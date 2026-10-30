@@ -3,7 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 // Preview uses its own Supabase project. Never use the production project's
 // credentials here, and never expose a service_role/secret key in browser code.
 const SUPABASE_URL = 'https://vgezfuztgzxbmvkmaoqn.supabase.co';
-const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
+const env = (import.meta as any).env || {};
+const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || env.REACT_APP_SUPABASE_ANON_KEY || '';
 
 export const supabaseConfigured =
   SUPABASE_URL.startsWith('https://') &&
