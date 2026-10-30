@@ -1,18 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Preview uses its own Supabase project. Never use the production project's
-// credentials here, and never expose a service_role/secret key in browser code.
-const SUPABASE_URL = 'https://vgezfuztgzxbmvkmaoqn.supabase.co';
-const env = (import.meta as any).env || {};
-const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || env.REACT_APP_SUPABASE_ANON_KEY || 'sb_publishable_RFIjvnuyKTODRMCud21nvQ_4IM8wm4c';
+// PLATO LAND live site uses the single main Supabase project.
+// Keep browser credentials publishable only; never place a service_role key here.
+const SUPABASE_URL = 'https://dfrppbapaaydbjeflozw.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_fuY9xR6e5pGB-6SnoV4-Hg_LNr23RzE';
 
 export const supabaseConfigured =
   SUPABASE_URL.startsWith('https://') &&
-  SUPABASE_ANON_KEY.length > 20 &&
-  !SUPABASE_ANON_KEY.toLowerCase().includes('service_role');
+  SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_');
 
 export const supabase = supabaseConfigured
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  ? createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
       auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
     })
   : null;
