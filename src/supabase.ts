@@ -1,15 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Set these to the Project URL and publishable/anon key from your own Supabase project.
-// Never put the service_role key in browser code.
-const SUPABASE_URL = 'https://YOUR-PREVIEW-PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'PASTE_PREVIEW_PUBLISHABLE_KEY_HERE';
+// Preview uses its own Supabase project. Never use the production project's
+// credentials here, and never expose a service_role/secret key in browser code.
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY || '';
 
 export const supabaseConfigured =
   SUPABASE_URL.startsWith('https://') &&
-  !SUPABASE_URL.includes('PASTE_') &&
-  !SUPABASE_ANON_KEY.includes('PASTE_') &&
-  SUPABASE_ANON_KEY.length > 20;
+  SUPABASE_ANON_KEY.length > 20 &&
+  !SUPABASE_ANON_KEY.toLowerCase().includes('service_role');
 
 export const supabase = supabaseConfigured
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
