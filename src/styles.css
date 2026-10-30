@@ -81,3 +81,5 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 @media(max-width:600px){.live-competition{padding:14px}.live-head h2{font-size:17px}.live-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.pot-grid,.group-grid{grid-template-columns:1fr}.live-section-title{align-items:flex-start;flex-direction:column}.seed-row{grid-template-columns:27px minmax(0,1fr) 44px 44px;gap:5px;padding:8px 6px}.seed-row input{font-size:11px}}
 
 .standing-row input{width:100%;min-width:0;box-sizing:border-box;padding:5px 2px;border:1px solid #45413a;border-radius:5px;background:#10151d;color:#f3e6c2;text-align:center;direction:ltr;font-size:10px}.standing-row{grid-template-columns:minmax(0,1fr) 42px 48px}
+
+.auth-inline-error{margin:14px 0;padding:12px 14px;border:1px solid rgba(225,105,90,.55);border-radius:10px;background:rgba(130,38,30,.18);color:#ffd0c8;font-size:13px;line-height:1.8;text-align:right;overflow-wrap:anywhere}.auth-debug{margin:8px 0;color:#b9c4d4;font-size:11px;line-height:1.7;text-align:center;overflow-wrap:anywhere}
