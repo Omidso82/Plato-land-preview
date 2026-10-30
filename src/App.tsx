@@ -104,7 +104,7 @@ function App(){
     const resolvedAvatar=prof.avatar_url?await getPrivateAvatarUrl(prof.avatar_url,user.id):''; const p={name:prof.display_name,platoId:prof.plato_id,avatar:resolvedAvatar,loggedIn:true};
     if(alive){setProfile(p);setAccountName(p.name);setAccountId(p.platoId);setAvatar(p.avatar);setAccountEmail(user.email||'');setTab('home');}
     if(alive)setRoleLoading(true);
-    const {data:roleRow,error:roleErr}=await supabase.from('user_roles').select('role').eq('user_id',user.id).maybeSingle();
+    const {data:roleValue,error:roleErr}=await supabase.rpc('current_user_role'); const roleRow=roleValue?{role:roleValue}:null;
     if(roleErr){
      if(alive){setRole('مدیر مسابقات');setAuthenticated(false);setNotice('پروفایل بارگذاری شد، اما خواندن نقش مدیریت از دیتابیس مجاز نبود: '+roleErr.message+' — سیاست SELECT جدول user_roles را بررسی کن.');}
     }else{
