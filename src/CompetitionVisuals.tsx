@@ -1,0 +1,44 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import { Trophy, Shuffle, Layers3, ListOrdered, Users, BarChart3, RotateCcw } from 'lucide-react';
+
+type Tournament = { id:string; title:string; game:string; progression:string; seedingMetric:string; seedingOrder:string; qualifiersPerGroup:string; publicSeeding:boolean; publicDraw:boolean; publicTables:boolean; publicBracket:boolean };
+type Registration = { id:string; name:string; platoId:string; tournamentId:string; status:string };
+type Player = { id:string; name:string; platoId:string; wins:number; level:number };
+type Group = { name:string; players:Player[] };
+
+const STORE_KEY = 'plato-land-live-competition-v1';
+const metricLabel:Record<string,string> = { wins:'تعداد برد', win_rate:'درصد برد', level:'سطح بازیکن', rating:'امتیاز یا ریتینگ', points:'امتیاز مسابقات', manual:'رتبه‌بندی دستی' };
+
+export default function CompetitionVisuals({ tournaments, registrations }: { tournaments:Tournament[]; registrations:Registration[] }) {
+ const [tournamentId,setTournamentId] = useState('');
+ const [players,setPlayers] = useState<Player[]>([]);
+ const [groups,setGroups] = useState<Group[]>([]);
+ const [drawReady,setDrawReady] = useState(false);
+ const [scores,setScores] = useState<Record<string,{played:number;won:number;lost:number;points:number}>>({});
+ const tournament = tournaments.find(t=>t.id===tournamentId);
+ const entrants = registrations.filter(r=>r.tournamentId===tournamentId && r.status==='تأیید شده');
+ useEffect(()=>{ if(!tournamentId && tournaments.length) setTournamentId(tournaments[0].id); },[tournaments,tournamentId]);
+ useEffect(()=>{
+  try { const saved=JSON.parse(localStorage.getItem(STORE_KEY)||'{}'); const data=saved[tournamentId]; if(data){setPlayers(data.players||[]);setGroups(data.groups||[]);setDrawReady(!!data.drawReady);setScores(data.scores||{});} else {setPlayers(entrants.map(r=>({id:r.id,name:r.name,platoId:r.platoId,wins:0,level:0})));setGroups([]);setDrawReady(false);setScores({});} } catch { setPlayers(entrants.map(r=>({id:r.id,name:r.name,platoId:r.platoId,wins:0,level:0})));setGroups([]);setDrawReady(false);setScores({});}
+ },[tournamentId]);
+ useEffect(()=>{ if(!tournamentId)return; try{const all=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');all[tournamentId]={players,groups,drawReady,scores};localStorage.setItem(STORE_KEY,JSON.stringify(all));}catch{} },[tournamentId,players,groups,drawReady,scores]);
+ useEffect(()=>{ if(!tournamentId)return; setPlayers(old=>{const map=new Map(old.map(p=>[p.id,p]));return entrants.map(r=>map.get(r.id)||({id:r.id,name:r.name,platoId:r.platoId,wins:0,level:0}));}); },[tournamentId,registrations.length]);
+ const sorted = useMemo(()=>[...players].sort((a,b)=>{const key=tournament?.seedingMetric||'wins';const d=key==='level'?a.level-b.level:a.wins-b.wins;return (tournament?.seedingOrder==='asc'?1:-1)*d||a.platoId.localeCompare(b.platoId);}),[players,tournament]);
+ const pots = useMemo(()=>{const count=Math.min(4,Math.max(1,sorted.length));return Array.from({length:count},(_,i)=>sorted.slice(Math.floor(i*sorted.length/count),Math.floor((i+1)*sorted.length/count)));},[sorted]);
+ function generateDraw(){if(players.length<2)return;const groupCount=Math.ceil(players.length/4);const next:Group[]=Array.from({length:groupCount},(_,i)=>({name:String.fromCharCode(65+i),players:[]}));pots.forEach(pot=>{const shuffled=[...pot].sort(()=>Math.random()-.5);shuffled.forEach((p,i)=>next[i%groupCount].players.push(p));});setGroups(next);setDrawReady(true);setScores({});}
+ function resetDraw(){setGroups([]);setDrawReady(false);setScores({});}
+ const groupStandings=(g:Group)=>[...g.players].sort((a,b)=>{const sa=scores[a.id]||{points:0,won:0};const sb=scores[b.id]||{points:0,won:0};return sb.points-sa.points||sb.won-sa.won;});
+ if(!tournaments.length)return <section className="live-competition panel"><h2>نمایش زندهٔ ساختار مسابقه</h2><p>ابتدا یک مسابقه در فرم مدیریت بساز.</p></section>;
+ return <section className="live-competition panel">
+  <div className="live-head"><div><span className="live-kicker">LIVE COMPETITION BUILDER</span><h2>نمایش گرافیکی زندهٔ مسابقه</h2><p>سیدبندی، سبدها، قرعه‌کشی، گروه‌ها و مسیر حذفی در یک نمای مدیریتی</p></div><BarChart3 size={28}/></div>
+  <label className="live-select">انتخاب مسابقه<select value={tournamentId} onChange={e=>setTournamentId(e.target.value)}>{tournaments.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}</select></label>
+  {tournament&&<div className="live-stats"><div><strong>{players.length}</strong><span>بازیکن تأییدشده</span></div><div><strong>{pots.length}</strong><span>سبد سیدبندی</span></div><div><strong>{groups.length}</strong><span>گروه قرعه‌کشی</span></div><div><strong>{drawReady?'آماده':'—'}</strong><span>وضعیت قرعه</span></div></div>}
+  <div className="live-section"><div className="live-section-title"><h3><ListOrdered size={18}/> سیدبندی و رتبه‌بندی</h3><small>معیار: {metricLabel[tournament?.seedingMetric||'wins']||'تعداد برد'}</small></div>
+   {players.length===0?<p className="live-empty">هنوز بازیکن تأییدشده‌ای برای این مسابقه وجود ندارد. ثبت‌نام‌های تأییدشده اینجا نمایش داده می‌شوند.</p>:<div className="seed-table"><div className="seed-row seed-header"><span>رتبه</span><span>بازیکن / Plato ID</span><span>برد</span><span>سطح</span></div>{sorted.map((p,i)=><div className="seed-row" key={p.id}><b>{i+1}</b><span><strong>{p.name}</strong><small>{p.platoId}</small></span><input aria-label={'برد '+p.name} type="number" min="0" value={p.wins} onChange={e=>setPlayers(old=>old.map(x=>x.id===p.id?{...x,wins:Number(e.target.value)}:x))}/><input aria-label={'سطح '+p.name} type="number" min="0" value={p.level} onChange={e=>setPlayers(old=>old.map(x=>x.id===p.id?{...x,level:Number(e.target.value)}:x))}/></div>)}</div>}
+  </div>
+  <div className="live-section"><div className="live-section-title"><h3><Layers3 size={18}/> سبدهای سیدبندی</h3><small>تقسیم متوازن بر اساس رتبه</small></div><div className="pot-grid">{pots.map((pot,i)=><div className="pot-card" key={i}><h4>سبد {i+1}</h4>{pot.length?pot.map((p,j)=><div className="pot-player" key={p.id}><span>{j+1}</span><b>{p.name}</b><small>{p.platoId}</small></div>):<p>خالی</p>}</div>)}</div></div>
+  <div className="live-section"><div className="live-section-title"><h3><Shuffle size={18}/> قرعه‌کشی و گروه‌بندی</h3><small>{drawReady?'قرعه تولید شده':'آمادهٔ قرعه‌کشی'}</small></div><div className="live-actions"><button type="button" className="gold-button" disabled={players.length<2} onClick={generateDraw}><Shuffle size={16}/> اجرای قرعه‌کشی</button><button type="button" className="outline-button" disabled={!drawReady} onClick={resetDraw}><RotateCcw size={15}/> پاک‌کردن قرعه</button></div>{drawReady?<div className="group-grid">{groups.map(g=><div className="group-card" key={g.name}><h4>گروه {g.name}</h4>{g.players.map(p=><div className="group-player" key={p.id}><Users size={14}/><span>{p.name}</span><small>{p.platoId}</small></div>)}</div>)}</div>:<p className="live-empty">پس از تأیید بازیکنان و تکمیل اطلاعات سیدبندی، قرعه‌کشی را اجرا کن.</p>}</div>
+  <div className="live-section"><div className="live-section-title"><h3><Trophy size={18}/> جدول گروهی و مسیر حذفی</h3><small>ثبت نتیجه در نسخهٔ بعدی</small></div>{drawReady?<><div className="group-grid">{groups.map(g=><div className="standings-card" key={g.name}><h4>جدول گروه {g.name}</h4><div className="standing-row standing-head"><span>بازیکن</span><span>برد</span><span>امتیاز</span></div>{groupStandings(g).map(p=>{const s=scores[p.id]||{played:0,won:0,lost:0,points:0};return <div className="standing-row" key={p.id}><span>{p.name}</span><b>{s.won}</b><b>{s.points}</b></div>})}</div>)}</div>{tournament?.progression!=='groups_only'&&<div className="bracket-preview"><h4>نمودار مرحلهٔ حذفی — پیش‌نمایش</h4><div className="bracket-round"><b>مرحلهٔ اول</b>{groups.slice(0,Math.max(1,Math.ceil(groups.length/2))).map((g,i)=><div className="bracket-match" key={g.name}><span>{groupStandings(g)[0]?.name||'صعودکننده گروه '+g.name}</span><span>{groupStandings(groups[i+Math.ceil(groups.length/2)]||g)[0]?.name||'صعودکننده گروه'}</span></div>)}</div><small>جایگاه‌ها نمایشی‌اند؛ با ثبت نتایج واقعی، جدول و مسیر صعود تکمیل می‌شود.</small></div>}</>:<p className="live-empty">پس از قرعه‌کشی، جدول گروه‌ها و پیش‌نمایش نمودار حذفی در این قسمت ساخته می‌شود.</p>}</div>
+  <p className="live-note">این بخش فعلاً نمونهٔ گرافیکی است و اطلاعات آن در همین مرورگر ذخیره می‌شود؛ هنوز به دیتابیس Supabase متصل نیست.</p>
+ </section>;
+}
