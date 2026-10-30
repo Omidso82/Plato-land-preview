@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 // credentials here, and never expose a service_role/secret key in browser code.
 const SUPABASE_URL = 'https://vgezfuztgzxbmvkmaoqn.supabase.co';
 const env = (import.meta as any).env || {};
-const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || env.REACT_APP_SUPABASE_ANON_KEY || '';
+const SUPABASE_ANON_KEY = env.VITE_SUPABASE_ANON_KEY || env.REACT_APP_SUPABASE_ANON_KEY || 'sb_publishable_RFIjvnuyKTODRMCud21nvQ_4IM8wm4c';
 
 export const supabaseConfigured =
   SUPABASE_URL.startsWith('https://') &&
