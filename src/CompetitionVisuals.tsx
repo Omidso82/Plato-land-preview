@@ -124,7 +124,8 @@ export default function CompetitionVisuals({ tournaments, registrations }: { tou
  const groupStandings=(g:Group)=>[...g.players].sort((a,b)=>{const sa=scores[a.id]||{points:0,won:0};const sb=scores[b.id]||{points:0,won:0};return sb.points-sa.points||sb.won-sa.won;});
  if(!tournaments.length)return <section className="live-competition panel"><h2>نمایش زندهٔ ساختار مسابقه</h2><p>ابتدا یک مسابقه در فرم مدیریت بساز.</p></section>;
  const champion=knockoutRounds.length?knockoutRounds[knockoutRounds.length-1].matches[0]?.winnerId:null;
- const championPlayer=champion?knockoutRounds[knockoutRounds.length-1].matches[0]?.player1?.id===champion?knockoutRounds[knockoutRounds.length-1].matches[0]?.player1:knockoutRounds[knockoutRounds.length-1].matches[0]?.player2:null:null;
+ const finalMatch=knockoutRounds.length?knockoutRounds[knockoutRounds.length-1].matches[0]:null;
+ const championPlayer=champion&&finalMatch?(finalMatch.player1?.id===champion?finalMatch.player1:finalMatch.player2):null;
  return <section className="live-competition panel">
   <div className="live-head"><div><span className="live-kicker">LIVE COMPETITION BUILDER</span><h2>نمایش گرافیکی زندهٔ مسابقه</h2><p>ساختار نمایشی متناسب با فرمت انتخاب‌شدهٔ مسابقه</p></div><BarChart3 size={28}/></div>
   <label className="live-select">انتخاب مسابقه<select value={tournamentId} onChange={e=>setTournamentId(e.target.value)}>{tournaments.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}</select></label>
