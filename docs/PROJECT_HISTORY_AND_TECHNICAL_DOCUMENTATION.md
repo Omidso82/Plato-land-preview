@@ -498,3 +498,8 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - The About and Guide public pages now load from Supabase with safe default content when no saved page exists. Owner admin navigation includes a dedicated Pages section for both editors.
 - Applied migrations 20261031211556_create_owner_managed_site_pages and 20261031211717_preserve_published_site_page_versions. Read-back confirmed RLS policies and anonymous SELECT-only column grants.
 - GitHub Actions Build and typecheck run 41242992252 completed successfully for commit c5f4169496a53f9196ffff72db3f609ccc02f17b.
+### Public visitor access
+- Corrected the no-session startup path: unauthenticated visitors now land on the public homepage instead of being redirected to the login-only screen.
+- Login and signup remain explicit header actions; registration/profile actions still require authentication.
+- This is necessary for the approved public Home, Tournaments, News, About and Guide pages to be accessible without an account.
+- GitHub Actions Build and typecheck run 41243053625 completed successfully for commit 0e6db8e44872bd6279558e54aa0361016a51683e.
