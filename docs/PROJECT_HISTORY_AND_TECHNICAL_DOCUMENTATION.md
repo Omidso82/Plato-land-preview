@@ -439,3 +439,27 @@ This is a read-only production data check; no registration rows were changed.
 
 ### QA follow-up
 Verify on the live site that League A shows two confirmed team entrants (Omid and Taj), that the draw creates the first knockout round after registration closure, and that a later approval is reflected through Realtime or the manual refresh control. Test Realtime independently; manual refresh remains the fallback.
+---
+
+## 31 October 2026 — PLATO LAND v10.7 implementation continuation (not deployed)
+
+### Implemented in the production codebase branch
+- Added explicit tournament lifecycle mapping between Supabase states (draft, published, ongoing, completed, cancelled) and Persian owner-facing status labels. Saving a tournament now preserves the selected lifecycle state while keeping registration-open as a separate flag.
+- The public homepage's active-tournament section now includes only published tournaments whose database lifecycle is ongoing. When none exist, it displays the approved minimal empty state.
+- The tournaments page now separates active competitions, future/open-registration competitions, and completed/cancelled archive entries, with search applied within each section.
+- Updated the site footer to the approved 2026 PLATO LAND copyright line and removed the prototype label.
+- Added live owner-dashboard counts for registrations and profiles using exact Supabase counts and Realtime refresh subscriptions; these figures no longer depend on unpopulated client-side arrays.
+- Added owner-dashboard lifecycle metrics for ongoing and completed tournaments.
+- Clarified that tournament-manager scope is enforced by database permissions and assignments, not merely simulated in the interface.
+- Kept Persian/Jalali date display and Tehran-time boundary helpers from the existing v10.7 work.
+
+### Validation
+- GitHub Actions Build and typecheck run 41242029428: completed successfully for commit 6f1d1c186fe99ed87361fc3c7f6fe3470c5baf70.
+- TypeScript typecheck and Vite production build both passed.
+- No Supabase schema migration was applied and no production rows were modified in this implementation slice.
+
+### Release state
+- Branch: implementation/uiux-v10-7-owner-foundation.
+- PR: #16 (https://github.com/Omidso82/Plato-land-preview/pull/16), still open as Draft.
+- The changes have not been merged to main and have not been deployed to https://platoland.org.
+- This is an incremental implementation slice, not completion of UI/UX checklist v10.7. Remaining approved requirements and full QA are still outstanding.
