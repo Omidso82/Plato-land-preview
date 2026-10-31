@@ -174,7 +174,7 @@ function App(){
  const active=tournaments.filter(t=>t.published&&t.status==='در حال برگزاری');
  const publishedTournaments=tournaments.filter(t=>t.published&&t.status!=='پیش‌نویس');
  const filtered=publishedTournaments.filter(t=>t.game.toLowerCase().includes(search.toLowerCase())||t.title.toLowerCase().includes(search.toLowerCase()));
- const matchesSelectedGame=(t:Tournament)=>!selectedGame||t.game===selectedGame;
+ const matchesSelectedGame=(t:Tournament)=>!selectedGame||(selectedGame==='__mixed__'?/ترکیبی|mixed/i.test(t.game):t.game===selectedGame);
  const selected=tournaments.find(t=>t.id===regTournament);
  const canManage=authenticated&&!roleLoading&&role==='مالک کل';
   useEffect(()=>{if(canManage)setAdminSection('overview');else if(authenticated&&!roleLoading&&role==='مدیر مسابقات')setAdminSection('requests')},[canManage,authenticated,role,roleLoading]);
