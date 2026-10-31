@@ -119,3 +119,12 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 .announcement-form input[type=file]{width:100%;box-sizing:border-box}
 .announcement-form .full-button{width:100%;justify-content:center}
 @media(max-width:700px){.site-announcement-card{grid-template-columns:1fr;gap:17px;margin:18px 0 25px;padding:18px}.site-announcement-copy h2{font-size:21px}.site-announcement-copy p{font-size:12px}.announcement-modal-backdrop{padding:10px}.announcement-modal{border-radius:10px}.announcement-modal-head{padding:10px 12px}.announcement-modal>video{max-height:72vh}}
+
+
+/* Disable seeding controls for knockout-only tournaments */
+.builder-section-disabled{border-color:rgba(130,120,100,.28);background:linear-gradient(145deg,rgba(35,34,31,.48),rgba(18,19,20,.72))}
+.builder-section-disabled h3{color:#898477}
+.seeding-disabled-note{color:#aaa394!important}
+.seeding-controls{display:flex;flex-direction:column;gap:12px;border:0;padding:0;margin:0;min-width:0}
+.seeding-controls:disabled label{opacity:.38;cursor:not-allowed}
+.seeding-controls:disabled input,.seeding-controls:disabled select,.seeding-controls:disabled textarea{cursor:not-allowed}
