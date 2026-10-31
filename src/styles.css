@@ -396,3 +396,7 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 
 .mixed-game-tags span{display:inline-flex;align-items:center;gap:6px}
 .mixed-game-tags img{width:20px;height:20px;border-radius:50%;object-fit:cover}
+
+.news-archive-filters{display:grid;grid-template-columns:minmax(0,2fr) minmax(150px,1fr);gap:12px;margin:16px 0}
+.news-archive-filters label{display:grid;gap:6px;color:var(--muted,#aaa49a);font-size:.84rem}
+@media(max-width:600px){.news-archive-filters{grid-template-columns:1fr}}
