@@ -71,23 +71,7 @@ function App(){
   const [announcementFile,setAnnouncementFile]=useState<File|null>(null);
   const [announcementBusy,setAnnouncementBusy]=useState(false);
   const [announcementError,setAnnouncementError]=useState('');
-  useEffect(()=>{
-  if(!canManage||!supabase||!managerTournamentId)return;
-  let alive=true;
-  setManagerBusy(true);setManagerError('');
-  Promise.all([
-   supabase.rpc('admin_list_site_users'),
-   supabase.from('tournament_manager_access').select('user_id').eq('tournament_id',managerTournamentId)
-  ]).then(([users,assigned]:any[])=>{
-   if(!alive)return;
-   if(users.error||assigned.error){setManagerError(users.error?.message||assigned.error?.message||'دریافت اطلاعات مدیران ناموفق بود.');return}
-   setManagerUsers((users.data||[]).filter((u:any)=>u.user_id));
-   setManagerAssignments(assigned.data||[]);
-  }).catch((err:any)=>{if(alive)setManagerError(err?.message||'خطای دریافت اطلاعات')})
-   .finally(()=>{if(alive)setManagerBusy(false)});
-  return ()=>{alive=false};
- },[canManage,managerTournamentId]);
- async function saveTournamentManagers(){
+  async function saveTournamentManagers(){
   if(!canManage||!supabase||!managerTournamentId)return;
   setManagerBusy(true);setManagerError('');
   try{
@@ -168,6 +152,22 @@ function App(){
  const filtered=active.filter(t=>t.game.toLowerCase().includes(search.toLowerCase())||t.title.toLowerCase().includes(search.toLowerCase()));
  const selected=tournaments.find(t=>t.id===regTournament);
  const canManage=authenticated&&!roleLoading&&role==='مالک کل';
+ useEffect(()=>{
+  if(!canManage||!supabase||!managerTournamentId)return;
+  let alive=true;
+  setManagerBusy(true);setManagerError('');
+  Promise.all([
+   supabase.rpc('admin_list_site_users'),
+   supabase.from('tournament_manager_access').select('user_id').eq('tournament_id',managerTournamentId)
+  ]).then(([users,assigned]:any[])=>{
+   if(!alive)return;
+   if(users.error||assigned.error){setManagerError(users.error?.message||assigned.error?.message||'دریافت اطلاعات مدیران ناموفق بود.');return}
+   setManagerUsers((users.data||[]).filter((u:any)=>u.user_id));
+   setManagerAssignments(assigned.data||[]);
+  }).catch((err:any)=>{if(alive)setManagerError(err?.message||'خطای دریافت اطلاعات')})
+   .finally(()=>{if(alive)setManagerBusy(false)});
+  return ()=>{alive=false};
+ },[canManage,managerTournamentId]);
  const nav=[['home','صفحه اصلی'],['tournaments','مسابقات'],['profile','حساب بازیکن'],['admin','مدیریت']];
  function go(next:string){setTab(next);setMobileMenu(false);setNotice('');window.scrollTo({top:0,behavior:'smooth'})}
  async function saveTournament(e:React.FormEvent){e.preventDefault();if(!canManage||!supabase){setNotice('فقط مالک کل با اتصال معتبر به پایگاه داده می‌تواند مسابقه را ذخیره کند.');return}if(!form.title.trim()||!form.rules.trim()){setNotice('عنوان مسابقه و قوانین الزامی است.');return}try{const {data:{user},error:userError}=await supabase.auth.getUser();if(userError)throw userError;if(!user)throw new Error('نشست مالک معتبر نیست.');const id=editing||crypto.randomUUID();const {data,error}=await supabase.from('tournaments').upsert(tournamentToDb(form,id,user.id),{onConflict:'id'}).select('*').single();if(error)throw error;const saved=tournamentFromDb(data);setTournaments(old=>editing?old.map(t=>t.id===editing?saved:t):[saved,...old]);setNotice(editing?'تغییرات مسابقه در پایگاه داده ذخیره شد.':'مسابقه در پایگاه داده مشترک ایجاد شد.');setForm(blankTournament());setEditing('');}catch(err:any){setNotice('ذخیره مسابقه ناموفق بود: '+(err?.message||'خطای ناشناخته'));}}
