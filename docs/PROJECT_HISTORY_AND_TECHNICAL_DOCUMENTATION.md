@@ -520,3 +520,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added responsive GameCatalog cards to the public tournaments page; selecting a game filters its active, future/open-registration and archive competitions. Added an owner-only Games management section with create/edit/enable/disable/delete controls.
 - Applied migration 20261031212532_create_owner_managed_game_catalog. Read-back confirmed the intended policies, limited anonymous SELECT grants and no site_games-specific security advisor findings.
 - GitHub Actions Build and typecheck run 41243604293 completed successfully for commit 270acc8ef3ca79e64f88e7e9eeddec079265468e.
+### Game catalog refinements
+- Mixed competitions now use a dedicated selection key and filter independently from single-game categories.
+- Tournament game mapping prefers explicit platform_settings.game metadata before the legacy game_type field, preventing older rows that stored a format label in game_type from being miscategorized when explicit game metadata exists.
+- Added migration 20261031212832_index_site_games_creator to cover the game catalog creator foreign key.
