@@ -118,26 +118,34 @@ export default function CompetitionVisuals({ tournaments }: { tournaments:Tourna
   return ()=>{if(channel)supabase?.removeChannel(channel);};
  },[tournamentId,loadTournamentRegistrations]);
  useEffect(()=>{
-  try {
-   const saved=JSON.parse(localStorage.getItem(STORE_KEY)||'{}'); const data=saved[tournamentId];
-   if(data){
-    const known=new Map<string,Player>((data.players||[]).map((p:Player)=>[p.id,p] as [string,Player]));
+  if(!tournamentId||!supabase)return;
+  let alive=true;
+  setLoadedTournamentId('');
+  (async()=>{
+   try{
+    const {data:remote,error}=await supabase.from('competition_snapshots').select('snapshot').eq('tournament_id',tournamentId).maybeSingle();
+    if(error)throw error;
+    let data:any=remote?.snapshot||null;
+    if(!data){const saved=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');data=saved[tournamentId]||null;}
+    if(!alive)return;
+    const known=new Map<string,Player>((data?.players||[]).map((p:Player)=>[p.id,p] as [string,Player]));
     setPlayers(entrants.map(r=>known.get(r.id)||({id:r.id,name:r.name,platoId:r.platoId,wins:0,level:0})));
-    setGroups(data.groups||[]);setDrawReady(!!data.drawReady);setScores(data.scores||{});
-    setKnockoutRounds(data.knockoutRounds||[]);
-   } else {
-    setPlayers(entrants.map(r=>({id:r.id,name:r.name,platoId:r.platoId,wins:0,level:0})));
-    setGroups([]);setDrawReady(false);setScores({});setKnockoutRounds([]);
-   }
-   setLoadedTournamentId(tournamentId);
-  } catch {
-   setPlayers(entrants.map(r=>({id:r.id,name:r.name,platoId:r.platoId,wins:0,level:0})));
-   setGroups([]);setDrawReady(false);setScores({});setKnockoutRounds([]);setLoadedTournamentId(tournamentId);
-  }
+    setGroups(data?.groups||[]);setDrawReady(!!data?.drawReady);setScores(data?.scores||{});
+    setKnockoutRounds(data?.knockoutRounds||[]);setLoadedTournamentId(tournamentId);
+   }catch(e:any){if(alive){setRegistrationsError(e?.message||'دریافت وضعیت قرعه از پایگاه داده ناموفق بود.');setPlayers(entrants.map(r=>({id:r.id,name:r.name,platoId:r.platoId,wins:0,level:0})));setGroups([]);setDrawReady(false);setScores({});setKnockoutRounds([]);setLoadedTournamentId(tournamentId);}}
+  })();
+  return ()=>{alive=false};
  },[tournamentId,entrants]);
  useEffect(()=>{
-  if(!tournamentId||loadedTournamentId!==tournamentId)return;
-  try{const all=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');all[tournamentId]={players,groups,drawReady,scores,knockoutRounds};localStorage.setItem(STORE_KEY,JSON.stringify(all));}catch{}
+  if(!tournamentId||loadedTournamentId!==tournamentId||!supabase)return;
+  const snapshot={players,groups,drawReady,scores,knockoutRounds};
+  try{const all=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');all[tournamentId]=snapshot;localStorage.setItem(STORE_KEY,JSON.stringify(all));}catch{}
+  let cancelled=false;
+  (async()=>{const {data:{user}}=await supabase.auth.getUser();if(cancelled||!user)return;
+   const {error}=await supabase.from('competition_snapshots').upsert({tournament_id:tournamentId,snapshot,updated_by:user.id,updated_at:new Date().toISOString()},{onConflict:'tournament_id'});
+   if(error&&!cancelled)setRegistrationsError('ذخیرهٔ قرعه برای نمایش به بازیکنان ناموفق بود: '+error.message);
+  })();
+  return ()=>{cancelled=true};
  },[tournamentId,loadedTournamentId,players,groups,drawReady,scores,knockoutRounds]);
  useEffect(()=>{
   if(!knockoutOnly||!registrationClosed||loadedTournamentId!==tournamentId||knockoutRounds.length||confirmedPlayers.length<2)return;
