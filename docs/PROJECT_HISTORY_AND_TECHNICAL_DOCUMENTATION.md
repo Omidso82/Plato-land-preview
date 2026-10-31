@@ -561,3 +561,8 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added a global maintenance gate for public visitors and a dedicated owner admin panel to enable/disable maintenance, edit the message, and preview the maintenance screen without taking the live site offline.
 - Owner is exempt from the public maintenance gate and can continue using the site and admin controls to disable maintenance.
 - Applied migrations 20261031220010_add_owner_controlled_maintenance_mode and 20261031220540_grant_maintenance_singleton_read to the existing Supabase project.
+### Scoped audit event stream
+- Added an invoker-context audit trigger function that records only operation, entity type/ID, tournament ID where applicable, and before/after status. It deliberately excludes profile evidence, file paths, full row contents and other private payloads.
+- Added change capture triggers for tournaments, registrations, results, news, About/Guide pages, game catalog and maintenance settings.
+- Tightened `audit_logs` read policy: owner can review all events; tournament managers can see only events carrying a valid tournament ID for a tournament assigned to them. Insert policy requires the authenticated actor to match `actor_id` and applies the same scope.
+- Added owner audit viewer with date/time in Tehran and filters by entity type. Applied migrations 20261031221020_add_scoped_audit_event_capture and 20261031221105_grant_scoped_audit_insert.
