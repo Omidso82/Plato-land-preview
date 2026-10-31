@@ -19,7 +19,7 @@ export default function NotificationBell({onOpenRegistrations}:{onOpenRegistrati
   }catch(e:any){setError(e?.message||'دریافت اعلان‌ها ناموفق بود.');}
   finally{setLoading(false);}
  },[]);
- useEffect(()=>{void load();if(!supabase)return;let channel:any;supabase.auth.getUser().then(({data})=>{if(!data.user)return;channel=supabase!.channel('player-notifications-'+data.user.id).on('postgres_changes',{event:'*',schema:'public',table:'user_notifications',filter:'user_id=eq.'+data.user.id},()=>void load()).subscribe();});return()=>{if(channel)void supabase?.removeChannel(channel);};},[load]);
+ useEffect(()=>{void load();if(!supabase)return;let active=true;let channel:any;supabase.auth.getUser().then(({data})=>{if(!active||!data.user)return;channel=supabase!.channel('player-notifications-'+data.user.id).on('postgres_changes',{event:'*',schema:'public',table:'user_notifications',filter:'user_id=eq.'+data.user.id},()=>void load()).subscribe();});return()=>{active=false;if(channel)void supabase?.removeChannel(channel);};},[load]);
  async function markRead(item:Notification){
   if(!supabase||item.read_at)return;
   const timestamp=new Date().toISOString();
