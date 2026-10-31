@@ -482,3 +482,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - The homepage featured-news section stays hidden while content loads and remains hidden when there is no currently valid featured published item. Expired featured items continue to appear in the permanent news archive.
 - Desktop layout emphasizes the first featured item; mobile cards stack vertically.
 - GitHub Actions Build and typecheck run 41242490016 completed successfully for commit 11053eeafd2201507a4e10f9e92256ce8e275de2.
+### Featured-news scheduling and public column permissions
+- Added Persian/Jalali date text fields and Iran wall-clock time inputs for the featured display start/end window. Stored values are converted to UTC instants from Asia/Tehran wall-clock input; the public homepage only shows currently valid featured items.
+- Applied additive migrations 20261031211355_limit_public_site_news_columns and 20261031211411_revoke_public_news_write_privileges. Anonymous users can select only the 12 public content/display columns; all anonymous write privileges are revoked.
+- Read-back of information_schema.column_privileges confirmed anon has SELECT only (12 columns), with no INSERT/UPDATE/DELETE privileges. Security advisor reports no site_news-specific security findings.
