@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { supabase } from './supabase';
 import { Trophy, Shuffle, Layers3, ListOrdered, Users, BarChart3, RotateCcw, Crown } from 'lucide-react';
 
 type Tournament = { id:string; title:string; game:string; progression:string; seedingMetric:string; seedingOrder:string; qualifiersPerGroup:string; publicSeeding:boolean; publicDraw:boolean; publicTables:boolean; publicBracket:boolean; status?:string };
-type Registration = { id:string; name:string; platoId:string; tournamentId:string; status:string };
+type Registration = { id:string; name:string; platoId:string; tournamentId:string; status:string; registration_type?:string; team_name?:string|null; is_reserve?:boolean; members?:{display_name:string;plato_id:string;is_captain:boolean}[] };
 type Player = { id:string; name:string; platoId:string; wins:number; level:number };
 type Group = { name:string; players:Player[] };
 type Match = { id:string; player1:Player|null; player2:Player|null; winnerId:string|null };
@@ -76,7 +77,7 @@ function updateWinner(rounds:Round[],roundIndex:number,matchIndex:number,winnerI
  return next;
 }
 
-export default function CompetitionVisuals({ tournaments, registrations }: { tournaments:Tournament[]; registrations:Registration[] }) {
+export default function CompetitionVisuals({ tournaments }: { tournaments:Tournament[]; registrations?:Registration[] }) {
  const [tournamentId,setTournamentId] = useState('');
  const [players,setPlayers] = useState<Player[]>([]);
  const [groups,setGroups] = useState<Group[]>([]);
@@ -84,12 +85,38 @@ export default function CompetitionVisuals({ tournaments, registrations }: { tou
  const [scores,setScores] = useState<Record<string,{played:number;won:number;lost:number;points:number}>>({});
  const [knockoutRounds,setKnockoutRounds] = useState<Round[]>([]);
  const [loadedTournamentId,setLoadedTournamentId] = useState('');
+ const [databaseRegistrations,setDatabaseRegistrations] = useState<Registration[]>([]);
+ const [registrationsLoading,setRegistrationsLoading] = useState(false);
+ const [registrationsError,setRegistrationsError] = useState('');
  const tournament = tournaments.find(t=>t.id===tournamentId);
- const entrants = registrations.filter(r=>r.tournamentId===tournamentId && r.status==='تأیید شده');
  const knockoutOnly=tournament?.progression==='knockout_only';
  const registrationClosed=tournament?.status==='بسته';
+ const loadTournamentRegistrations = useCallback(async () => {
+  if(!tournamentId || !supabase){setDatabaseRegistrations([]);return;}
+  setRegistrationsLoading(true);setRegistrationsError('');
+  try {
+   const {data:rows,error}=await supabase.from('registrations').select('id,tournament_id,status,registration_type,is_reserve,display_name,plato_id,team_name,created_at').eq('tournament_id',tournamentId).order('created_at',{ascending:true});
+   if(error)throw error;
+   const ids=(rows||[]).map((r:any)=>r.id);
+   const memberResult=ids.length?await supabase.from('registration_members').select('registration_id,display_name,plato_id,is_captain').in('registration_id',ids):{data:[],error:null};
+   if(memberResult.error)throw memberResult.error;
+   const memberMap=new Map<string,any[]>();
+   (memberResult.data||[]).forEach((m:any)=>memberMap.set(m.registration_id,[...(memberMap.get(m.registration_id)||[]),m]));
+   setDatabaseRegistrations((rows||[]).map((r:any)=>({id:r.id,tournamentId:r.tournament_id,status:r.status,name:r.registration_type==='team'?(r.team_name||r.display_name||'تیم بدون نام'):(r.display_name||r.plato_id||'بازیکن'),platoId:r.plato_id||'',registration_type:r.registration_type,team_name:r.team_name,is_reserve:r.is_reserve===true,members:memberMap.get(r.id)||[]})));
+  } catch(e:any) {setRegistrationsError(e?.message||'دریافت ثبت‌نام‌های تأییدشده ناموفق بود.');}
+  finally {setRegistrationsLoading(false);}
+ },[tournamentId]);
+ const entrants = useMemo(()=>databaseRegistrations.filter(r=>['approved','registered'].includes(r.status)&&!r.is_reserve),[databaseRegistrations]);
  const confirmedPlayers=useMemo(()=>entrants.map(r=>({id:r.id,name:r.name,platoId:r.platoId,wins:0,level:0})),[entrants]);
  useEffect(()=>{ if(!tournamentId && tournaments.length) setTournamentId(tournaments[0].id); },[tournaments,tournamentId]);
+ useEffect(()=>{
+  if(!tournamentId)return;
+  void loadTournamentRegistrations();
+  const channel=supabase?.channel('competition-registrations-'+tournamentId)
+   .on('postgres_changes',{event:'*',schema:'public',table:'registrations',filter:'tournament_id=eq.'+tournamentId},()=>{void loadTournamentRegistrations();})
+   .subscribe();
+  return ()=>{if(channel)supabase?.removeChannel(channel);};
+ },[tournamentId,loadTournamentRegistrations]);
  useEffect(()=>{
   try {
    const saved=JSON.parse(localStorage.getItem(STORE_KEY)||'{}'); const data=saved[tournamentId];
@@ -107,7 +134,7 @@ export default function CompetitionVisuals({ tournaments, registrations }: { tou
    setPlayers(entrants.map(r=>({id:r.id,name:r.name,platoId:r.platoId,wins:0,level:0})));
    setGroups([]);setDrawReady(false);setScores({});setKnockoutRounds([]);setLoadedTournamentId(tournamentId);
   }
- },[tournamentId]);
+ },[tournamentId,entrants]);
  useEffect(()=>{
   if(!tournamentId||loadedTournamentId!==tournamentId)return;
   try{const all=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');all[tournamentId]={players,groups,drawReady,scores,knockoutRounds};localStorage.setItem(STORE_KEY,JSON.stringify(all));}catch{}
@@ -130,10 +157,11 @@ export default function CompetitionVisuals({ tournaments, registrations }: { tou
   <div className="live-head"><div><span className="live-kicker">LIVE COMPETITION BUILDER</span><h2>نمایش گرافیکی زندهٔ مسابقه</h2><p>ساختار نمایشی متناسب با فرمت انتخاب‌شدهٔ مسابقه</p></div><BarChart3 size={28}/></div>
   <label className="live-select">انتخاب مسابقه<select value={tournamentId} onChange={e=>setTournamentId(e.target.value)}>{tournaments.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}</select></label>
   {tournament&&<div className="live-stats"><div><strong>{entrants.length}</strong><span>بازیکن تأییدشده</span></div><div><strong>{knockoutOnly?'-':pots.length}</strong><span>{knockoutOnly?'بدون سیدبندی':'سبد سیدبندی'}</span></div><div><strong>{knockoutOnly?(knockoutRounds.length||'—'):groups.length}</strong><span>{knockoutOnly?'مراحل حذفی':'گروه قرعه‌کشی'}</span></div><div><strong>{knockoutOnly?(registrationClosed?'بسته':'باز'):(drawReady?'آماده':'—')}</strong><span>{knockoutOnly?'وضعیت ثبت‌نام':'وضعیت قرعه'}</span></div></div>}
+  <div className="live-actions"><button type="button" className="outline-button" onClick={()=>void loadTournamentRegistrations()} disabled={registrationsLoading}><RotateCcw size={15}/> {registrationsLoading?'در حال بروزرسانی…':'بروزرسانی فهرست تأییدشدگان'}</button></div>{registrationsError&&<p className="live-empty">{registrationsError}</p>}
   {knockoutOnly ? <>
    <div className="live-section live-disabled-section"><div className="live-section-title"><h3><ListOrdered size={18}/> سیدبندی و رتبه‌بندی</h3><small>برای فرمت فقط حذفی کاربرد ندارد</small></div><div className="live-disabled-content"><p>در مسابقهٔ فقط حذفی، سیدبندی و رتبه‌بندی انجام نمی‌شود. جایگاه بازیکنان با قرعه‌کشی تصادفی تعیین خواهد شد.</p></div></div>
    <div className="live-section live-disabled-section"><div className="live-section-title"><h3><Layers3 size={18}/> سبدهای سیدبندی و گروه‌ها</h3><small>غیرفعال در مسابقهٔ حذفی</small></div><div className="live-disabled-content"><p>این مسابقه مرحلهٔ گروهی ندارد؛ بنابراین سبدها، گروه‌ها و جدول‌های گروهی نمایش داده نمی‌شوند.</p></div></div>
-   <div className="live-section"><div className="live-section-title"><h3><Shuffle size={18}/> قرعه‌کشی مسابقهٔ حذفی</h3><small>{!registrationClosed?'پس از پایان ثبت‌نام فعال می‌شود':knockoutRounds.length?'قرعه‌کشی انجام شده':'در انتظار بازیکنان تأییدشده'}</small></div>
+   <div className="live-section"><div className="live-section-title"><h3><Shuffle size={18}/> قرعه‌کشی مسابقهٔ حذفی</h3><small>{!registrationClosed?'پس از پایان ثبت‌نام فعال می‌شود':knockoutRounds.length?'قرعه‌کشی انجام شده':registrationsLoading?'در حال دریافت تأییدشدگان':'در انتظار بازیکنان تأییدشده'}</small></div>
     {!registrationClosed?<p className="live-empty">تا زمانی که وضعیت ثبت‌نام مسابقه «بسته» نشود، قرعه‌کشی انجام نمی‌شود.</p>:entrants.length<2?<p className="live-empty">برای انجام قرعه‌کشی حداقل دو بازیکن تأییدشده لازم است. تعداد فعلی: {entrants.length}</p>:knockoutRounds.length?<><div className="knockout-draw-summary"><span><Shuffle size={15}/> قرعه‌کشی تصادفی ثبت شد</span><small>{entrants.length} بازیکن · {knockoutRounds[0]?.matches.length||0} مسابقه در دور اول</small></div><div className="knockout-first-round">{knockoutRounds[0]?.matches.map((m,i)=><div className="knockout-draw-match" key={m.id}><b>مسابقه {i+1}</b><span>{m.player1?.name||'استراحت'}</span><span>{m.player2?.name||'استراحت'}</span>{(!m.player1||!m.player2)&&<small>صعود خودکار بازیکن حاضر</small>}</div>)}</div></>:<p className="live-empty">قرعه‌کشی پس از بسته‌شدن ثبت‌نام به‌صورت خودکار ایجاد می‌شود.</p>}
    </div>
    <div className="live-section"><div className="live-section-title"><h3><Trophy size={18}/> جدول مرحلهٔ حذفی</h3><small>{knockoutRounds.length?'با ثبت برنده، مرحله بعد به‌روز می‌شود':'پس از قرعه‌کشی ساخته می‌شود'}</small></div>
