@@ -503,3 +503,8 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Login and signup remain explicit header actions; registration/profile actions still require authentication.
 - This is necessary for the approved public Home, Tournaments, News, About and Guide pages to be accessible without an account.
 - GitHub Actions Build and typecheck run 41243053625 completed successfully for commit 0e6db8e44872bd6279558e54aa0361016a51683e.
+### Recent champions on the homepage
+- Added tournaments.completed_at, populated automatically when the owner changes a tournament lifecycle to completed; existing completion time is preserved on later edits.
+- Added the security-barrier view public.recent_tournament_champions. It exposes only the last three unambiguous champions (exactly one placement-1 result per completed tournament), with public player display name/Plato ID and tournament metadata. It does not expose auth user IDs or private avatar storage paths.
+- Added the homepage RecentChampions component. It reads only the limited view and hides the section when there are no valid champion records; current production query returned no rows, so no invented champion cards are displayed.
+- GitHub Actions Build and typecheck run 41243238941 completed successfully for commit 97ea2db53b4b4e02c998a94a3b28548fd41d38b7.
