@@ -601,3 +601,4 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Changed the self-service profile form so display name is read-only; players can still update their Plato ID and profile image.
 - Added a database trigger that rejects self-service display-name changes. The site owner retains the ability to correct a display name.
 - Registration success now uses the exact approved Persian confirmation: «درخواست شما با موفقیت ثبت شد و در انتظار بررسی است».
+- GitHub Actions run 41252810148 passed TypeScript typecheck and production build after adding public avatar handling, news/page version rollback, and profile display-name protection.
