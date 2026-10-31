@@ -4,6 +4,8 @@ import { formatIranDateTime } from './iranDate';
 import { ClipboardList, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
 import CompetitionVisuals from './CompetitionVisuals';
 
+const registrationStatusLabel:Record<string,string>={pending:'در انتظار بررسی',approved:'تأیید شده',registered:'تأیید شده',rejected:'رد شده',withdrawn:'انصراف داده'};
+
 type Row = {
   id: string; tournament_id: string; status: string; registration_type: string;
   is_reserve: boolean; reserve_position: number | null; slot_count: number; display_name: string | null;
@@ -127,7 +129,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
             <div className="registration-row" key={r.id}>
               <div className="player-data">
                 <strong>{r.registration_type === 'team' ? 'تیم: ' + (r.team_name || 'بدون نام') : r.display_name || 'بازیکن'}</strong>
-                <span>Plato ID: {r.plato_id || '—'} · {r.status}</span>
+                <span>Plato ID: {r.plato_id || '—'} · {registrationStatusLabel[r.status]||'وضعیت نامشخص'}</span>
                 <small>زمان ثبت درخواست: {formatIranDateTime(r.created_at)}</small>
                 {r.registration_type === 'team' && r.members?.map((m, index) => <small key={m.plato_id}>عضو {index + 1}: {m.display_name} · {m.plato_id}{m.is_captain ? ' (سرگروه)' : ''}</small>)}
                 {r.is_reserve && <small>صف ذخیره · نوبت {r.reserve_position || '—'}</small>}
