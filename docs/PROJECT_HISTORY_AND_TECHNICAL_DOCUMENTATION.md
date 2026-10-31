@@ -508,3 +508,6 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added the security-barrier view public.recent_tournament_champions. It exposes only the last three unambiguous champions (exactly one placement-1 result per completed tournament), with public player display name/Plato ID and tournament metadata. It does not expose auth user IDs or private avatar storage paths.
 - Added the homepage RecentChampions component. It reads only the limited view and hides the section when there are no valid champion records; current production query returned no rows, so no invented champion cards are displayed.
 - GitHub Actions Build and typecheck run 41243238941 completed successfully for commit 97ea2db53b4b4e02c998a94a3b28548fd41d38b7.
+### Champions view privilege hardening
+- Read-back of information_schema.role_table_grants showed broad default privileges on the new view; applied migration 20261031212302_limit_recent_champions_view_grants to revoke all privileges from anon/authenticated and restore SELECT only.
+- Verification confirms both roles now have SELECT only on public.recent_tournament_champions.
