@@ -468,3 +468,12 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Anonymous users can now read only tournaments in public lifecycle states: published, ongoing, completed, and cancelled. Draft tournaments remain private.
 - Authenticated users retain the same public lifecycle visibility plus the existing private.can_manage_tournament(id) access for their assigned management scope.
 - Read-back of pg_policies confirmed the two intended SELECT policies. The security advisor showed no new findings from this migration; previously known SECURITY DEFINER and leaked-password warnings remain unchanged.
+### Owner-managed news and public archive
+- Added the additive Supabase table public.site_news with draft/published states, optional summary/body/image URL, featured flag and optional featured display window.
+- Enabled RLS: anonymous visitors can select published rows only; authenticated non-owners can select published rows only; owner-only policies govern insert, update and delete.
+- Added the public NewsCenter page with featured news, permanent published archive, empty states and manual refresh. Expired featured items remain in the archive.
+- Added owner-side news creation, editing, draft/publish, featured toggle and deletion. Draft rows are visible only to the owner.
+- Added responsive RTL news-card styling. News body is rendered as text, not interpreted as HTML.
+- Applied migration 20261031210842_create_owner_managed_public_news and follow-up 20261031211014_optimize_site_news_owner_policy to the existing production Supabase project. The follow-up adds the creator foreign-key index and wraps owner/UID helpers in the insert policy.
+- Read-back confirmed RLS is enabled and the intended five policies exist. No news rows were inserted and no existing records were changed.
+- GitHub Actions Build and typecheck run 41242361746 completed successfully for the NewsCenter code commit 1bc8b8237fc6f0734a5e2edca98057a77ecf458d.
