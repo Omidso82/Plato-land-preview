@@ -54,15 +54,16 @@ export default function SitePages({ slug, owner = false }: { slug: PageSlug; own
     if (!supabase) { setLoading(false); setError('اتصال به پایگاه داده برقرار نیست.'); return; }
     setLoading(true); setError('');
     try {
-      const { data, error: loadError } = await supabase.from('site_pages').select('slug,title,content,status,updated_at').eq('slug', slug).maybeSingle();
+      const fields = owner ? 'slug,title,content,status,updated_at,published_title,published_content,published_at' : 'slug,published_title,published_content,published_at,updated_at';
+      const { data, error: loadError } = await supabase.from('site_pages').select(fields).eq('slug', slug).maybeSingle();
       if (loadError) throw loadError;
       if (data) {
-        const content = data.content as Partial<PageContent>;
-        setTitle(data.title || fallback.title);
-        setIntro(typeof content?.intro === 'string' ? content.intro : fallback.content.intro);
-        setSections(Array.isArray(content?.sections) ? content.sections.filter((item: any) => item && typeof item.heading === 'string' && typeof item.body === 'string') : fallback.content.sections);
-        setStatus(data.status === 'draft' ? 'draft' : 'published');
-        setUpdatedAt(data.updated_at || '');
+        const workingContent = owner ? data.content as Partial<PageContent> : data.published_content as Partial<PageContent>;
+        setTitle((owner ? data.title : data.published_title) || fallback.title);
+        setIntro(typeof workingContent?.intro === 'string' ? workingContent.intro : fallback.content.intro);
+        setSections(Array.isArray(workingContent?.sections) ? workingContent.sections.filter((item: any) => item && typeof item.heading === 'string' && typeof item.body === 'string') : fallback.content.sections);
+        setStatus(owner && data.status === 'draft' ? 'draft' : 'published');
+        setUpdatedAt(data.updated_at || data.published_at || '');
       } else {
         setTitle(fallback.title);
         setIntro(fallback.content.intro);
@@ -91,9 +92,15 @@ export default function SitePages({ slug, owner = false }: { slug: PageSlug; own
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError) throw authError;
       if (!user) throw new Error('نشست مالک معتبر نیست.');
+      const nextContent = { intro: intro.trim(), sections: sections.map(section => ({ heading: section.heading.trim(), body: section.body.trim() })) };
+      const { data: existing, error: existingError } = await supabase.from('site_pages').select('published_title,published_content,published_at').eq('slug', slug).maybeSingle();
+      if (existingError) throw existingError;
+      const publishedAt = status === 'published' ? (existing?.published_at || new Date().toISOString()) : (existing?.published_at || null);
       const { error: saveError } = await supabase.from('site_pages').upsert({
-        slug, title: title.trim(), content: { intro: intro.trim(), sections: sections.map(section => ({ heading: section.heading.trim(), body: section.body.trim() })) },
-        status, updated_by: user.id, updated_at: new Date().toISOString()
+        slug, title: title.trim(), content: nextContent,
+        status, published_title: status === 'published' ? title.trim() : (existing?.published_title || null),
+        published_content: status === 'published' ? nextContent : (existing?.published_content || null),
+        published_at: publishedAt, updated_by: user.id, updated_at: new Date().toISOString()
       }, { onConflict: 'slug' });
       if (saveError) throw saveError;
       setEditing(false);
