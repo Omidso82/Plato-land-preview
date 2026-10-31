@@ -578,3 +578,4 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 ### Database index review
 - Added indexes for `audit_logs.actor_id`, `site_maintenance.updated_by`, `user_notifications.tournament_id`, and `tournament_results.player_id`; removed the duplicate audit timestamp index introduced during implementation.
 - Re-ran Supabase Performance Advisor: the new FK warnings for those paths are resolved. Remaining warnings concern pre-existing tables/policies and unutilized indexes pending workload evidence; no existing indexes were removed without a proven duplicate.
+- Added `site_maintenance` to Supabase Realtime and allowed anonymous reads of only its non-sensitive flag/message columns even while disabled, so already-open public sessions receive both activation and deactivation updates. Verified the table is in `supabase_realtime`.
