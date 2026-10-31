@@ -546,3 +546,8 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added `owner_private_notes` and `owner_admin_tasks` tables with RLS enabled and owner-and-creator scoped policies. No anonymous or tournament-manager access is granted.
 - Added owner workspace UI for private notes (priority, edit/delete) and operational tasks (Iran/Jalali due date, Tehran time, priority, status, edit/delete, completion). All records persist in the existing production Supabase project.
 - Applied migrations 20261031214025_configure_mixed_competition_game_members, 20261031214210_grant_public_mixed_game_catalog_column, and 20261031214550_create_owner_private_notes_and_tasks. Existing tournament and registration records were not modified.
+### Owner exports and game-history preservation
+- Added an owner-only CSV export workspace for profiles, tournaments, registrations and tournament results. Exports include Persian column headings and Tehran-local date/time formatting; private evidence paths and screenshot files are deliberately excluded.
+- Added the OwnerExports section to the owner-only admin navigation. Data is queried from the existing Supabase database at export time; no duplicate data store or browser persistence is used.
+- Removed the catalog delete action and dropped the `site_games_owner_delete` RLS policy. Games must be disabled to hide them; catalog rows and tournament history are retained.
+- Applied migration 20261031215015_preserve_game_catalog_history_no_delete. The migration does not delete or alter any game or tournament record.
