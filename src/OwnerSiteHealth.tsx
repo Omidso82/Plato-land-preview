@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import { Activity, AlertTriangle, CheckCircle2, Database, FileText, Gamepad2, Users } from 'lucide-react';
 
-type HealthItem={key:string;label:string;count:number|null;error?:string;icon:React.ComponentType<any>};
+type HealthItem={key:string;label:string;count:number|null;error?:string;icon:any};
 export default function OwnerSiteHealth(){
  const [items,setItems]=useState<HealthItem[]>([]);
  const [loading,setLoading]=useState(true);
