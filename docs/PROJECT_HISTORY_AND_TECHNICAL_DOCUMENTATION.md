@@ -364,3 +364,44 @@ PLATO LAND یک پلتفرم چندبازی برای مدیریت مسابقات
 
 ### قاعده نگهداری این سند
 هر زمان کد، دیتابیس، امنیت یا تصمیم محصول تغییر کرد، این سند نیز باید به‌روزرسانی شود. برای هر تغییر، تاریخ، فایل‌ها یا اشیای دیتابیس تحت‌تأثیر، آزمون‌های انجام‌شده و وضعیت تأیید مالک ثبت شود. پیشنهادهای تأییدنشده باید از تصمیم‌های نهایی جدا بمانند.
+
+
+---
+
+## Change record — 31 October 2026 (final registration UX and manager removal)
+
+This entry supplements the prior project history; it does not replace earlier decisions or project records.
+
+### A. Per-tournament Plato profile screenshot requirement
+- The tournament owner controls the setting **«بارگذاری تصویر پروفایل Plato برای این مسابقه الزامی باشد»** independently for each tournament.
+- When `platform_settings.require_profile_screenshot=false`, the registration form must not render the upload input or its explanatory text at all.
+- When true, the upload field is visible and required.
+- `tournamentFromDb` now preserves explicit false and supports the stored snake_case setting, the compatibility camelCase setting, and corresponding root-level compatibility fields. Legacy tournaments without an explicit setting retain the safe default of required.
+- Submission validates and uploads the file only when required. For optional tournaments the RPC receives `p_evidence_path=null`; no unnecessary private upload is performed.
+- The database-side rule remains authoritative: null evidence is accepted only when the tournament explicitly sets screenshot requirement to false.
+
+### B. Remove a player/team registration from the tournament
+- `src/TournamentManagerDashboard.tsx` now provides **«حذف از مسابقه»** for registration rows, including pending and approved/registered entries and reserve entries. Approve/reject controls remain limited to pending entries.
+- The manager sees a confirmation dialog identifying the player/team and explaining the effect on capacity/reserves.
+- The new `public.remove_tournament_registration(uuid)` RPC is **SECURITY INVOKER**, requires an authenticated user, locks the target registration, and checks `private.can_manage_tournament(tournament_id)` inside the database. It does not rely on hiding UI controls as authorization.
+- EXECUTE is granted to `authenticated` and `service_role`; privileges for `public` and `anon` are revoked.
+- Deleting the registration cascades to its `registration_members` and `registration_evidence` rows. The RPC returns the private evidence storage path before deleting the parent row; the client then removes that object from the private `registration-evidence` bucket.
+- The Storage DELETE policy `registration_evidence_delete_owner_or_admin` was updated so the file can be deleted by its submitter or an authorized manager of the associated tournament. The post-row-delete cleanup path is checked against the tournament UUID embedded in the stored object path and the same manager authorization helper.
+- When an active non-reserve entry is removed, the earliest pending reserve is promoted to the freed slot. Removing a reserve or an inactive/rejected/withdrawn entry does not promote another reserve.
+
+### C. Files, migrations and commits
+- `src/App.tsx`: commit `1f18adb265949fb4374dbd4f8959571a9f267c22` — preserve explicit false screenshot setting and hide upload field unless required.
+- `src/TournamentManagerDashboard.tsx`: commit `ced8c3e171bf3ff65dadcd63f6da1b543c5da8d6` — add manager-side registration removal.
+- Migration: `supabase/migrations/20261031140000_add_manager_registration_removal_and_storage_cleanup.sql`.
+- Migration file was initially committed as `22d7fc40ba2583dac8c572da963096d7799834c0`; final grant restriction commit is `7a88f2a77b7c08af09b9d95ceb8637ef09a3b93d`.
+- The migration was applied to the production Supabase project `dfrppbapaaydbjeflozw`.
+- Live DB inspection confirmed the new RPC is SECURITY INVOKER, has its manager authorization guard, and has EXECUTE grants only for authenticated/service_role (plus owner-level postgres); anon/public are not granted.
+
+### D. CI, deployment and owner acceptance
+- GitHub Actions **Build and typecheck** run `41198106226`: completed successfully for commit `7a88f2a77b7c08af09b9d95ceb8637ef09a3b93d`.
+- GitHub Actions **Deploy mobile preview** run `41198106193`: completed successfully for the same commit.
+- The site owner subsequently confirmed that the site had updated, the changes were correct, and both issues were resolved.
+- Independent multi-role end-to-end testing (owner, assigned manager, unassigned manager, ordinary player), including private-file cleanup and reserve promotion, remains a separate QA item and is not inferred solely from successful CI/deployment.
+
+### E. Scope guard
+No changes were made to the approved 17 Series 2 rules, the hidden/unpublished Series 1 policy, or unrelated tournament features in this change set.
