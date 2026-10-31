@@ -586,6 +586,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added a dedicated owner admin navigation entry. This is a read-only diagnostic surface; it does not alter operational records.
 ### Public profile photos for results and champions
 - Added a separate `public-profile-avatars` storage bucket; the existing `avatars` and `registration-evidence` buckets remain private. Users can upload only into their own folder; public read applies only to the dedicated profile-photo bucket.
-- Profile upload now writes a private account copy and a separate public display copy, updates both profile paths atomically at the profile-row level, and cleans up previous objects after success. The UI explicitly tells users that the profile image can appear in public champion cards.
+- Profile upload now writes a private account copy and a separate public display copy, updates both profile paths in one profile-row update, and cleans up previous objects after success. The UI explicitly tells users that the profile image can appear in public champion cards.
 - Added `profiles.public_avatar_path`, exposed only as a public display column for champion-eligible profiles, and extended the security-invoker recent champions view. Recent champion cards and completed results now show the public avatar when available.
 - Added authenticated read policies for completed tournament results and their participant profile display rows so signed-in visitors see the same completed results as anonymous visitors.
+- GitHub Actions run 41252537783 passed TypeScript typecheck and production build for the public avatar and results integration.
