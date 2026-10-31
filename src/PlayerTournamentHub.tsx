@@ -61,7 +61,7 @@ export default function PlayerTournamentHub(){
    const publicDraw=settings.publicDraw!==false;
    const publicBracket=settings.publicBracket!==false;
    const publicTables=settings.publicTables!==false;
-   const seedList=[...(snapshot?.players||[])].sort((a,b)=>settings.seedingOrder==='asc'?(a.wins||0)-(b.wins||0):(b.wins||0)-(a.wins||0));
+   const seedMetric=settings.seedingMetric||'wins';const seedList=[...(snapshot?.players||[])].sort((a,b)=>{const av=seedMetric==='level'?(a.level||0):(a.wins||0);const bv=seedMetric==='level'?(b.level||0):(b.wins||0);return (settings.seedingOrder==='asc'?1:-1)*(av-bv)||a.platoId.localeCompare(b.platoId);});
    const seedIndex=seedList.findIndex(p=>p.id===myEntryId);
    return <article className="player-tournament-card" key={r.id}>
     <div className="player-tournament-top"><div><span className="section-kicker">{t.game_type||'مسابقه'}{t.series_name?' · '+t.series_name:''}</span><h3>{t.title}</h3><p>{myName} · Plato ID: {r.plato_id||'—'}</p></div><span className={'player-reg-status '+(approved?'is-approved':'')}>{statusText[r.status]||r.status}{r.is_reserve?' · ذخیره':''}</span></div>
