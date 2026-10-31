@@ -530,3 +530,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Registration window timestamps are stored as absolute UTC instants converted from Iran wall-clock input. Existing schedule metadata is preserved when editing a tournament.
 - The public details dialog formats schedule timestamps in Iran time and shows an explicit empty state when schedule data has not been provided.
 - GitHub Actions Build and typecheck run 41244094206 completed successfully for commit 23c80eea00307296514b515273f5af05e2635b18.
+### Index coverage follow-up
+- Applied migration 20261031213213_index_page_and_tournament_owners to add indexes for site_pages.updated_by and tournaments.created_by foreign keys.
+- This removes the new site_pages creator/editor FK warning and addresses the existing tournaments.created_by FK warning without changing any rows.
+- Latest code validation: GitHub Actions Build and typecheck run 41244147438 completed successfully for commit 4357550dff28eac6aade231e4ee6d3700ded5fd2.
