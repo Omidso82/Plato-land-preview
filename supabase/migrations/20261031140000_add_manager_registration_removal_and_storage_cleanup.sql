@@ -58,7 +58,7 @@ begin
 end;
 $function$;
 
-revoke all on function public.remove_tournament_registration(uuid) from public;
+revoke all on function public.remove_tournament_registration(uuid) from public, anon;
 grant execute on function public.remove_tournament_registration(uuid) to authenticated, service_role;
 
 drop policy if exists registration_evidence_delete_owner_or_admin on storage.objects;
