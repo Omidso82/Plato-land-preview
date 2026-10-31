@@ -486,3 +486,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added Persian/Jalali date text fields and Iran wall-clock time inputs for the featured display start/end window. Stored values are converted to UTC instants from Asia/Tehran wall-clock input; the public homepage only shows currently valid featured items.
 - Applied additive migrations 20261031211355_limit_public_site_news_columns and 20261031211411_revoke_public_news_write_privileges. Anonymous users can select only the 12 public content/display columns; all anonymous write privileges are revoked.
 - Read-back of information_schema.column_privileges confirmed anon has SELECT only (12 columns), with no INSERT/UPDATE/DELETE privileges. Security advisor reports no site_news-specific security findings.
+### Shared Jalali conversion helper
+- Centralized Jalali date parsing in src/iranDate.ts and switched the existing owner date input to use the same exported conversion helper used by featured-news scheduling.
+- This reduces duplicate calendar conversion logic and keeps date input/storage consistent across the owner forms.
+- GitHub Actions Build and typecheck run 41242711435 completed successfully for commit 2e8a4eccc8295eb8b4a52a1e46806fe12386a22a.
