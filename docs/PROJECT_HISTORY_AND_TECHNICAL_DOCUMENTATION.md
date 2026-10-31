@@ -405,3 +405,37 @@ This entry supplements the prior project history; it does not replace earlier de
 
 ### E. Scope guard
 No changes were made to the approved 17 Series 2 rules, the hidden/unpublished Series 1 policy, or unrelated tournament features in this change set.
+
+
+---
+
+## 31 October 2026 — Fix approved entrants missing from knockout draw (League A)
+
+### Root cause
+The manager dashboard reads registration rows directly from Supabase and displays the database status values such as `approved`. The `CompetitionVisuals` draw component previously relied on the legacy `registrations` array passed from browser-local state and filtered for the Persian display string `تأیید شده`. The two surfaces therefore used different data sources and different status representations. A team could be approved in the manager panel but still be counted as zero in the draw.
+
+### Production data checked
+Tournament `00d89dd7-f1e8-49a7-a116-a0ce2ed6b7eb` (League A):
+- `progression=knockout_only`
+- `registration_open=false`
+- `capacity=2`, `capacity_unit=teams`
+- Two registration rows exist; both are `status=approved`, `registration_type=team`, `is_reserve=false`, `slot_count=1`, with two team members each.
+- Registration IDs: `bcdf884d-14b8-4806-9844-15ab944af56d` and `56dd79b6-aded-459a-a531-2e5a4677ea7f`.
+This is a read-only production data check; no registration rows were changed.
+
+### Code correction
+- `src/CompetitionVisuals.tsx` now queries `public.registrations` for the selected tournament from the shared Supabase project.
+- It loads associated `registration_members` rows and maps a team registration to one draw entrant using the team name and captain Plato ID. Capacity unit remains one team per registration.
+- Only non-reserve registrations with database status `approved` or `registered` are included. Pending, rejected, withdrawn and reserve entries are not included in the draw entrants.
+- A fresh load occurs when the selected tournament changes. A Supabase Realtime subscription listens for changes to that tournament's registration rows, and a manual refresh control is also available.
+- Existing knockout behavior is retained: once registration is closed and at least two confirmed entrants exist, the first-round draw and bracket are generated automatically.
+- The existing limitation remains: draw/bracket state is stored in that browser's `localStorage`; this change does not migrate draw state to shared Supabase storage.
+
+### Commit, CI and deployment
+- Commit: `4d6375b50906e4bb56d491bd3eb27b5735469227`.
+- Build and typecheck run `41199248932`: completed successfully.
+- Deploy mobile preview run `41199248916`: completed successfully.
+- Owner-facing live browser confirmation of the two entrants appearing in the draw was not yet received at the time this record was written; the production data and CI/deploy evidence are recorded separately from that visual confirmation.
+
+### QA follow-up
+Verify on the live site that League A shows two confirmed team entrants (Omid and Taj), that the draw creates the first knockout round after registration closure, and that a later approval is reflected through Realtime or the manual refresh control. Test Realtime independently; manual refresh remains the fallback.
