@@ -46,7 +46,7 @@ function jalaliToIso(value:string){const m=value.trim().match(/^(\\d{4})[\\/.-](
 function JalaliDateInput({value,onChange,required=false}:{value:string;onChange:(value:string)=>void;required?:boolean}){const parts=jalaliParts(value);const shown=parts?String(parts.year).padStart(4,'0')+'/'+String(parts.month).padStart(2,'0')+'/'+String(parts.day).padStart(2,'0'):'';const [draft,setDraft]=useState(shown);useEffect(()=>setDraft(shown),[shown]);return <input type="text" inputMode="numeric" dir="ltr" className="jalali-date-input" aria-label="تاریخ شمسی" placeholder="۱۴۰۵/۰۸/۱۴" value={draft} required={required} onChange={e=>{const next=e.target.value.replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c)));setDraft(next);if(!next){onChange('');return;}const iso=jalaliToIso(next);if(iso)onChange(iso);}} onBlur={()=>{if(draft&&!jalaliToIso(draft))setDraft(shown);}}/>}
 function App(){
  const [tab,setTab]=useState('home'),[mobileMenu,setMobileMenu]=useState(false),[search,setSearch]=useState('');
- const [adminSection,setAdminSection]=useState('overview');
+ const [adminSection,setAdminSection]=useState('requests');
  const [tournaments,setTournaments]=useState<Tournament[]>([]);
  const [tournamentsLoaded,setTournamentsLoaded]=useState(false),[tournamentsLoading,setTournamentsLoading]=useState(false),[tournamentsError,setTournamentsError]=useState('');
  const [registrations,setRegistrations]=useState<Registration[]>([]);
@@ -169,6 +169,7 @@ function App(){
  const filtered=active.filter(t=>t.game.toLowerCase().includes(search.toLowerCase())||t.title.toLowerCase().includes(search.toLowerCase()));
  const selected=tournaments.find(t=>t.id===regTournament);
  const canManage=authenticated&&!roleLoading&&role==='مالک کل';
+  useEffect(()=>{if(canManage)setAdminSection('overview');else if(authenticated&&!roleLoading&&role==='مدیر مسابقات')setAdminSection('requests')},[canManage,authenticated,role,roleLoading]);
  useEffect(()=>{
   if(!canManage||!supabase)return;
   let alive=true;
