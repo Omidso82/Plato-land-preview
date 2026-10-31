@@ -8,6 +8,7 @@ import SitePages from './SitePages';
 import RecentChampions from './RecentChampions';
 import GameCatalog from './GameCatalog';
 import PublicParticipants from './PublicParticipants';
+import PublicResults from './PublicResults';
 import PlayerTournamentHub from './PlayerTournamentHub';
 import { supabase, supabaseConfigured } from './supabase';
 import React, { useEffect, useMemo, useState } from 'react';
