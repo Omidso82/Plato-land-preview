@@ -295,7 +295,7 @@ function App(){
     p_members:isTeam?members:[]
    });
    if(submitError)throw submitError;
-   setNotice('درخواست ثبت‌نام با موفقیت ذخیره شد. کد پیگیری: '+registrationId);
+   setNotice('درخواست شما با موفقیت ثبت شد و در انتظار بررسی است');
    setRegName('');setRegId('');setRegRules(false);setRegImage('');setRegImageFile(null);setRegTeamName('');setRegTeammates([]);setRegParticipation('individual');
   }catch(err:any){const message=String(err?.message||'');setNotice('ثبت‌نام انجام نشد: '+(message.includes('قبلاً در این مسابقه ثبت‌نام کرده‌اند')||message.includes('قبلاً در این مسابقه ثبت‌نام کرده است')?'این Plato ID قبلاً در همین مسابقه ثبت‌نام کرده است و ثبت‌نام دوباره مجاز نیست.':message||'خطای ناشناخته'));}
   finally{setAuthBusy(false);}
