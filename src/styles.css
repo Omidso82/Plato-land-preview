@@ -377,3 +377,19 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 .audit-log-copy span,.audit-log-copy small,.audit-log-row time{color:var(--muted,#aaa49a);font-size:.8rem;overflow-wrap:anywhere}
 .audit-log-row time{white-space:nowrap}
 @media(max-width:620px){.audit-toolbar{align-items:stretch;flex-direction:column}.audit-log-row{grid-template-columns:auto minmax(0,1fr)}.audit-log-row time{grid-column:2}}
+
+.notification-bell-wrap{position:relative;display:inline-flex}
+.notification-bell{position:relative;width:40px;height:40px;display:grid;place-items:center;border:1px solid rgba(214,179,91,.25);border-radius:50%;background:rgba(214,179,91,.06);color:var(--gold,#d6b35b);cursor:pointer}
+.notification-bell>span{position:absolute;top:-5px;right:-5px;min-width:18px;height:18px;padding:0 4px;display:grid;place-items:center;border-radius:20px;background:#b88b37;color:#111;font-size:.68rem;font-weight:800}
+.notification-dismiss{position:fixed;inset:0;z-index:100}
+.notification-popover{position:absolute;top:calc(100% + 10px);right:0;z-index:101;width:min(360px,calc(100vw - 24px));max-height:70vh;overflow:auto;padding:14px;border:1px solid rgba(214,179,91,.25);border-radius:14px;background:#171614;box-shadow:0 16px 44px rgba(0,0,0,.45);color:#f5f1e8}
+.notification-popover-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.notification-popover-head button{display:flex;align-items:center;gap:5px;background:none;border:0;color:var(--gold,#d6b35b);cursor:pointer;font-size:.78rem}
+.notification-popover-head button:disabled{opacity:.4;cursor:default}
+.notification-list{display:grid;gap:6px;padding-top:8px}
+.notification-item{display:grid;gap:5px;width:100%;padding:10px;text-align:right;border:0;border-radius:9px;background:transparent;color:inherit;cursor:pointer}
+.notification-item.unread{background:rgba(214,179,91,.09)}
+.notification-item strong{font-size:.88rem}
+.notification-item span,.notification-item small{color:#b8b0a2;font-size:.78rem;line-height:1.7}
+.notification-item em{display:flex;align-items:center;gap:4px;color:var(--gold,#d6b35b);font-size:.72rem;font-style:normal}
+@media(max-width:600px){.notification-popover{position:fixed;top:70px;right:12px}}
