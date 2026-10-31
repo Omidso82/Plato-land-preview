@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
-import { formatIranDateTime } from './iranDate';
+import { formatIranDateTime, formatIranJalaliDateInput, formatIranClockInput, iranJalaliDateTimeToIso } from './iranDate';
 import { FileText, Newspaper, Pencil, RefreshCw, Save, Trash2 } from 'lucide-react';
 
 type NewsItem = {
@@ -18,7 +18,7 @@ type NewsItem = {
   updated_at: string;
 };
 
-const emptyForm = { title: '', summary: '', body: '', image_url: '', status: 'draft' as 'draft' | 'published', featured: false };
+const emptyForm = { title: '', summary: '', body: '', image_url: '', status: 'draft' as 'draft' | 'published', featured: false, featured_start_date: '', featured_start_time: '', featured_end_date: '', featured_end_time: '' };
 
 export default function NewsCenter({ owner = false, featuredOnly = false }: { owner?: boolean; featuredOnly?: boolean }) {
   const [items, setItems] = useState<NewsItem[]>([]);
@@ -64,7 +64,7 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
 
   function startEdit(item: NewsItem) {
     setEditingId(item.id);
-    setForm({ title: item.title, summary: item.summary || '', body: item.body || '', image_url: item.image_url || '', status: item.status, featured: item.featured });
+    setForm({ title: item.title, summary: item.summary || '', body: item.body || '', image_url: item.image_url || '', status: item.status, featured: item.featured, featured_start_date: item.featured_starts_at ? formatIranJalaliDateInput(item.featured_starts_at) : '', featured_start_time: item.featured_starts_at ? formatIranClockInput(item.featured_starts_at) : '', featured_end_date: item.featured_ends_at ? formatIranJalaliDateInput(item.featured_ends_at) : '', featured_end_time: item.featured_ends_at ? formatIranClockInput(item.featured_ends_at) : '' });
     setError('');
   }
 
@@ -80,6 +80,15 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
       if (authError) throw authError;
       if (!user) throw new Error('نشست مالک معتبر نیست.');
       const current = items.find(item => item.id === editingId);
+      const hasStart = !!(form.featured_start_date.trim() || form.featured_start_time.trim());
+      const hasEnd = !!(form.featured_end_date.trim() || form.featured_end_time.trim());
+      if (hasStart && (!form.featured_start_date.trim() || !form.featured_start_time.trim())) throw new Error('برای شروع خبر ویژه، تاریخ شمسی و ساعت ایران را هر دو وارد کن.');
+      if (hasEnd && (!form.featured_end_date.trim() || !form.featured_end_time.trim())) throw new Error('برای پایان خبر ویژه، تاریخ شمسی و ساعت ایران را هر دو وارد کن.');
+      const featuredStart = hasStart ? iranJalaliDateTimeToIso(form.featured_start_date, form.featured_start_time) : null;
+      const featuredEnd = hasEnd ? iranJalaliDateTimeToIso(form.featured_end_date, form.featured_end_time) : null;
+      if (hasStart && !featuredStart) throw new Error('تاریخ یا ساعت شروع خبر ویژه معتبر نیست.');
+      if (hasEnd && !featuredEnd) throw new Error('تاریخ یا ساعت پایان خبر ویژه معتبر نیست.');
+      if (featuredStart && featuredEnd && new Date(featuredEnd).getTime() <= new Date(featuredStart).getTime()) throw new Error('پایان نمایش ویژه باید بعد از زمان شروع باشد.');
       const payload = {
         title: form.title.trim(),
         summary: form.summary.trim(),
@@ -87,6 +96,8 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
         image_url: form.image_url.trim() || null,
         status: form.status,
         featured: form.featured,
+        featured_starts_at: featuredStart,
+        featured_ends_at: featuredEnd,
         published_at: form.status === 'published' ? (current?.published_at || new Date().toISOString()) : null,
         created_by: user.id,
         updated_at: new Date().toISOString()
@@ -129,6 +140,7 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
         <label>لینک تصویر (اختیاری)<input type="url" value={form.image_url} onChange={e => setForm(v => ({ ...v, image_url: e.target.value }))} placeholder="https://…" /></label>
         <label>وضعیت انتشار<select value={form.status} onChange={e => setForm(v => ({ ...v, status: e.target.value as 'draft' | 'published' }))}><option value="draft">پیش‌نویس</option><option value="published">انتشار عمومی</option></select></label>
         <label className="check-row"><input type="checkbox" checked={form.featured} onChange={e => setForm(v => ({ ...v, featured: e.target.checked }))}/><span>نمایش به‌عنوان خبر ویژه</span></label>
+        {form.featured && <div className="news-feature-window"><p className="form-footnote">زمان‌ها بر اساس ساعت ایران هستند؛ تاریخ را شمسی وارد کن. خالی گذاشتن شروع یا پایان به معنی بدون محدودیت است.</p><div className="form-grid"><label>تاریخ شروع نمایش ویژه<input type="text" dir="ltr" inputMode="numeric" placeholder="۱۴۰۵/۰۸/۱۰" value={form.featured_start_date} onChange={e => setForm(v => ({ ...v, featured_start_date: e.target.value }))}/></label><label>ساعت شروع (ایران)<input type="time" dir="ltr" value={form.featured_start_time} onChange={e => setForm(v => ({ ...v, featured_start_time: e.target.value }))}/></label></div><div className="form-grid"><label>تاریخ پایان نمایش ویژه<input type="text" dir="ltr" inputMode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" value={form.featured_end_date} onChange={e => setForm(v => ({ ...v, featured_end_date: e.target.value }))}/></label><label>ساعت پایان (ایران)<input type="time" dir="ltr" value={form.featured_end_time} onChange={e => setForm(v => ({ ...v, featured_end_time: e.target.value }))}/></label></div></div>}
         {error && <p className="auth-inline-error" role="alert">{error}</p>}
         <button className="gold-button full-button" type="submit" disabled={busy}>{busy ? 'در حال ذخیره…' : <><Save size={16}/> {editingId ? 'ذخیره تغییرات' : 'ذخیره خبر'}</>}</button>
         {editingId && <button className="outline-button full-button" type="button" onClick={resetForm} disabled={busy}>لغو ویرایش</button>}
