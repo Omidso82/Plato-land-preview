@@ -575,3 +575,6 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added the notification bell/dropdown to signed-in player navigation, unread count, mark-one-read and mark-all-read actions. Realtime publication is enabled only for this private table, with RLS still applied.
 - Applied migrations 20261031222035_add_persistent_player_notifications, 20261031222310_restrict_notification_inserts_to_tournament_managers, 20261031222500_limit_player_notification_table_grants and 20261031222615_enable_realtime_player_notifications.
 - GitHub Actions run 41251961258 passed TypeScript typecheck and production build for the player notification UI and all preceding owner modules.
+### Database index review
+- Added indexes for `audit_logs.actor_id`, `site_maintenance.updated_by`, `user_notifications.tournament_id`, and `tournament_results.player_id`; removed the duplicate audit timestamp index introduced during implementation.
+- Re-ran Supabase Performance Advisor: the new FK warnings for those paths are resolved. Remaining warnings concern pre-existing tables/policies and unutilized indexes pending workload evidence; no existing indexes were removed without a proven duplicate.
