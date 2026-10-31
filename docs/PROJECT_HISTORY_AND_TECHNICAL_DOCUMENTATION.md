@@ -552,3 +552,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Removed the catalog delete action and dropped the `site_games_owner_delete` RLS policy. Games must be disabled to hide them; catalog rows and tournament history are retained.
 - Applied migration 20261031215015_preserve_game_catalog_history_no_delete. The migration does not delete or alter any game or tournament record.
 - GitHub Actions run 41251338812 passed both `npm run typecheck` and `npm run build` for the owner workspace, mixed-competition editor, game-history protection, and CSV export changes.
+### Scheduled news publication and expiry
+- Added `site_news.publish_at` and `site_news.expires_at`. Published articles become publicly visible only when the Tehran-scheduled publication instant has arrived and remain visible until their optional expiry instant.
+- Updated anonymous and authenticated non-owner SELECT policies to enforce the publication window at the database layer; owners retain access to drafts and scheduled/expired content for management.
+- Extended anonymous column grants only for the two public scheduling fields and added Jalali date/Tehran time inputs to the owner news editor. Featured display windows remain separate from article publication/expiry windows.
