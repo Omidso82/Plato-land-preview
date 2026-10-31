@@ -9,7 +9,7 @@ type Row = {
   evidenceUrl?: string;
 };
 
-export default function TournamentManagerDashboard() {
+export default function TournamentManagerDashboard({ owner = false }: { owner?: boolean }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [tournaments, setTournaments] = useState<Record<string,string>>({});
   const [loading, setLoading] = useState(true);
@@ -23,10 +23,17 @@ export default function TournamentManagerDashboard() {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError) throw authError;
       if (!user) throw new Error('برای مشاهده پنل، وارد حساب مدیر شوید.');
-      const { data: assigned, error: assignedError } = await supabase
-        .from('tournament_manager_access').select('tournament_id').eq('user_id', user.id);
-      if (assignedError) throw assignedError;
-      const ids = (assigned || []).map((x: any) => x.tournament_id);
+      let ids: string[] = [];
+      if (owner) {
+        const { data: tsAll, error: tsAllError } = await supabase.from('tournaments').select('id,title');
+        if (tsAllError) throw tsAllError;
+        ids = (tsAll || []).map((x: any) => x.id);
+      } else {
+        const { data: assigned, error: assignedError } = await supabase
+          .from('tournament_manager_access').select('tournament_id').eq('user_id', user.id);
+        if (assignedError) throw assignedError;
+        ids = (assigned || []).map((x: any) => x.tournament_id);
+      }
       if (!ids.length) { setRows([]); setTournaments({}); return; }
       const [{ data: ts, error: tsError }, { data: regs, error: regsError }] = await Promise.all([
         supabase.from('tournaments').select('id,title').in('id', ids),
@@ -50,7 +57,7 @@ export default function TournamentManagerDashboard() {
     finally { setLoading(false); }
   }
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [owner]);
 
   async function review(id: string, approved: boolean) {
     if (!supabase) return;
@@ -68,8 +75,8 @@ export default function TournamentManagerDashboard() {
   const assignedIds = Object.keys(tournaments);
   return <section className="panel admin-panel manager-dashboard">
     <div className="admin-toolbar">
-      <div><span className="section-kicker">پنل مدیر مسابقه</span><h2>مسابقات واگذارشده به من</h2>
-      <p>فقط مسابقاتی را می‌بینید که مالک سایت به شما واگذار کرده است. تنظیمات سراسری و مدیریت کاربران در دسترس نیست.</p></div>
+      <div><span className="section-kicker">{owner ? 'پنل مالک سایت' : 'پنل مدیر مسابقه'}</span><h2>{owner ? 'درخواست‌های ثبت‌نام همه مسابقات' : 'مسابقات واگذارشده به من'}</h2>
+      <p>{owner ? 'مدیریت درخواست‌ها و مدارک ثبت‌نام در همه مسابقات.' : 'فقط مسابقاتی را می‌بینید که مالک سایت به شما واگذار کرده است. تنظیمات سراسری و مدیریت کاربران در دسترس نیست.'}</p></div>
       <button type="button" className="outline-button" onClick={() => void load()} disabled={loading}><RefreshCw size={15}/> بروزرسانی</button>
     </div>
     {loading ? <p className="empty-state">در حال دریافت اطلاعات…</p> : error ? <p className="auth-inline-error">{error}</p> :
