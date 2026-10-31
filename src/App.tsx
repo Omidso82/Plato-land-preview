@@ -93,6 +93,8 @@ function App(){
   let alive=true;
   const applySession=async(user:any)=>{
    if(!user){if(alive){setProfile({...blankProfile,loggedIn:false});setAuthenticated(false);setRole('مدیر مسابقات');setRoleLoading(false);setAvatar('');setTab('login')}return}
+   // Fail closed while this session's server-side role is being resolved.
+   if(alive){setAuthenticated(false);setRole('مدیر مسابقات');setRoleLoading(true);}
    try{
     let {data:prof,error:profErr}=await supabase.from('profiles').select('display_name,plato_id,avatar_url').eq('id',user.id).maybeSingle();
     if(profErr) throw profErr;
@@ -100,16 +102,15 @@ function App(){
      const saved=await supabase.from('profiles').upsert({id:user.id,display_name:user.user_metadata.display_name,plato_id:user.user_metadata.plato_id,avatar_url:null,updated_at:new Date().toISOString()},{onConflict:'id'}).select('display_name,plato_id,avatar_url').single();
      if(saved.error) throw saved.error; prof=saved.data;
     }
-    if(!prof){if(alive)setNotice('ورود انجام شد، اما پروفایل پیدا نشد. لطفاً با مدیر سایت تماس بگیر.');return}
+    if(!prof){if(alive){setNotice('ورود انجام شد، اما پروفایل پیدا نشد. لطفاً با مدیر سایت تماس بگیر.');setRoleLoading(false);}return}
     const resolvedAvatar=prof.avatar_url?await getPrivateAvatarUrl(prof.avatar_url,user.id):''; const p={name:prof.display_name,platoId:prof.plato_id,avatar:resolvedAvatar,loggedIn:true};
     if(alive){setProfile(p);setAccountName(p.name);setAccountId(p.platoId);setAvatar(p.avatar);setAccountEmail(user.email||'');setTab('home');}
-    if(alive)setRoleLoading(true);
     const {data:roleValue,error:roleErr}=await supabase.rpc('current_user_role'); const roleRow=roleValue?{role:roleValue}:null;
     if(roleErr){
      if(alive){setRole('مدیر مسابقات');setAuthenticated(false);setNotice('پروفایل بارگذاری شد، اما خواندن نقش مدیریت از دیتابیس مجاز نبود: '+roleErr.message+' — سیاست SELECT جدول user_roles را بررسی کن.');}
     }else{
      const r=roleRow?.role;
-     if(alive){if(r==='owner'||r==='مالک کل'||r==='مالک کل'){setRole('مالک کل');setAuthenticated(true)}else if(r==='tournament_admin'||r==='admin'||r==='مدیر مسابقات'){setRole('مدیر مسابقات');setAuthenticated(true)}else{setRole('مدیر مسابقات');setAuthenticated(false);}}
+     if(alive){if(r==='owner'||r==='مالک کل'){setRole('مالک کل');setAuthenticated(true)}else if(r==='tournament_admin'||r==='admin'||r==='مدیر مسابقات'){setRole('مدیر مسابقات');setAuthenticated(true)}else{setRole('مدیر مسابقات');setAuthenticated(false);}}
     }
     if(alive)setRoleLoading(false);
    }catch(err:any){if(alive){setRoleLoading(false);setAuthenticated(false);setNotice('خطا در دریافت اطلاعات حساب از Supabase: '+(err?.message||'خطای ناشناخته'));}}
@@ -121,7 +122,7 @@ function App(){
  const active=tournaments.filter(t=>t.published&&t.status!=='بسته');
  const filtered=active.filter(t=>t.game.toLowerCase().includes(search.toLowerCase())||t.title.toLowerCase().includes(search.toLowerCase()));
  const selected=tournaments.find(t=>t.id===regTournament);
- const canManage=authenticated&&role==='مالک کل';
+ const canManage=authenticated&&!roleLoading&&role==='مالک کل';
  const nav=[['home','صفحه اصلی'],['tournaments','مسابقات'],['profile','حساب بازیکن'],['admin','مدیریت']];
  function go(next:string){setTab(next);setMobileMenu(false);setNotice('');window.scrollTo({top:0,behavior:'smooth'})}
  function saveTournament(e:React.FormEvent){e.preventDefault();if(!canManage){setNotice('فقط مالک کل می‌تواند مسابقه بسازد یا ویرایش کند.');return}if(!form.title.trim()||!form.rules.trim()){setNotice('عنوان مسابقه و قوانین الزامی است.');return} if(editing){setTournaments(old=>old.map(t=>t.id===editing?{...form,id:editing}:t));setNotice('تغییرات مسابقه ذخیره شد.')}else{const item={...form,id:'t-'+Date.now()};setTournaments(old=>[item,...old]);setNotice('مسابقه ساخته شد.')}setForm(blankTournament());setEditing('')}
@@ -205,7 +206,7 @@ function App(){
  if(!profile.loggedIn) return <div className="app-shell login-only-shell"><main className="login-screen"><div className="login-brand"><span className="brand-mark"><Crown size={38}/></span><strong>PLATO <em>LAND</em></strong><small>بازی، رقابت، قهرمانی</small></div><section className="panel form-panel login-card"><div className="auth-lock"><Lock size={30}/></div><h1>{authMode==='login'?'ورود به سایت':'ساخت حساب بازیکن'}</h1><p>{authMode==='login'?'برای مشاهدهٔ مسابقات، وارد حساب خود شو.':'برای ساخت حساب PLATO LAND، اطلاعات زیر را وارد کن.'}</p><form onSubmit={authMode==='login'?loginPlayer:registerPlayer}>{authMode==='register'&&<><label>نام نمایشی<input value={accountName} onChange={e=>setAccountName(e.target.value)} required maxLength={60} placeholder="نام بازیکن"/></label><label>Plato ID<input value={accountId} onChange={e=>setAccountId(e.target.value)} required maxLength={80} placeholder="Plato ID"/></label></>}<label>ایمیل<input type="email" value={accountEmail} onChange={e=>setAccountEmail(e.target.value)} required autoComplete="email" placeholder="name@example.com"/></label><label>رمز عبور<input type="password" value={accountPassword} onChange={e=>setAccountPassword(e.target.value)} required minLength={8} autoComplete={authMode==='login'?'current-password':'new-password'} placeholder="حداقل ۸ کاراکتر"/></label><button className="gold-button full-button" type="submit" disabled={authBusy}>{authBusy?'لطفاً صبر کن…':authMode==='login'?<><LogIn size={17}/> ورود به PLATO LAND</>:<>ثبت‌نام و ساخت حساب</>}</button></form>{notice&&<div className="auth-inline-error" role="alert">{notice}</div>}{authDebug&&<p className="auth-debug" role="status">{authDebug}</p>}<button className="auth-switch" onClick={()=>{setAuthMode(authMode==='login'?'register':'login');setNotice('')}}>{authMode==='login'?'حساب نداری؟ ثبت‌نام کن':'قبلاً حساب ساخته‌ای؟ وارد شو'}</button><button className="manager-login-link" onClick={()=>go('admin')}>ورود مدیر</button><p className="form-footnote"><Lock size={14}/> ورود و ثبت‌نام از Supabase Auth استفاده می‌کند. پیش از استفاده، src/supabase.ts را با آدرس پروژه و کلید عمومی تنظیم کن.</p></section></main></div>;
  const shownTab=preview&&tab==='admin'?'home':tab;
  return <div className="app-shell">
-  <header className="site-header"><div className="header-inner"><div className="header-brand-stack"><Brand onClick={()=>go('home')}/>{profile.loggedIn&&<button type="button" className="header-account" onClick={()=>go('profile')} aria-label={`پروفایل ${profile.name}`}>{avatar?<img src={avatar} alt=""/>:<span className="header-account-fallback"><User size={15}/></span>}<span>{profile.name||'بازیکن'}</span></button>}</div><nav className="desktop-nav">{nav.slice(0,3).map(n=><button key={n[0]} className={tab===n[0]?'nav-link active':'nav-link'} onClick={()=>go(n[0])}>{n[1]}</button>)}</nav><div className="header-actions">{authenticated&&role==='مالک کل'&&<button className="admin-link" onClick={()=>go('admin')} title="ورود به پنل مدیریت"><ShieldCheck size={16}/> پنل مدیریت</button>}<button className="gold-button small" onClick={()=>go('tournaments')}>مسابقات <ChevronLeft size={16}/></button><button className="mobile-menu-button" onClick={()=>setMobileMenu(v=>!v)} aria-label="منو">{mobileMenu?<X/>:<Menu/>}</button></div></div>{mobileMenu&&<nav className="mobile-nav">{nav.filter(n=>n[0]!=='admin'||canManage).map(n=><button key={n[0]} onClick={()=>go(n[0])}>{n[1]}</button>)}</nav>}</header>
+  <header className="site-header"><div className="header-inner"><div className="header-brand-stack"><Brand onClick={()=>go('home')}/>{profile.loggedIn&&<button type="button" className="header-account" onClick={()=>go('profile')} aria-label={`پروفایل ${profile.name}`}>{avatar?<img src={avatar} alt=""/>:<span className="header-account-fallback"><User size={15}/></span>}<span>{profile.name||'بازیکن'}</span></button>}</div><nav className="desktop-nav">{nav.slice(0,3).map(n=><button key={n[0]} className={tab===n[0]?'nav-link active':'nav-link'} onClick={()=>go(n[0])}>{n[1]}</button>)}</nav><div className="header-actions">{authenticated&&!roleLoading&&role==='مالک کل'&&<button className="admin-link" onClick={()=>go('admin')} title="ورود به پنل مدیریت"><ShieldCheck size={16}/> پنل مدیریت</button>}<button className="gold-button small" onClick={()=>go('tournaments')}>مسابقات <ChevronLeft size={16}/></button><button className="mobile-menu-button" onClick={()=>setMobileMenu(v=>!v)} aria-label="منو">{mobileMenu?<X/>:<Menu/>}</button></div></div>{mobileMenu&&<nav className="mobile-nav">{nav.filter(n=>n[0]!=='admin'||canManage).map(n=><button key={n[0]} onClick={()=>go(n[0])}>{n[1]}</button>)}</nav>}</header>
   {preview&&<div className="preview-banner"><Eye size={16}/> پیش‌نمایش از دید بازیکن — حالت فقط مشاهده <button onClick={()=>{setPreview(false);go('admin')}}>بازگشت به مدیریت</button></div>}
   <main>
   {shownTab==='home'&&<div className="page">
