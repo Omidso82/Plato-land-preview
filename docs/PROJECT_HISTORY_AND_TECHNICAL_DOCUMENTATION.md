@@ -1,254 +1,256 @@
-# PLATO LAND Tournament Platform
-## Project history, technical decisions, security model and change log
+# پلتفرم تورنمنت PLATO LAND
+## سند جامع سوابق پروژه، تصمیم‌های تأییدشده، ساختار فنی و گزارش تغییرات
 
-**Document version:** 1.0  
-**Last updated:** 2026-10-31  
-**Status:** The latest administration-dashboard layout has been reviewed and explicitly approved by the project owner.  
-**Canonical code repository:** `Omidso82/Plato-land-preview`, branch `main`  
-**Latest confirmed main commit:** `36a8bbc3e78a69c97ff54cef36c05b5c128eff45`  
-**Website domain:** `https://platoland.org`  
-**Supabase project referenced by the implementation work:** `dfrppbapaaydbjeflozw`
+**نسخه سند:** ۱.۰  
+**تاریخ آخرین به‌روزرسانی:** ۳۱ اکتبر ۲۰۲۶  
+**وضعیت:** ساختار جدید پنل مدیریت توسط مالک بررسی و صریحاً تأیید شده است.  
+**مخزن اصلی کد:** `Omidso82/Plato-land-preview` — شاخه `main`  
+**آخرین Commit کدِ تأییدشده:** `36a8bbc3e78a69c97ff54cef36c05b5c128eff45`  
+**دامنه سایت:** `https://platoland.org`  
+**شناسه پروژه Supabase مورد استفاده در بررسی‌های فنی:** `dfrppbapaaydbjeflozw`
 
-> This document records the decisions and implementation work known at the date above. It distinguishes code/database changes from checks that were actually performed. It is not a claim that every end-to-end scenario has been tested with real player and manager accounts.
-
----
-
-## 1. Product purpose and governing principles
-
-PLATO LAND is a Persian, right-to-left tournament platform for multiple games on Plato. It is not a backgammon-only site.
-
-### Approved product identity
-- Brand/title: **PLATO LAND**
-- Tagline: **«بازی، رقابت، قهرمانی»**
-- Visual direction: premium dark gaming presentation, black and gold palette, crown motif and clear typography.
-- Interface language: Persian (Iranian Persian), RTL.
-- The public-facing platform is intended to support different games and independently configured tournaments.
-
-### Project governance rules
-1. Each series and tournament is an independent record. Never merge Series 1 and Series 2 information, rules, players, groups, draws, schedules, or results.
-2. Unknown or unapproved information must be marked **«در انتظار تأیید»**. Names, IDs, scores, placements, rules, and dates must never be guessed.
-3. Preserve existing records and the existing database structure. A change to one feature must not silently reset or rewrite unrelated data.
-4. Do not publish Series 1 until the owner supplies and approves its complete information.
-5. Do not treat a prototype, local browser state, or a successful compile as proof that a production workflow works end-to-end.
-6. Avoid unnecessary paid services, token purchases, or premature publication. The owner is not expected to write or run code manually.
+> این سند وضعیت و تصمیم‌هایی را ثبت می‌کند که تا تاریخ بالا در سوابق پروژه قابل تأیید بوده‌اند. بین «تغییر انجام‌شده»، «آزمایش واقعاً اجراشده» و «موردی که هنوز نیازمند بررسی است» تفاوت گذاشته شده است. موفقیت Build به‌تنهایی به معنی آزمایش کامل تمام سناریوهای عملیاتی نیست.
 
 ---
 
-## 2. Series and tournament content boundaries
+## ۱. هدف پروژه و اصول حاکم
 
-### Series 1
-- Series 1 is intentionally kept out of the public tournament list.
-- The existing tournament record inspected during the implementation work had ID `98a54687-bbb7-4b45-8a51-273ce0143159`, title «لیگ جدید», and series name «سری اول».
-- Its database state was changed to `status='draft'` and `registration_open=false`.
-- This was a visibility/registration safeguard. It did not authorize publishing Series 1 or inventing its missing public details.
-- Keep it draft and closed until the owner explicitly provides and approves its complete content.
+PLATO LAND یک پلتفرم چندبازی برای مدیریت مسابقات کاربران Plato است. سایت محدود به تخته‌نرد نیست و باید بتواند مسابقات بازی‌های مختلف را با قوانین، ظرفیت، شیوه ثبت‌نام و ساختار مستقل مدیریت کند.
 
-### Series 2 — backgammon
-- Series 2 is a separate project scope and must not inherit Series 1 registrations, IDs, groups, results, or schedule.
-- The approved final Series 2 rules contain **17 items**, not 15. The earlier 15-item version or a summary is not the final rules.
-- The exact full approved 17-item text must be retrieved from the authoritative project record before inserting it into the website. It must not be reconstructed from memory or replaced with a summary.
-- The implementation work described here did not insert an invented rules text into the database.
+### هویت بصری و محصولی تأییدشده
+- نام و عنوان برند: **PLATO LAND**
+- شعار منتخب: **«بازی، رقابت، قهرمانی»**
+- سبک طراحی: حرفه‌ای و لوکس، پس‌زمینه تیره، ترکیب مشکی و طلایی، المان تاج و تایپوگرافی خوانا.
+- زبان رابط: فارسی ایران و راست‌چین (RTL).
+- هدف محصول: پشتیبانی از چند بازی و چند تورنمنت مستقل در یک پلتفرم واحد.
 
----
-
-## 3. Tournament configuration model
-
-The tournament builder is intended to configure each tournament independently.
-
-### Participation format
-- Individual participation.
-- Team participation.
-- Both individual and team participation, where the tournament permits the player to choose.
-- Team roster registration currently supports a pre-formed team: a team leader submits the team name and the required teammates.
-- The alternative workflow in which players register individually and an administrator later forms teams is deliberately disabled/not available yet. The form blocks this incomplete workflow rather than accepting partial team records.
-
-### Capacity
-- Capacity is stored per tournament, not as one global site-wide limit.
-- A capacity may be a positive number or left blank for unlimited capacity.
-- The unit is configurable as **players** or **teams**.
-- When capacity is measured in teams, one complete team registration consumes one team slot; team members remain stored as a roster and are not counted as separate teams.
-- The database registration record uses `slot_count=1` for a team registration.
-
-### Reserve queue
-- Reserve registration is configurable independently for each tournament.
-- When enabled and the main capacity is full, further eligible submissions can be placed in the reserve queue.
-- The reserve closing window is configurable per tournament using `platform_settings.reserve_close_days_before`; the implementation has a one-day fallback if no value is configured.
-- A value of 0 means the reserve window closes at the tournament start; 1 means one day before; larger values mean that many days before.
-- Reserve positions are stored and the manager dashboard displays the queue.
-- Rejecting a pending non-reserve registration promotes the next reserve according to the database function logic. Rejecting a reserve does not trigger another promotion.
-- A reserve request is not treated as an approved main-capacity slot.
-
-### Tournament progression and public display
-The tournament form includes configuration for:
-- Group stage followed by knockout.
-- Groups only.
-- Knockout only.
-- Qualifiers per group where relevant.
-- Seeding metric and order, with tie-break criteria.
-- Public visibility switches for seeding/pots, draw/groups, group tables/results, and knockout bracket.
-- Tournament status, publication, start date, description, rules, and prizes.
-
-These settings are per tournament. A form control being present does not itself prove a complete live competition engine or a fully populated draw/results dataset.
+### اصول قطعی مدیریت پروژه
+۱. هر سری و هر تورنمنت مستقل است. اطلاعات سری اول و سری دوم، از جمله قوانین، بازیکنان، شناسه‌ها، گروه‌ها، قرعه‌کشی، برنامه و نتایج نباید با یکدیگر مخلوط شوند.  
+۲. اطلاعات نامشخص یا تأییدنشده باید با عبارت **«در انتظار تأیید»** مشخص شود. نام، Plato ID، نتیجه، رتبه، قانون و تاریخ نباید حدس زده شود.  
+۳. اطلاعات و ساختار فعلی دیتابیس باید حفظ شود. تغییر یک قابلیت نباید باعث پاک شدن یا بازنویسی ناخواسته داده‌های بخش‌های دیگر شود.  
+۴. سری اول تا زمانی که مالک اطلاعات کامل آن را ارائه و تأیید نکرده، نباید عمومی یا منتشر شود.  
+۵. پیش‌نمایش، داده محلی مرورگر یا Build موفق، به‌تنهایی اثبات نمی‌کند که یک فرآیند در محیط واقعی و از ابتدا تا انتها درست کار می‌کند.  
+۶. از هزینه‌های غیرضروری، خرید توکن یا انتشار زودهنگام پرهیز شود. مالک نباید مجبور به برنامه‌نویسی یا اجرای دستی دستورهای فنی پیچیده شود.
 
 ---
 
-## 4. Registration workflow and evidence handling
+## ۲. مرزبندی سری‌ها و محتوای مسابقات
 
-### Player flow
-1. A player creates an account or signs in using Supabase Auth.
-2. The player opens a published tournament with registration open.
-3. The player reads the rules for that specific tournament and must accept them before submitting.
-4. The form collects the display name and Plato ID.
-5. A complete Plato profile screenshot is required. The screenshot is intended to show the profile information used for review, including wins and level.
-6. Team tournaments collect the team name and required roster details when the selected team-entry mode is pre-formed team.
-7. The submission is sent to the database RPC and stored with a review status.
+### سری اول
+- سری اول عمداً از فهرست عمومی مسابقات پنهان نگه داشته شده است.
+- رکوردی که در بررسی دیتابیس شناسایی شد:
+  - شناسه: `98a54687-bbb7-4b45-8a51-273ce0143159`
+  - عنوان: «لیگ جدید»
+  - نام سری: «سری اول»
+- وضعیت این رکورد به `status='draft'` و `registration_open=false` تغییر داده شد.
+- این تغییر صرفاً برای جلوگیری از نمایش عمومی و ثبت‌نام ناخواسته بود؛ به معنی تأیید محتوای عمومی سری اول نیست.
+- تا زمان دریافت و تأیید اطلاعات کامل توسط مالک، همین وضعیت پیش‌نویس و بسته حفظ شود.
 
-### Evidence requirements and privacy
-- Profile evidence is required at submission.
-- The UI enforces a maximum evidence file size of 8 MB.
-- Evidence is uploaded under a user/tournament-scoped path.
-- The `registration-evidence` Storage bucket is private (`public=false`).
-- Evidence is not intended to be publicly browseable. Signed links are generated for authorized review and have a limited lifetime (15 minutes in the manager dashboard implementation).
-- The implementation does **not** perform OCR or automatically verify wins/level from the screenshot. A human owner/authorized tournament manager reviews the evidence.
-- The player must use the Plato ID associated with the signed-in profile for the primary player identity.
-
-### Persistence and review states
-- Registration submissions are persisted in Supabase, not merely in localStorage.
-- The workflow uses pending, approved, and rejected review states.
-- Existing localStorage-only review behavior was removed from the registration review path.
-- The registration review dashboard loads registrations from the shared database and uses database RPCs for approval/rejection.
-- Existing records and the private evidence bucket are preserved.
+### سری دوم — مسابقات تخته‌نرد
+- سری دوم پروژه‌ای مستقل است و نباید اطلاعات ثبت‌نام، شناسه‌ها، گروه‌ها، نتایج یا برنامه سری اول را به ارث ببرد.
+- نسخه نهایی قوانین سری دوم دقیقاً **۱۷ بند** دارد، نه ۱۵ بند.
+- نسخه قدیمی ۱۵‌بندی یا خلاصه قوانین، نسخه نهایی محسوب نمی‌شود.
+- متن کامل و دقیق ۱۷ قانون باید از مرجع رسمی و تأییدشده پروژه دریافت شود. بازسازی آن از حافظه یا جایگزینی با خلاصه مجاز نیست.
+- در تغییرات فنی ثبت‌شده در این سند، متن ساختگی یا حدسی برای قوانین سری دوم در دیتابیس درج نشده است.
 
 ---
 
-## 5. Database objects and security boundaries
+## ۳. مدل تنظیمات مستقل هر تورنمنت
 
-The implementation work referenced the following existing or added database objects:
+فرم ساخت تورنمنت برای تنظیم جداگانه هر مسابقه طراحی شده است.
 
-### Tables
+### نوع مشارکت
+- انفرادی
+- تیمی
+- انفرادی یا تیمی، در صورتی که برای همان تورنمنت فعال شده باشد.
+- ثبت‌نام تیمی فعلی از نوع «تیم آماده» است: سرگروه نام تیم و اطلاعات اعضای موردنیاز را ثبت می‌کند.
+- روش جایگزینِ ثبت‌نام انفرادی و تیم‌بندی بعدی توسط مدیر، فعلاً غیرفعال است. فرم نباید درخواست ناقص این روش را بپذیرد.
+
+### ظرفیت
+- ظرفیت برای هر تورنمنت جداگانه تعیین می‌شود و یک سقف سراسری برای کل سایت نیست.
+- ظرفیت می‌تواند یک عدد مثبت یا خالی (نامحدود) باشد.
+- واحد ظرفیت قابل انتخاب است: **بازیکن** یا **تیم**.
+- اگر واحد ظرفیت «تیم» باشد، هر تیم کامل یک جایگاه مصرف می‌کند؛ اعضای تیم به‌عنوان اعضای همان تیم ذخیره می‌شوند و چند تیم جداگانه محسوب نمی‌شوند.
+- مقدار `slot_count=1` برای ثبت‌نام تیمی استفاده می‌شود تا یک تیم یک جایگاه تیمی اشغال کند.
+
+### صف ذخیره (رزرو)
+- فعال یا غیرفعال بودن صف ذخیره برای هر تورنمنت مستقل تنظیم می‌شود.
+- وقتی ظرفیت اصلی تکمیل شده و صف ذخیره فعال باشد، درخواست‌های واجد شرایط بعدی می‌توانند در صف ذخیره قرار گیرند.
+- مهلت پایان ثبت‌نام ذخیره با تنظیم `platform_settings.reserve_close_days_before` تعیین می‌شود؛ در صورت نبود تنظیم، مقدار پیش‌فرض یک روز قبل از شروع است.
+- مقدار صفر یعنی بسته‌شدن مهلت در زمان شروع مسابقه؛ مقدار یک یعنی یک روز پیش از شروع؛ مقادیر بزرگ‌تر یعنی همان تعداد روز قبل از شروع.
+- موقعیت صف ذخیره در دیتابیس ثبت و در داشبورد مدیر نمایش داده می‌شود.
+- طبق منطق تابع دیتابیس، رد کردن یک ثبت‌نام اصلیِ در انتظار بررسی باعث ارتقای نفر بعدی صف ذخیره می‌شود. رد کردن یک درخواست ذخیره به‌تنهایی ارتقای دیگری ایجاد نمی‌کند.
+- درخواست ذخیره، جایگاه تأییدشده در ظرفیت اصلی محسوب نمی‌شود.
+
+### ساختار مراحل و نمایش عمومی
+فرم تورنمنت تنظیمات زیر را در اختیار مالک قرار می‌دهد:
+- مرحله گروهی و سپس حذفی
+- فقط گروهی
+- فقط حذفی
+- تعداد صعودکنندگان از هر گروه، در صورت ارتباط با فرمت
+- معیار و ترتیب سیدبندی و معیارهای رفع تساوی
+- نمایش عمومی سیدبندی و سبدها
+- نمایش قرعه‌کشی و گروه‌بندی
+- نمایش جدول و نتایج گروهی
+- نمایش نمودار مرحله حذفی
+- وضعیت، انتشار، تاریخ شروع، توضیحات، قوانین و جوایز
+
+وجود تنظیمات در فرم به‌تنهایی به معنی تکمیل موتور اجرایی قرعه‌کشی، جدول نتایج یا نمودار حذفی نیست؛ داده‌های واقعی و آزمون‌های عملیاتی مربوط به خود را لازم دارند.
+
+---
+
+## ۴. فرآیند ثبت‌نام و نگهداری مدارک
+
+### مسیر بازیکن
+۱. بازیکن با Supabase Auth حساب می‌سازد یا وارد حساب خود می‌شود.  
+۲. تورنمنت منتشرشده‌ای را باز می‌کند که ثبت‌نام آن باز است.  
+۳. قوانین همان تورنمنت را می‌خواند و باید پذیرش آن‌ها را پیش از ارسال درخواست ثبت کند.  
+۴. نام نمایشی و Plato ID دریافت می‌شود.  
+۵. بارگذاری تصویر کامل پروفایل Plato الزامی است. تصویر برای بررسی اطلاعات پروفایل، از جمله تعداد بردها و سطح بازیکن، استفاده می‌شود.  
+۶. در مسابقه تیمی، در صورت انتخاب حالت تیم آماده، نام تیم و اطلاعات اعضای لازم نیز دریافت می‌شود.  
+۷. درخواست از طریق تابع امن دیتابیس ارسال و با وضعیت بررسی ذخیره می‌شود.
+
+### الزامات و حریم خصوصی مدرک
+- تصویر مدرک در زمان ثبت‌نام اجباری است.
+- حداکثر حجم فایل در رابط کاربری ۸ مگابایت است.
+- مسیر ذخیره‌سازی تصویر به کاربر و تورنمنت مربوط می‌شود.
+- باکت Storage با نام `registration-evidence` خصوصی است و مقدار `public=false` برای آن تأیید شده است.
+- تصویر نباید به‌صورت عمومی قابل مرور باشد. لینک امضاشده و زمان‌دار فقط برای کاربر مجاز و بازبین صادر می‌شود؛ اعتبار لینک در داشبورد مدیر ۱۵ دقیقه تنظیم شده است.
+- OCR یا بررسی خودکار محتوای تصویر پیاده‌سازی نشده است. مالک یا مدیر مجاز، تصویر را به‌صورت انسانی بررسی می‌کند.
+- Plato ID بازیکن اصلی باید با Plato ID پروفایل حساب واردشده تطبیق داشته باشد.
+
+### ذخیره‌سازی و وضعیت بررسی
+- درخواست‌ها در Supabase ذخیره می‌شوند و صرفاً متکی به حافظه محلی مرورگر نیستند.
+- وضعیت‌های بررسی شامل در انتظار بررسی، تأییدشده و ردشده است.
+- مسیر قدیمی بررسی ثبت‌نام مبتنی بر localStorage از جریان اصلی بررسی حذف شده است.
+- داشبورد بررسی، درخواست‌ها را از دیتابیس مشترک می‌خواند و تأیید یا رد را از طریق RPC انجام می‌دهد.
+- رکوردهای موجود و باکت خصوصی مدارک حفظ شده‌اند.
+
+---
+
+## ۵. ساختار دیتابیس و مرزهای امنیتی
+
+### جدول‌های استفاده‌شده یا اضافه‌شده
 - `public.tournaments`
 - `public.registrations`
 - `public.registration_evidence`
 - `public.profiles`
 - `public.user_admin_permissions`
 - `public.tournament_manager_access`
-- `public.registration_members` — added to keep team rosters linked to a registration.
-- `public.player_bans` — persistent player-ban records, using the existing table schema discovered during implementation.
+- `public.registration_members` — برای نگهداری اعضای تیم مرتبط با هر ثبت‌نام اضافه شده است.
+- `public.player_bans` — برای ثبت محرومیت بازیکنان؛ ساختار واقعی جدول موجود هنگام اجرا بررسی و حفظ شد.
 
-The registration model includes fields such as `tournament_id`, `player_id`, `status`, `rules_accepted_at`, `evidence_path`, `registration_type`, `is_reserve`, `display_name`, `plato_id`, `team_name`, `reserve_position`, and `slot_count`.
+مدل ثبت‌نام شامل فیلدهایی مانند `tournament_id`، `player_id`، `status`، `rules_accepted_at`، `evidence_path`، `registration_type`، `is_reserve`، `display_name`، `plato_id`، `team_name`، `reserve_position` و `slot_count` است.
 
-### Role model
-- **Owner (`owner` / UI label «مالک کل»):** full site-level administration.
-- **Tournament manager (`tournament_admin` / UI label «مدیر مسابقات»):** limited to tournaments explicitly assigned to that manager.
-- **Ordinary player:** no site-wide or tournament-management controls.
+### مدل نقش‌ها
+- **مالک (`owner` / عنوان رابط «مالک کل»):** دسترسی کامل مدیریتی در سطح سایت.
+- **مدیر مسابقات (`tournament_admin`):** دسترسی محدود به تورنمنت‌هایی که صریحاً به او واگذار شده‌اند.
+- **بازیکن عادی:** بدون کنترل‌های مدیریت سایت یا مسابقات.
 
-### Owner-only functions and surfaces
-The owner-only site administration includes:
-- Global tournament creation/edit/delete and publication controls.
-- Site user management.
-- Assignment of tournament-specific managers.
-- Homepage video announcement management.
-- Persistent player-ban management.
-- Legacy tournament import.
-- Site-level settings.
+### قابلیت‌های مخصوص مالک
+- ایجاد، ویرایش، حذف و انتشار تورنمنت
+- مدیریت حساب‌های کاربران سایت
+- تعیین مدیر اختصاصی برای هر تورنمنت
+- مدیریت ویدیوی اطلاع‌رسانی صفحه اصلی
+- مدیریت فهرست محرومیت بازیکنان
+- انتقال اطلاعات قدیمی مسابقات
+- تنظیمات سراسری سایت
 
-The shield/admin entry point is rendered only when the authenticated account has the owner role. Tournament managers and ordinary users must not see the shield entry point.
+دکمه سپر و ورودی پنل مدیریت فقط برای حساب دارای نقش مالک نمایش داده می‌شود. مدیر مسابقه و بازیکن عادی نباید این دکمه را ببینند.
 
-### Tournament-manager scope
-- A manager sees and reviews only tournaments assigned to that manager.
-- The manager dashboard is scoped by `tournament_manager_access`.
-- Managers may review assigned-tournament registrations and evidence.
-- Managers do not receive global site administration, user management, tournament creation/edit/delete, or site-wide settings.
-- Manager assignment itself is owner-only.
-- At the time of the database inspection, no manager assignments existed.
+### محدوده دسترسی مدیر مسابقه
+- مدیر فقط تورنمنت‌هایی را می‌بیند که به او تخصیص داده شده‌اند.
+- داشبورد مدیر بر اساس جدول `tournament_manager_access` محدود می‌شود.
+- مدیر می‌تواند درخواست‌ها و مدارک تورنمنت‌های تخصیص‌یافته را بررسی کند.
+- مدیر اجازه مدیریت سراسری سایت، مدیریت کاربران، ساخت/ویرایش/حذف تورنمنت یا تغییر تنظیمات سایت را ندارد.
+- تخصیص مدیر فقط توسط مالک انجام می‌شود.
+- در زمان بررسی دیتابیس، هیچ تخصیص مدیریتی فعالی ثبت نشده بود.
 
-### Row Level Security and private storage
-The security implementation includes:
-- `private.can_manage_tournament(p_tournament_id)` as the authorization helper for owner or assigned manager access.
-- Public tournament reads limited to published tournaments; unpublished tournament visibility is limited to the owner/assigned manager.
-- Registration reads scoped to the submitting player, owner, or assigned manager.
-- Registration review/update scoped to owner or assigned manager.
-- Evidence reads scoped to the submitting player, owner, or assigned manager.
-- Private Storage policies restricting evidence access to the appropriate player and authorized reviewers.
-- Owner-only policies on `player_bans` for select/insert/update/delete.
+### RLS و فضای ذخیره‌سازی خصوصی
+موارد زیر در پیاده‌سازی امنیتی لحاظ شده‌اند:
+- تابع کمکی `private.can_manage_tournament(p_tournament_id)` برای تشخیص مالک یا مدیر مجاز همان تورنمنت.
+- خواندن عمومی تورنمنت‌ها به موارد منتشرشده محدود است؛ تورنمنت منتشرنشده فقط برای مالک یا مدیر تخصیص‌یافته قابل مشاهده است.
+- خواندن ثبت‌نام‌ها به صاحب درخواست، مالک یا مدیر تخصیص‌یافته محدود است.
+- تغییر وضعیت و بررسی ثبت‌نام فقط برای مالک یا مدیر مجاز همان تورنمنت است.
+- خواندن مدارک به بازیکن مربوط، مالک یا مدیر تخصیص‌یافته محدود است.
+- سیاست‌های Storage دسترسی به مدارک خصوصی را محدود می‌کنند.
+- سیاست‌های `player_bans` برای خواندن، درج، ویرایش و حذف فقط به مالک اجازه می‌دهند.
 
-**Important:** hiding a button is not the security boundary. The database RLS policies and authorization checks are required and form the actual access-control layer.
+**نکته امنیتی:** پنهان کردن یک دکمه در رابط کاربری، مرز امنیتی محسوب نمی‌شود. RLS و بررسی مجوز در دیتابیس باید دسترسی واقعی را کنترل کنند.
 
-### Player bans
-- Owner-managed ban records persist in `public.player_bans`.
-- Plato IDs are normalized using lowercase/trimmed values for comparison.
-- The registration submission function checks the primary Plato ID and every supplied team roster ID against active global bans and bans scoped to the selected tournament.
-- A ban may be global or limited to a selected tournament.
-- The UI persists additions and removals in the database; it does not rely only on browser memory.
+### محرومیت بازیکنان
+- فهرست محرومیت در جدول `public.player_bans` به‌صورت پایدار ذخیره می‌شود.
+- Plato ID برای مقایسه نرمال‌سازی می‌شود: حذف فاصله‌های ابتدا/انتها و تبدیل حروف به حالت کوچک.
+- تابع ثبت‌نام، شناسه بازیکن اصلی و تمام شناسه‌های اعضای تیم را با محرومیت‌های فعال سراسری یا محرومیت همان تورنمنت بررسی می‌کند.
+- محرومیت می‌تواند برای تمام مسابقات یا فقط یک تورنمنت مشخص اعمال شود.
+- افزودن و لغو محرومیت در دیتابیس انجام می‌شود و فقط در حافظه مرورگر باقی نمی‌ماند.
 
 ---
 
-## 6. Database RPCs and transaction behavior
-
-The implementation work updated or used these functions:
+## ۶. توابع دیتابیس و رفتار تراکنشی
 
 ### `public.submit_tournament_registration(...)`
-The full signature accepts tournament ID, submitted rules, evidence and player/team details. Its logic includes:
-- authenticated-user and profile checks;
-- Plato ID validation;
-- exact comparison of the accepted rules with the tournament's current rules;
-- tournament publication, registration-open, and date checks;
-- verification that the evidence path belongs to the submitting user and tournament and that the object exists in the private bucket;
-- individual or pre-formed-team validation;
-- team name and roster ID checks, including duplicate checks;
-- capacity calculation using the tournament's capacity and capacity unit;
-- reserve-queue handling when enabled;
-- persistent registration, member roster, and evidence records in the database transaction;
-- active-ban checks for all IDs included in the registration.
+نسخه کامل تابع ثبت‌نام، شناسه تورنمنت، قوانین ارسال‌شده، مسیر مدرک و اطلاعات بازیکن/تیم را دریافت می‌کند. منطق آن شامل موارد زیر است:
+- احراز هویت و بررسی پروفایل کاربر
+- اعتبارسنجی Plato ID
+- تطبیق دقیق قوانین پذیرفته‌شده با قوانین فعلی تورنمنت
+- بررسی انتشار تورنمنت، باز بودن ثبت‌نام و تاریخ‌ها
+- بررسی اینکه مسیر مدرک متعلق به همان کاربر و تورنمنت باشد و فایل در باکت خصوصی واقعاً وجود داشته باشد
+- اعتبارسنجی ثبت‌نام انفرادی یا تیم آماده
+- بررسی نام تیم و شناسه اعضا و جلوگیری از شناسه‌های تکراری
+- محاسبه ظرفیت بر اساس ظرفیت و واحد ظرفیت همان تورنمنت
+- مدیریت صف ذخیره در صورت فعال بودن
+- ذخیره تراکنشی ثبت‌نام، اعضای تیم و مدرک
+- بررسی محرومیت فعال برای تمام شناسه‌های ارسال‌شده
 
-The former weak three-argument overload `submit_tournament_registration(uuid,text,jsonb)` was revoked from `public`, `anon`, and `authenticated` so clients cannot fall back to the older signature.
+نسخه قدیمی و ضعیف سه‌پارامتری `submit_tournament_registration(uuid,text,jsonb)` از نقش‌های `public`، `anon` و `authenticated` سلب دسترسی شده است تا کلاینت نتواند از امضای قدیمی و کم‌اعتبار استفاده کند.
 
 ### `public.review_tournament_registration(uuid,boolean)`
-- Requires authentication.
-- Locks the pending registration row with `FOR UPDATE`.
-- Checks owner/assigned-manager authorization for that tournament.
-- Updates registration/evidence review state transactionally.
-- Promotes the next reserve after rejection of a non-reserve registration.
-- Does not promote another reserve when a reserve request itself is rejected.
+- احراز هویت را الزامی می‌کند.
+- ردیف ثبت‌نام در انتظار بررسی را با `FOR UPDATE` قفل می‌کند.
+- مجوز مالک یا مدیر تخصیص‌یافته همان تورنمنت را بررسی می‌کند.
+- وضعیت ثبت‌نام و مدرک را به‌صورت تراکنشی تغییر می‌دهد.
+- در صورت رد ثبت‌نام اصلی، نفر بعدی صف ذخیره را ارتقا می‌دهد.
+- رد یک درخواست ذخیره باعث ارتقای درخواست ذخیره دیگری نمی‌شود.
 
 ### `public.withdraw_tournament_registration(uuid)`
-- Performs an authenticated, owner-checked withdrawal.
-- Uses the defined promotion behavior when a main slot becomes available.
+- انصراف را با بررسی مالکیت درخواست و احراز هویت انجام می‌دهد.
+- در صورت آزاد شدن جایگاه اصلی، منطق ارتقای صف ذخیره را اجرا می‌کند.
 
-### Other role/admin RPCs
-- `current_user_role` reads the caller's role for UI gating.
-- `admin_list_site_users` is restricted to the owner.
-- Execute grants were narrowed to authenticated users for the relevant functions, while authorization remains enforced inside the function bodies.
+### توابع نقش و مدیریت
+- `current_user_role` نقش کاربر جاری را برای کنترل رابط کاربری می‌خواند.
+- `admin_list_site_users` فقط برای مالک مجاز است.
+- مجوز اجرای توابع مرتبط به نقش‌های لازم محدود شده است؛ بررسی مجوز داخل بدنه توابع نیز برقرار است.
 
 ---
 
-## 7. Administration dashboard — approved navigation structure (2026-10-31)
+## ۷. ساختار جدید پنل مدیریت — تأیید مالک در ۳۱ اکتبر ۲۰۲۶
 
-### Before
-The owner dashboard had many administrative tools presented in a long, vertically stacked page. This made it harder to find a particular tool and required unnecessary scrolling.
+### وضعیت قبلی
+ابزارهای مختلف مدیریت در یک صفحه طولانی و پشت سر هم قرار گرفته بودند. پیدا کردن ابزار مشخص دشوار بود و کاربر برای رسیدن به بخش موردنظر باید صفحه را زیاد بالا و پایین می‌کرد.
 
-### Implemented change
-The admin dashboard was reorganized into a responsive Persian navigation menu. Only the selected management section is displayed at a time.
+### تغییر انجام‌شده
+پنل مدیریت به منوی ناوبری فارسی، راست‌چین و واکنش‌گرا تبدیل شد. در هر لحظه فقط بخش انتخاب‌شده نمایش داده می‌شود.
 
-The navigation sections are:
+شش بخش منو:
 
-1. **درخواست‌ها** — review pending/approved/rejected tournament registration requests; for an assigned manager, this is the manager's permitted review area.
-2. **مسابقات** — owner-only tournament creation, editing, publication, and tournament list.
-3. **مدیران مسابقه** — owner-only assignment of managers to individual tournaments.
-4. **کاربران سایت** — owner-only site-account list and user-management entry.
-5. **محتوای صفحه اصلی** — owner-only homepage video announcement controls.
-6. **انتقال اطلاعات** — owner-only legacy tournament import from the browser's old local data.
+۱. **درخواست‌ها** — بررسی درخواست‌های ثبت‌نام و وضعیت‌های آن‌ها. مالک و مدیر مجاز، فقط در محدوده دسترسی خود این بخش را می‌بینند.  
+۲. **مسابقات** — ساخت، ویرایش، انتشار و مشاهده فهرست مسابقات؛ فقط برای مالک.  
+۳. **مدیران مسابقه** — تخصیص مدیر به تورنمنت‌های مشخص؛ فقط برای مالک.  
+۴. **کاربران سایت** — مشاهده فهرست حساب‌ها و مدیریت کاربران؛ فقط برای مالک.  
+۵. **محتوای صفحه اصلی** — تنظیم ویدیوی اطلاع‌رسانی صفحه اول؛ فقط برای مالک.  
+۶. **انتقال اطلاعات** — انتقال مسابقات قدیمی از داده‌های محلی مرورگر؛ فقط برای مالک.
 
-### Access and behavior
-- The requests section is available to the owner and authorized tournament managers, within their database-enforced scope.
-- The other five sections are shown only to the owner.
-- Clicking a navigation item changes the selected section without changing database records.
-- The existing feature handlers, Supabase calls, and role checks were retained; the work reorganized the dashboard presentation rather than rewriting the underlying workflows.
-- The menu uses a responsive grid, clear selected-state styling, gold accents, and mobile breakpoints.
-- A separate stylesheet, `src/admin-dashboard.css`, contains the navigation-specific styles.
-- `src/App.tsx` imports that stylesheet and holds the selected section state.
+### رفتار و سطح دسترسی
+- بخش درخواست‌ها برای مالک و مدیران مجاز، با رعایت محدوده دسترسی دیتابیس، در دسترس است.
+- پنج بخش دیگر فقط به مالک نمایش داده می‌شوند.
+- کلیک روی گزینه منو فقط بخش نمایشی انتخاب‌شده را عوض می‌کند و به‌خودی‌خود رکورد دیتابیس را تغییر نمی‌دهد.
+- توابع عملیاتی، فراخوانی‌های Supabase و کنترل‌های نقش موجود حفظ شدند؛ این تغییر، سازمان‌دهی رابط پنل بود، نه بازنویسی فرآیندهای اصلی.
+- منو دارای حالت انتخاب‌شده واضح، رنگ طلایی و نقاط شکست واکنش‌گرا برای موبایل و صفحه بزرگ است.
+- فایل مستقل `src/admin-dashboard.css` برای استایل منوی جدید اضافه شد.
+- فایل `src/App.tsx` این استایل را وارد می‌کند و وضعیت بخش انتخاب‌شده را نگه می‌دارد.
 
-### Approved section keys in the code
+### کلیدهای بخش‌ها در کد
 - `requests`
 - `tournaments`
 - `managers`
@@ -256,107 +258,109 @@ The navigation sections are:
 - `content`
 - `transfer`
 
-### Files changed for this navigation work
+### فایل‌های تغییرکرده در این مرحله
 - `src/App.tsx`
-- `src/admin-dashboard.css` (new)
+- `src/admin-dashboard.css` — فایل جدید
 
-### Change record
-- Pull request: [#10 — Organize admin panel into separate navigation sections](https://github.com/Omidso82/Plato-land-preview/pull/10)
-- Merge commit: [`36a8bbc3e78a69c97ff54cef36c05b5c128eff45`](https://github.com/Omidso82/Plato-land-preview/commit/36a8bbc3e78a69c97ff54cef36c05b5c128eff45)
-- The project owner explicitly confirmed on 2026-10-31 that the updated structure and appearance were correct and approved.
-
----
-
-## 8. Other implemented owner and player features
-
-### Site user management
-- Owner can view the site account list independently of tournament registrations.
-- Search supports display name, Plato ID, and email.
-- The owner-only delete action calls the `admin-delete-user` Edge Function.
-- The user is asked to confirm the irreversible deletion before the call is made.
-- This is distinct from withdrawing a tournament registration.
-
-### Homepage video announcement
-- Owner can set a video title, upload a video, enable/disable homepage display, and remove the announcement.
-- Supported formats in the UI: MP4, WebM, MOV.
-- UI limit: 50 MB.
-- The announcement is displayed only when enabled and a valid video URL is available.
-
-### Profile and authentication
-- Supabase Auth is used for sign-in/sign-up.
-- Player profile includes display name, Plato ID, and optional personal avatar.
-- The avatar UI limit is 2 MB.
-- The profile area includes the player's registration history as represented by the available data.
-
-### Preview-as-player mode
-- Owner can switch to a read-only player-view preview and return to management.
-- The preview mode does not grant additional database privileges.
+### سابقه ثبت تغییر
+- Pull Request: [شماره ۱۰ — سازمان‌دهی پنل مدیریت](https://github.com/Omidso82/Plato-land-preview/pull/10)
+- Commit ادغام‌شده: [`36a8bbc3e78a69c97ff54cef36c05b5c128eff45`](https://github.com/Omidso82/Plato-land-preview/commit/36a8bbc3e78a69c97ff54cef36c05b5c128eff45)
+- مالک پروژه در تاریخ ۳۱ اکتبر ۲۰۲۶ صریحاً اعلام کرد که ساختار و ظاهر جدید درست است و آن را تأیید می‌کند.
 
 ---
 
-## 9. Validation performed and known limits
+## ۸. سایر قابلیت‌های پیاده‌سازی‌شده
 
-### Checks confirmed during the implementation sequence
-- The admin-navigation branch passed `npm install`.
-- `npm run typecheck` completed successfully.
-- `npm run build` completed successfully.
-- GitHub Actions verification for the navigation change completed those steps successfully before the change was merged.
-- The change was merged into `main` as commit `36a8bbc3e78a69c97ff54cef36c05b5c128eff45`.
-- The owner subsequently confirmed the updated structure and appearance.
+### مدیریت کاربران سایت
+- مالک می‌تواند فهرست حساب‌های سایت را جدا از ثبت‌نام مسابقات مشاهده کند.
+- جست‌وجو بر اساس نام نمایشی، Plato ID و ایمیل انجام می‌شود.
+- حذف حساب فقط برای مالک است و از Edge Function با نام `admin-delete-user` استفاده می‌کند.
+- پیش از حذف دائمی، تأیید کاربر دریافت می‌شود.
+- حذف حساب سایت با انصراف از ثبت‌نام یک مسابقه متفاوت است.
 
-### Database checks recorded during the implementation sequence
-- Existing database records were inspected before changes.
-- At the time of inspection: one tournament, zero registrations, zero evidence records, and zero tournament-manager assignments.
-- The private `registration-evidence` bucket was confirmed to have `public=false`.
-- The Series 1 tournament row was confirmed as draft with registration closed.
-- Owner RLS behavior for reading `player_bans` was tested in a transaction and rolled back.
-- Plato ID normalization and a roster-ban match were tested in a transaction and rolled back.
-- Reserve-cutoff date calculations were checked for 0-, 1-, and 7-day settings.
-- No real production registrations or manager assignments were created as test data.
+### ویدیوی اطلاع‌رسانی صفحه اصلی
+- مالک می‌تواند عنوان ویدیو را تعیین کند، فایل را بارگذاری کند و نمایش آن را فعال/غیرفعال کند.
+- حذف ویدیو از صفحه اصلی نیز در اختیار مالک است.
+- فرمت‌های مجاز در رابط: MP4، WebM و MOV.
+- حداکثر حجم در رابط: ۵۰ مگابایت.
+- نمایش عمومی فقط وقتی انجام می‌شود که ویدیو فعال باشد و نشانی معتبر آن موجود باشد.
 
-### Not claimed as fully verified
-- Full end-to-end tests with separate real player, owner, assigned-manager, and unassigned-manager accounts were not completed in the recorded work.
-- Automated OCR or screenshot-content validation is not implemented.
-- The exact Series 2 17-rule text still needs to be loaded from its authoritative approved source before it can be displayed as final website content.
-- The Supabase Auth leaked-password protection warning remained unresolved; it was not changed by guessing at configuration.
-- Supabase advisor warnings also remained for some SECURITY DEFINER functions and performance/index recommendations. Function bodies include authorization checks, but those warnings should remain visible in the technical backlog until separately reviewed.
-- The successful build/typecheck is not, by itself, a proof of every production workflow.
-- This document does not claim a separate live-domain smoke test was run by an automated browser. The owner has now confirmed that the latest visible dashboard changes are correct.
+### احراز هویت و پروفایل
+- ورود و ثبت‌نام از Supabase Auth استفاده می‌کند.
+- پروفایل بازیکن شامل نام نمایشی، Plato ID و عکس شخصی اختیاری است.
+- محدودیت حجم عکس پروفایل ۲ مگابایت است.
+- بخش پروفایل، سابقه ثبت‌نام‌های بازیکن را بر اساس داده‌های موجود نشان می‌دهد.
+
+### پیش‌نمایش از دید بازیکن
+- مالک می‌تواند سایت را در حالت مشاهده از دید بازیکن ببیند و به پنل مدیریت بازگردد.
+- این حالت پیش‌نمایش، مجوز دیتابیس یا سطح دسترسی جدید ایجاد نمی‌کند.
 
 ---
 
-## 10. Technical backlog and safeguards
+## ۹. آزمون‌های انجام‌شده و محدودیت‌های شناخته‌شده
 
-These items are intentionally not represented as completed:
+### بررسی‌های کد و CI
+- در شاخه تغییر پنل مدیریت، اجرای `npm install` موفق بود.
+- اجرای `npm run typecheck` موفق بود.
+- اجرای `npm run build` موفق بود.
+- اجرای GitHub Actions برای این تغییر، پیش از ادغام، مراحل بررسی TypeScript و Build را با موفقیت گذراند.
+- تغییرات در شاخه `main` ادغام شدند.
+- پس از آن، مالک ظاهر و ساختار پنل را بررسی و تأیید کرد.
 
-1. Run controlled end-to-end permission tests using distinct owner, assigned-manager, unassigned-manager, and ordinary-player accounts.
-2. Review the remaining Supabase Security Advisor warnings, especially leaked-password protection and SECURITY DEFINER exposure, without weakening working authorization.
-3. Review performance advisor findings: unindexed foreign keys, RLS initplan warnings, unused/duplicate indexes. Apply only measured, safe changes.
-4. Retrieve and insert the exact owner-approved 17-item Series 2 rule text.
-5. Validate registration, evidence review, team roster, reserve promotion, withdrawal, and ban enforcement in a non-production/staging environment before relying on them for a live event.
-6. Confirm deployment workflow status for future code changes; do not equate a merged commit with a verified production deployment.
-7. Keep Series 1 unpublished until the owner supplies its full approved details.
+### بررسی‌های دیتابیس ثبت‌شده
+- قبل از تغییرات، وضعیت داده‌های موجود بررسی شد.
+- در زمان آن بررسی: یک تورنمنت، صفر ثبت‌نام، صفر مدرک و صفر تخصیص مدیر مسابقه وجود داشت.
+- خصوصی بودن باکت `registration-evidence` با مقدار `public=false` تأیید شد.
+- رکورد سری اول به‌عنوان پیش‌نویس و ثبت‌نام بسته تأیید شد.
+- رفتار RLS مالک برای خواندن `player_bans` در یک تراکنش آزمایشی بررسی و در پایان Rollback شد.
+- نرمال‌سازی Plato ID و تطبیق شناسه عضو تیم با محرومیت در تراکنش آزمایشی بررسی و Rollback شد.
+- محاسبه تاریخ پایان صف ذخیره برای تنظیمات صفر، یک و هفت روز بررسی شد.
+- برای آزمایش، ثبت‌نام واقعی تولیدی یا تخصیص مدیر دائمی در دیتابیس ایجاد نشد.
+
+### مواردی که نباید «آزمون کامل‌شده» تلقی شوند
+- آزمون End-to-End با حساب‌های واقعی و جداگانه مالک، مدیر تخصیص‌یافته، مدیر تخصیص‌نیافته و بازیکن عادی در سوابق این مرحله کامل نشده است.
+- OCR و اعتبارسنجی خودکار محتوای تصویر مدرک پیاده‌سازی نشده است.
+- متن دقیق و نهایی ۱۷ قانون سری دوم هنوز باید از مرجع رسمی تأییدشده وارد سایت شود.
+- هشدار Supabase درباره غیرفعال بودن حفاظت در برابر رمزهای عبور افشاشده، در این مرحله برطرف نشده است؛ تنظیمات امنیتی حدس زده یا بدون ابزار معتبر تغییر داده نشده‌اند.
+- برخی هشدارهای Supabase Advisor درباره توابع SECURITY DEFINER و پیشنهادهای کارایی/ایندکس باقی مانده‌اند. بدنه توابع بررسی مجوز دارد، اما این هشدارها باید در کار فنی جداگانه بررسی شوند.
+- Build موفق، به‌تنهایی اثبات صحت تمام فرآیندهای محیط واقعی نیست.
+- برای این تغییر، تست خودکار مرورگر روی دامنه به‌عنوان یک آزمون مستقل ثبت نشده است؛ با این حال مالک اعلام کرده ظاهر و ساختار جدید را بررسی کرده و درست می‌داند.
 
 ---
 
-## 11. Change log
+## ۱۰. فهرست کارهای فنی باقی‌مانده و محافظت‌ها
 
-| Date | Change | Scope / result |
+موارد زیر عمداً به‌عنوان کار انجام‌شده ثبت نشده‌اند:
+
+۱. اجرای آزمون‌های کنترل‌شده End-to-End با حساب‌های مجزای مالک، مدیر تخصیص‌یافته، مدیر تخصیص‌نیافته و بازیکن عادی.  
+۲. بررسی هشدارهای باقی‌مانده Supabase Security Advisor، به‌خصوص حفاظت رمزهای افشاشده و دسترسی توابع SECURITY DEFINER، بدون تضعیف مجوزهای فعلی.  
+۳. بررسی هشدارهای Performance Advisor شامل Foreign Keyهای بدون ایندکس، هشدارهای RLS initplan و ایندکس‌های بلااستفاده یا تکراری؛ تغییر فقط پس از بررسی اثر واقعی انجام شود.  
+۴. دریافت و درج عین متن تأییدشده ۱۷ قانون سری دوم.  
+۵. آزمایش ثبت‌نام، بررسی مدرک، اعضای تیم، ارتقای صف ذخیره، انصراف و کنترل محرومیت در محیط غیرتولیدی/آزمایشی پیش از اتکا به آن‌ها در مسابقه زنده.  
+۶. بررسی وضعیت Workflow انتشار برای تغییرات آینده؛ ادغام Commit نباید به‌تنهایی معادل تأیید انتشار روی دامنه تلقی شود.  
+۷. حفظ سری اول در وضعیت منتشرنشده تا دریافت و تأیید اطلاعات کامل از مالک.
+
+---
+
+## ۱۱. تاریخچه تغییرات
+
+| تاریخ | تغییر | نتیجه و محدوده |
 |---|---|---|
-| 2026-10-31 | Persistent player bans and roster checks | Ban records persisted in Supabase; normalized Plato ID checks include team roster IDs; owner-only RLS. |
-| 2026-10-31 | Reserve cutoff configuration | Registration RPC uses per-tournament reserve-close configuration, with a one-day fallback. |
-| 2026-10-31 | Series 1 safety state | Existing Series 1 record set to draft and registration closed; not published. |
-| 2026-10-31 | Registration security hardening | Legacy weak RPC signature revoked; review/withdraw and evidence access paths use authorization checks. |
-| 2026-10-31 | Admin dashboard navigation | Six-section responsive dashboard menu added; existing feature handlers and permission boundaries retained. |
-| 2026-10-31 | Owner acceptance | Owner confirmed the new dashboard structure and appearance were correct. |
+| ۳۱ اکتبر ۲۰۲۶ | ثبت پایدار محرومیت و بررسی اعضای تیم | محرومیت‌ها در Supabase ذخیره شدند؛ بررسی Plato ID نرمال‌شده شامل شناسه تمام اعضای تیم شد؛ RLS فقط مالک را مجاز می‌کند. |
+| ۳۱ اکتبر ۲۰۲۶ | تنظیم مهلت صف ذخیره | تابع ثبت‌نام از تنظیم مهلت مختص هر تورنمنت استفاده می‌کند و در نبود تنظیم، یک روز را پیش‌فرض می‌گیرد. |
+| ۳۱ اکتبر ۲۰۲۶ | محافظت از سری اول | رکورد موجود سری اول پیش‌نویس و ثبت‌نام آن بسته شد؛ منتشر نشد. |
+| ۳۱ اکتبر ۲۰۲۶ | تقویت امنیت ثبت‌نام | امضای قدیمی RPC لغو شد؛ مسیرهای بررسی، انصراف و دسترسی به مدرک با مجوز کنترل می‌شوند. |
+| ۳۱ اکتبر ۲۰۲۶ | سازمان‌دهی پنل مدیریت | منوی واکنش‌گرای شش‌بخشی اضافه شد؛ توابع عملیاتی و مرزهای دسترسی حفظ شدند. |
+| ۳۱ اکتبر ۲۰۲۶ | تأیید مالک | مالک ساختار و ظاهر جدید پنل را تأیید کرد. |
 
 ---
 
-## 12. Canonical references
+## ۱۲. مراجع اصلی
 
-- Repository: https://github.com/Omidso82/Plato-land-preview
-- Latest approved navigation change: https://github.com/Omidso82/Plato-land-preview/commit/36a8bbc3e78a69c97ff54cef36c05b5c128eff45
-- Pull request #10: https://github.com/Omidso82/Plato-land-preview/pull/10
-- Production domain: https://platoland.org
+- مخزن کد: https://github.com/Omidso82/Plato-land-preview
+- تغییر تأییدشده پنل مدیریت: https://github.com/Omidso82/Plato-land-preview/commit/36a8bbc3e78a69c97ff54cef36c05b5c128eff45
+- Pull Request شماره ۱۰: https://github.com/Omidso82/Plato-land-preview/pull/10
+- دامنه سایت: https://platoland.org
 
-**Maintenance rule:** update this document whenever a code, database, security, or product decision is changed. Record the date, affected files/database objects, validation performed, and whether the owner approved the result. Keep proposed changes separate from approved decisions.
+### قاعده نگهداری این سند
+هر زمان کد، دیتابیس، امنیت یا تصمیم محصول تغییر کرد، این سند نیز باید به‌روزرسانی شود. برای هر تغییر، تاریخ، فایل‌ها یا اشیای دیتابیس تحت‌تأثیر، آزمون‌های انجام‌شده و وضعیت تأیید مالک ثبت شود. پیشنهادهای تأییدنشده باید از تصمیم‌های نهایی جدا بمانند.
