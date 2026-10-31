@@ -539,3 +539,10 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added the public Participants tab to tournament details, showing only approved non-reserve entries and team roster display fields. Tournament cards now show approved registration count against capacity and refresh the count through Realtime when available.
 - Applied migration 20261031213708_public_completed_tournament_results_read. Public result access is restricted to completed tournaments; only result metrics and player display name/Plato ID columns are granted. Private profile fields remain unavailable.
 - Added the Results tab for completed tournaments, with placement, player, Plato ID, wins, losses and points. It shows an empty state when no verified result rows exist.
+### Mixed competitions and owner private workspace
+- Added `site_games.included_game_slugs` with a database constraint: a mixed-competition catalog item must include at least two selected standalone games; standalone games cannot carry mixed-game members.
+- Updated the owner game editor to choose constituent games for mixed competitions and show their labels in the public catalog. Removed destructive game deletion from the catalog UI; owners should disable a game to hide it while retaining tournament history.
+- Anonymous catalog access was expanded only to the new public display column; owner write policies remain owner-only.
+- Added `owner_private_notes` and `owner_admin_tasks` tables with RLS enabled and owner-and-creator scoped policies. No anonymous or tournament-manager access is granted.
+- Added owner workspace UI for private notes (priority, edit/delete) and operational tasks (Iran/Jalali due date, Tehran time, priority, status, edit/delete, completion). All records persist in the existing production Supabase project.
+- Applied migrations 20261031214025_configure_mixed_competition_game_members, 20261031214210_grant_public_mixed_game_catalog_column, and 20261031214550_create_owner_private_notes_and_tasks. Existing tournament and registration records were not modified.
