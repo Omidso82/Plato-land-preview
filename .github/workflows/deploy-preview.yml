@@ -1,4 +1,5 @@
 name: Deploy mobile preview
+# Re-run production-domain deployment after registration preflight fix in dcddb39c569d74579d16ace544abf740328a9a64
 
 on:
   push:
