@@ -1,0 +1,58 @@
+/* PLATO LAND — organized admin dashboard navigation */
+.admin-section-nav{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:12px;
+  margin:18px 0 24px;
+  padding:14px;
+  border:1px solid rgba(202,168,91,.2);
+  border-radius:16px;
+  background:linear-gradient(145deg,rgba(24,25,27,.98),rgba(14,16,19,.98));
+  box-shadow:0 14px 34px rgba(0,0,0,.16);
+}
+.admin-section-nav button{
+  min-width:0;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  text-align:right;
+  padding:15px 14px;
+  border:1px solid #34322c;
+  border-radius:12px;
+  background:#151719;
+  color:#d5d0c4;
+  cursor:pointer;
+  transition:border-color .18s ease,background .18s ease,transform .18s ease;
+}
+.admin-section-nav button:hover{border-color:#8d713d;background:#201d17;transform:translateY(-1px)}
+.admin-section-nav button.active{
+  border-color:#c4a45d;
+  background:linear-gradient(135deg,rgba(101,77,34,.36),rgba(33,29,21,.95));
+  color:#f1d58e;
+  box-shadow:inset 0 0 0 1px rgba(196,164,93,.12),0 8px 20px rgba(0,0,0,.14);
+}
+.admin-section-nav button>svg{flex:0 0 22px;width:22px;height:22px;color:#c5a45d}
+.admin-section-nav button span{display:flex;flex-direction:column;gap:4px;min-width:0}
+.admin-section-nav button strong{font-size:12px;font-weight:700;line-height:1.6}
+.admin-section-nav button small{font-size:10px;color:#969187;line-height:1.6}
+.admin-section-nav button.active small{color:#c4b27f}
+.admin-panel,.admin-layout{animation:adminSectionIn .2s ease both}
+@keyframes adminSectionIn{from{opacity:.55;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+.admin-panel .admin-toolbar{margin-bottom:16px}
+.admin-panel .settings-section:first-child{margin-top:12px}
+.admin-layout{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px}
+.admin-layout>.admin-panel{padding:22px}
+.admin-layout .form-panel{padding:22px}
+@media(max-width:850px){
+ .admin-section-nav{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding:10px}
+ .admin-section-nav button{padding:13px 11px}
+ .admin-layout{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+ .admin-section-nav{grid-template-columns:1fr 1fr;margin:14px 0 19px}
+ .admin-section-nav button{gap:8px;padding:12px 9px}
+ .admin-section-nav button>svg{flex-basis:19px;width:19px;height:19px}
+ .admin-section-nav button strong{font-size:11px}
+ .admin-section-nav button small{font-size:9px}
+ .admin-layout>.admin-panel,.admin-layout .form-panel{padding:15px}
+}
