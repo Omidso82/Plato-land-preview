@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 import { formatIranDate } from './iranDate';
 import { CalendarDays, Trophy, Users, Swords, RefreshCw, Clock3 } from 'lucide-react';
 
-type Row = { id:string; tournament_id:string; status:string; registration_type:string; is_reserve:boolean; display_name:string|null; plato_id:string|null; team_name:string|null };
+type Row = { id:string; tournament_id:string; status:string; registration_type:string; is_reserve:boolean; display_name:string|null; plato_id:string|null; team_name:string|null; created_at:string };
 type Tournament = { id:string; title:string; game_type:string; series_name:string|null; description:string|null; rules:string|null; status:string; registration_open:boolean; starts_at:string|null; platform_settings:any };
 type Player = { id:string; name:string; platoId:string; wins?:number; level?:number };
 type Snapshot = { players?:Player[]; groups?:{name:string;players:Player[]}[]; drawReady?:boolean; scores?:Record<string,{played:number;won:number;lost:number;points:number}>; knockoutRounds?:{name:string;matches:{id:string;player1:Player|null;player2:Player|null;winnerId:string|null}[]}[] };
@@ -19,7 +19,7 @@ export default function PlayerTournamentHub(){
   setLoading(true);setError('');
   try{
    const {data:{user},error:authError}=await supabase.auth.getUser();if(authError)throw authError;if(!user)throw new Error('برای دیدن مسابقات وارد حساب خود شو.');
-   const {data:regs,error:regError}=await supabase.from('registrations').select('id,tournament_id,status,registration_type,is_reserve,display_name,plato_id,team_name').eq('player_id',user.id).order('created_at',{ascending:false});
+   const {data:regs,error:regError}=await supabase.from('registrations').select('id,tournament_id,status,registration_type,is_reserve,display_name,plato_id,team_name,created_at').eq('player_id',user.id).order('created_at',{ascending:false});
    if(regError)throw regError;
    const rows=(regs||[]) as Row[];
    if(!rows.length){setItems([]);return;}
@@ -66,6 +66,7 @@ export default function PlayerTournamentHub(){
    const seedIndex=seedList.findIndex(p=>p.id===myEntryId);
    return <article className="player-tournament-card" key={r.id}>
     <div className="player-tournament-top"><div><span className="section-kicker">{t.game_type||'مسابقه'}{t.series_name?' · '+t.series_name:''}</span><h3>{t.title}</h3><p>{myName} · Plato ID: {r.plato_id||'—'}</p></div><span className={'player-reg-status '+(approved?'is-approved':'')}>{statusText[r.status]||r.status}{r.is_reserve?' · ذخیره':''}</span></div>
+    {r.created_at&&<p className="player-tournament-date"><Clock3 size={15}/> زمان ثبت درخواست: {formatIranDateTime(r.created_at)}</p>}
     {t.starts_at&&<p className="player-tournament-date"><CalendarDays size={15}/> شروع مسابقه: {formatIranDate(t.starts_at)}</p>}
     {r.registration_type==='team'&&members.length>0&&<div className="player-team-members"><strong>اعضای تیم</strong>{members.map((m:any)=><span key={m.plato_id}>{m.display_name} · {m.plato_id}{m.is_captain?' (سرگروه)':''}</span>)}</div>}
     {approved&&!r.is_reserve?<div className="player-competition-details">
