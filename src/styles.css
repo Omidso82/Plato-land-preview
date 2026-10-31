@@ -271,3 +271,22 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 .champion-date{grid-column:1/-1}
 @media(max-width:800px){.recent-champions-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.recent-champions-grid{grid-template-columns:1fr}}
+
+.game-catalog{display:grid;gap:18px;margin:24px 0}
+.game-catalog-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.game-catalog-heading h2{margin:5px 0}
+.game-catalog-heading p{margin:0;color:var(--muted,#aaa49a)}
+.game-catalog-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.game-catalog-card{overflow:hidden;display:flex;flex-direction:column;min-width:0;cursor:pointer;transition:border-color .18s,transform .18s}
+.game-catalog-card.selected{border-color:var(--gold,#d6b35b);box-shadow:0 0 0 1px rgba(214,179,91,.18)}
+.game-catalog-card[role=button]:hover{transform:translateY(-2px)}
+.game-catalog-card>img,.game-card-placeholder{width:100%;aspect-ratio:16/9;object-fit:cover;background:rgba(255,255,255,.04)}
+.game-card-placeholder{display:grid;place-items:center;color:var(--gold,#d6b35b)}
+.game-card-copy{display:grid;gap:7px;padding:16px;flex:1}
+.game-card-copy h3{margin:0;font-size:1.05rem}
+.game-card-copy p{margin:0;color:var(--muted,#aaa49a);line-height:1.8}
+.game-card-copy small{color:var(--gold,#d6b35b)}
+.game-admin-actions{display:flex;gap:8px;padding:0 16px 16px}
+.game-editor{display:grid;gap:14px}
+@media(max-width:850px){.game-catalog-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.game-catalog-grid{grid-template-columns:1fr}.game-catalog-heading{align-items:flex-start;flex-direction:column}}
