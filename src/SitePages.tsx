@@ -54,9 +54,16 @@ export default function SitePages({ slug, owner = false }: { slug: PageSlug; own
     if (!supabase) { setLoading(false); setError('اتصال به پایگاه داده برقرار نیست.'); return; }
     setLoading(true); setError('');
     try {
-      const fields = owner ? 'slug,title,content,status,updated_at,published_title,published_content,published_at' : 'slug,published_title,published_content,published_at,updated_at';
-      const { data, error: loadError } = await supabase.from('site_pages').select(fields).eq('slug', slug).maybeSingle();
-      if (loadError) throw loadError;
+      let data: any = null;
+      if (owner) {
+        const result = await supabase.from('site_pages').select('slug,title,content,status,updated_at,published_title,published_content,published_at').eq('slug', slug).maybeSingle();
+        if (result.error) throw result.error;
+        data = result.data;
+      } else {
+        const result = await supabase.from('site_pages').select('slug,published_title,published_content,published_at,updated_at').eq('slug', slug).maybeSingle();
+        if (result.error) throw result.error;
+        data = result.data;
+      }
       if (data) {
         const workingContent = owner ? data.content as Partial<PageContent> : data.published_content as Partial<PageContent>;
         setTitle((owner ? data.title : data.published_title) || fallback.title);
