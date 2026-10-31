@@ -287,7 +287,7 @@ function App(){
     const {error:uploadError}=await supabase.storage.from('registration-evidence').upload(path,regImageFile!,{contentType:regImageFile!.type,cacheControl:'3600',upsert:false});
     if(uploadError)throw uploadError;
    }
-   const {data:registrationId,error:submitError}=await supabase.rpc('submit_tournament_registration',{
+   const {error:submitError}=await supabase.rpc('submit_tournament_registration',{
     p_tournament_id:regTournament,p_evidence_path:path,
     p_extracted_data:{displayName:regName.trim(),platoId:regId.trim(),teamName:preformedTeam?regTeamName.trim():null,memberCount:members.length,screenshotRequired:currentTournament!.requireProfileScreenshot!==false},
     p_display_name:regName.trim(),p_plato_id:regId.trim(),p_rules_text:currentTournament!.rules,
