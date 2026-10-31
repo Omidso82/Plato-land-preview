@@ -27,6 +27,7 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
   const [error, setError] = useState('');
   const [editingId, setEditingId] = useState('');
   const [form, setForm] = useState(emptyForm);
+  const [now, setNow] = useState(() => Date.now());
 
   const load = useCallback(async () => {
     if (!supabase) { setError('اتصال به پایگاه داده برقرار نیست.'); setLoading(false); return; }
@@ -45,6 +46,7 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
   }, [owner]);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => { const timer = window.setInterval(() => setNow(Date.now()), 60_000); return () => window.clearInterval(timer); }, []);
   useEffect(() => {
     if (!supabase) return;
     const channel = supabase.channel('site-news-publication')
@@ -53,7 +55,6 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
     return () => { void supabase?.removeChannel(channel); };
   }, [load]);
 
-  const now = Date.now();
   const featured = useMemo(() => items.filter(item =>
     item.status === 'published' && item.featured &&
     (!item.featured_starts_at || new Date(item.featured_starts_at).getTime() <= now) &&
