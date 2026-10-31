@@ -604,3 +604,4 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - GitHub Actions run 41252810148 passed TypeScript typecheck and production build after adding public avatar handling, news/page version rollback, and profile display-name protection.
 - GitHub Actions run 41252729515 passed `npm run typecheck` and `npm run build` for the news/page version-history changes.
 - GitHub Actions run 41252810148 passed `npm run typecheck` and `npm run build` after the exact registration confirmation and owner-only display-name enforcement were added.
+- Added a Jalali calendar-year filter to the public tournament archive; the existing tournament/game search continues to apply alongside the year filter.
