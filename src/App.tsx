@@ -141,7 +141,7 @@ function App(){
   if(!supabase) return;
   let alive=true;
   const applySession=async(user:any)=>{
-   if(!user){if(alive){setProfile({...blankProfile,loggedIn:false});setAuthenticated(false);setRole('مدیر مسابقات');setRoleLoading(false);setAvatar('');setTab('login');setSessionResolved(true)}return}
+   if(!user){if(alive){setProfile({...blankProfile,loggedIn:false});setAuthenticated(false);setRole('مدیر مسابقات');setRoleLoading(false);setAvatar('');setTab('home');setSessionResolved(true)}return}
    // Fail closed while this session's server-side role is being resolved.
    if(alive){setAuthenticated(false);setRole('مدیر مسابقات');setRoleLoading(true);setSessionResolved(false);}
    try{
