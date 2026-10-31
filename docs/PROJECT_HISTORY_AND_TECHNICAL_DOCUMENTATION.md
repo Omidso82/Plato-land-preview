@@ -511,3 +511,6 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 ### Champions view privilege hardening
 - Read-back of information_schema.role_table_grants showed broad default privileges on the new view; applied migration 20261031212302_limit_recent_champions_view_grants to revoke all privileges from anon/authenticated and restore SELECT only.
 - Verification confirms both roles now have SELECT only on public.recent_tournament_champions.
+### Recent champions RLS hardening
+- Supabase Security Advisor flagged the initial champions view as SECURITY DEFINER. Replaced that behavior with migration 20261031212428_secure_public_champion_view_with_rls: the view is now SECURITY INVOKER, and anon policies expose only placement-1 result rows for completed tournaments plus only champion profile display_name/Plato ID.
+- Anonymous column grants on profiles and tournament_results are limited to the exact join/display columns. Read-back confirmed only those six SELECT column grants and no additional site-specific security advisor finding; the view remains SELECT-only.
