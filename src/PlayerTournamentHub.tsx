@@ -65,7 +65,7 @@ export default function PlayerTournamentHub(){
    const seedIndex=seedList.findIndex(p=>p.id===myEntryId);
    return <article className="player-tournament-card" key={r.id}>
     <div className="player-tournament-top"><div><span className="section-kicker">{t.game_type||'مسابقه'}{t.series_name?' · '+t.series_name:''}</span><h3>{t.title}</h3><p>{myName} · Plato ID: {r.plato_id||'—'}</p></div><span className={'player-reg-status '+(approved?'is-approved':'')}>{statusText[r.status]||r.status}{r.is_reserve?' · ذخیره':''}</span></div>
-    {t.starts_at&&<p className="player-tournament-date"><CalendarDays size={15}/> شروع مسابقه: {new Date(t.starts_at).toLocaleDateString('fa-IR')}</p>}
+    {t.starts_at&&<p className="player-tournament-date"><CalendarDays size={15}/> شروع مسابقه: {formatIranDate(t.starts_at)}</p>}
     {r.registration_type==='team'&&members.length>0&&<div className="player-team-members"><strong>اعضای تیم</strong>{members.map((m:any)=><span key={m.plato_id}>{m.display_name} · {m.plato_id}{m.is_captain?' (سرگروه)':''}</span>)}</div>}
     {approved&&!r.is_reserve?<div className="player-competition-details">
      {publicSeeding&&<div className="player-detail-block"><h4><Trophy size={16}/> سیدبندی</h4>{seedIndex>=0?<><p>رتبهٔ شما در سیدبندی: <strong>{seedIndex+1}</strong></p><div className="player-seed-list">{seedList.map((player,index)=><div key={player.id} className={player.id===myEntryId?'is-mine':''}><b>{index+1}</b><span>{player.name}</span><small>{player.platoId}</small></div>)}</div></>:<p>سیدبندی هنوز توسط مدیر مسابقه ثبت نشده است.</p>}</div>}
