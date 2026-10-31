@@ -174,3 +174,14 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 .player-tournament-rules{margin-top:14px;border-top:1px solid rgba(255,255,255,.08);padding-top:12px}
 .player-tournament-rules summary{cursor:pointer;color:#d9bb7a}.player-tournament-rules p{white-space:pre-wrap;line-height:1.9}
 @media(max-width:600px){.player-tournament-hub{padding:16px}.player-hub-heading,.player-tournament-top{flex-direction:column}.player-reg-status{align-self:flex-start}}
+
+.player-seed-list{display:flex;flex-direction:column;gap:5px;margin-top:10px}
+.player-seed-list>div{display:flex;align-items:center;gap:10px;padding:7px 9px;border-radius:7px;background:rgba(255,255,255,.025);font-size:12px}
+.player-seed-list>div.is-mine,.player-bracket-list p.is-mine{border:1px solid rgba(215,181,105,.45);background:rgba(175,137,53,.12);color:#f2d98e}
+.player-seed-list>div>b{min-width:22px;color:#d9bb7a}
+.player-seed-list>div>small{margin-right:auto;color:#999;font-size:10px}
+.player-bracket-list{display:flex;gap:10px;overflow-x:auto;margin-top:12px;padding-bottom:5px}
+.player-bracket-list>div{min-width:180px;padding:10px;border:1px solid rgba(199,166,94,.2);border-radius:9px}
+.player-bracket-list>div>strong{display:block;margin-bottom:8px;color:#d9bb7a;font-size:12px}
+.player-bracket-list p{margin:5px 0;padding:7px;border-radius:6px;background:rgba(255,255,255,.035);font-size:10px;line-height:1.8}
+.player-bracket-list p small{color:#9f9b90}
