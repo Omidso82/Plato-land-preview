@@ -11,7 +11,7 @@ type Row = {
 
 export default function TournamentManagerDashboard({ owner = false }: { owner?: boolean }) {
   const [rows, setRows] = useState<Row[]>([]);
-  const [tournaments, setTournaments] = useState<Record<string,string>>({});
+  const [tournaments, setTournaments] = useState<Record<string,{title:string;capacity:number|null;capacityUnit:string}>>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
@@ -25,7 +25,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
       if (!user) throw new Error('برای مشاهده پنل، وارد حساب مدیر شوید.');
       let ids: string[] = [];
       if (owner) {
-        const { data: tsAll, error: tsAllError } = await supabase.from('tournaments').select('id,title');
+        const { data: tsAll, error: tsAllError } = await supabase.from('tournaments').select('id,title,capacity,platform_settings');
         if (tsAllError) throw tsAllError;
         ids = (tsAll || []).map((x: any) => x.id);
       } else {
@@ -41,7 +41,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
       ]);
       if (tsError) throw tsError;
       if (regsError) throw regsError;
-      setTournaments(Object.fromEntries((ts || []).map((t: any) => [t.id, t.title])));
+      setTournaments(Object.fromEntries((ts || []).map((t: any) => [t.id, {title:t.title,capacity:t.capacity,capacityUnit:t.platform_settings?.capacity_unit || 'players'}])));
       const [{ data: evidence, error: evidenceError }, { data: members, error: membersError }] = await Promise.all([
         supabase.from('registration_evidence').select('registration_id,storage_path').in('registration_id', (regs || []).map((r: any) => r.id)),
         supabase.from('registration_members').select('registration_id,display_name,plato_id,is_captain').in('registration_id', (regs || []).map((r: any) => r.id))
@@ -91,8 +91,10 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
       !assignedIds.length ? <p className="empty-state">هنوز مسابقه‌ای به حساب شما واگذار نشده است.</p> :
       assignedIds.map(id => {
         const list = rows.filter(r => r.tournament_id === id);
+        const used = list.filter(r => !r.is_reserve && ['pending','approved','registered'].includes(r.status)).reduce((n,r) => n + 1, 0);
+        const meta = tournaments[id];
         return <section className="settings-section" key={id}>
-          <h3>{tournaments[id]}</h3><p>{list.length} درخواست ثبت‌نام · {list.filter(r => r.is_reserve).length} نفر/تیم در صف ذخیره</p>
+          <h3>{meta?.title}</h3><p>{list.length} درخواست ثبت‌نام · {list.filter(r => r.is_reserve).length} در صف ذخیره · ظرفیت: {meta?.capacity ? used + ' از ' + meta.capacity + (meta.capacityUnit === 'teams' ? ' تیم' : ' بازیکن') : 'نامحدود'}</p>
           {!list.length ? <p className="empty-state">درخواستی ثبت نشده است.</p> : list.map(r =>
             <div className="registration-row" key={r.id}>
               <div className="player-data">
