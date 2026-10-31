@@ -590,3 +590,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added `profiles.public_avatar_path`, exposed only as a public display column for champion-eligible profiles, and extended the security-invoker recent champions view. Recent champion cards and completed results now show the public avatar when available.
 - Added authenticated read policies for completed tournament results and their participant profile display rows so signed-in visitors see the same completed results as anonymous visitors.
 - GitHub Actions run 41252537783 passed TypeScript typecheck and production build for the public avatar and results integration.
+### About and Guide content versioning
+- Added owner-only `site_page_versions` history for About and Guide. Before each content/status/publication change or deletion, the previous page state is preserved with a monotonically increasing per-page version number.
+- Owner can review the latest 20 prior versions and restore a selected version. Restoring is a normal page update, so the version being replaced is also preserved by the trigger.
+- Version history is not exposed to public visitors or tournament managers.
