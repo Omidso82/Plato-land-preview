@@ -328,3 +328,9 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 .public-results-table th{color:var(--gold,#d6b35b);font-size:.82rem;background:rgba(255,255,255,.035)}
 .public-results-table td{font-size:.9rem}
 .public-results-table tbody tr:last-child td{border-bottom:0}
+
+.mixed-game-picker{display:grid;gap:9px;margin:0;padding:14px;border:1px solid rgba(214,179,91,.25);border-radius:12px}
+.mixed-game-picker legend{padding:0 7px;color:var(--gold,#d6b35b);font-weight:700}
+.mixed-game-picker>p{margin:0;color:var(--muted,#aaa49a);font-size:.86rem;line-height:1.8}
+.mixed-game-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.mixed-game-tags span{padding:4px 9px;border:1px solid rgba(214,179,91,.25);border-radius:999px;color:var(--gold,#d6b35b);font-size:.76rem}
