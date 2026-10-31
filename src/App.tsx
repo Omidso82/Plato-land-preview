@@ -191,17 +191,30 @@ function App(){
  async function togglePublish(id:string){if(!canManage||!supabase){setNotice('فقط مالک کل می‌تواند انتشار مسابقه را تغییر دهد.');return}const current=tournaments.find(t=>t.id===id);if(!current)return;try{const {data:{user},error:userError}=await supabase.auth.getUser();if(userError)throw userError;if(!user)throw new Error('نشست مالک معتبر نیست.');const next={...current,published:!current.published};const {data,error}=await supabase.from('tournaments').update(tournamentToDb(next,id,user.id)).eq('id',id).select('*').single();if(error)throw error;const saved=tournamentFromDb(data);setTournaments(old=>old.map(t=>t.id===id?saved:t));setNotice(saved.published?'مسابقه در سایت منتشر شد.':'انتشار مسابقه برداشته شد.');}catch(err:any){setNotice('تغییر وضعیت انتشار ناموفق بود: '+(err?.message||'خطای ناشناخته'));}}
  async function submitReg(e:React.FormEvent){
   e.preventDefault();
-  if(!selected||!regRules||!regName.trim()||!regId.trim()){setNotice('مسابقه، نام، Plato ID و پذیرش قوانین را کامل کن.');return;}
+  if(!tournamentsLoaded||tournamentsLoading){setNotice('اطلاعات مسابقه هنوز از سرور دریافت نشده است؛ چند لحظه دیگر دوباره تلاش کن.');return;}
+  if(!regTournament||!regRules||!regName.trim()||!regId.trim()){setNotice('مسابقه، نام، Plato ID و پذیرش قوانین را کامل کن.');return;}
   if(!isValidPlatoId(regId)){setNotice('Plato ID باید فقط با حروف انگلیسی، عدد، خط تیره یا زیرخط وارد شود.');return;}
   if(!supabase||!profile.loggedIn){setNotice('برای ثبت‌نام پایدار ابتدا وارد حساب کاربری شو.');return;}
-  if(selected.requireProfileScreenshot!==false&&!regImageFile){setNotice('برای این مسابقه بارگذاری تصویر کامل پروفایل Plato الزامی است.');return;}
+  let currentTournament:Tournament;
+  try{
+   const {data:row,error:readError}=await supabase.from('tournaments').select('*').eq('id',regTournament).maybeSingle();
+   if(readError)throw readError;
+   if(!row){setNotice('این مسابقه در پایگاه داده پیدا نشد؛ فهرست مسابقات را تازه‌سازی و دوباره انتخاب کن.');return;}
+   currentTournament=tournamentFromDb(row);
+   setTournaments(old=>old.map(t=>t.id===currentTournament.id?currentTournament:t));
+   if(row.status!=='published'||row.registration_open!==true){setNotice('ثبت‌نام این مسابقه طبق وضعیت فعلی سرور بسته است؛ صفحه مسابقات را تازه‌سازی کن.');return;}
+   const now=Date.now();
+   if(row.registration_starts_at&&new Date(row.registration_starts_at).getTime()>now){setNotice('مهلت ثبت‌نام این مسابقه هنوز شروع نشده است.');return;}
+   if(row.registration_ends_at&&new Date(row.registration_ends_at).getTime()<=now){setNotice('مهلت ثبت‌نام این مسابقه به پایان رسیده است.');return;}
+  }catch(err:any){setNotice('دریافت آخرین وضعیت مسابقه از سرور ناموفق بود: '+(err?.message||'خطای ناشناخته'));return;}
+  if(currentTournament!.requireProfileScreenshot!==false&&!regImageFile){setNotice('برای این مسابقه بارگذاری تصویر کامل پروفایل Plato الزامی است.');return;}
   if(regImageFile&&(!regImageFile.type.startsWith('image/')||regImageFile.size>8*1024*1024)){setNotice('تصویر باید معتبر و حداکثر ۸ مگابایت باشد.');return;}
-  const isTeam=selected.participation==='team'||(selected.participation==='both'&&regParticipation==='team');
-  const preformedTeam=isTeam&&selected.teamEntry==='preformed';
+  const isTeam=currentTournament!.participation==='team'||(currentTournament!.participation==='both'&&regParticipation==='team');
+  const preformedTeam=isTeam&&currentTournament!.teamEntry==='preformed';
   if(isTeam&&!preformedTeam){setNotice('ثبت‌نام تیم آماده در حال حاضر فعال است؛ قابلیت تیم‌بندی توسط مدیر هنوز آماده نشده و برای جلوگیری از ثبت ناقص غیرفعال است.');return;}
-  const requiredTeammates=preformedTeam?Math.max(0,Number.parseInt(selected.teamSize,10)-1):0;
+  const requiredTeammates=preformedTeam?Math.max(0,Number.parseInt(currentTournament!.teamSize,10)-1):0;
   const members=[{displayName:regName.trim(),platoId:regId.trim()},...(preformedTeam?regTeammates.slice(0,requiredTeammates).map(m=>({displayName:m.name.trim(),platoId:m.platoId.trim()})):[])];
-  if(preformedTeam&&(!regTeamName.trim()||members.length!==Number.parseInt(selected.teamSize,10)||members.some(m=>!m.displayName||!m.platoId))){setNotice('نام تیم و اطلاعات تمام اعضا را کامل وارد کن.');return;}
+  if(preformedTeam&&(!regTeamName.trim()||members.length!==Number.parseInt(currentTournament!.teamSize,10)||members.some(m=>!m.displayName||!m.platoId))){setNotice('نام تیم و اطلاعات تمام اعضا را کامل وارد کن.');return;}
   if(members.some(m=>!isValidPlatoId(m.platoId))){setNotice('Plato ID تمام اعضای تیم باید فقط با حروف انگلیسی، عدد، خط تیره یا زیرخط وارد شود.');return;}
   if(new Set(members.map(m=>m.platoId.trim().toLowerCase())).size!==members.length){setNotice('Plato ID تکراری در اعضای تیم وجود دارد.');return;}
   if(regId.trim().toLowerCase()!==profile.platoId.trim().toLowerCase()){setNotice('Plato ID بازیکن اصلی باید با پروفایل حساب کاربری یکسان باشد.');return;}
@@ -209,7 +222,7 @@ function App(){
   try{
    const {data:{user},error:userError}=await supabase.auth.getUser();if(userError)throw userError;if(!user)throw new Error('نشست کاربری معتبر نیست.');
    let path:string|null=null;
-   if(selected.requireProfileScreenshot!==false){
+   if(currentTournament!.requireProfileScreenshot!==false){
     const ext=(regImageFile!.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';
     path=user.id+'/'+regTournament+'/'+crypto.randomUUID()+'.'+ext;
     const {error:uploadError}=await supabase.storage.from('registration-evidence').upload(path,regImageFile!,{contentType:regImageFile!.type,cacheControl:'3600',upsert:false});
@@ -217,8 +230,8 @@ function App(){
    }
    const {data:registrationId,error:submitError}=await supabase.rpc('submit_tournament_registration',{
     p_tournament_id:regTournament,p_evidence_path:path,
-    p_extracted_data:{displayName:regName.trim(),platoId:regId.trim(),teamName:preformedTeam?regTeamName.trim():null,memberCount:members.length,screenshotRequired:selected.requireProfileScreenshot!==false},
-    p_display_name:regName.trim(),p_plato_id:regId.trim(),p_rules_text:selected.rules,
+    p_extracted_data:{displayName:regName.trim(),platoId:regId.trim(),teamName:preformedTeam?regTeamName.trim():null,memberCount:members.length,screenshotRequired:currentTournament!.requireProfileScreenshot!==false},
+    p_display_name:regName.trim(),p_plato_id:regId.trim(),p_rules_text:currentTournament!.rules,
     p_registration_type:isTeam?'team':'individual',p_team_name:preformedTeam?regTeamName.trim():null,
     p_members:isTeam?members:[]
    });
