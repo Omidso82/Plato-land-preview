@@ -602,3 +602,5 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added a database trigger that rejects self-service display-name changes. The site owner retains the ability to correct a display name.
 - Registration success now uses the exact approved Persian confirmation: «درخواست شما با موفقیت ثبت شد و در انتظار بررسی است».
 - GitHub Actions run 41252810148 passed TypeScript typecheck and production build after adding public avatar handling, news/page version rollback, and profile display-name protection.
+- GitHub Actions run 41252729515 passed `npm run typecheck` and `npm run build` for the news/page version-history changes.
+- GitHub Actions run 41252810148 passed `npm run typecheck` and `npm run build` after the exact registration confirmation and owner-only display-name enforcement were added.
