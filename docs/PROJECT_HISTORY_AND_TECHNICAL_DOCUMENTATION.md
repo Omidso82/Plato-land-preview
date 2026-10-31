@@ -463,3 +463,8 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - PR: #16 (https://github.com/Omidso82/Plato-land-preview/pull/16), still open as Draft.
 - The changes have not been merged to main and have not been deployed to https://platoland.org.
 - This is an incremental implementation slice, not completion of UI/UX checklist v10.7. Remaining approved requirements and full QA are still outstanding.
+### Production database policy alignment
+- Applied additive migration 20261031210747_public_tournament_lifecycle_read to the existing production Supabase project (dfrppbapaaydbjeflozw). No rows were modified.
+- Anonymous users can now read only tournaments in public lifecycle states: published, ongoing, completed, and cancelled. Draft tournaments remain private.
+- Authenticated users retain the same public lifecycle visibility plus the existing private.can_manage_tournament(id) access for their assigned management scope.
+- Read-back of pg_policies confirmed the two intended SELECT policies. The security advisor showed no new findings from this migration; previously known SECURITY DEFINER and leaked-password warnings remain unchanged.
