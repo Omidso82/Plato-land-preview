@@ -113,6 +113,20 @@ export default function SitePages({ slug, owner = false }: { slug: PageSlug; own
   }
 
   function cancelEdit() { setEditing(false); void load(); }
+  async function deleteSavedPage() {
+    if (!owner || !supabase || !window.confirm('محتوای ذخیره‌شدهٔ این صفحه حذف و نسخهٔ پیش‌فرض جایگزین شود؟')) return;
+    setBusy(true); setError('');
+    try {
+      const { error: deleteError } = await supabase.from('site_pages').delete().eq('slug', slug);
+      if (deleteError) throw deleteError;
+      setEditing(false);
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'حذف محتوای ذخیره‌شده ناموفق بود.');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const pageTitle = slug === 'about' ? 'دربارهٔ PLATO LAND' : 'راهنمای PLATO LAND';
   if (loading) return <div className="page inner-page"><p className="panel empty-state">در حال دریافت محتوای صفحه…</p></div>;
@@ -128,7 +142,7 @@ export default function SitePages({ slug, owner = false }: { slug: PageSlug; own
       <button type="button" className="outline-button full-button" onClick={() => setSections(old => [...old, { heading: '', body: '' }])}><Plus size={15}/> افزودن بخش</button>
       <label>وضعیت صفحه<select value={status} onChange={e => setStatus(e.target.value as 'draft' | 'published')}><option value="published">منتشرشده</option><option value="draft">پیش‌نویس خصوصی</option></select></label>
       <button type="submit" className="gold-button full-button" disabled={busy}>{busy ? 'در حال ذخیره…' : <><Save size={16}/> ذخیره صفحه</>}</button>
-      <button type="button" className="outline-button full-button" onClick={cancelEdit} disabled={busy}>لغو تغییرات</button>
+      <button type="button" className="outline-button full-button" onClick={cancelEdit} disabled={busy}>لغو تغییرات</button><button type="button" className="reject-button full-button" onClick={() => void deleteSavedPage()} disabled={busy}><Trash2 size={15}/> حذف محتوای ذخیره‌شده و بازگشت به پیش‌فرض</button>
     </form></section>}
     {slug === 'guide' ? <div className="guide-steps">{sections.map((section, index) => <section className="panel guide-step" key={index}><span>{(index + 1).toLocaleString('fa-IR')}</span><div><h2>{section.heading}</h2><p>{section.body}</p></div></section>)}</div> : <div className="public-info-grid">{sections.map((section, index) => { const Icon = sectionIcons[index % sectionIcons.length]; return <section className="panel public-info-card" key={index}><Icon/><h2>{section.heading}</h2><p>{section.body}</p></section>; })}</div>}
   </div>;
