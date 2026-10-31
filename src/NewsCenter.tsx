@@ -14,11 +14,13 @@ type NewsItem = {
   featured_starts_at: string | null;
   featured_ends_at: string | null;
   published_at: string | null;
+  publish_at: string | null;
+  expires_at: string | null;
   created_at: string;
   updated_at: string;
 };
 
-const emptyForm = { title: '', summary: '', body: '', image_url: '', status: 'draft' as 'draft' | 'published', featured: false, featured_start_date: '', featured_start_time: '', featured_end_date: '', featured_end_time: '' };
+const emptyForm = { title: '', summary: '', body: '', image_url: '', status: 'draft' as 'draft' | 'published', featured: false, featured_start_date: '', featured_start_time: '', featured_end_date: '', featured_end_time: '', publish_date: '', publish_time: '', expiry_date: '', expiry_time: '' };
 
 export default function NewsCenter({ owner = false, featuredOnly = false }: { owner?: boolean; featuredOnly?: boolean }) {
   const [items, setItems] = useState<NewsItem[]>([]);
@@ -33,7 +35,7 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
     if (!supabase) { setError('اتصال به پایگاه داده برقرار نیست.'); setLoading(false); return; }
     setLoading(true); setError('');
     try {
-      let query = supabase.from('site_news').select('id,title,summary,body,image_url,status,featured,featured_starts_at,featured_ends_at,published_at,created_at,updated_at');
+      let query = supabase.from('site_news').select('id,title,summary,body,image_url,status,featured,featured_starts_at,featured_ends_at,published_at,publish_at,expires_at,created_at,updated_at');
       if (!owner) query = query.eq('status', 'published');
       const { data, error: loadError } = await query.order('published_at', { ascending: false, nullsFirst: false }).order('created_at', { ascending: false });
       if (loadError) throw loadError;
@@ -65,7 +67,7 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
 
   function startEdit(item: NewsItem) {
     setEditingId(item.id);
-    setForm({ title: item.title, summary: item.summary || '', body: item.body || '', image_url: item.image_url || '', status: item.status, featured: item.featured, featured_start_date: item.featured_starts_at ? formatIranJalaliDateInput(item.featured_starts_at) : '', featured_start_time: item.featured_starts_at ? formatIranClockInput(item.featured_starts_at) : '', featured_end_date: item.featured_ends_at ? formatIranJalaliDateInput(item.featured_ends_at) : '', featured_end_time: item.featured_ends_at ? formatIranClockInput(item.featured_ends_at) : '' });
+    setForm({ title: item.title, summary: item.summary || '', body: item.body || '', image_url: item.image_url || '', status: item.status, featured: item.featured, featured_start_date: item.featured_starts_at ? formatIranJalaliDateInput(item.featured_starts_at) : '', featured_start_time: item.featured_starts_at ? formatIranClockInput(item.featured_starts_at) : '', featured_end_date: item.featured_ends_at ? formatIranJalaliDateInput(item.featured_ends_at) : '', featured_end_time: item.featured_ends_at ? formatIranClockInput(item.featured_ends_at) : '', publish_date: item.publish_at ? formatIranJalaliDateInput(item.publish_at) : '', publish_time: item.publish_at ? formatIranClockInput(item.publish_at) : '', expiry_date: item.expires_at ? formatIranJalaliDateInput(item.expires_at) : '', expiry_time: item.expires_at ? formatIranClockInput(item.expires_at) : '' });
     setError('');
   }
 
@@ -81,6 +83,15 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
       if (authError) throw authError;
       if (!user) throw new Error('نشست مالک معتبر نیست.');
       const current = items.find(item => item.id === editingId);
+      const hasPublish = !!(form.publish_date.trim() || form.publish_time.trim());
+      const hasExpiry = !!(form.expiry_date.trim() || form.expiry_time.trim());
+      if (hasPublish && (!form.publish_date.trim() || !form.publish_time.trim())) throw new Error("برای زمان انتشار، تاریخ شمسی و ساعت ایران را هر دو وارد کن.");
+      if (hasExpiry && (!form.expiry_date.trim() || !form.expiry_time.trim())) throw new Error("برای زمان انقضا، تاریخ شمسی و ساعت ایران را هر دو وارد کن.");
+      const publishAt = hasPublish ? iranJalaliDateTimeToIso(form.publish_date, form.publish_time) : (form.status === "published" ? new Date().toISOString() : null);
+      const expiresAt = hasExpiry ? iranJalaliDateTimeToIso(form.expiry_date, form.expiry_time) : null;
+      if (hasPublish && !publishAt) throw new Error("تاریخ یا ساعت انتشار معتبر نیست.");
+      if (hasExpiry && !expiresAt) throw new Error("تاریخ یا ساعت انقضا معتبر نیست.");
+      if (publishAt && expiresAt && new Date(expiresAt).getTime() <= new Date(publishAt).getTime()) throw new Error("زمان انقضا باید بعد از زمان انتشار باشد.");
       const hasStart = !!(form.featured_start_date.trim() || form.featured_start_time.trim());
       const hasEnd = !!(form.featured_end_date.trim() || form.featured_end_time.trim());
       if (hasStart && (!form.featured_start_date.trim() || !form.featured_start_time.trim())) throw new Error('برای شروع خبر ویژه، تاریخ شمسی و ساعت ایران را هر دو وارد کن.');
@@ -99,7 +110,9 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
         featured: form.featured,
         featured_starts_at: featuredStart,
         featured_ends_at: featuredEnd,
-        published_at: form.status === 'published' ? (current?.published_at || new Date().toISOString()) : null,
+        published_at: form.status === 'published' ? (current?.published_at || publishAt || new Date().toISOString()) : null,
+        publish_at: form.status === 'published' ? publishAt : null,
+        expires_at: expiresAt,
         created_by: user.id,
         updated_at: new Date().toISOString()
       };
@@ -140,6 +153,7 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
         <label>متن کامل خبر<textarea rows={6} value={form.body} onChange={e => setForm(v => ({ ...v, body: e.target.value }))} placeholder="متن کامل خبر یا اطلاعیه" /></label>
         <label>لینک تصویر (اختیاری)<input type="url" value={form.image_url} onChange={e => setForm(v => ({ ...v, image_url: e.target.value }))} placeholder="https://…" /></label>
         <label>وضعیت انتشار<select value={form.status} onChange={e => setForm(v => ({ ...v, status: e.target.value as 'draft' | 'published' }))}><option value="draft">پیش‌نویس</option><option value="published">انتشار عمومی</option></select></label>
+        {form.status === "published" && <div className="news-feature-window"><strong>زمان‌بندی انتشار و انقضا</strong><p className="form-footnote">اگر زمان انتشار را خالی بگذاری، خبر بلافاصله منتشر می‌شود. تاریخ‌ها شمسی و ساعت‌ها بر اساس تهران هستند. زمان انقضا اختیاری است.</p><div className="form-grid"><label>تاریخ انتشار<input type="text" dir="ltr" inputMode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" value={form.publish_date} onChange={e => setForm(v => ({ ...v, publish_date: e.target.value }))}/></label><label>ساعت انتشار<input type="time" dir="ltr" value={form.publish_time} onChange={e => setForm(v => ({ ...v, publish_time: e.target.value }))}/></label></div><div className="form-grid"><label>تاریخ انقضا (اختیاری)<input type="text" dir="ltr" inputMode="numeric" placeholder="۱۴۰۵/۰۸/۳۰" value={form.expiry_date} onChange={e => setForm(v => ({ ...v, expiry_date: e.target.value }))}/></label><label>ساعت انقضا<input type="time" dir="ltr" value={form.expiry_time} onChange={e => setForm(v => ({ ...v, expiry_time: e.target.value }))}/></label></div></div>}
         <label className="check-row"><input type="checkbox" checked={form.featured} onChange={e => setForm(v => ({ ...v, featured: e.target.checked }))}/><span>نمایش به‌عنوان خبر ویژه</span></label>
         {form.featured && <div className="news-feature-window"><p className="form-footnote">زمان‌ها بر اساس ساعت ایران هستند؛ تاریخ را شمسی وارد کن. خالی گذاشتن شروع یا پایان به معنی بدون محدودیت است.</p><div className="form-grid"><label>تاریخ شروع نمایش ویژه<input type="text" dir="ltr" inputMode="numeric" placeholder="۱۴۰۵/۰۸/۱۰" value={form.featured_start_date} onChange={e => setForm(v => ({ ...v, featured_start_date: e.target.value }))}/></label><label>ساعت شروع (ایران)<input type="time" dir="ltr" value={form.featured_start_time} onChange={e => setForm(v => ({ ...v, featured_start_time: e.target.value }))}/></label></div><div className="form-grid"><label>تاریخ پایان نمایش ویژه<input type="text" dir="ltr" inputMode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" value={form.featured_end_date} onChange={e => setForm(v => ({ ...v, featured_end_date: e.target.value }))}/></label><label>ساعت پایان (ایران)<input type="time" dir="ltr" value={form.featured_end_time} onChange={e => setForm(v => ({ ...v, featured_end_time: e.target.value }))}/></label></div></div>}
         {error && <p className="auth-inline-error" role="alert">{error}</p>}
