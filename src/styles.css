@@ -428,3 +428,7 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 
 .news-version-history{display:grid;gap:8px;margin-top:18px;padding:14px;border:1px solid rgba(214,179,91,.22);border-radius:12px}
 .news-version-history .section-heading{margin-bottom:4px}
+
+.archive-year-filter{display:flex;align-items:center;gap:8px;color:var(--muted,#aaa49a);font-size:.82rem}
+.archive-year-filter select{min-width:130px}
+@media(max-width:600px){.archive-year-filter{width:100%;justify-content:space-between}.archive-year-filter select{flex:1}}
