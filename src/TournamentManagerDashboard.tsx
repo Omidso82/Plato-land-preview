@@ -1,0 +1,100 @@
+import React, { useEffect, useState } from 'react';
+import { supabase } from './supabase';
+import { ClipboardList, ExternalLink, RefreshCw } from 'lucide-react';
+
+type Row = {
+  id: string; tournament_id: string; status: string; registration_type: string;
+  is_reserve: boolean; reserve_position: number | null; display_name: string | null;
+  plato_id: string | null; team_name: string | null; created_at: string;
+  evidenceUrl?: string;
+};
+
+export default function TournamentManagerDashboard() {
+  const [rows, setRows] = useState<Row[]>([]);
+  const [tournaments, setTournaments] = useState<Record<string,string>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState('');
+
+  async function load() {
+    if (!supabase) return;
+    setLoading(true); setError('');
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) throw new Error('برای مشاهده پنل، وارد حساب مدیر شوید.');
+      const { data: assigned, error: assignedError } = await supabase
+        .from('tournament_manager_access').select('tournament_id').eq('user_id', user.id);
+      if (assignedError) throw assignedError;
+      const ids = (assigned || []).map((x: any) => x.tournament_id);
+      if (!ids.length) { setRows([]); setTournaments({}); return; }
+      const [{ data: ts, error: tsError }, { data: regs, error: regsError }] = await Promise.all([
+        supabase.from('tournaments').select('id,title').in('id', ids),
+        supabase.from('registrations').select('id,tournament_id,status,registration_type,is_reserve,reserve_position,display_name,plato_id,team_name,created_at').in('tournament_id', ids).order('created_at', { ascending: true })
+      ]);
+      if (tsError) throw tsError;
+      if (regsError) throw regsError;
+      setTournaments(Object.fromEntries((ts || []).map((t: any) => [t.id, t.title])));
+      const { data: evidence, error: evidenceError } = await supabase.from('registration_evidence')
+        .select('registration_id,storage_path').in('registration_id', (regs || []).map((r: any) => r.id));
+      if (evidenceError) throw evidenceError;
+      const evidenceMap = new Map((evidence || []).map((e: any) => [e.registration_id, e.storage_path]));
+      const hydrated = await Promise.all((regs || []).map(async (r: any) => {
+        const path = evidenceMap.get(r.id);
+        if (!path) return r;
+        const { data, error } = await supabase.storage.from('registration-evidence').createSignedUrl(path, 900);
+        return { ...r, evidenceUrl: error ? '' : data?.signedUrl || '' };
+      }));
+      setRows(hydrated);
+    } catch (e: any) { setError(e?.message || 'بارگذاری پنل مدیر ناموفق بود.'); }
+    finally { setLoading(false); }
+  }
+
+  useEffect(() => { void load(); }, []);
+
+  async function review(id: string, approved: boolean) {
+    if (!supabase) return;
+    setBusy(id); setError('');
+    try {
+      const { error } = await supabase.rpc('review_tournament_registration', {
+        p_registration_id: id, p_approved: approved
+      });
+      if (error) throw error;
+      await load();
+    } catch (e: any) { setError(e?.message || 'ثبت نتیجه بررسی ناموفق بود.'); }
+    finally { setBusy(''); }
+  }
+
+  const assignedIds = Object.keys(tournaments);
+  return <section className="panel admin-panel manager-dashboard">
+    <div className="admin-toolbar">
+      <div><span className="section-kicker">پنل مدیر مسابقه</span><h2>مسابقات واگذارشده به من</h2>
+      <p>فقط مسابقاتی را می‌بینید که مالک سایت به شما واگذار کرده است. تنظیمات سراسری و مدیریت کاربران در دسترس نیست.</p></div>
+      <button type="button" className="outline-button" onClick={() => void load()} disabled={loading}><RefreshCw size={15}/> بروزرسانی</button>
+    </div>
+    {loading ? <p className="empty-state">در حال دریافت اطلاعات…</p> : error ? <p className="auth-inline-error">{error}</p> :
+      !assignedIds.length ? <p className="empty-state">هنوز مسابقه‌ای به حساب شما واگذار نشده است.</p> :
+      assignedIds.map(id => {
+        const list = rows.filter(r => r.tournament_id === id);
+        return <section className="settings-section" key={id}>
+          <h3>{tournaments[id]}</h3><p>{list.length} درخواست ثبت‌نام · {list.filter(r => r.is_reserve).length} نفر/تیم در صف ذخیره</p>
+          {!list.length ? <p className="empty-state">درخواستی ثبت نشده است.</p> : list.map(r =>
+            <div className="registration-row" key={r.id}>
+              <div className="player-data">
+                <strong>{r.registration_type === 'team' ? 'تیم: ' + (r.team_name || 'بدون نام') : r.display_name || 'بازیکن'}</strong>
+                <span>Plato ID: {r.plato_id || '—'} · {r.status}</span>
+                {r.is_reserve && <small>صف ذخیره · نوبت {r.reserve_position || '—'}</small>}
+                {r.evidenceUrl && <a href={r.evidenceUrl} target="_blank" rel="noreferrer"><ExternalLink size={13}/> مشاهده تصویر خصوصی</a>}
+              </div>
+              {r.status === 'pending' && !r.is_reserve && <div className="registration-actions">
+                <button type="button" disabled={busy === r.id} onClick={() => void review(r.id, true)}>تأیید</button>
+                <button type="button" className="reject-button" disabled={busy === r.id} onClick={() => void review(r.id, false)}>رد</button>
+              </div>}
+            </div>
+          )}
+        </section>;
+      })
+    }
+    <div className="form-footnote"><ClipboardList size={14}/> دسترسی و بررسی درخواست‌ها در سمت دیتابیس نیز به همین مسابقات محدود شده است.</div>
+  </section>;
+}
