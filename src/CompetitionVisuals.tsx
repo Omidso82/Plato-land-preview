@@ -9,7 +9,6 @@ type Group = { name:string; players:Player[] };
 type Match = { id:string; player1:Player|null; player2:Player|null; winnerId:string|null };
 type Round = { name:string; matches:Match[] };
 
-const STORE_KEY = 'plato-land-live-competition-v1';
 const metricLabel:Record<string,string> = { wins:'تعداد برد', win_rate:'درصد برد', level:'سطح بازیکن', rating:'امتیاز یا ریتینگ', points:'امتیاز مسابقات', manual:'رتبه‌بندی دستی' };
 
 function shuffled<T>(items:T[]):T[] {
@@ -134,8 +133,7 @@ export default function CompetitionVisuals({ tournaments }: { tournaments:Tourna
    try{
     const {data:remote,error}=await supabase.from('competition_snapshots').select('snapshot').eq('tournament_id',tournamentId).maybeSingle();
     if(error)throw error;
-    let data:any=remote?.snapshot||null;
-    if(!data){const saved=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');data=saved[tournamentId]||null;}
+    const data:any=remote?.snapshot||null;
     if(!alive)return;
     const known=new Map<string,Player>((data?.players||[]).map((p:Player)=>[p.id,p] as [string,Player]));
     setPlayers(entrants.map(r=>known.get(r.id)||({id:r.id,name:r.name,platoId:r.platoId,wins:0,level:0})));
@@ -148,7 +146,6 @@ export default function CompetitionVisuals({ tournaments }: { tournaments:Tourna
  useEffect(()=>{
   if(!tournamentId||loadedTournamentId!==tournamentId||!supabase)return;
   const snapshot={players,groups,drawReady,scores,knockoutRounds};
-  try{const all=JSON.parse(localStorage.getItem(STORE_KEY)||'{}');all[tournamentId]=snapshot;localStorage.setItem(STORE_KEY,JSON.stringify(all));}catch{}
   let cancelled=false;
   (async()=>{const {data:{user}}=await supabase.auth.getUser();if(cancelled||!user)return;
    const {error}=await supabase.from('competition_snapshots').upsert({tournament_id:tournamentId,snapshot,updated_by:user.id,updated_at:new Date().toISOString()},{onConflict:'tournament_id'});
