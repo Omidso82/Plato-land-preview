@@ -514,3 +514,9 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 ### Recent champions RLS hardening
 - Supabase Security Advisor flagged the initial champions view as SECURITY DEFINER. Replaced that behavior with migration 20261031212428_secure_public_champion_view_with_rls: the view is now SECURITY INVOKER, and anon policies expose only placement-1 result rows for completed tournaments plus only champion profile display_name/Plato ID.
 - Anonymous column grants on profiles and tournament_results are limited to the exact join/display columns. Read-back confirmed only those six SELECT column grants and no additional site-specific security advisor finding; the view remains SELECT-only.
+### Owner-managed game catalog
+- Added public.site_games for curated game cards and the mixed-competition category, with name, slug, description, optional HTTPS image, enabled flag and display order.
+- RLS is enabled. Anonymous users can read enabled game cards only and have SELECT-only access to the ten public display columns; owner-only policies manage create/update/delete. Disabling a catalog item does not delete tournament history.
+- Added responsive GameCatalog cards to the public tournaments page; selecting a game filters its active, future/open-registration and archive competitions. Added an owner-only Games management section with create/edit/enable/disable/delete controls.
+- Applied migration 20261031212532_create_owner_managed_game_catalog. Read-back confirmed the intended policies, limited anonymous SELECT grants and no site_games-specific security advisor findings.
+- GitHub Actions Build and typecheck run 41243604293 completed successfully for commit 270acc8ef3ca79e64f88e7e9eeddec079265468e.
