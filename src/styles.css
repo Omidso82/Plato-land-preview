@@ -309,3 +309,14 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 .tournament-detail-rules{border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px}
 .tournament-details-actions{display:flex;justify-content:flex-end;gap:10px;border-top:1px solid rgba(255,255,255,.1);padding-top:16px}
 @media(max-width:600px){.tournament-details-modal{padding:17px}.tournament-details-facts{grid-template-columns:1fr}.tournament-details-actions{flex-direction:column-reverse}.tournament-details-actions button{width:100%}}
+
+.public-participants{display:grid;gap:16px}
+.public-participants .section-heading h3{margin:4px 0}
+.participants-total{display:flex;align-items:center;gap:7px;color:var(--gold,#d6b35b)}
+.participants-total small{color:var(--muted,#aaa49a);font-size:.78rem}
+.participants-list{display:grid;gap:10px}
+.participant-card{display:grid;gap:10px;padding:14px 16px}
+.participant-main{display:grid;gap:4px}
+.participant-main span,.participant-main small,.participant-members span{color:var(--muted,#aaa49a);font-size:.82rem}
+.participant-members{display:flex;flex-wrap:wrap;gap:8px}
+.participant-members span{padding:6px 9px;border-radius:8px;background:rgba(255,255,255,.04)}
