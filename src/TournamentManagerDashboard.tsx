@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import { formatIranDateTime } from './iranDate';
 import { ClipboardList, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
 import CompetitionVisuals from './CompetitionVisuals';
 
@@ -127,6 +128,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
               <div className="player-data">
                 <strong>{r.registration_type === 'team' ? 'تیم: ' + (r.team_name || 'بدون نام') : r.display_name || 'بازیکن'}</strong>
                 <span>Plato ID: {r.plato_id || '—'} · {r.status}</span>
+                <small>زمان ثبت درخواست: {formatIranDateTime(r.created_at)}</small>
                 {r.registration_type === 'team' && r.members?.map((m, index) => <small key={m.plato_id}>عضو {index + 1}: {m.display_name} · {m.plato_id}{m.is_captain ? ' (سرگروه)' : ''}</small>)}
                 {r.is_reserve && <small>صف ذخیره · نوبت {r.reserve_position || '—'}</small>}
                 {r.evidenceUrl && <a href={r.evidenceUrl} target="_blank" rel="noreferrer"><ExternalLink size={13}/> مشاهده تصویر خصوصی</a>}
