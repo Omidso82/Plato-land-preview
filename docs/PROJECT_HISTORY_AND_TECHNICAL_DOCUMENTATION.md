@@ -477,3 +477,8 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Applied migration 20261031210842_create_owner_managed_public_news and follow-up 20261031211014_optimize_site_news_owner_policy to the existing production Supabase project. The follow-up adds the creator foreign-key index and wraps owner/UID helpers in the insert policy.
 - Read-back confirmed RLS is enabled and the intended five policies exist. No news rows were inserted and no existing records were changed.
 - GitHub Actions Build and typecheck run 41242361746 completed successfully for the NewsCenter code commit 1bc8b8237fc6f0734a5e2edca98057a77ecf458d.
+### Homepage featured-news integration
+- Reused NewsCenter in featured-only mode on the public homepage immediately after the hero section.
+- The homepage featured-news section stays hidden while content loads and remains hidden when there is no currently valid featured published item. Expired featured items continue to appear in the permanent news archive.
+- Desktop layout emphasizes the first featured item; mobile cards stack vertically.
+- GitHub Actions Build and typecheck run 41242490016 completed successfully for commit 11053eeafd2201507a4e10f9e92256ce8e275de2.
