@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import { ClipboardList, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
+import CompetitionVisuals from './CompetitionVisuals';
 
 type Row = {
   id: string; tournament_id: string; status: string; registration_type: string;
@@ -12,6 +13,7 @@ type Row = {
 export default function TournamentManagerDashboard({ owner = false }: { owner?: boolean }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [tournaments, setTournaments] = useState<Record<string,{title:string;capacity:number|null;capacityUnit:string}>>({});
+  const [competitionTournaments,setCompetitionTournaments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState('');
@@ -25,7 +27,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
       if (!user) throw new Error('برای مشاهده پنل، وارد حساب مدیر شوید.');
       let ids: string[] = [];
       if (owner) {
-        const { data: tsAll, error: tsAllError } = await supabase.from('tournaments').select('id,title,capacity,platform_settings');
+        const { data: tsAll, error: tsAllError } = await supabase.from('tournaments').select('id,title,capacity,platform_settings,game_type,series_name,status,registration_open');
         if (tsAllError) throw tsAllError;
         ids = (tsAll || []).map((x: any) => x.id);
       } else {
@@ -34,7 +36,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
         if (assignedError) throw assignedError;
         ids = (assigned || []).map((x: any) => x.tournament_id);
       }
-      if (!ids.length) { setRows([]); setTournaments({}); return; }
+      if (!ids.length) { setRows([]); setTournaments({}); setCompetitionTournaments([]); return; }
       const [{ data: ts, error: tsError }, { data: regs, error: regsError }] = await Promise.all([
         supabase.from('tournaments').select('id,title,capacity,platform_settings').in('id', ids),
         supabase.from('registrations').select('id,tournament_id,status,registration_type,is_reserve,reserve_position,slot_count,display_name,plato_id,team_name,created_at').in('tournament_id', ids).order('created_at', { ascending: true })
@@ -42,6 +44,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
       if (tsError) throw tsError;
       if (regsError) throw regsError;
       setTournaments(Object.fromEntries((ts || []).map((t: any) => [t.id, {title:t.title,capacity:t.capacity,capacityUnit:t.platform_settings?.capacity_unit || 'players'}])));
+      setCompetitionTournaments((ts||[]).map((t:any)=>({id:t.id,title:t.title,game:t.game_type||'تخته‌نرد',progression:t.platform_settings?.progression||'groups_knockout',seedingMetric:t.platform_settings?.seedingMetric||'wins',seedingOrder:t.platform_settings?.seedingOrder||'desc',qualifiersPerGroup:String(t.platform_settings?.qualifiersPerGroup||'2'),publicSeeding:t.platform_settings?.publicSeeding!==false,publicDraw:t.platform_settings?.publicDraw!==false,publicTables:t.platform_settings?.publicTables!==false,publicBracket:t.platform_settings?.publicBracket!==false,status:t.status==='draft'?'پیش‌نویس':t.registration_open?'در حال ثبت‌نام':'بسته'})));
       const [{ data: evidence, error: evidenceError }, { data: members, error: membersError }] = await Promise.all([
         supabase.from('registration_evidence').select('registration_id,storage_path').in('registration_id', (regs || []).map((r: any) => r.id)),
         supabase.from('registration_members').select('registration_id,display_name,plato_id,is_captain').in('registration_id', (regs || []).map((r: any) => r.id))
@@ -140,6 +143,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
         </section>;
       })
     }
-    <div className="form-footnote"><ClipboardList size={14}/> دسترسی و بررسی درخواست‌ها در سمت دیتابیس نیز به همین مسابقات محدود شده است.</div>
+    {competitionTournaments.length>0&&<div className="manager-competition-tools"><CompetitionVisuals tournaments={competitionTournaments}/></div>}
+    <div className="form-footnote"><ClipboardList size={14}/> دسترسی و بررسی درخواست‌ها و مدیریت قرعه فقط برای مسابقات واگذارشده به حساب مدیر در سمت دیتابیس نیز کنترل می‌شود.</div>
   </section>;
 }
