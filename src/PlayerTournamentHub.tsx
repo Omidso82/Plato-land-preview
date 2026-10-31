@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import { formatIranDate } from './iranDate';
 import { CalendarDays, Trophy, Users, Swords, RefreshCw, Clock3 } from 'lucide-react';
 
 type Row = { id:string; tournament_id:string; status:string; registration_type:string; is_reserve:boolean; display_name:string|null; plato_id:string|null; team_name:string|null };
