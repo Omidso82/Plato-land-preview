@@ -574,3 +574,4 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Registration triggers create notices for pending submissions, reserve placement, approval, rejection, withdrawal and promotion from reserve. Notification content contains only status/action messaging and tournament reference, not private evidence.
 - Added the notification bell/dropdown to signed-in player navigation, unread count, mark-one-read and mark-all-read actions. Realtime publication is enabled only for this private table, with RLS still applied.
 - Applied migrations 20261031222035_add_persistent_player_notifications, 20261031222310_restrict_notification_inserts_to_tournament_managers, 20261031222500_limit_player_notification_table_grants and 20261031222615_enable_realtime_player_notifications.
+- GitHub Actions run 41251961258 passed TypeScript typecheck and production build for the player notification UI and all preceding owner modules.
