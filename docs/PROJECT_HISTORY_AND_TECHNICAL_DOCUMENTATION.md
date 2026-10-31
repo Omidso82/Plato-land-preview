@@ -556,3 +556,8 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added `site_news.publish_at` and `site_news.expires_at`. Published articles become publicly visible only when the Tehran-scheduled publication instant has arrived and remain visible until their optional expiry instant.
 - Updated anonymous and authenticated non-owner SELECT policies to enforce the publication window at the database layer; owners retain access to drafts and scheduled/expired content for management.
 - Extended anonymous column grants only for the two public scheduling fields and added Jalali date/Tehran time inputs to the owner news editor. Featured display windows remain separate from article publication/expiry windows.
+### Owner-controlled maintenance mode
+- Added `site_maintenance` as a single-row setting with RLS. Anonymous visitors can read only the maintenance flag/message fields and cannot write; owner alone can change the setting.
+- Added a global maintenance gate for public visitors and a dedicated owner admin panel to enable/disable maintenance, edit the message, and preview the maintenance screen without taking the live site offline.
+- Owner is exempt from the public maintenance gate and can continue using the site and admin controls to disable maintenance.
+- Applied migrations 20261031220010_add_owner_controlled_maintenance_mode and 20261031220540_grant_maintenance_singleton_read to the existing Supabase project.
