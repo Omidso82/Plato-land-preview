@@ -49,6 +49,7 @@ export default function SitePages({ slug, owner = false }: { slug: PageSlug; own
   const [busy, setBusy] = useState(false);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState('');
+  const [versions, setVersions] = useState<any[]>([]);
 
   const load = useCallback(async () => {
     if (!supabase) { setLoading(false); setError('اتصال به پایگاه داده برقرار نیست.'); return; }
@@ -64,6 +65,11 @@ export default function SitePages({ slug, owner = false }: { slug: PageSlug; own
         if (result.error) throw result.error;
         data = result.data;
       }
+      if (owner) {
+        const { data: versionRows, error: versionsError } = await supabase.from('site_page_versions').select('id,version_number,title,content,status,published_title,published_content,published_at,created_at').eq('slug', slug).order('version_number', { ascending: false }).limit(20);
+        if (versionsError) throw versionsError;
+        setVersions(versionRows || []);
+      } else setVersions([]);
       if (data) {
         const workingContent = owner ? data.content as Partial<PageContent> : data.published_content as Partial<PageContent>;
         setTitle((owner ? data.title : data.published_title) || fallback.title);
@@ -120,6 +126,24 @@ export default function SitePages({ slug, owner = false }: { slug: PageSlug; own
   }
 
   function cancelEdit() { setEditing(false); void load(); }
+  async function restoreVersion(version: any) {
+    if (!owner || !supabase || !window.confirm('نسخهٔ '+version.version_number+' جایگزین محتوای فعلی شود؟ نسخهٔ فعلی نیز در تاریخچه حفظ می‌شود.')) return;
+    setBusy(true); setError('');
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) throw new Error('نشست مالک معتبر نیست.');
+      const { error: restoreError } = await supabase.from('site_pages').upsert({
+        slug, title: version.title, content: version.content, status: version.status,
+        published_title: version.published_title, published_content: version.published_content,
+        published_at: version.published_at, updated_by: user.id, updated_at: new Date().toISOString()
+      }, { onConflict: 'slug' });
+      if (restoreError) throw restoreError;
+      setEditing(false);
+      await load();
+    } catch (e: any) { setError(e?.message || 'بازیابی نسخه ناموفق بود.'); }
+    finally { setBusy(false); }
+  }
   async function deleteSavedPage() {
     if (!owner || !supabase || !window.confirm('محتوای ذخیره‌شدهٔ این صفحه حذف و نسخهٔ پیش‌فرض جایگزین شود؟')) return;
     setBusy(true); setError('');
@@ -151,6 +175,7 @@ export default function SitePages({ slug, owner = false }: { slug: PageSlug; own
       <button type="submit" className="gold-button full-button" disabled={busy}>{busy ? 'در حال ذخیره…' : <><Save size={16}/> ذخیره صفحه</>}</button>
       <button type="button" className="outline-button full-button" onClick={cancelEdit} disabled={busy}>لغو تغییرات</button><button type="button" className="reject-button full-button" onClick={() => void deleteSavedPage()} disabled={busy}><Trash2 size={15}/> حذف محتوای ذخیره‌شده و بازگشت به پیش‌فرض</button>
     </form></section>}
+{owner && versions.length > 0 && <section className="panel site-page-versions"><div className="section-heading"><div><span className="section-kicker">تاریخچه نسخه‌ها</span><h2>نسخه‌های قبلی صفحه</h2></div></div><div className="site-page-version-list">{versions.map(version=><article className="site-page-version" key={version.id}><div><strong>نسخه {version.version_number.toLocaleString('fa-IR')}</strong><small>{formatIranDateTime(version.created_at)} · {version.status === 'draft' ? 'پیش‌نویس' : 'منتشرشده'}</small></div><button type="button" className="outline-button" onClick={()=>void restoreVersion(version)} disabled={busy}>بازیابی این نسخه</button></article>)}</div></section>}
     {slug === 'guide' ? <div className="guide-steps">{sections.map((section, index) => <section className="panel guide-step" key={index}><span>{(index + 1).toLocaleString('fa-IR')}</span><div><h2>{section.heading}</h2><p>{section.body}</p></div></section>)}</div> : <div className="public-info-grid">{sections.map((section, index) => { const Icon = sectionIcons[index % sectionIcons.length]; return <section className="panel public-info-card" key={index}><Icon/><h2>{section.heading}</h2><p>{section.body}</p></section>; })}</div>}
   </div>;
 }
