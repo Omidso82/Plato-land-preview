@@ -21,7 +21,7 @@ export default function OwnerSiteHealth(){
   ];
   try{
    const results=await Promise.all(checks.map(async item=>{
-    const {count,error:queryError}=await supabase!.from(item.table).select('*',{count:'exact',head:true});
+    const {count,error:queryError}=await supabase!.from(item.table as any).select('*',{count:'exact',head:true});
     return {...item,count:queryError?null:(count??0),error:queryError?.message};
    }));
    setItems(results);const failed=results.filter(x=>x.error);
