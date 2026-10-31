@@ -534,3 +534,8 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Applied migration 20261031213213_index_page_and_tournament_owners to add indexes for site_pages.updated_by and tournaments.created_by foreign keys.
 - This removes the new site_pages creator/editor FK warning and addresses the existing tournaments.created_by FK warning without changing any rows.
 - Latest code validation: GitHub Actions Build and typecheck run 41244147438 completed successfully for commit 4357550dff28eac6aade231e4ee6d3700ded5fd2.
+### Public participants and completed results
+- Applied migration 20261031213427_public_approved_participants_read. Anonymous users can read only approved/registered non-reserve registration rows and approved team-member display fields; evidence paths, pending/rejected requests and reserves remain private.
+- Added the public Participants tab to tournament details, showing only approved non-reserve entries and team roster display fields. Tournament cards now show approved registration count against capacity and refresh the count through Realtime when available.
+- Applied migration 20261031213708_public_completed_tournament_results_read. Public result access is restricted to completed tournaments; only result metrics and player display name/Plato ID columns are granted. Private profile fields remain unavailable.
+- Added the Results tab for completed tournaments, with placement, player, Plato ID, wins, losses and points. It shows an empty state when no verified result rows exist.
