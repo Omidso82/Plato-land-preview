@@ -6,7 +6,7 @@ type Row = {
   id: string; tournament_id: string; status: string; registration_type: string;
   is_reserve: boolean; reserve_position: number | null; display_name: string | null;
   plato_id: string | null; team_name: string | null; created_at: string;
-  evidenceUrl?: string;
+  evidenceUrl?: string; members?: { display_name: string; plato_id: string; is_captain: boolean }[];
 };
 
 export default function TournamentManagerDashboard({ owner = false }: { owner?: boolean }) {
@@ -42,15 +42,23 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
       if (tsError) throw tsError;
       if (regsError) throw regsError;
       setTournaments(Object.fromEntries((ts || []).map((t: any) => [t.id, t.title])));
-      const { data: evidence, error: evidenceError } = await supabase.from('registration_evidence')
-        .select('registration_id,storage_path').in('registration_id', (regs || []).map((r: any) => r.id));
+      const [{ data: evidence, error: evidenceError }, { data: members, error: membersError }] = await Promise.all([
+        supabase.from('registration_evidence').select('registration_id,storage_path').in('registration_id', (regs || []).map((r: any) => r.id)),
+        supabase.from('registration_members').select('registration_id,display_name,plato_id,is_captain').in('registration_id', (regs || []).map((r: any) => r.id))
+      ]);
       if (evidenceError) throw evidenceError;
+      if (membersError) throw membersError;
       const evidenceMap = new Map((evidence || []).map((e: any) => [e.registration_id, e.storage_path]));
+      const membersMap = new Map<string, any[]>();
+      (members || []).forEach((m: any) => membersMap.set(m.registration_id, [...(membersMap.get(m.registration_id) || []), m]));
       const hydrated = await Promise.all((regs || []).map(async (r: any) => {
         const path = evidenceMap.get(r.id);
-        if (!path) return r;
-        const { data, error } = await supabase.storage.from('registration-evidence').createSignedUrl(path, 900);
-        return { ...r, evidenceUrl: error ? '' : data?.signedUrl || '' };
+        let evidenceUrl = '';
+        if (path) {
+          const { data, error } = await supabase.storage.from('registration-evidence').createSignedUrl(path, 900);
+          if (!error) evidenceUrl = data?.signedUrl || '';
+        }
+        return { ...r, evidenceUrl, members: membersMap.get(r.id) || [] };
       }));
       setRows(hydrated);
     } catch (e: any) { setError(e?.message || 'بارگذاری پنل مدیر ناموفق بود.'); }
@@ -90,6 +98,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
               <div className="player-data">
                 <strong>{r.registration_type === 'team' ? 'تیم: ' + (r.team_name || 'بدون نام') : r.display_name || 'بازیکن'}</strong>
                 <span>Plato ID: {r.plato_id || '—'} · {r.status}</span>
+                {r.registration_type === 'team' && r.members?.map((m, index) => <small key={m.plato_id}>عضو {index + 1}: {m.display_name} · {m.plato_id}{m.is_captain ? ' (سرگروه)' : ''}</small>)}
                 {r.is_reserve && <small>صف ذخیره · نوبت {r.reserve_position || '—'}</small>}
                 {r.evidenceUrl && <a href={r.evidenceUrl} target="_blank" rel="noreferrer"><ExternalLink size={13}/> مشاهده تصویر خصوصی</a>}
               </div>
