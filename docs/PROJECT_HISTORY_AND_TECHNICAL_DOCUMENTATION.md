@@ -524,3 +524,9 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Mixed competitions now use a dedicated selection key and filter independently from single-game categories.
 - Tournament game mapping prefers explicit platform_settings.game metadata before the legacy game_type field, preventing older rows that stored a format label in game_type from being miscategorized when explicit game metadata exists.
 - Added migration 20261031212832_index_site_games_creator to cover the game catalog creator foreign key.
+### Tournament details and registration time windows
+- Added a responsive tournament detail dialog accessible from public tournament cards, with overview, rules and schedule tabs, real capacity/prize/status data, and registration action only when registration is open.
+- Added Jalali date and Asia/Tehran wall-clock fields for tournament start time and registration start/end windows. No default times are silently invented; incomplete date/time pairs are rejected before save.
+- Registration window timestamps are stored as absolute UTC instants converted from Iran wall-clock input. Existing schedule metadata is preserved when editing a tournament.
+- The public details dialog formats schedule timestamps in Iran time and shows an explicit empty state when schedule data has not been provided.
+- GitHub Actions Build and typecheck run 41244094206 completed successfully for commit 23c80eea00307296514b515273f5af05e2635b18.
