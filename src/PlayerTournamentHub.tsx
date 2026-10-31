@@ -40,7 +40,10 @@ export default function PlayerTournamentHub(){
  useEffect(()=>{
   if(!supabase)return;
   let channel:any;
-  supabase.auth.getUser().then(({data})=>{if(data.user)channel=supabase.channel('player-tournament-hub-'+data.user.id).on('postgres_changes',{event:'*',schema:'public',table:'registrations',filter:'player_id=eq.'+data.user.id},()=>void load()).subscribe();});
+  supabase.auth.getUser().then(({data})=>{if(data.user)channel=supabase.channel('player-tournament-hub-'+data.user.id)
+   .on('postgres_changes',{event:'*',schema:'public',table:'registrations',filter:'player_id=eq.'+data.user.id},()=>void load())
+   .on('postgres_changes',{event:'*',schema:'public',table:'competition_snapshots'},()=>void load())
+   .subscribe();});
   return()=>{if(channel)supabase?.removeChannel(channel)};
  },[load]);
  return <section className="player-tournament-hub panel">
