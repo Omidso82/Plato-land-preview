@@ -400,3 +400,16 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 .news-archive-filters{display:grid;grid-template-columns:minmax(0,2fr) minmax(150px,1fr);gap:12px;margin:16px 0}
 .news-archive-filters label{display:grid;gap:6px;color:var(--muted,#aaa49a);font-size:.84rem}
 @media(max-width:600px){.news-archive-filters{grid-template-columns:1fr}}
+
+.health-overall{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:18px 0}
+.health-overall small{color:var(--muted,#aaa49a)}
+.health-ok,.health-warning{display:inline-flex;align-items:center;gap:6px;font-size:.84rem}
+.health-ok{color:#83c99a}.health-warning{color:#e5a17b}
+.health-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.health-card{display:grid;gap:10px;padding:16px}
+.health-card>div{display:flex;align-items:center;gap:8px}
+.health-card>div svg{color:var(--gold,#d6b35b)}
+.health-card small{color:var(--muted,#aaa49a);overflow-wrap:anywhere}
+.health-count{font-size:1.55rem}
+@media(max-width:800px){.health-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.health-grid{grid-template-columns:1fr}}
