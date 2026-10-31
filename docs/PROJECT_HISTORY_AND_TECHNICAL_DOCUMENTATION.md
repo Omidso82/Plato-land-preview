@@ -594,3 +594,6 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added owner-only `site_page_versions` history for About and Guide. Before each content/status/publication change or deletion, the previous page state is preserved with a monotonically increasing per-page version number.
 - Owner can review the latest 20 prior versions and restore a selected version. Restoring is a normal page update, so the version being replaced is also preserved by the trigger.
 - Version history is not exposed to public visitors or tournament managers.
+### News content versioning
+- Added owner-only `site_news_versions` history. Changes and deletions preserve the prior title, summary, body, image reference, publication state, featured window, scheduled publication and expiry values.
+- While editing an existing news item, the owner can review the latest 20 versions and restore one. The restore is itself versioned, preserving the state being replaced.
