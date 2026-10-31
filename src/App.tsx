@@ -47,6 +47,7 @@ function App(){
  const [bans,setBans]=useState<any[]>([]);
  const [banId,setBanId]=useState(''),[banReason,setBanReason]=useState(''),[banStart,setBanStart]=useState(new Date().toISOString().slice(0,10)),[banEnd,setBanEnd]=useState(''),[banScope,setBanScope]=useState('all'),[banTournament,setBanTournament]=useState('');
  const [profile,setProfile]=useState<Profile>({...blankProfile,loggedIn:false});
+ const [invite,setInvite]=useState(''),[inviteSaving,setInviteSaving]=useState(false),[editing,setEditing]=useState('');
  const [notice,setNotice]=useState(''),[preview,setPreview]=useState(false),[authenticated,setAuthenticated]=useState(false),[role,setRole]=useState<'مالک کل'|'مدیر مسابقات'>('مدیر مسابقات'),[roleLoading,setRoleLoading]=useState(false),[sessionResolved,setSessionResolved]=useState(false),[avatarBusy,setAvatarBusy]=useState(false);
  const [form,setForm]=useState<Tournament>(blankTournament());
  const [regTournament,setRegTournament]=useState(''),[regName,setRegName]=useState(''),[regId,setRegId]=useState(''),[regRules,setRegRules]=useState(false),[regImage,setRegImage]=useState(''),[regImageFile,setRegImageFile]=useState<File|null>(null),[regParticipation,setRegParticipation]=useState<'individual'|'team'>('individual'),[regTeamName,setRegTeamName]=useState(''),[regTeammates,setRegTeammates]=useState<{name:string;platoId:string}[]>([]);
