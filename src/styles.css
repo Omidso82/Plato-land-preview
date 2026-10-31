@@ -155,3 +155,22 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 .knockout-champion{display:flex;align-items:center;gap:8px;margin-top:12px;padding:13px;border:1px solid rgba(218,185,103,.45);border-radius:9px;background:rgba(175,137,53,.12);color:#e7ca7c;font-size:12px}
 .knockout-champion strong{color:#fff}
 @media(max-width:600px){.knockout-bracket-round{flex-basis:165px}.knockout-draw-summary{align-items:flex-start;flex-direction:column}}
+
+/* Participant tournament hub */
+.player-tournament-hub{margin-top:24px;padding:24px}
+.player-hub-heading,.player-tournament-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.player-hub-heading h2{margin:5px 0 7px}.player-hub-heading p,.player-tournament-top p{margin:0;color:var(--muted,#a9a29a)}
+.player-tournament-card{margin-top:18px;padding:20px;border:1px solid rgba(201,164,91,.24);border-radius:16px;background:rgba(255,255,255,.025)}
+.player-tournament-top h3{margin:5px 0 7px}
+.player-reg-status{white-space:nowrap;border:1px solid rgba(220,170,90,.35);border-radius:999px;padding:6px 11px;font-size:12px;color:#d7b879}
+.player-reg-status.is-approved{border-color:rgba(82,180,125,.45);color:#80d5a1}
+.player-tournament-date,.player-hub-note{display:flex;align-items:center;gap:8px;color:var(--muted,#aaa);font-size:13px}
+.player-team-members,.player-detail-block{margin-top:12px;padding:13px;border-radius:12px;background:rgba(255,255,255,.035)}
+.player-team-members{display:flex;flex-wrap:wrap;gap:8px 14px}.player-team-members strong{width:100%}
+.player-team-members span{font-size:13px;color:var(--muted,#aaa)}
+.player-competition-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:14px}
+.player-detail-block h4{display:flex;align-items:center;gap:7px;margin:0 0 8px;color:#d9bb7a}
+.player-detail-block p{margin:0;line-height:1.8;font-size:14px}
+.player-tournament-rules{margin-top:14px;border-top:1px solid rgba(255,255,255,.08);padding-top:12px}
+.player-tournament-rules summary{cursor:pointer;color:#d9bb7a}.player-tournament-rules p{white-space:pre-wrap;line-height:1.9}
+@media(max-width:600px){.player-tournament-hub{padding:16px}.player-hub-heading,.player-tournament-top{flex-direction:column}.player-reg-status{align-self:flex-start}}
