@@ -32,6 +32,7 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
   const [now, setNow] = useState(() => Date.now());
   const [archiveSearch, setArchiveSearch] = useState('');
   const [archiveYear, setArchiveYear] = useState('all');
+  const [versions, setVersions] = useState<any[]>([]);
 
   const load = useCallback(async () => {
     if (!supabase) { setError('اتصال به پایگاه داده برقرار نیست.'); setLoading(false); return; }
@@ -68,13 +69,37 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
   const archive = useMemo(() => items.filter(item => item.status === 'published' && (archiveYear === 'all' || (item.published_at && formatIranJalaliDateInput(item.published_at).startsWith(archiveYear))) && (!archiveSearch.trim() || [item.title,item.summary,item.body].join(' ').toLocaleLowerCase('fa').includes(archiveSearch.trim().toLocaleLowerCase('fa')))), [items, archiveSearch, archiveYear]);
   if (featuredOnly && (loading || error || featured.length === 0)) return null;
 
+  async function loadVersions(newsId:string) {
+    if (!owner || !supabase) { setVersions([]); return; }
+    const { data, error: versionError } = await supabase.from('site_news_versions').select('id,version_number,title,summary,body,image_url,status,featured,featured_starts_at,featured_ends_at,published_at,publish_at,expires_at,created_at').eq('news_id',newsId).order('version_number',{ascending:false}).limit(20);
+    if (versionError) { setError(versionError.message); setVersions([]); return; }
+    setVersions(data || []);
+  }
+
+  async function restoreVersion(version:any) {
+    if (!owner || !supabase || !editingId || !window.confirm('نسخهٔ '+version.version_number+' جایگزین خبر فعلی شود؟ نسخهٔ فعلی نیز در تاریخچه حفظ می‌شود.')) return;
+    setBusy(true); setError('');
+    try {
+      const { error: restoreError } = await supabase.from('site_news').update({
+        title:version.title,summary:version.summary,body:version.body,image_url:version.image_url,status:version.status,
+        featured:version.featured,featured_starts_at:version.featured_starts_at,featured_ends_at:version.featured_ends_at,
+        published_at:version.published_at,publish_at:version.publish_at,expires_at:version.expires_at,updated_at:new Date().toISOString()
+      }).eq('id',editingId);
+      if (restoreError) throw restoreError;
+      resetForm();
+      await load();
+    } catch(e:any) { setError(e?.message || 'بازیابی نسخه ناموفق بود.'); }
+    finally { setBusy(false); }
+  }
+
   function startEdit(item: NewsItem) {
     setEditingId(item.id);
+    void loadVersions(item.id);
     setForm({ title: item.title, summary: item.summary || '', body: item.body || '', image_url: item.image_url || '', status: item.status, featured: item.featured, featured_start_date: item.featured_starts_at ? formatIranJalaliDateInput(item.featured_starts_at) : '', featured_start_time: item.featured_starts_at ? formatIranClockInput(item.featured_starts_at) : '', featured_end_date: item.featured_ends_at ? formatIranJalaliDateInput(item.featured_ends_at) : '', featured_end_time: item.featured_ends_at ? formatIranClockInput(item.featured_ends_at) : '', publish_date: item.publish_at ? formatIranJalaliDateInput(item.publish_at) : '', publish_time: item.publish_at ? formatIranClockInput(item.publish_at) : '', expiry_date: item.expires_at ? formatIranJalaliDateInput(item.expires_at) : '', expiry_time: item.expires_at ? formatIranClockInput(item.expires_at) : '' });
     setError('');
   }
 
-  function resetForm() { setEditingId(''); setForm(emptyForm); setError(''); }
+  function resetForm() { setEditingId(''); setForm(emptyForm); setVersions([]); setError(''); }
 
   async function save(event: React.FormEvent) {
     event.preventDefault();
@@ -163,6 +188,7 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
         <button className="gold-button full-button" type="submit" disabled={busy}>{busy ? 'در حال ذخیره…' : <><Save size={16}/> {editingId ? 'ذخیره تغییرات' : 'ذخیره خبر'}</>}</button>
         {editingId && <button className="outline-button full-button" type="button" onClick={resetForm} disabled={busy}>لغو ویرایش</button>}
       </form>
+      {editingId && versions.length > 0 && <section className="news-version-history"><div className="section-heading"><div><span className="section-kicker">تاریخچه خبر</span><h3>نسخه‌های قبلی</h3></div></div>{versions.map(version=><article className="site-page-version" key={version.id}><div><strong>نسخه {version.version_number.toLocaleString('fa-IR')} · {version.title}</strong><small>{formatIranDateTime(version.created_at)} · {version.status==='draft'?'پیش‌نویس':'منتشرشده'}</small></div><button type="button" className="outline-button" onClick={()=>void restoreVersion(version)} disabled={busy}>بازیابی نسخه</button></article>)}</section>}
     </section>}
     {!featuredOnly && <div className="news-list-heading"><div><span className="section-kicker">تازه‌های PLATO LAND</span><h2>اخبار و اطلاعیه‌ها</h2></div><button type="button" className="outline-button" onClick={() => void load()} disabled={loading}><RefreshCw size={15}/> بروزرسانی</button></div>}
     {loading ? <p className="panel empty-state">در حال دریافت خبرها…</p> : error ? <p className="auth-inline-error" role="alert">{error}</p> : <>
