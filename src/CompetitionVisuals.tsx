@@ -79,6 +79,7 @@ function updateWinner(rounds:Round[],roundIndex:number,matchIndex:number,winnerI
 
 export default function CompetitionVisuals({ tournaments }: { tournaments:Tournament[]; registrations?:Registration[] }) {
  const [tournamentId,setTournamentId] = useState('');
+ const [manualTournamentSelection,setManualTournamentSelection] = useState(false);
  const [players,setPlayers] = useState<Player[]>([]);
  const [groups,setGroups] = useState<Group[]>([]);
  const [drawReady,setDrawReady] = useState(false);
@@ -107,6 +108,14 @@ export default function CompetitionVisuals({ tournaments }: { tournaments:Tourna
   finally {setRegistrationsLoading(false);}
  },[tournamentId]);
  const entrants = useMemo(()=>databaseRegistrations.filter(r=>['approved','registered'].includes(r.status)&&!r.is_reserve),[databaseRegistrations]);
+ useEffect(()=>{
+  if(manualTournamentSelection||!tournamentId||!tournaments.length)return;
+  const currentCount=databaseRegistrations.filter(r=>r.tournamentId===tournamentId&&['approved','registered'].includes(r.status)&&!r.is_reserve).length;
+  if(currentCount>0)return;
+  const counts=tournaments.map(t=>({id:t.id,count:databaseRegistrations.filter(r=>r.tournamentId===t.id&&['approved','registered'].includes(r.status)&&!r.is_reserve).length}));
+  const best=counts.sort((a,b)=>b.count-a.count)[0];
+  if(best&&best.count>0&&best.id!==tournamentId)setTournamentId(best.id);
+ },[manualTournamentSelection,tournamentId,tournaments,databaseRegistrations]);
  const confirmedPlayers=useMemo(()=>entrants.map(r=>({id:r.id,name:r.name,platoId:r.platoId,wins:0,level:0})),[entrants]);
  useEffect(()=>{ if(!tournamentId && tournaments.length) setTournamentId(tournaments[0].id); },[tournaments,tournamentId]);
  useEffect(()=>{
@@ -160,7 +169,7 @@ export default function CompetitionVisuals({ tournaments }: { tournaments:Tourna
  const championPlayer=champion&&finalMatch?(finalMatch.player1?.id===champion?finalMatch.player1:finalMatch.player2):null;
  return <section className="live-competition panel">
   <div className="live-head"><div><span className="live-kicker">LIVE COMPETITION BUILDER</span><h2>نمایش گرافیکی زندهٔ مسابقه</h2><p>ساختار نمایشی متناسب با فرمت انتخاب‌شدهٔ مسابقه</p></div><BarChart3 size={28}/></div>
-  <label className="live-select">انتخاب مسابقه<select value={tournamentId} onChange={e=>setTournamentId(e.target.value)}>{tournaments.map(t=><option key={t.id} value={t.id}>{t.title}</option>)}</select></label>
+  <label className="live-select">انتخاب مسابقه<select value={tournamentId} onChange={e=>{setManualTournamentSelection(true);setTournamentId(e.target.value)}}>{tournaments.map(t=>{const count=databaseRegistrations.filter(r=>r.tournamentId===t.id&&['approved','registered'].includes(r.status)&&!r.is_reserve).length;const duplicates=tournaments.filter(x=>x.title===t.title).length>1;return <option key={t.id} value={t.id}>{t.title}{duplicates?' · '+t.id.slice(0,8):''} · '+count+' تأییدشده</option>})}</select></label>
   {tournament&&<div className="live-stats"><div><strong>{entrants.length}</strong><span>بازیکن تأییدشده</span></div><div><strong>{knockoutOnly?'-':pots.length}</strong><span>{knockoutOnly?'بدون سیدبندی':'سبد سیدبندی'}</span></div><div><strong>{knockoutOnly?(knockoutRounds.length||'—'):groups.length}</strong><span>{knockoutOnly?'مراحل حذفی':'گروه قرعه‌کشی'}</span></div><div><strong>{knockoutOnly?(registrationClosed?'بسته':'باز'):(drawReady?'آماده':'—')}</strong><span>{knockoutOnly?'وضعیت ثبت‌نام':'وضعیت قرعه'}</span></div></div>}
   <div className="live-actions"><button type="button" className="outline-button" onClick={()=>void loadTournamentRegistrations()} disabled={registrationsLoading}><RotateCcw size={15}/> {registrationsLoading?'در حال بروزرسانی…':'بروزرسانی فهرست تأییدشدگان'}</button></div>{registrationsError&&<p className="live-empty">{registrationsError}</p>}
   {knockoutOnly ? <>
