@@ -580,3 +580,4 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Re-ran Supabase Performance Advisor: the new FK warnings for those paths are resolved. Remaining warnings concern pre-existing tables/policies and unutilized indexes pending workload evidence; no existing indexes were removed without a proven duplicate.
 - Added `site_maintenance` to Supabase Realtime and allowed anonymous reads of only its non-sensitive flag/message columns even while disabled, so already-open public sessions receive both activation and deactivation updates. Verified the table is in `supabase_realtime`.
 - GitHub Actions run 41252170429 passed `npm run typecheck` and `npm run build` for the notification, mixed-game logo and maintenance realtime code.
+- Extended the public news archive with full-text search over title/summary/body and a Persian-calendar year filter; filters operate on the published archive and do not expose drafts.
