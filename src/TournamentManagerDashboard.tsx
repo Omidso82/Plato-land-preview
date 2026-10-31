@@ -4,7 +4,7 @@ import { ClipboardList, ExternalLink, RefreshCw } from 'lucide-react';
 
 type Row = {
   id: string; tournament_id: string; status: string; registration_type: string;
-  is_reserve: boolean; reserve_position: number | null; display_name: string | null;
+  is_reserve: boolean; reserve_position: number | null; slot_count: number; display_name: string | null;
   plato_id: string | null; team_name: string | null; created_at: string;
   evidenceUrl?: string; members?: { display_name: string; plato_id: string; is_captain: boolean }[];
 };
@@ -36,8 +36,8 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
       }
       if (!ids.length) { setRows([]); setTournaments({}); return; }
       const [{ data: ts, error: tsError }, { data: regs, error: regsError }] = await Promise.all([
-        supabase.from('tournaments').select('id,title').in('id', ids),
-        supabase.from('registrations').select('id,tournament_id,status,registration_type,is_reserve,reserve_position,display_name,plato_id,team_name,created_at').in('tournament_id', ids).order('created_at', { ascending: true })
+        supabase.from('tournaments').select('id,title,capacity,platform_settings').in('id', ids),
+        supabase.from('registrations').select('id,tournament_id,status,registration_type,is_reserve,reserve_position,slot_count,display_name,plato_id,team_name,created_at').in('tournament_id', ids).order('created_at', { ascending: true })
       ]);
       if (tsError) throw tsError;
       if (regsError) throw regsError;
@@ -91,7 +91,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
       !assignedIds.length ? <p className="empty-state">هنوز مسابقه‌ای به حساب شما واگذار نشده است.</p> :
       assignedIds.map(id => {
         const list = rows.filter(r => r.tournament_id === id);
-        const used = list.filter(r => !r.is_reserve && ['pending','approved','registered'].includes(r.status)).reduce((n,r) => n + 1, 0);
+        const used = list.filter(r => !r.is_reserve && ['pending','approved','registered'].includes(r.status)).reduce((n,r) => n + (r.slot_count || 1), 0);
         const meta = tournaments[id];
         return <section className="settings-section" key={id}>
           <h3>{meta?.title}</h3><p>{list.length} درخواست ثبت‌نام · {list.filter(r => r.is_reserve).length} در صف ذخیره · ظرفیت: {meta?.capacity ? used + ' از ' + meta.capacity + (meta.capacityUnit === 'teams' ? ' تیم' : ' بازیکن') : 'نامحدود'}</p>
@@ -104,8 +104,8 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
                 {r.is_reserve && <small>صف ذخیره · نوبت {r.reserve_position || '—'}</small>}
                 {r.evidenceUrl && <a href={r.evidenceUrl} target="_blank" rel="noreferrer"><ExternalLink size={13}/> مشاهده تصویر خصوصی</a>}
               </div>
-              {r.status === 'pending' && !r.is_reserve && <div className="registration-actions">
-                <button type="button" disabled={busy === r.id} onClick={() => void review(r.id, true)}>تأیید</button>
+              {r.status === 'pending' && <div className="registration-actions">
+                {!r.is_reserve && <button type="button" disabled={busy === r.id} onClick={() => void review(r.id, true)}>تأیید</button>}
                 <button type="button" className="reject-button" disabled={busy === r.id} onClick={() => void review(r.id, false)}>رد</button>
               </div>}
             </div>
