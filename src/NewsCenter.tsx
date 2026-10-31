@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
 import { formatIranDateTime } from './iranDate';
-import { FileText, Image as ImageIcon, Newspaper, Pencil, Plus, RefreshCw, Save, Trash2 } from 'lucide-react';
+import { FileText, Newspaper, Pencil, RefreshCw, Save, Trash2 } from 'lucide-react';
 
 type NewsItem = {
   id: string;
@@ -134,7 +134,7 @@ export default function NewsCenter({ owner = false }: { owner?: boolean }) {
       </form>
     </section>}
     <div className="news-list-heading"><div><span className="section-kicker">تازه‌های PLATO LAND</span><h2>اخبار و اطلاعیه‌ها</h2></div><button type="button" className="outline-button" onClick={() => void load()} disabled={loading}><RefreshCw size={15}/> بروزرسانی</button></div>
-    {loading ? <p className="panel empty-state">در حال دریافت خبرها…</p> : error && !owner ? <p className="auth-inline-error" role="alert">{error}</p> : <>
+    {loading ? <p className="panel empty-state">در حال دریافت خبرها…</p> : error ? <p className="auth-inline-error" role="alert">{error}</p> : <>
       {featured.length > 0 && <section className="news-featured-section"><div className="section-heading"><div><span className="section-kicker">منتخب</span><h2>خبرهای ویژه</h2></div></div><div className="news-featured-grid">{featured.map(item => <article className="panel news-card news-featured-card" key={item.id}>{item.image_url && <img src={item.image_url} alt="" loading="lazy"/>}<div className="news-card-copy"><small>{item.published_at ? formatIranDateTime(item.published_at) : ''}</small><h3>{item.title}</h3>{item.summary && <p>{item.summary}</p>}{item.body && <details><summary>ادامه خبر</summary><p className="news-body">{item.body}</p></details>}</div></article>)}</div></section>}
       <section className="news-archive-section"><div className="section-heading"><div><span className="section-kicker">آرشیو</span><h2>همه خبرها</h2></div></div>{archive.length ? <div className="news-archive-list">{archive.map(item => <article className="panel news-card news-archive-card" key={item.id}>{item.image_url && <img src={item.image_url} alt="" loading="lazy"/>}<div className="news-card-copy"><small>{item.published_at ? formatIranDateTime(item.published_at) : ''}</small><h3>{item.title}</h3>{item.summary && <p>{item.summary}</p>}{item.body && <details><summary>متن کامل</summary><p className="news-body">{item.body}</p></details>}</div>{owner && <div className="news-admin-actions"><button type="button" className="outline-button" onClick={() => startEdit(item)} disabled={busy}><Pencil size={14}/> ویرایش</button><button type="button" className="reject-button" onClick={() => void remove(item)} disabled={busy}><Trash2 size={14}/> حذف</button></div>}</article>)}</div> : <div className="panel empty-state"><FileText size={28}/><strong>هنوز خبر منتشرشده‌ای وجود ندارد</strong><span>به‌محض انتشار خبر رسمی، اینجا در دسترس خواهد بود.</span></div>}</section>
     </>}
