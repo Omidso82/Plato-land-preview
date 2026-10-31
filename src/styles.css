@@ -393,3 +393,6 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 .notification-item span,.notification-item small{color:#b8b0a2;font-size:.78rem;line-height:1.7}
 .notification-item em{display:flex;align-items:center;gap:4px;color:var(--gold,#d6b35b);font-size:.72rem;font-style:normal}
 @media(max-width:600px){.notification-popover{position:fixed;top:70px;right:12px}}
+
+.mixed-game-tags span{display:inline-flex;align-items:center;gap:6px}
+.mixed-game-tags img{width:20px;height:20px;border-radius:50%;object-fit:cover}
