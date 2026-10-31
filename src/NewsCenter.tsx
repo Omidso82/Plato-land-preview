@@ -60,7 +60,7 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
     (!item.featured_ends_at || new Date(item.featured_ends_at).getTime() > now)
   ), [items, now]);
   const archive = useMemo(() => items.filter(item => item.status === 'published'), [items]);
-  if (featuredOnly && !loading && (error || featured.length === 0)) return null;
+  if (featuredOnly && (loading || error || featured.length === 0)) return null;
 
   function startEdit(item: NewsItem) {
     setEditingId(item.id);
