@@ -597,3 +597,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 ### News content versioning
 - Added owner-only `site_news_versions` history. Changes and deletions preserve the prior title, summary, body, image reference, publication state, featured window, scheduled publication and expiry values.
 - While editing an existing news item, the owner can review the latest 20 versions and restore one. The restore is itself versioned, preserving the state being replaced.
+### Player display-name protection and registration confirmation
+- Changed the self-service profile form so display name is read-only; players can still update their Plato ID and profile image.
+- Added a database trigger that rejects self-service display-name changes. The site owner retains the ability to correct a display name.
+- Registration success now uses the exact approved Persian confirmation: «درخواست شما با موفقیت ثبت شد و در انتظار بررسی است».
