@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
-import { ClipboardList, ExternalLink, RefreshCw } from 'lucide-react';
+import { ClipboardList, ExternalLink, RefreshCw, Trash2 } from 'lucide-react';
 
 type Row = {
   id: string; tournament_id: string; status: string; registration_type: string;
   is_reserve: boolean; reserve_position: number | null; slot_count: number; display_name: string | null;
   plato_id: string | null; team_name: string | null; created_at: string;
-  evidenceUrl?: string; members?: { display_name: string; plato_id: string; is_captain: boolean }[];
+  evidenceUrl?: string; evidencePath?: string; members?: { display_name: string; plato_id: string; is_captain: boolean }[];
 };
 
 export default function TournamentManagerDashboard({ owner = false }: { owner?: boolean }) {
@@ -58,7 +58,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
           const { data, error } = await supabase.storage.from('registration-evidence').createSignedUrl(path, 900);
           if (!error) evidenceUrl = data?.signedUrl || '';
         }
-        return { ...r, evidenceUrl, members: membersMap.get(r.id) || [] };
+        return { ...r, evidenceUrl, evidencePath: path || '', members: membersMap.get(r.id) || [] };
       }));
       setRows(hydrated);
     } catch (e: any) { setError(e?.message || 'بارگذاری پنل مدیر ناموفق بود.'); }
@@ -78,6 +78,30 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
       await load();
     } catch (e: any) { setError(e?.message || 'ثبت نتیجه بررسی ناموفق بود.'); }
     finally { setBusy(''); }
+  }
+
+  async function removeRegistration(row: Row) {
+    if (!supabase) return;
+    const label = row.registration_type === 'team'
+      ? 'تیم «' + (row.team_name || 'بدون نام') + '»'
+      : 'بازیکن «' + (row.display_name || row.plato_id || 'بدون نام') + '»';
+    if (!window.confirm(label + ' از این مسابقه حذف شود؟ این کار ثبت‌نام و اعضای تیم را از مسابقه حذف می‌کند و ظرفیت آزادشده به نفر ذخیره بعدی می‌رسد.')) return;
+    setBusy(row.id); setError('');
+    try {
+      const { data: storagePath, error: removeError } = await supabase.rpc('remove_tournament_registration', {
+        p_registration_id: row.id
+      });
+      if (removeError) throw removeError;
+      if (storagePath) {
+        const { error: storageError } = await supabase.storage.from('registration-evidence').remove([storagePath]);
+        if (storageError) {
+          setError('ثبت‌نام حذف شد، اما پاک‌سازی فایل خصوصی تصویر با خطا روبه‌رو شد: ' + storageError.message);
+        }
+      }
+      await load();
+    } catch (e: any) {
+      setError(e?.message || 'حذف ثبت‌نام از مسابقه ناموفق بود.');
+    } finally { setBusy(''); }
   }
 
   const assignedIds = Object.keys(tournaments);
@@ -104,10 +128,13 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
                 {r.is_reserve && <small>صف ذخیره · نوبت {r.reserve_position || '—'}</small>}
                 {r.evidenceUrl && <a href={r.evidenceUrl} target="_blank" rel="noreferrer"><ExternalLink size={13}/> مشاهده تصویر خصوصی</a>}
               </div>
-              {r.status === 'pending' && <div className="registration-actions">
-                {!r.is_reserve && <button type="button" disabled={busy === r.id} onClick={() => void review(r.id, true)}>تأیید</button>}
-                <button type="button" className="reject-button" disabled={busy === r.id} onClick={() => void review(r.id, false)}>رد</button>
-              </div>}
+              <div className="registration-actions">
+                {r.status === 'pending' && <>
+                  {!r.is_reserve && <button type="button" disabled={busy === r.id} onClick={() => void review(r.id, true)}>تأیید</button>}
+                  <button type="button" className="reject-button" disabled={busy === r.id} onClick={() => void review(r.id, false)}>رد</button>
+                </>}
+                <button type="button" className="reject-button" disabled={busy === r.id} onClick={() => void removeRegistration(r)}><Trash2 size={13}/> حذف از مسابقه</button>
+              </div>
             </div>
           )}
         </section>;
