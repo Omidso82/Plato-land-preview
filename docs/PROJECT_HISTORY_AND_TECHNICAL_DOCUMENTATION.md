@@ -551,3 +551,4 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Added the OwnerExports section to the owner-only admin navigation. Data is queried from the existing Supabase database at export time; no duplicate data store or browser persistence is used.
 - Removed the catalog delete action and dropped the `site_games_owner_delete` RLS policy. Games must be disabled to hide them; catalog rows and tournament history are retained.
 - Applied migration 20261031215015_preserve_game_catalog_history_no_delete. The migration does not delete or alter any game or tournament record.
+- GitHub Actions run 41251338812 passed both `npm run typecheck` and `npm run build` for the owner workspace, mixed-competition editor, game-history protection, and CSV export changes.
