@@ -490,3 +490,11 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Centralized Jalali date parsing in src/iranDate.ts and switched the existing owner date input to use the same exported conversion helper used by featured-news scheduling.
 - This reduces duplicate calendar conversion logic and keeps date input/storage consistent across the owner forms.
 - GitHub Actions Build and typecheck run 41242711435 completed successfully for commit 2e8a4eccc8295eb8b4a52a1e46806fe12386a22a.
+### Editable About and Guide pages
+- Added public.site_pages with two allowed slugs (about, guide), JSONB section content, owner draft state, and separate published snapshot columns.
+- Public visitors can read only the published snapshot; anonymous privileges are limited to the six public display columns and all anonymous write privileges are revoked.
+- Owner can edit page title/introduction, add or remove sections, save as draft, publish, or delete saved content and return to the default page copy.
+- Saving a draft preserves the last published snapshot; the public page continues to show the prior published version until the owner publishes the new content.
+- The About and Guide public pages now load from Supabase with safe default content when no saved page exists. Owner admin navigation includes a dedicated Pages section for both editors.
+- Applied migrations 20261031211556_create_owner_managed_site_pages and 20261031211717_preserve_published_site_page_versions. Read-back confirmed RLS policies and anonymous SELECT-only column grants.
+- GitHub Actions Build and typecheck run 41242992252 completed successfully for commit c5f4169496a53f9196ffff72db3f609ccc02f17b.
