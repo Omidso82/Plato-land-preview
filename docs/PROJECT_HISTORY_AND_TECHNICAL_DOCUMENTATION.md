@@ -631,8 +631,8 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - No operational tournament, registration, result, profile or evidence rows were modified by these migrations.
 
 ### Migration history reconciliation
-- Primary Supabase project `dfrppbapaaydbjeflozw` now reports 75 applied migrations.
-- 55 repository migration files now use the exact version IDs recorded in the primary migration ledger.
+- Primary Supabase project `dfrppbapaaydbjeflozw` now reports 78 applied migrations.
+- 58 repository migration files now use the exact version IDs recorded in the primary migration ledger.
 - Twenty earlier applied baseline migrations have no corresponding SQL source file in this repository. Two implementation files whose migration versions were not in the primary ledger were moved to `supabase/migrations_reviewed_not_applied/` after their target objects/policies were verified as already present.
 - `supabase/migrations/README.md` records this state. Do not run `supabase db push` or replay historical migrations until the missing baseline source/history is reconciled. No migration was replayed as a duplicate.
 
@@ -687,7 +687,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 
 ### Migration ledger
 - Primary Supabase project `dfrppbapaaydbjeflozw`: 75 applied migrations.
-- Repository: 55 SQL migration files, all 55 version/name pairs match the primary migration ledger.
+- Repository: 58 SQL migration files, all 55 version/name pairs match the primary migration ledger.
 - Twenty older applied baseline migrations remain without source SQL files in the repository. Do not run `supabase db push` or replay migrations until this history is recovered/reconstructed.
 - Two non-ledger historical SQL files remain archived under `supabase/migrations_reviewed_not_applied/`.
 
@@ -719,3 +719,14 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - The manager section-permission test was transaction-scoped and rolled back. There are no real manager assignments in production at this time.
 - Browser E2E and independent live-domain checks remain pending because no authenticated browser automation capability was available in this session.
 - Updated artifacts: `docs/QA_MASTER_CHECKLIST_v1.2.md`, `docs/TECHNICAL_HANDOVER_v2.6_2026-11-01.md`, and `supabase/migrations/README.md`.
+
+
+## 1 November 2026 — Atomic manager permission save and final permission hardening
+- Added `public.save_tournament_manager_access(uuid,jsonb)` in migration `20261101004447_save_tournament_manager_permissions_atomically`. It validates a maximum of two managers, unique account IDs and the four allowed section keys; replaces assignments and grants atomically.
+- The RPC was changed to SECURITY INVOKER in migration `20261101004534_make_manager_permission_save_rpc_invoker`, avoiding an additional exposed SECURITY DEFINER warning. The current owner is checked through `private.has_role`; all writes are governed by owner-only RLS policies.
+- Migration `20261101004548_grant_manager_access_update_for_owner_rpc` grants UPDATE privilege on `tournament_manager_access` to authenticated, while the RLS UPDATE policy remains owner-only.
+- `src/App.tsx` now saves manager assignments through the single atomic RPC and excludes the site owner from manager candidates.
+- `src/TournamentManagerOperations.tsx` now preserves a completed match's status when its schedule is edited and rejects missing score fields. `src/TournamentManagerDashboard.tsx` preserves private-file cleanup warnings after reloading registration data.
+- A transaction-scoped test executed the owner RPC as authenticated owner, switched to a temporary non-owner account, verified `tournament_admin`, verified groups-only permission and denial of registrations/schedule/results, then rolled back. No real manager assignment was left in production.
+- Primary database now reports 78 applied migrations; repository has 58 matching SQL migration files; 20 older applied baseline files remain missing from the source tree.
+- Security Advisor remains at two existing SECURITY DEFINER RPC warnings plus leaked-password protection disabled; the new save RPC is SECURITY INVOKER.
