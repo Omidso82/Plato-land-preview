@@ -3,34 +3,41 @@
 Last reconciled: 2026-11-01.
 
 - Primary Supabase project: `dfrppbapaaydbjeflozw`.
-- The 60 SQL files in `supabase/migrations/` have version prefixes matching 60 migrations recorded as applied in the primary database.
-- The primary database has 80 applied migrations. Twenty earlier applied migrations are not present as SQL files in this repository; their source must be recovered or reconstructed before treating this directory as a complete bootstrap history.
+- The primary database has **80 applied migrations**.
+- The repository contains **60 SQL files** in `supabase/migrations/`; all 60 version/name pairs match entries in the primary database migration ledger.
+- **20 earlier applied baseline migrations** are not present as SQL files in this repository. Recover or reconstruct their source before treating this directory as a complete bootstrap history.
 - Do not run `supabase db push` or replay historical migrations against the primary database until the missing baseline history is reconciled.
-- Fifteen migrations added during this implementation phase cover Series 1 privacy, safe public reads, anonymous privilege reduction, public-policy consolidation, tournament-manager section permissions, assigned-manager role inference, confirmed-participant reads, and foreign-key indexing. All nine exact production version IDs are committed.
+- Two historical SQL files not present in the primary ledger are archived under `supabase/migrations_reviewed_not_applied/`. Their target effects were already present in the primary database; do not execute them.
 
-Two historical SQL files that are not present in the primary migration ledger have been moved to `supabase/migrations_reviewed_not_applied/`. Their target objects/policies already exist in the primary database. They are retained for audit context only and must not be run against the primary database as duplicates.
+## Changes represented by the latest implementation phase
 
-For every future schema change:
-1. Inspect the primary migration ledger first.
-2. Create one new migration using the Supabase CLI.
-3. Apply it once to the primary project only after reviewing its SQL.
-4. Commit the exact generated versioned filename and update this ledger.
-5. Never replay an applied migration or create a second database for testing.
+The 15 migrations added during this implementation phase cover Series 1 privacy, safe public reads, anonymous privilege reduction, public policy consolidation, tournament-manager section permissions, assigned-manager role inference, confirmed-participant reads, foreign-key indexing, atomic manager assignment, Storage evidence cleanup and notification policy hardening. The exact latest manager-related migration IDs are listed in `docs/TECHNICAL_HANDOVER_v2.7_2026-11-01.md`.
 
+## Safe procedure for future schema changes
 
-## Tournament manager permission model — 1 November 2026
+1. Inspect the primary database migration ledger first.
+2. Create a new migration with the Supabase CLI; do not invent a version prefix.
+3. Review the SQL before applying it.
+4. Apply only the new migration once to the primary project.
+5. Commit the exact generated versioned SQL file and update this ledger.
+6. Never replay an applied migration or create a second database for testing.
 
-- The primary database uses `public.tournament_manager_section_permissions` for per-tournament manager permissions. The legacy `public.user_admin_permissions` remains a separate global permission table and is not reused for tournament-scoped grants.
-- `public.tournament_manager_access.permissions_configured` distinguishes legacy assignments from explicitly configured permissions. Existing assignments with this flag false retain their previous access until the owner reviews and saves the assignment. New assignments are explicitly configured.
-- The allowed section keys are `registrations`, `groups`, `schedule`, and `results`.
-- `private.can_manage_tournament_section(uuid,text)` enforces these grants in RLS and in the registration-review/removal RPCs.
-- Group, schedule and results managers may read only confirmed, non-reserve participant data; pending registration requests, evidence rows and signed evidence files remain restricted to registration managers.
-- The owner may assign at most two managers per tournament through the owner UI.
-- A manager's site role is inferred from an active tournament assignment by `public.current_user_role()`; no global owner role is granted to a manager.
-- The new table is protected by RLS. Only the owner can change grants; a manager can read only their own scoped grants.
-- A transaction-scoped SQL test using a temporary non-owner profile verified that a manager with only the `groups` grant receives the manager role, can manage groups, and is denied registrations, schedule and results. The transaction was rolled back; no manager assignments or permission rows were persisted.
+## Tournament-manager permission model — 1 November 2026
 
-- The owner saves manager assignments and section grants through `public.save_tournament_manager_access(uuid,jsonb)`, a SECURITY INVOKER RPC. It relies on owner-only table privileges/RLS and is atomic; its EXECUTE grant is limited to authenticated/service_role. The authenticated role has UPDATE table privilege on `tournament_manager_access`, with the RLS UPDATE policy still restricted to owner.
+- Per-tournament grants use `public.tournament_manager_section_permissions`; legacy `public.user_admin_permissions` remains a separate global permission table.
+- `public.tournament_manager_access.permissions_configured` distinguishes legacy assignments from explicitly configured grants. Existing assignments with false retain legacy access until the owner reviews and saves them.
+- Allowed keys: `registrations`, `groups`, `schedule`, `results`.
+- `private.can_manage_tournament_section(uuid,text)` enforces grants in RLS and relevant registration RPCs.
+- Group/schedule/results managers may read only confirmed, non-reserve participant data; pending requests and private evidence remain restricted to registrations managers.
+- Owner UI allows at most two managers per tournament.
+- `public.current_user_role()` infers `tournament_admin` from an active assignment; it does not grant owner access.
+- The owner saves assignments through `public.save_tournament_manager_access(uuid,jsonb)`, a SECURITY INVOKER RPC. It is atomic, checks owner authorization, and relies on owner-only RLS.
+- A transaction-scoped groups-only test verified role inference, positive groups permission and denial of registrations/schedule/results; transaction rolled back and left no assignment.
+- Migration `20261101004817_restore_registration_evidence_cleanup_for_scoped_managers` restores scoped Storage evidence cleanup after registration metadata deletion.
+- Migration `20261101004832_scope_notification_inserts_to_authorized_manager_sections` consolidates notification INSERT: self-notification or manager notification only with registrations/schedule/results permission for the participant's tournament.
 
-- Migration `20261101004817_restore_registration_evidence_cleanup_for_scoped_managers` restores the scoped-manager fallback needed to delete the private Storage object after its registration/evidence metadata has been removed.
-- Migration `20261101004832_scope_notification_inserts_to_authorized_manager_sections` consolidates notification INSERT policy: users may create their own notification; managers may create notifications for a tournament participant only with registrations, schedule or results permission. The broad legacy manager INSERT policy is removed.
+## Current implementation verification
+
+- Latest branch HEAD at reconciliation: `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23`.
+- GitHub Actions run `41258556282` for workflow `Build and typecheck` completed successfully on that HEAD.
+- No migration was replayed as a duplicate; no operational data was intentionally deleted or rewritten.
