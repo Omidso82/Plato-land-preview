@@ -758,3 +758,11 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - GitHub Actions workflow `Build and typecheck` run `41258556282` completed successfully on the current HEAD.
 - The current HEAD follows the previously code-verified commit `c72b92648fdd69585aa1214d2ca9f386d0981fd3`; this later commit is documentation-only. No new code, schema change, production data change, merge or deployment was performed as part of this documentation update.
 - Outstanding gates remain: real-browser E2E with owner/manager/player/anonymous roles, private Storage signed-URL testing, full Jalali/Tehran browser QA, 20 missing baseline SQL sources, practical negative security tests, Auth leaked-password protection, and explicit release approval.
+
+
+## تکمیل ثبت وضعیت پس از یکپارچه‌سازی مستندات — ۱ نوامبر ۲۰۲۶
+- آخرین HEAD بررسی‌شده پیش از این اصلاح مستندات: `24ea7b91bf3c55ed29e9a2ac37280b42e9dce5df`؛ PR #16 به همین شاخه اشاره می‌کرد.
+- روی آن HEAD، GitHub Actions run `41259613218` با وضعیت `in_progress` مشاهده شد؛ بنابراین نتیجه نهایی آن در این لحظه هنوز قابل اعلام نبود.
+- آخرین CI تکمیل‌شده و موفقِ قابل استناد پیش از این اجرا: run `41258556282` روی commit `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23`.
+- تغییرات انجام‌شده پس از commit کدِ تأییدشده، فقط مستنداتی بوده‌اند؛ هیچ فایل کد، migration، داده عملیاتی، main یا دامنه در این مرحله تغییر نکرده است.
+- وضعیت CI برای هر commit جدید باید از GitHub Actions همان commit خوانده شود؛ موفقیت یک commit را نباید به commit بعدی تعمیم داد.
