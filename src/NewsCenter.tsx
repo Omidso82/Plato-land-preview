@@ -20,6 +20,13 @@ type NewsItem = {
   updated_at: string;
 };
 
+function isPubliclyVisible(item: NewsItem, now: number) {
+  if (item.status !== 'published') return false;
+  const publishAt = item.publish_at ? new Date(item.publish_at).getTime() : 0;
+  const expiresAt = item.expires_at ? new Date(item.expires_at).getTime() : Number.POSITIVE_INFINITY;
+  return publishAt <= now && expiresAt > now;
+}
+
 const emptyForm = { title: '', summary: '', body: '', image_url: '', status: 'draft' as 'draft' | 'published', featured: false, featured_start_date: '', featured_start_time: '', featured_end_date: '', featured_end_time: '', publish_date: '', publish_time: '', expiry_date: '', expiry_time: '' };
 
 export default function NewsCenter({ owner = false, featuredOnly = false }: { owner?: boolean; featuredOnly?: boolean }) {
@@ -61,12 +68,12 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
   }, [load]);
 
   const featured = useMemo(() => items.filter(item =>
-    item.status === 'published' && item.featured &&
+    isPubliclyVisible(item, now) && item.featured &&
     (!item.featured_starts_at || new Date(item.featured_starts_at).getTime() <= now) &&
     (!item.featured_ends_at || new Date(item.featured_ends_at).getTime() > now)
   ), [items, now]);
   const archiveYears = useMemo(() => [...new Set(items.filter(item => item.status === 'published' && item.published_at).map(item => formatIranJalaliDateInput(item.published_at!).slice(0,4)))].filter(Boolean).sort((a,b)=>b.localeCompare(a)), [items]);
-  const archive = useMemo(() => items.filter(item => item.status === 'published' && (archiveYear === 'all' || (item.published_at && formatIranJalaliDateInput(item.published_at).startsWith(archiveYear))) && (!archiveSearch.trim() || [item.title,item.summary,item.body].join(' ').toLocaleLowerCase('fa').includes(archiveSearch.trim().toLocaleLowerCase('fa')))), [items, archiveSearch, archiveYear]);
+  const archive = useMemo(() => items.filter(item => isPubliclyVisible(item, now) && (archiveYear === 'all' || (item.published_at && formatIranJalaliDateInput(item.published_at).startsWith(archiveYear))) && (!archiveSearch.trim() || [item.title,item.summary,item.body].join(' ').toLocaleLowerCase('fa').includes(archiveSearch.trim().toLocaleLowerCase('fa')))), [items, archiveSearch, archiveYear, now]);
   if (featuredOnly && (loading || error || featured.length === 0)) return null;
 
   async function loadVersions(newsId:string) {
