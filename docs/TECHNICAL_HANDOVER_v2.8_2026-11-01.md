@@ -1,7 +1,7 @@
 # PLATO LAND Tournament Platform — Technical Handover v2.8
 
 تاریخ ثبت: ۱ نوامبر ۲۰۲۶  
-این نسخه وضعیت جاری شاخه کاری را جایگزین وضعیت‌های عددی قدیمی‌تر در v2.6 می‌کند. v2.6 برای سابقه نگهداری می‌شود؛ مرجع جاری این سند و Implementation Register v1.0 است.
+این نسخه وضعیت جاری شاخه کاری را جایگزین وضعیت‌های عددی قدیمی‌تر در v2.7 می‌کند. نسخه‌های v2.6 و v2.7 برای سابقه نگهداری می‌شوند؛ مرجع جاری این سند و Implementation Register v1.1 است.
 
 ## 1. شناسه‌ها و منبع حقیقت
 - Repository: `Omidso82/Plato-land-preview`
@@ -98,7 +98,7 @@
 
 ## 7. وضعیت انتشار و موارد باز
 - PR #16 باز، Draft و Unmerged است؛ main تغییر نکرده و deploy این مرحله انجام نشده است.
-- موارد باز اصلی در QA Master Checklist v1.3 و Implementation Register v1.0 ثبت شده‌اند؛ از جمله:
+- موارد باز اصلی در QA Master Checklist v1.4 و Implementation Register v1.1 ثبت شده‌اند؛ از جمله:
   1. آزمون کامل مرورگر با مالک، مدیر مجاز، مدیر غیرمجاز، بازیکن و anon.
   2. آزمون واقعی upload/read/delete فایل خصوصی و signed URL.
   3. تکمیل تمام الزامات UI/UX v5.4 تا v10.7؛ از جمله Backup/Restore، File Manager، پیام/پشتیبانی، بازخورد، شکایت، اعتراض، رویداد ویژه، حریم خصوصی، عملیات گروهی، راهنما، نظرسنجی، قفل اضطراری و analytics.
