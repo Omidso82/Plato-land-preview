@@ -819,3 +819,11 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Five commits after that tested code commit changed only README/documentation files; GitHub compare confirmed no code files changed after the successful build.
 - The separate Pages workflow run `41261452472` was cancelled and did not deploy the working branch.
 - PR #16 remains Draft/Unmerged pending the explicit release step; no live-domain update has yet occurred.
+
+
+## 1 November 2026 — Production release trigger after PR #16 merge
+
+- PR #16 merged into `main` at merge commit `5cec7a5cc3637742802372dc6e8aac5d3b839100`.
+- The code in that merge passed TypeScript and production Build in GitHub Actions run `41261452485` on code commit `b342a881865cd75fa2a2a3efe435345880d13d60`; later PR commits were documentation-only.
+- This documentation-only main commit ensures the existing push-to-main Pages workflow is invoked for the merged release.
+- Production deployment status must be confirmed from the resulting GitHub Actions run and live-domain response; this note does not itself assert deployment success.
