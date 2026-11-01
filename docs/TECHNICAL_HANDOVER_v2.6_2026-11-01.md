@@ -86,6 +86,9 @@
   - `20261101003936_use_dedicated_tournament_manager_section_permissions`
   - `20261101004110_allow_schedule_results_managers_confirmed_participant_reads`
   - `20261101004212_index_tournament_manager_permission_foreign_keys`
+  - `20261101004447_save_tournament_manager_permissions_atomically`
+  - `20261101004534_make_manager_permission_save_rpc_invoker`
+  - `20261101004548_grant_manager_access_update_for_owner_rpc`
 
 ## 7. Advisorها و هشدارهای باقی‌مانده
 
@@ -128,3 +131,11 @@
 - پنل مالک و مدیر مسابقات جدا؛ دکمه سپر فقط برای مالک.
 - قابلیت تأییدنشده بدون اجازه اجرا نشود.
 - Commit، Build، Deploy و مرورگر واقعی چهار وضعیت جداگانه‌اند؛ هرکدام فقط با شاهد واقعی تأیید شوند.
+
+
+### Atomic manager permission assignment — ۱ نوامبر ۲۰۲۶
+- `public.save_tournament_manager_access(uuid,jsonb)` now runs as SECURITY INVOKER and is granted only to authenticated/service_role; the function verifies the current caller is owner and uses owner-only table RLS for all writes.
+- Assignment replacement and permission inserts occur within one database transaction. The RPC enforces at most two managers, unique user IDs and the four allowed permission keys.
+- `authenticated` has UPDATE privilege on `tournament_manager_access`, but the UPDATE policy still allows only the owner.
+- A transaction-scoped test with owner + temporary non-owner manager successfully called the RPC, verified `tournament_admin` role and groups-only access, verified denial of registrations/schedule/results, then rolled back.
+- The owner is filtered out of the manager candidate list.
