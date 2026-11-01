@@ -117,7 +117,8 @@ export default function TournamentManagerOperations({section,owner=false}:{secti
   const {data:{user},error:userError}=await supabase.auth.getUser();if(userError||!user){setError(userError?.message||'نشست مدیریت معتبر نیست.');return;}
   setBusy('schedule');setError('');setNotice('');
   try{
-   const payload={tournament_id:selectedId,round_name:roundName.trim()||null,player_one_id:playerOne,player_two_id:playerTwo,scheduled_at:iranJalaliDateTimeToIso(scheduleDate,scheduleTime),status:'scheduled',reported_by:user.id,updated_at:new Date().toISOString()};
+   const existingMatch=editingMatchId?matches.find(m=>m.id===editingMatchId):null;
+   const payload={tournament_id:selectedId,round_name:roundName.trim()||null,player_one_id:playerOne,player_two_id:playerTwo,scheduled_at:iranJalaliDateTimeToIso(scheduleDate,scheduleTime),status:existingMatch?.status||'scheduled',reported_by:user.id,updated_at:new Date().toISOString()};
    const result=editingMatchId
     ? await supabase.from('matches').update(payload).eq('id',editingMatchId)
     : await supabase.from('matches').insert(payload);
@@ -130,7 +131,8 @@ export default function TournamentManagerOperations({section,owner=false}:{secti
  async function saveMatchResult(m:Match){
   if(!supabase||!selectedId||!canUse)return;
   const draft=matchDrafts[m.id];const score1=Number(draft?.score1),score2=Number(draft?.score2),winnerId=draft?.winnerId||'';
-  if(!Number.isInteger(score1)||score1<0||!Number.isInteger(score2)||score2<0){setError('نتیجه هر دو بازیکن باید عدد صحیح صفر یا بیشتر باشد.');return;}
+  if(!draft||draft.score1.trim()===''||draft.score2.trim()===''||!Number.isInteger(score1)||score1<0||!Number.isInteger(score2)||score2<0){setError('نتیجه هر دو بازیکن باید به‌صورت عدد صحیح صفر یا بیشتر وارد شود.');return;}
+  if(!m.player_one_id||!m.player_two_id){setError('برای ثبت نتیجه باید هر دو بازیکن مسابقه مشخص شده باشند.');return;}
   if(!winnerId||![m.player_one_id,m.player_two_id].includes(winnerId)){setError('برنده این مسابقه را مشخص کن.');return;}
   setBusy(m.id);setError('');setNotice('');
   try{
