@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
 import { formatIranDateTime, formatIranJalaliDateInput, formatIranClockInput, iranJalaliDateTimeToIso } from './iranDate';
 import { FileText, Newspaper, Pencil, RefreshCw, Save, Trash2 } from 'lucide-react';
+import JalaliDatePicker from './JalaliDatePicker';
 
 type NewsItem = {
   id: string;
@@ -118,13 +119,14 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
       if (authError) throw authError;
       if (!user) throw new Error('نشست مالک معتبر نیست.');
       const current = items.find(item => item.id === editingId);
-      const hasPublish = !!(form.publish_date.trim() || form.publish_time.trim());
+      const hasPublishDate = !!form.publish_date.trim();
       const hasExpiry = !!(form.expiry_date.trim() || form.expiry_time.trim());
-      if (hasPublish && (!form.publish_date.trim() || !form.publish_time.trim())) throw new Error("برای زمان انتشار، تاریخ شمسی و ساعت ایران را هر دو وارد کن.");
-      if (hasExpiry && (!form.expiry_date.trim() || !form.expiry_time.trim())) throw new Error("برای زمان انقضا، تاریخ شمسی و ساعت ایران را هر دو وارد کن.");
-      const publishAt = hasPublish ? iranJalaliDateTimeToIso(form.publish_date, form.publish_time) : (form.status === "published" ? new Date().toISOString() : null);
-      const expiresAt = hasExpiry ? iranJalaliDateTimeToIso(form.expiry_date, form.expiry_time) : null;
-      if (hasPublish && !publishAt) throw new Error("تاریخ یا ساعت انتشار معتبر نیست.");
+      if (hasExpiry && !form.expiry_date.trim()) throw new Error("برای زمان انقضا، تاریخ شمسی را وارد کن.");
+      const publishTime = form.publish_time.trim() || "00:00";
+      const publishAt = hasPublishDate ? iranJalaliDateTimeToIso(form.publish_date, publishTime) : (form.status === "published" ? new Date().toISOString() : null);
+      const expiresAt = hasExpiry ? iranJalaliDateTimeToIso(form.expiry_date, form.expiry_time.trim() || "23:59") : null;
+      if (hasPublishDate && !publishAt) throw new Error("تاریخ انتشار شمسی معتبر نیست.");
+
       if (hasExpiry && !expiresAt) throw new Error("تاریخ یا ساعت انقضا معتبر نیست.");
       if (publishAt && expiresAt && new Date(expiresAt).getTime() <= new Date(publishAt).getTime()) throw new Error("زمان انقضا باید بعد از زمان انتشار باشد.");
       const hasStart = !!(form.featured_start_date.trim() || form.featured_start_time.trim());
@@ -188,9 +190,9 @@ export default function NewsCenter({ owner = false, featuredOnly = false }: { ow
         <label>متن کامل خبر<textarea rows={6} value={form.body} onChange={e => setForm(v => ({ ...v, body: e.target.value }))} placeholder="متن کامل خبر یا اطلاعیه" /></label>
         <label>لینک تصویر (اختیاری)<input type="url" value={form.image_url} onChange={e => setForm(v => ({ ...v, image_url: e.target.value }))} placeholder="https://…" /></label>
         <label>وضعیت انتشار<select value={form.status} onChange={e => setForm(v => ({ ...v, status: e.target.value as 'draft' | 'published' }))}><option value="draft">پیش‌نویس</option><option value="published">انتشار عمومی</option></select></label>
-        {form.status === "published" && <div className="news-feature-window"><strong>زمان‌بندی انتشار و انقضا</strong><p className="form-footnote">اگر زمان انتشار را خالی بگذاری، خبر بلافاصله منتشر می‌شود. تاریخ‌ها شمسی و ساعت‌ها بر اساس تهران هستند. زمان انقضا اختیاری است.</p><div className="form-grid"><label>تاریخ انتشار<input type="text" dir="ltr" inputMode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" value={form.publish_date} onChange={e => setForm(v => ({ ...v, publish_date: e.target.value }))}/></label><label>ساعت انتشار<input type="time" dir="ltr" value={form.publish_time} onChange={e => setForm(v => ({ ...v, publish_time: e.target.value }))}/></label></div><div className="form-grid"><label>تاریخ انقضا (اختیاری)<input type="text" dir="ltr" inputMode="numeric" placeholder="۱۴۰۵/۰۸/۳۰" value={form.expiry_date} onChange={e => setForm(v => ({ ...v, expiry_date: e.target.value }))}/></label><label>ساعت انقضا<input type="time" dir="ltr" value={form.expiry_time} onChange={e => setForm(v => ({ ...v, expiry_time: e.target.value }))}/></label></div></div>}
+        {form.status === "published" && <div className="news-feature-window"><strong>زمان‌بندی انتشار و انقضا</strong><p className="form-footnote">اگر تاریخ انتشار را خالی بگذاری، خبر بلافاصله منتشر می‌شود. در صورت انتخاب تاریخ و خالی‌بودن ساعت، ساعت ۰۰:۰۰ تهران در نظر گرفته می‌شود. زمان انقضا اختیاری است؛ در صورت انتخاب تاریخ و خالی‌بودن ساعت، پایان همان روز ساعت ۲۳:۵۹ خواهد بود.</p><div className="form-grid"><label>تاریخ انتشار (اختیاری)<JalaliDatePicker value={form.publish_date} onChange={value => setForm(v => ({ ...v, publish_date: value }))} placeholder="۱۴۰۵/۰۸/۱۵" /></label><label>ساعت انتشار<input type="time" dir="ltr" value={form.publish_time} onChange={e => setForm(v => ({ ...v, publish_time: e.target.value }))}/></label></div><div className="form-grid"><label>تاریخ انقضا (اختیاری)<JalaliDatePicker value={form.expiry_date} onChange={value => setForm(v => ({ ...v, expiry_date: value }))} placeholder="۱۴۰۵/۰۸/۳۰" /></label><label>ساعت انقضا<input type="time" dir="ltr" value={form.expiry_time} onChange={e => setForm(v => ({ ...v, expiry_time: e.target.value }))}/></label></div></div>}
         <label className="check-row"><input type="checkbox" checked={form.featured} onChange={e => setForm(v => ({ ...v, featured: e.target.checked }))}/><span>نمایش به‌عنوان خبر ویژه</span></label>
-        {form.featured && <div className="news-feature-window"><p className="form-footnote">زمان‌ها بر اساس ساعت ایران هستند؛ تاریخ را شمسی وارد کن. خالی گذاشتن شروع یا پایان به معنی بدون محدودیت است.</p><div className="form-grid"><label>تاریخ شروع نمایش ویژه<input type="text" dir="ltr" inputMode="numeric" placeholder="۱۴۰۵/۰۸/۱۰" value={form.featured_start_date} onChange={e => setForm(v => ({ ...v, featured_start_date: e.target.value }))}/></label><label>ساعت شروع (ایران)<input type="time" dir="ltr" value={form.featured_start_time} onChange={e => setForm(v => ({ ...v, featured_start_time: e.target.value }))}/></label></div><div className="form-grid"><label>تاریخ پایان نمایش ویژه<input type="text" dir="ltr" inputMode="numeric" placeholder="۱۴۰۵/۰۸/۱۵" value={form.featured_end_date} onChange={e => setForm(v => ({ ...v, featured_end_date: e.target.value }))}/></label><label>ساعت پایان (ایران)<input type="time" dir="ltr" value={form.featured_end_time} onChange={e => setForm(v => ({ ...v, featured_end_time: e.target.value }))}/></label></div></div>}
+        {form.featured && <div className="news-feature-window"><p className="form-footnote">زمان‌ها بر اساس ساعت ایران هستند؛ تاریخ را شمسی وارد کن. خالی گذاشتن شروع یا پایان به معنی بدون محدودیت است.</p><div className="form-grid"><label>تاریخ شروع نمایش ویژه<JalaliDatePicker value={form.featured_start_date} onChange={value => setForm(v => ({ ...v, featured_start_date: value }))} placeholder="۱۴۰۵/۰۸/۱۰" /></label><label>ساعت شروع (ایران)<input type="time" dir="ltr" value={form.featured_start_time} onChange={e => setForm(v => ({ ...v, featured_start_time: e.target.value }))}/></label></div><div className="form-grid"><label>تاریخ پایان نمایش ویژه<JalaliDatePicker value={form.featured_end_date} onChange={value => setForm(v => ({ ...v, featured_end_date: value }))} placeholder="۱۴۰۵/۰۸/۱۵" /></label><label>ساعت پایان (ایران)<input type="time" dir="ltr" value={form.featured_end_time} onChange={e => setForm(v => ({ ...v, featured_end_time: e.target.value }))}/></label></div></div>}
         {error && <p className="auth-inline-error" role="alert">{error}</p>}
         <button className="gold-button full-button" type="submit" disabled={busy}>{busy ? 'در حال ذخیره…' : <><Save size={16}/> {editingId ? 'ذخیره تغییرات' : 'ذخیره خبر'}</>}</button>
         {editingId && <button className="outline-button full-button" type="button" onClick={resetForm} disabled={busy}>لغو ویرایش</button>}
