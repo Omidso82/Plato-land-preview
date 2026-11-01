@@ -66,15 +66,21 @@ export default function JalaliDatePicker({ value, onChange, placeholder = '۱۴�
     else setMonth(next);
   }
 
+  function blurDateInput() {
+    inputRef.current?.blur();
+    // iOS Safari may restore input focus after the tap click sequence.
+    window.requestAnimationFrame(() => inputRef.current?.blur());
+  }
+
   function choose(day: number) {
     onChange(`${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`);
     setOpen(false);
-    inputRef.current?.blur();
+    blurDateInput();
   }
 
   function closeCalendar() {
     setOpen(false);
-    inputRef.current?.blur();
+    blurDateInput();
   }
 
   return <div className="jalali-date-picker">
@@ -93,26 +99,26 @@ export default function JalaliDatePicker({ value, onChange, placeholder = '۱۴�
         onChange={event => onChange(formatInput(event.target.value))}
         aria-label={label || 'تاریخ شمسی'}
       />
-      <button type="button" className="jalali-calendar-trigger" onPointerDown={event => event.preventDefault()} onClick={() => { inputRef.current?.blur(); setOpen(v => !v); }} aria-label="باز کردن تقویم شمسی">
+      <button type="button" className="jalali-calendar-trigger" onClick={() => { blurDateInput(); setOpen(true); }} aria-label="باز کردن تقویم شمسی">
         <CalendarDays size={19}/>
       </button>
     </div>
     {open && <div className="jalali-calendar-popover" dir="rtl">
       <div className="jalali-calendar-heading">
-        <button type="button" onPointerDown={event => event.preventDefault()} onClick={() => moveMonth(-1)} aria-label="ماه قبل"><ChevronRight size={19}/></button>
+        <button type="button" onClick={() => moveMonth(-1)} aria-label="ماه قبل"><ChevronRight size={19}/></button>
         <strong>{monthLabel} {yearLabel}</strong>
-        <button type="button" onPointerDown={event => event.preventDefault()} onClick={() => moveMonth(1)} aria-label="ماه بعد"><ChevronLeft size={19}/></button>
+        <button type="button" onClick={() => moveMonth(1)} aria-label="ماه بعد"><ChevronLeft size={19}/></button>
       </div>
       <div className="jalali-calendar-grid">
         {weekdays.map((day, index) => <span className="jalali-weekday" key={index}>{day}</span>)}
         {days.map((day, index) => day === 0
           ? <span className="jalali-calendar-empty" key={'empty-' + index}/>
-          : <button type="button" key={day} className={selected === `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}` ? 'selected' : ''} onPointerDown={event => event.preventDefault()} onClick={() => choose(day)}>{persianDigits(day)}</button>
+          : <button type="button" key={day} className={selected === `${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}` ? 'selected' : ''} onClick={() => choose(day)}>{persianDigits(day)}</button>
         )}
       </div>
       <div className="jalali-calendar-footer">
-        <button type="button" onPointerDown={event => event.preventDefault()} onClick={() => { const today = parts(new Date()); setYear(today.year); setMonth(today.month); onChange(`${today.year}/${String(today.month).padStart(2, '0')}/${String(today.day).padStart(2, '0')}`); closeCalendar(); }}>امروز</button>
-        <button type="button" onPointerDown={event => event.preventDefault()} onClick={closeCalendar}>بستن</button>
+        <button type="button" onClick={() => { const today = parts(new Date()); setYear(today.year); setMonth(today.month); onChange(`${today.year}/${String(today.month).padStart(2, '0')}/${String(today.day).padStart(2, '0')}`); closeCalendar(); }}>امروز</button>
+        <button type="button" onClick={closeCalendar}>بستن</button>
       </div>
     </div>}
   </div>;
