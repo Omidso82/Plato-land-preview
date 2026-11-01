@@ -137,11 +137,13 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
         p_registration_id: row.id
       });
       if (removeError) throw removeError;
+      let cleanupWarning='';
       if (storagePath) {
         const { error: storageError } = await supabase.storage.from('registration-evidence').remove([storagePath]);
-        if (storageError) setError('ثبت‌نام حذف شد، اما پاک‌سازی فایل خصوصی تصویر با خطا روبه‌رو شد: ' + storageError.message);
+        if (storageError) cleanupWarning='ثبت‌نام حذف شد، اما پاک‌سازی فایل خصوصی تصویر با خطا روبه‌رو شد: ' + storageError.message;
       }
       await load();
+      if(cleanupWarning)setError(cleanupWarning);
     } catch (e: any) { setError(e?.message || 'حذف ثبت‌نام از مسابقه ناموفق بود.'); }
     finally { setBusy(''); }
   }
