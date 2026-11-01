@@ -605,3 +605,39 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - GitHub Actions run 41252729515 passed `npm run typecheck` and `npm run build` for the news/page version-history changes.
 - GitHub Actions run 41252810148 passed `npm run typecheck` and `npm run build` after the exact registration confirmation and owner-only display-name enforcement were added.
 - Added a Jalali calendar-year filter to the public tournament archive; the existing tournament/game search continues to apply alongside the year filter.
+
+## 1 November 2026 — Production privacy, RLS and migration-ledger reconciliation
+
+### Series 1 privacy correction
+- The primary database contained two Series 1 tournament records with `status='published'`. The prior anonymous lifecycle policy did not exclude Series 1, and the application public lists had no Series 1 filter.
+- Applied production migration `20261101002024_hide_series_one_from_public_access_and_scope_tournament_managers`.
+- Added `private.is_tournament_public(uuid)`, normalizing Persian/Arabic Yeh/Kaf and English Series 1 labels. Public and ordinary authenticated reads now exclude Series 1 from tournaments, approved registrations, registration members, completed results, public profile rows and the recent-champions view.
+- Owner/assigned-manager access remains available through the scoped management policy. The two existing Series 1 rows were not edited, deleted or rewritten.
+- The same migration changed match and result INSERT/UPDATE/SELECT policies from global `tournament_admin` role checks to `private.can_manage_tournament(tournament_id)`, preventing an unassigned tournament manager from writing another tournament's match/result rows.
+- `src/App.tsx` now filters Series 1 from public homepage/archive/registration lists and requests only the safe public tournament columns.
+
+### Safe public reads and least privilege
+- Applied `20261101002100_grant_safe_public_tournament_read_columns`: anonymous users receive SELECT only on the tournament fields needed by public pages; internal ownership fields remain unavailable.
+- Applied `20261101002231_reduce_anon_access_to_private_tables_and_invoker_role_rpc`: removed unnecessary anonymous SELECT grants from owner notes/tasks, registration evidence, manager permissions, notifications, version history, tournament settings and competition snapshots.
+- Changed `public.current_user_role()` to SECURITY INVOKER. The existing own-role RLS policy is sufficient for the caller to read their own role.
+- Supabase Security Advisor now reports two remaining SECURITY DEFINER RPC warnings (`admin_list_site_users` and `withdraw_tournament_registration`) plus leaked-password protection disabled. The two RPCs retain explicit owner/ownership guards; the Auth password setting still requires separate project Auth configuration and has not been changed here.
+
+### Production verification performed
+- Anonymous SQL-role simulation: zero tournament rows, zero Series 1 rows, and zero public registrations/members/results/champions are visible. The public tournament query now succeeds using the limited column grants.
+- Ordinary authenticated-user simulation: zero Series 1 tournament rows visible.
+- Owner SQL-role simulation: both existing Series 1 records remain visible to the owner.
+- `public.current_user_role()` under the owner authenticated context returned `owner`.
+- Anonymous table SELECT was confirmed unavailable on the private tables listed above.
+- No operational tournament, registration, result, profile or evidence rows were modified by these migrations.
+
+### Migration history reconciliation
+- Primary Supabase project `dfrppbapaaydbjeflozw` now reports 68 applied migrations.
+- 48 repository migration files now use the exact version IDs recorded in the primary migration ledger.
+- Twenty earlier applied baseline migrations have no corresponding SQL source file in this repository. Two implementation files whose migration versions were not in the primary ledger were moved to `supabase/migrations_reviewed_not_applied/` after their target objects/policies were verified as already present.
+- `supabase/migrations/README.md` records this state. Do not run `supabase db push` or replay historical migrations until the missing baseline source/history is reconciled. No migration was replayed as a duplicate.
+
+### Release and QA status
+- PR #16 remains Draft and unmerged. Latest implementation branch head at this record: `4c2677c2127da255bace0620a6f9e25b4feb3c3f`.
+- The last confirmed GitHub Actions success available during this check was run `41256383944` on commit `27788b4889c521e224af29441124527e76be59c8`; it is not evidence for the later App.tsx and migration-ledger commits. A fresh run against the latest head is required.
+- Authenticated owner/manager/player browser E2E, private-file access tests in a real browser, domain deployment and live-domain verification remain outstanding. No deployment or merge was performed.
+- The full UI/UX v10.7 scope is not complete. See `docs/QA_MASTER_CHECKLIST_v1.1.md` for implemented, partial and pending requirements. In particular, granular manager section permissions and several owner modules from versions 7.3–10.5 remain open.
