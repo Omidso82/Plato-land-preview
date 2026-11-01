@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatIranJalaliDateInput, jalaliDateToIso } from './iranDate';
 import './JalaliDatePicker.css';
@@ -46,6 +46,7 @@ export default function JalaliDatePicker({ value, onChange, placeholder = '۱۴�
     return iso ? parts(new Date(iso + 'T12:00:00Z')) : parts(new Date());
   }, []);
   const [open, setOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [month, setMonth] = useState(initial.month);
   const [year, setYear] = useState(initial.year);
 
@@ -53,6 +54,7 @@ export default function JalaliDatePicker({ value, onChange, placeholder = '۱۴�
   const monthLength = Array.from({ length: 31 }, (_, i) => i + 1).filter(day => !!dateForJalaliDay(year, month, day)).length;
   const offset = firstDate ? (firstDate.getUTCDay() + 1) % 7 : 0;
   const monthLabel = firstDate ? monthNames.format(firstDate) : '';
+  const yearLabel = new Intl.NumberFormat('fa-IR', { useGrouping: false }).format(year);
   const selected = formatInput(value);
   const days = [...Array(offset).fill(0), ...Array.from({ length: monthLength }, (_, i) => i + 1)];
 
@@ -66,12 +68,19 @@ export default function JalaliDatePicker({ value, onChange, placeholder = '۱۴�
   function choose(day: number) {
     onChange(`${year}/${String(month).padStart(2, '0')}/${String(day).padStart(2, '0')}`);
     setOpen(false);
+    inputRef.current?.blur();
+  }
+
+  function closeCalendar() {
+    setOpen(false);
+    inputRef.current?.blur();
   }
 
   return <div className="jalali-date-picker">
     {label && <span className="jalali-date-label">{label}</span>}
     <div className="jalali-date-input-wrap">
       <input
+        ref={inputRef}
         type="text"
         dir="ltr"
         inputMode="numeric"
@@ -90,7 +99,7 @@ export default function JalaliDatePicker({ value, onChange, placeholder = '۱۴�
     {open && <div className="jalali-calendar-popover" dir="rtl">
       <div className="jalali-calendar-heading">
         <button type="button" onClick={() => moveMonth(-1)} aria-label="ماه قبل"><ChevronRight size={19}/></button>
-        <strong>{monthLabel} {year.toLocaleString('fa-IR')}</strong>
+        <strong>{monthLabel} {yearLabel}</strong>
         <button type="button" onClick={() => moveMonth(1)} aria-label="ماه بعد"><ChevronLeft size={19}/></button>
       </div>
       <div className="jalali-calendar-grid">
@@ -101,8 +110,8 @@ export default function JalaliDatePicker({ value, onChange, placeholder = '۱۴�
         )}
       </div>
       <div className="jalali-calendar-footer">
-        <button type="button" onClick={() => { const today = parts(new Date()); setYear(today.year); setMonth(today.month); choose(today.day); }}>امروز</button>
-        <button type="button" onClick={() => setOpen(false)}>بستن</button>
+        <button type="button" onClick={() => { const today = parts(new Date()); setYear(today.year); setMonth(today.month); onChange(`${today.year}/${String(today.month).padStart(2, '0')}/${String(today.day).padStart(2, '0')}`); closeCalendar(); }}>امروز</button>
+        <button type="button" onClick={closeCalendar}>بستن</button>
       </div>
     </div>}
   </div>;
