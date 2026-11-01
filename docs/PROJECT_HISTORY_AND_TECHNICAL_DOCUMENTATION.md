@@ -787,3 +787,16 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Security negative tests: owner call to `admin_list_site_users()` returned 9 rows as a count; non-owner call was denied with 42501. A non-owner attempting to withdraw a different user's registration was denied with P0002. No operational data was changed.
 - Supabase organization plan is Free; current Supabase documentation says leaked password protection is available on Pro and above. No plan upgrade or additional cost was made.
 - Current main remains at `4dc4dd38f3f772218318b7caa599fb141c6912a8`; last successful Pages deploy is run `41232233687` on that commit. PR #16 remains Draft/Unmerged, so the just-added features are not yet live.
+
+
+## 1 November 2026 — Owner bulk operations (UI/UX 8.7)
+
+- Added owner-only `src/OwnerBulkOperations.tsx` and an owner-only navigation entry in `src/App.tsx`.
+- Added multi-select lists for tournaments, news, games and profiles. A preview step shows selected/actionable/unchanged counts and target names before explicit confirmation.
+- Implemented guarded bulk publish/hide for draft/published tournaments and news, and enable/disable for games. Tournament publish excludes drafts with registration already open; ongoing/completed/cancelled tournaments are not eligible. Future-scheduled news is excluded from immediate bulk publication.
+- User multi-select is present, but bulk role/account-state changes are intentionally unavailable because the current schema/client path does not provide a dedicated account status field or a safe Auth-admin operation.
+- Existing row-level audit triggers capture each changed row; an additional `bulk_operations` summary is inserted into `audit_logs` and shown in OwnerAuditLog.
+- Verified the owner RLS policy accepts a `bulk_update` summary insert using a simulated owner JWT inside a transaction; the transaction was rolled back. No persistent operational data changed.
+- No schema migration or DDL was applied.
+- Updated the GitHub Pages workflow to run TypeScript/Build on pull requests to main while retaining the deploy guard for `refs/heads/main`.
+- Current code remains in PR #16 Draft/Unmerged. Build status for the new HEAD and browser E2E are not yet verified; no merge or production deploy was performed.
