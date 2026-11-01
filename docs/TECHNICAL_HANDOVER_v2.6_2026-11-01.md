@@ -12,7 +12,7 @@
 - دامنه: `https://platoland.org`
 - Supabase اصلی: `dfrppbapaaydbjeflozw`
 - این پروژه فقط از دیتابیس اصلی استفاده می‌کند. هیچ پروژه یا دیتابیس آزمایشی جدید ساخته نشده است.
-- آخرین Commit شاخه که Build و TypeScript آن به‌طور قطعی موفق شده: `c35145cbda8f08f509304145b0c8be8827f71753`، GitHub Actions run `41258413750`.
+- آخرین Commit شاخه که Build و TypeScript آن به‌طور قطعی موفق شده: `c72b92648fdd69585aa1214d2ca9f386d0981fd3`، GitHub Actions run `41258487565`.
 - این CI شامل کدهای مدیریت مجوزهای مدیر، زمان‌بندی و نتایج، migration ledger و مستندات ثبت‌شده تا commit مذکور است.
 
 ## 2. معماری و داده

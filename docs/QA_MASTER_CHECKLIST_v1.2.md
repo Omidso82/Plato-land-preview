@@ -169,8 +169,8 @@
 - [ ] آزمون واقعی Storage و دسترسی تصاویر مدارک در مرورگر انجام شود.
 
 ### Build و انتشار
-- [x] GitHub Actions run `41258413750` روی commit `c35145cbda8f08f509304145b0c8be8827f71753` مراحل npm install، TypeScript و Build را با موفقیت گذراند.
-- [ ] تمام کدها، migrationها و مستندات تا commit `c35145cbda8f08f509304145b0c8be8827f71753` در run `41258413750` با موفقیت Build و TypeScript شدند.
+- [x] GitHub Actions run `41258487565` روی commit `c72b92648fdd69585aa1214d2ca9f386d0981fd3` مراحل npm install، TypeScript و Build را با موفقیت گذراند.
+- [ ] تمام کدها، migrationها و مستندات تا commit `c72b92648fdd69585aa1214d2ca9f386d0981fd3` در run `41258487565` با موفقیت Build و TypeScript شدند.
 - [ ] PR #16 از Draft خارج و پس از QA کامل ادغام شود.
 - [ ] دامنه `https://platoland.org` پس از انتشار جداگانه بررسی شود.
 - [ ] آزمون مرورگر واقعی با مالک، مدیر، بازیکن و کاربر ناشناس هنوز انجام نشده است.

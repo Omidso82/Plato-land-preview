@@ -740,7 +740,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 
 
 ## 1 November 2026 — Final verification after manager permissions and storage/notification hardening
-- Current fully verified implementation/docs commit: `c35145cbda8f08f509304145b0c8be8827f71753`.
+- Current fully verified implementation/docs commit: `c72b92648fdd69585aa1214d2ca9f386d0981fd3`.
 - GitHub Actions run `41258413750` completed npm install, `npm run typecheck`, and `npm run build` successfully.
 - Production Supabase ledger: 80 migrations; repository: 60 SQL files, all version/name pairs matched; 20 older baseline migration sources remain missing.
 - Storage evidence delete fallback was restored and is limited to registration-section managers after the registration metadata is removed.
