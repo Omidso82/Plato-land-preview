@@ -405,16 +405,29 @@ function App(){
   {preview&&<div className="preview-banner"><Eye size={16}/> پیش‌نمایش از دید بازیکن — حالت فقط مشاهده <button onClick={()=>{setPreview(false);go('admin')}}>بازگشت به مدیریت</button></div>}
   <main>
   <MaintenanceGate owner={canManage}/>
-  {shownTab==='home'&&<div className="page">
-   <section className="hero"><div className="hero-copy"><h1>بازی کن.<br/><span>رقابت کن.</span><br/>قهرمان شو.</h1><p className="hero-description">به دنیای PLATO LAND خوش آمدی؛ پلتفرمی برای مسابقات بازی‌های مختلف، با قوانین و ثبت‌نام اختصاصی هر تورنمنت.</p><div className="hero-actions"><button className="gold-button" onClick={()=>go('tournaments')}>مشاهده مسابقات <ChevronLeft size={18}/></button></div></div><div className="hero-art"><div className="art-orbit orbit-one"/><div className="art-orbit orbit-two"/><div className="art-glow"/><div className="crest"><Crown size={104}/><div className="crest-rule"/><span>PLATO LAND</span><small>GAME · COMPETE · WIN</small></div><span className="floating-star star-a">✦</span><span className="floating-star star-b">✧</span><span className="floating-star star-c">✦</span><div className="art-caption"><Trophy size={17}/><span>هر بازی، یک فرصت تازه</span></div></div></section>
-   <NewsCenter featuredOnly/>
-   {siteAnnouncement?.enabled&&announcementVideoUrl&&<section className="site-announcement-card" aria-label="اطلاعیه ویدیویی PLATO LAND"><div className="site-announcement-copy"><span className="section-kicker">اطلاعیه ویژه</span><h2>{siteAnnouncement.title}</h2><p>برای تماشای تیزر و اطلاع از جزئیات مسابقه، ویدیو را باز کن.</p><button type="button" className="gold-button" onClick={()=>setAnnouncementModalOpen(true)}><Lucide.PlayCircle size={18}/> تماشای ویدیو</button></div><button type="button" className="site-announcement-preview" onClick={()=>setAnnouncementModalOpen(true)} aria-label="پخش ویدیوی اطلاعیه"><video src={announcementVideoUrl} preload="metadata" muted playsInline/><span><Lucide.Play size={30}/></span></button></section>}
-   {announcementModalOpen&&announcementVideoUrl&&<div className="announcement-modal-backdrop" role="presentation" onClick={()=>setAnnouncementModalOpen(false)}><section className="announcement-modal" role="dialog" aria-modal="true" aria-label={siteAnnouncement?.title||'ویدیوی اطلاع‌رسانی'} onClick={e=>e.stopPropagation()}><div className="announcement-modal-head"><strong>{siteAnnouncement?.title||'اطلاعیه PLATO LAND'}</strong><button type="button" onClick={()=>setAnnouncementModalOpen(false)} aria-label="بستن ویدیو"><X size={22}/></button></div><video src={announcementVideoUrl} controls autoPlay playsInline preload="metadata"/></section></div>}
-   <section className="stats-strip"><div><span className="stat-icon"><Trophy/></span><span><strong>{active.length} مسابقه فعال</strong><small>مسابقات منتشرشده</small></span></div><div><span className="stat-icon"><Users/></span><span><strong>دیتابیس مشترک</strong><small>ثبت‌نام‌های واقعی</small></span></div><div><span className="stat-icon"><Medal/></span><span><strong>چندبازی</strong><small>تخته‌نرد، فوتبال و بیشتر</small></span></div></section>
-   <section className="section-block"><div className="section-heading"><div><span className="section-kicker">وارد میدان شو</span><h2>مسابقات فعال</h2><p>فقط رقابت‌هایی که در حال برگزاری هستند در این بخش نمایش داده می‌شوند.</p></div><button className="text-link" onClick={()=>go('tournaments')}>همهٔ مسابقات <ChevronLeft size={17}/></button></div>{active.length?active.map(t=><TournamentCard key={t.id} t={t} register={()=>{setRegTournament(t.id);go('register')}} details={()=>setDetailsTournament(t)}/>):<div className="panel empty-state"><Trophy size={28}/><strong>مسابقات فعال</strong><span>به‌زودی شاهد رقابت‌های جدیدی خواهیم بود.</span></div>}</section>
+  {shownTab==='home'&&<div className="page home-v107">
+   <section className="home-hero-v107">
+    <div className="home-hero-copy">
+     <span className="home-eyebrow"><Crown size={15}/> پلتفرم رسمی رقابت‌های PLATO</span>
+     <h1>PLATO LAND</h1>
+     <p className="home-tagline">بازی، رقابت، قهرمانی</p>
+     <p className="home-intro">جایی برای رقابت منظم و حرفه‌ای در بازی‌های Plato؛ مسابقات، قوانین، ثبت‌نام و نتایج را در یک مسیر شفاف دنبال کن.</p>
+     <div className="home-hero-actions"><button className="gold-button" onClick={()=>go('tournaments')}>مشاهده مسابقات <ChevronLeft size={18}/></button></div>
+     <div className="home-hero-points"><span><CheckCircle2 size={15}/> قوانین روشن</span><span><CheckCircle2 size={15}/> رقابت منصفانه</span><span><CheckCircle2 size={15}/> نتایج شفاف</span></div>
+    </div>
+    <div className="home-hero-art" aria-label="ترکیبی از بازی‌ها و جام قهرمانی">
+     <div className="home-art-halo"/>
+     <div className="home-art-ring home-art-ring-one"/>
+     <div className="home-art-ring home-art-ring-two"/>
+     <div className="home-art-tile home-art-tile-backgammon"><Lucide.Dices size={38}/><span>تخته‌نرد</span></div>
+     <div className="home-art-tile home-art-tile-games"><Gamepad2 size={34}/><span>بازی‌ها</span></div>
+     <div className="home-art-trophy"><Trophy size={88}/><span>قهرمانی</span></div>
+     <span className="home-art-star home-art-star-one">✦</span><span className="home-art-star home-art-star-two">✧</span>
+    </div>
+   </section>
+   <section className="section-block home-active-section"><div className="section-heading"><div><span className="section-kicker">رقابت‌های در جریان</span><h2>مسابقات فعال</h2><p>فقط مسابقاتی که در حال برگزاری هستند نمایش داده می‌شوند.</p></div><button className="text-link" onClick={()=>go('tournaments')}>همه مسابقات <ChevronLeft size={17}/></button></div>{active.length?active.map(t=><TournamentCard key={t.id} t={t} register={()=>{setRegTournament(t.id);go('register')}} details={()=>setDetailsTournament(t)}/>):<div className="panel home-empty-active"><Medal size={25}/><strong>مسابقات فعال</strong><span>به‌زودی شاهد رقابت‌های جدیدی خواهیم بود.</span></div>}</section>
    <RecentChampions/>
-   <section className="bottom-cta"><div className="cta-icon"><Crown size={31}/></div><div><span className="section-kicker">نوبت توست</span><h2>به جامعهٔ PLATO LAND بپیوند</h2><p>مسابقه‌ات را پیدا کن، قوانین را بخوان و وارد رقابت شو.</p></div>{invite?<button className="gold-button" onClick={()=>window.open(invite,'_blank','noopener,noreferrer')}>عضویت در گروه PLATO LAND <ChevronLeft size={18}/></button>:canManage&&<button className="gold-button" onClick={()=>go('admin')}>تنظیم لینک گروه <ChevronLeft size={18}/></button>}</section>
-   <section className="download-panel panel"><div><Download/><h2>دانلود رسمی Plato</h2><p>اپلیکیشن را از فروشگاه رسمی دستگاهت دریافت کن.</p></div><a className="outline-button" href="https://apps.apple.com/app/plato-games-to-play-together/id1054747306" target="_blank" rel="noreferrer">دانلود برای آیفون <ExternalLink size={15}/></a><a className="outline-button" href="https://play.google.com/store/apps/details?id=com.plato.android" target="_blank" rel="noreferrer">دانلود برای اندروید <ExternalLink size={15}/></a></section>
+   <section className="home-news-section"><div className="section-heading"><div><span className="section-kicker">تازه‌های مجموعه</span><h2>اخبار و اطلاعیه‌ها</h2><p>خبرهای مهم و اطلاعیه‌های رسمی PLATO LAND</p></div><button className="text-link" onClick={()=>go('news')}>مشاهده همه اخبار <ChevronLeft size={17}/></button></div><NewsCenter featuredOnly/></section>
   </div>}
   {shownTab==='news'&&<div className="page inner-page"><NewsCenter owner={canManage}/></div>}
   {shownTab==='about'&&<SitePages slug="about" owner={canManage}/>}
