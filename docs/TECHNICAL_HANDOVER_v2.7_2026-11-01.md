@@ -7,13 +7,13 @@
 - Repository: `Omidso82/Plato-land-preview`
 - شاخه اصلی: `main`
 - شاخه کاری: `implementation/uiux-v10-7-owner-foundation`
-- HEAD جاری: `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23`
+- آخرین HEAD بررسی‌شده پیش از این اصلاح مستندات: `24ea7b91bf3c55ed29e9a2ac37280b42e9dce5df`
 - Pull Request: [#16](https://github.com/Omidso82/Plato-land-preview/pull/16) — باز، Draft و Unmerged.
 - دامنه: `https://platoland.org`
 - Supabase اصلی: `dfrppbapaaydbjeflozw`
 - دیتابیس جداگانه آزمایشی ساخته نشده است؛ فقط دیتابیس اصلی استفاده شده است.
-- آخرین CI روی HEAD جاری: GitHub Actions run `41258556282`, workflow `Build and typecheck`, نتیجه `success`.
-- آخرین commit کد که پیش از مستندسازی CI موفق داشت: `c72b92648fdd69585aa1214d2ca9f386d0981fd3`. commit جاری `c5bc7d8...` تغییر مستنداتی پس از آن است.
+- آخرین CI تکمیل‌شده و موفق پیش از آخرین اصلاح مستندات: run `41258556282` روی commit `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23`. اجرای CI روی HEAD بررسی‌شده بعدی `24ea7b91bf3c55ed29e9a2ac37280b42e9dce5df` با run `41259613218` در وضعیت `in_progress` بود.
+- آخرین commit کد که CI موفق داشت: `c72b92648fdd69585aa1214d2ca9f386d0981fd3`. commitهای پس از آن که در این مرحله ساخته شدند، فقط مستنداتی بوده‌اند.
 
 ## 2. معماری و قواعد داده
 - Frontend: React + TypeScript + Vite.
@@ -118,3 +118,11 @@
 - پنل مالک و مدیر جدا؛ دکمه سپر فقط برای مالک.
 - هیچ قابلیت تأییدنشده اجرا نشود.
 - Build، CI، E2E، Deploy و live-domain verification وضعیت‌های جدا هستند.
+
+
+## تکمیل ثبت وضعیت پس از یکپارچه‌سازی مستندات — ۱ نوامبر ۲۰۲۶
+- آخرین HEAD بررسی‌شده پیش از این اصلاح مستندات: `24ea7b91bf3c55ed29e9a2ac37280b42e9dce5df`؛ PR #16 به همین شاخه اشاره می‌کرد.
+- روی آن HEAD، GitHub Actions run `41259613218` با وضعیت `in_progress` مشاهده شد؛ بنابراین نتیجه نهایی آن در این لحظه هنوز قابل اعلام نبود.
+- آخرین CI تکمیل‌شده و موفقِ قابل استناد پیش از این اجرا: run `41258556282` روی commit `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23`.
+- تغییرات انجام‌شده پس از commit کدِ تأییدشده، فقط مستنداتی بوده‌اند؛ هیچ فایل کد، migration، داده عملیاتی، main یا دامنه در این مرحله تغییر نکرده است.
+- وضعیت CI برای هر commit جدید باید از GitHub Actions همان commit خوانده شود؛ موفقیت یک commit را نباید به commit بعدی تعمیم داد.
