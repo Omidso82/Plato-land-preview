@@ -4,7 +4,7 @@ import { CheckSquare, RefreshCw, ShieldCheck, Users, Trophy, Newspaper, Gamepad2
 
 type Target = 'tournaments' | 'news' | 'games' | 'users';
 type Operation = 'publish' | 'hide' | 'enable' | 'disable';
-type Item = { id: string; title: string; subtitle?: string; state: string; enabled?: boolean; publishAt?: string | null };
+type Item = { id: string; title: string; subtitle?: string; state: string; enabled?: boolean; publishAt?: string | null; registrationOpen?: boolean };
 
 const targetLabels: Record<Target,string> = {
   tournaments: 'مسابقات',
@@ -36,7 +36,7 @@ export default function OwnerBulkOperations() {
     setLoading(true); setError('');
     try {
       const [t,n,g,p] = await Promise.all([
-        supabase.from('tournaments').select('id,title,game_type,status').order('created_at',{ascending:false}),
+        supabase.from('tournaments').select('id,title,game_type,status,registration_open').order('created_at',{ascending:false}),
         supabase.from('site_news').select('id,title,status,publish_at').order('created_at',{ascending:false}),
         supabase.from('site_games').select('id,name,slug,enabled').order('sort_order').order('name'),
         supabase.from('profiles').select('id,display_name,plato_id').order('created_at',{ascending:false})
@@ -48,7 +48,7 @@ export default function OwnerBulkOperations() {
       setSelected({tournaments:[],news:[],games:[],users:[]});
       setPreviewOpen(false);
       setItems({
-        tournaments:(t.data||[]).map((x:any)=>({id:x.id,title:x.title||'مسابقه بدون عنوان',subtitle:x.game_type||'',state:x.status||'unknown'})),
+        tournaments:(t.data||[]).map((x:any)=>({id:x.id,title:x.title||'مسابقه بدون عنوان',subtitle:x.game_type||'',state:(x.status||'unknown')+(x.registration_open===true?' · ثبت‌نام باز':''),registrationOpen:x.registration_open===true})),
         news:(n.data||[]).map((x:any)=>({id:x.id,title:x.title||'خبر بدون عنوان',state:x.status||'draft',publishAt:x.publish_at||null})),
         games:(g.data||[]).map((x:any)=>({id:x.id,title:x.name||x.slug||'بازی بدون نام',state:x.enabled?'فعال':'غیرفعال',enabled:!!x.enabled})),
         users:(p.data||[]).map((x:any)=>({id:x.id,title:x.display_name||'نام ثبت نشده',subtitle:x.plato_id||'بدون Plato ID',state:'حساب کاربری'}))
@@ -74,7 +74,7 @@ export default function OwnerBulkOperations() {
   },[target,allowedOperations,operation]);
 
   const actionable = useMemo(()=>currentItems.filter(item=>selectedIds.includes(item.id)).filter(item=>{
-    if (target==='tournaments') return operation==='publish' ? item.state==='draft' : operation==='hide' ? item.state==='published' : false;
+    if (target==='tournaments') return operation==='publish' ? item.state.startsWith('draft') && item.registrationOpen===false : operation==='hide' ? item.state.startsWith('published') : false;
     if (target==='news') return operation==='publish' ? item.state==='draft' && (!item.publishAt || new Date(item.publishAt).getTime()<=Date.now()) : operation==='hide' ? item.state==='published' : false;
     if (target==='games') return operation==='enable' ? item.enabled===false : operation==='disable' ? item.enabled===true : false;
     return false;
