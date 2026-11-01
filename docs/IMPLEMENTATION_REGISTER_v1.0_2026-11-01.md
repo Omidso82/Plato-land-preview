@@ -3,7 +3,7 @@
 تاریخ تهیه و تطبیق: ۱ نوامبر ۲۰۲۶  
 Repository: `Omidso82/Plato-land-preview`  
 Branch: `implementation/uiux-v10-7-owner-foundation`  
-HEAD: `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23`  
+آخرین HEAD بررسی‌شده: `24ea7b91bf3c55ed29e9a2ac37280b42e9dce5df`  
 PR: #16 (Draft / Unmerged)  
 Primary Supabase: `dfrppbapaaydbjeflozw`
 
@@ -92,7 +92,7 @@ Primary Supabase: `dfrppbapaaydbjeflozw`
 
 ## 8. وضعیت تأیید و انتشار در تاریخ ثبت
 - HEAD: `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23`.
-- CI run `41258556282` روی HEAD جاری موفق.
+- CI run `41258556282` روی commit `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23` موفق؛ CI روی HEAD بعدی `24ea7b91bf3c55ed29e9a2ac37280b42e9dce5df` با run `41259613218` هنگام بررسی در حال اجرا بود.
 - PR #16 باز، Draft و Unmerged.
 - main تغییر نکرده؛ Deploy جدید انجام نشده است.
 - E2E واقعی با مالک/مدیر/بازیکن/anon، Storage signed URL و بررسی مستقل دامنه انجام نشده‌اند.
@@ -115,3 +115,11 @@ Primary Supabase: `dfrppbapaaydbjeflozw`
 - پنل مالک/مدیر جدا و سپر فقط برای مالک.
 - تاریخ شمسی و زمان تهران در سراسر سایت.
 - هیچ قابلیت تأییدنشده اجرا نشود.
+
+
+## تکمیل ثبت وضعیت پس از یکپارچه‌سازی مستندات — ۱ نوامبر ۲۰۲۶
+- آخرین HEAD بررسی‌شده پیش از این اصلاح مستندات: `24ea7b91bf3c55ed29e9a2ac37280b42e9dce5df`؛ PR #16 به همین شاخه اشاره می‌کرد.
+- روی آن HEAD، GitHub Actions run `41259613218` با وضعیت `in_progress` مشاهده شد؛ بنابراین نتیجه نهایی آن در این لحظه هنوز قابل اعلام نبود.
+- آخرین CI تکمیل‌شده و موفقِ قابل استناد پیش از این اجرا: run `41258556282` روی commit `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23`.
+- تغییرات انجام‌شده پس از commit کدِ تأییدشده، فقط مستنداتی بوده‌اند؛ هیچ فایل کد، migration، داده عملیاتی، main یا دامنه در این مرحله تغییر نکرده است.
+- وضعیت CI برای هر commit جدید باید از GitHub Actions همان commit خوانده شود؛ موفقیت یک commit را نباید به commit بعدی تعمیم داد.
