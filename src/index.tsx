@@ -11,9 +11,12 @@ if(queryRoute==='semifinal-prediction') {
   window.history.replaceState(null,'','/semifinal-prediction');
 }
 const path=window.location.pathname.replace(/\/+$/,'') || '/';
+
 if(path==='/prediction-admin') {
   root.render(<React.StrictMode><PredictionOwnerPanel/></React.StrictMode>);
-} else if(path==='/semifinal-prediction' || queryRoute==='semifinal-prediction') {
+} else if(path==='/semifinal-prediction' || queryRoute==='semifinal-prediction' || path==='/') {
+  // Temporary public landing page: keep the full platform out of public view
+  // while PLATO LAND semifinal predictions are being collected.
   root.render(<React.StrictMode><ChampionPrediction/></React.StrictMode>);
 } else {
   root.render(<React.StrictMode><App/></React.StrictMode>);
