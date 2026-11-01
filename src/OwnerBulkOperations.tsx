@@ -45,6 +45,8 @@ export default function OwnerBulkOperations() {
       if (n.error) throw n.error;
       if (g.error) throw g.error;
       if (p.error) throw p.error;
+      setSelected({tournaments:[],news:[],games:[],users:[]});
+      setPreviewOpen(false);
       setItems({
         tournaments:(t.data||[]).map((x:any)=>({id:x.id,title:x.title||'مسابقه بدون عنوان',subtitle:x.game_type||'',state:x.status||'unknown'})),
         news:(n.data||[]).map((x:any)=>({id:x.id,title:x.title||'خبر بدون عنوان',state:x.status||'draft',publishAt:x.publish_at||null})),
@@ -108,6 +110,9 @@ export default function OwnerBulkOperations() {
     if (!supabase || !previewOpen || !actionable.length) return;
     setBusy(true); setError(''); setMessage('');
     try {
+      const {data:{user},error:authError}=await supabase.auth.getUser();
+      if (authError) throw authError;
+      if (!user) throw new Error('نشست مالک معتبر نیست.');
       const ids = actionable.map(x=>x.id);
       let result:any;
       let table = '';
@@ -137,9 +142,6 @@ export default function OwnerBulkOperations() {
       if (result.error) throw result.error;
       const affectedIds=(result.data||[]).map((x:any)=>x.id);
       if (!affectedIds.length) throw new Error('هیچ رکوردی تغییر نکرد؛ احتمالاً وضعیت موارد از زمان پیش‌نمایش عوض شده است. فهرست را تازه‌سازی کن.');
-      const {data:{user},error:authError}=await supabase.auth.getUser();
-      if (authError) throw authError;
-      if (!user) throw new Error('نشست مالک معتبر نیست.');
       const auditResult=await supabase.from('audit_logs').insert({
         actor_id:user.id,
         action:'bulk_update',
