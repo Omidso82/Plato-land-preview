@@ -1,7 +1,7 @@
 # PLATO LAND — QA Master Checklist v1.4
 
 تاریخ: ۱ نوامبر ۲۰۲۶  
-مبنای بررسی: UI/UX Design Checklist v10.7، Technical Handover v2.7، Implementation Register v1.0، و وضعیت تأییدشده GitHub و Supabase اصلی.
+مبنای بررسی: UI/UX Design Checklist v10.7، Technical Handover v2.8، Implementation Register v1.1، و وضعیت تأییدشده GitHub و Supabase اصلی.
 
 ## وضعیت انتشار
 
@@ -199,7 +199,7 @@
 
 ## الحاقیه وضعیت جاری — ۱ نوامبر ۲۰۲۶ (برتری این بخش بر اعداد قدیمی‌تر همین فایل)
 
-این الحاقیه پس از بررسی مستقیم شاخه کاری، PR #16، CI و migration ledger دیتابیس اصلی نوشته شده است. در صورت تعارض اعداد یا وضعیت‌های قدیمی‌تر داخل نسخه‌های قبلی این چک‌لیست، اطلاعات این بخش و Technical Handover v2.7 معتبر است.
+این الحاقیه پس از بررسی مستقیم شاخه کاری، PR #16، CI و migration ledger دیتابیس اصلی نوشته شده است. در صورت تعارض اعداد یا وضعیت‌های قدیمی‌تر داخل نسخه‌های قبلی این چک‌لیست، اطلاعات این بخش و Technical Handover v2.8 معتبر است.
 
 ### وضعیت Git و CI
 - [x] HEAD شاخه کاری: `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23`.
