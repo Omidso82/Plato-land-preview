@@ -121,7 +121,7 @@ function App(){
     const {error}=await supabase.from('tournament_manager_access').update({permissions_configured:true}).eq('tournament_id',managerTournamentId).in('user_id',desired);if(error)throw error;
     const {error:clearError}=await supabase.from('tournament_manager_section_permissions').delete().eq('tournament_id',managerTournamentId).in('user_id',desired);if(clearError)throw clearError;
     const permissionRows=desired.flatMap((user_id:string)=>(managerPermissions[user_id]||[]).map(permission_key=>({tournament_id:managerTournamentId,user_id,permission_key,granted_by:user.id})));
-    if(permissionRows.length){const {error}=await supabase.from('user_admin_permissions').insert(permissionRows);if(error)throw error;}
+    if(permissionRows.length){const {error}=await supabase.from('tournament_manager_section_permissions').insert(permissionRows);if(error)throw error;}
    }
    setNotice('مدیران و دسترسی‌های اختصاصی این مسابقه با موفقیت ذخیره شدند.');
   }catch(err:any){setManagerError(err?.message||'ذخیره دسترسی مدیران ناموفق بود.')}
