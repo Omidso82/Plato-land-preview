@@ -46,8 +46,8 @@ npm run dev
 
 ## مستندات مرجع
 
-- `docs/IMPLEMENTATION_REGISTER_v1.0_2026-11-01.md`
-- `docs/TECHNICAL_HANDOVER_v2.7_2026-11-01.md`
-- `docs/QA_MASTER_CHECKLIST_v1.3.md`
+- `docs/IMPLEMENTATION_REGISTER_v1.1_2026-11-01.md`
+- `docs/TECHNICAL_HANDOVER_v2.8_2026-11-01.md`
+- `docs/QA_MASTER_CHECKLIST_v1.4.md`
 - `docs/PROJECT_HISTORY_AND_TECHNICAL_DOCUMENTATION.md`
 - `supabase/migrations/README.md`
