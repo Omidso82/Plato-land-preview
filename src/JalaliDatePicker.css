@@ -1,0 +1,15 @@
+.jalali-date-picker{position:relative;display:grid;gap:7px;min-width:0}
+.jalali-date-label{color:var(--muted,#aaa49a);font-size:.84rem}
+.jalali-date-input-wrap{position:relative;display:flex;align-items:center}
+.jalali-date-input-wrap input{width:100%;padding-left:46px!important}
+.jalali-calendar-trigger{position:absolute;left:8px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:grid;place-items:center;border:0;border-radius:8px;background:rgba(214,179,91,.1);color:var(--gold,#d6b35b);cursor:pointer}
+.jalali-calendar-popover{position:absolute;z-index:1500;top:calc(100% + 8px);right:0;width:min(310px,calc(100vw - 48px));padding:13px;border:1px solid rgba(214,179,91,.42);border-radius:14px;background:#171614;color:#f5f1e8;box-shadow:0 16px 44px rgba(0,0,0,.55)}
+.jalali-calendar-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.jalali-calendar-heading strong{color:var(--gold,#d6b35b);font-size:.95rem}
+.jalali-calendar-heading button,.jalali-calendar-footer button{border:1px solid rgba(214,179,91,.25);border-radius:8px;background:rgba(214,179,91,.08);color:#f5f1e8;padding:7px 9px;cursor:pointer}
+.jalali-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px;text-align:center}
+.jalali-weekday{padding:6px 0;color:#c8ad69;font-size:.78rem}
+.jalali-calendar-grid>button{min-height:34px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:#222;color:#f5f1e8;cursor:pointer}
+.jalali-calendar-grid>button.selected{background:var(--gold,#d6b35b);border-color:var(--gold,#d6b35b);color:#17130a;font-weight:800}
+.jalali-calendar-empty{min-height:34px}
+.jalali-calendar-footer{display:flex;justify-content:space-between;margin-top:10px}
