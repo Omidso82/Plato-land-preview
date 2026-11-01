@@ -747,3 +747,14 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Notification INSERT policies were consolidated; only self-notifications or managers with registrations/schedule/results permission can create notifications for the relevant participant.
 - Security Advisor remains at two existing SECURITY DEFINER warnings and Leaked Password Protection disabled. Performance Advisor reports 35 unused-index INFO findings.
 - PR #16 remains Draft/unmerged; no domain deployment or merge occurred. Browser E2E and live-domain verification remain outstanding.
+
+
+## 1 November 2026 — Documentation consolidation and current-state reconciliation
+- Created `docs/IMPLEMENTATION_REGISTER_v1.0_2026-11-01.md` as the cumulative register of implemented feature groups, partial implementations, security controls, migration state, verification evidence and open work.
+- Created `docs/TECHNICAL_HANDOVER_v2.7_2026-11-01.md` as the current technical handover. It supersedes v2.6 for current status; v2.6 is retained as a historical snapshot.
+- Created `docs/QA_MASTER_CHECKLIST_v1.3.md`. Its dated addendum corrects stale earlier counts and explicitly distinguishes code/DB implementation from browser E2E and deployment.
+- Reconciled the primary migration ledger: 80 applied migrations, 60 SQL migration files in the repository matching the ledger, and 20 older applied baseline migrations whose SQL source files are missing.
+- Reconciled GitHub state: branch HEAD `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23`; PR #16 remains open, Draft and Unmerged.
+- GitHub Actions workflow `Build and typecheck` run `41258556282` completed successfully on the current HEAD.
+- The current HEAD follows the previously code-verified commit `c72b92648fdd69585aa1214d2ca9f386d0981fd3`; this later commit is documentation-only. No new code, schema change, production data change, merge or deployment was performed as part of this documentation update.
+- Outstanding gates remain: real-browser E2E with owner/manager/player/anonymous roles, private Storage signed-URL testing, full Jalali/Tehran browser QA, 20 missing baseline SQL sources, practical negative security tests, Auth leaked-password protection, and explicit release approval.
