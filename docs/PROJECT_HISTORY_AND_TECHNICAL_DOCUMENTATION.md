@@ -810,3 +810,12 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - QA v1.4, Implementation Register v1.1 and Technical Handover v2.8 now record bulk operations, user-operation limits, audit verification and the release gate.
 - README now points to the current register/handover/QA documents.
 - No merge, production deploy, DB schema change or persistent operational data change was performed.
+
+
+## 1 November 2026 — Successful CI for owner bulk operations
+
+- GitHub Actions run `41261452485` completed successfully on code commit `b342a881865cd75fa2a2a3efe435345880d13d60`.
+- Steps passed: `npm install`, `npm run typecheck`, `npm run build`.
+- Five commits after that tested code commit changed only README/documentation files; GitHub compare confirmed no code files changed after the successful build.
+- The separate Pages workflow run `41261452472` was cancelled and did not deploy the working branch.
+- PR #16 remains Draft/Unmerged pending the explicit release step; no live-domain update has yet occurred.
