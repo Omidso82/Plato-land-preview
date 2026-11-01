@@ -3,7 +3,7 @@
 تاریخ تهیه و تطبیق: ۱ نوامبر ۲۰۲۶  
 Repository: `Omidso82/Plato-land-preview`  
 Branch: `implementation/uiux-v10-7-owner-foundation`  
-آخرین commit کد بررسی‌شده: `da9ef025dec3e2632f308dc92d5d919fd7b5ace7`  
+آخرین HEAD شاخه بررسی‌شده: `b342a881865cd75fa2a2a3efe435345880d13d60`  
 PR: #16 (Draft / Unmerged)  
 Primary Supabase: `dfrppbapaaydbjeflozw`
 
@@ -175,3 +175,13 @@ Primary Supabase: `dfrppbapaaydbjeflozw`
 - هیچ migration یا تغییر schema در این مرحله اعمال نشد.
 
 **وضعیت:** هسته عملیات گروهی برای مسابقات، اخبار و بازی‌ها پیاده‌سازی شده؛ بخش اقدام گروهی کاربران و آزمون مرورگر/Build نهایی باز است. این تغییر هنوز merge یا deploy نشده است.
+
+
+## ۱۲. وضعیت جاری CI و انتشار — ۱ نوامبر ۲۰۲۶
+
+- HEAD هنگام ثبت: `b342a881865cd75fa2a2a3efe435345880d13d60`.
+- PR #16 باز، Draft و Unmerged است.
+- پس از افزودن trigger مربوط به pull_request، run `41261452485` برای Build and typecheck آغاز شد؛ در زمان این یادداشت هنوز در حال اجرا بود.
+- هیچ Deploy از PR مجاز نیست؛ شرط job انتشار همچنان `refs/heads/main` است.
+- نسخه عملیات گروهی این شاخه هنوز روی دامنه اصلی منتشر نشده است.
+- آخرین آزمون موفق Build/TypeScript پیش از عملیات گروهی مربوط به commit قدیمی‌تر `da9ef025dec3e2632f308dc92d5d919fd7b5ace7` است؛ نباید آن را به HEAD فعلی تعمیم داد.
