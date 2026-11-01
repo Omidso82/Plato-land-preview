@@ -12,8 +12,8 @@
 - دامنه: `https://platoland.org`
 - Supabase اصلی: `dfrppbapaaydbjeflozw`
 - این پروژه فقط از دیتابیس اصلی استفاده می‌کند. هیچ پروژه یا دیتابیس آزمایشی جدید ساخته نشده است.
-- آخرین Commit کد که Build و TypeScript آن به‌طور قطعی موفق شده: `2af6ac11e71bd7f783ee22f832955a8634e41c20`، GitHub Actions run `41257846376`.
-- پس از این Commit، فقط فایل migration ledger، مستندات و migration SQL جدید اضافه شده‌اند؛ CI نهایی روی HEAD جدید باید دوباره تأیید شود.
+- آخرین Commit شاخه که Build و TypeScript آن به‌طور قطعی موفق شده: `b9d9752e7469737e74755d18474345de38908fb0`، GitHub Actions run `41257994066`.
+- این CI شامل کدهای مدیریت مجوزهای مدیر، زمان‌بندی و نتایج، migration ledger و مستندات ثبت‌شده تا commit مذکور است.
 
 ## 2. معماری و داده
 
@@ -93,7 +93,7 @@
   - دو هشدار SECURITY DEFINER برای `admin_list_site_users()` و `withdraw_tournament_registration(uuid)`. هر دو دارای کنترل owner/مالکیت در بدنه تابع‌اند؛ بررسی عملی سوءاستفاده هنوز لازم است.
   - Leaked Password Protection در Supabase Auth خاموش است. در ابزارهای فعلی تغییر این تنظیم قابل انجام نبود.
 - Performance Advisor:
-  - 33 مورد unused-index از نوع INFO باقی است؛ بدون شواهد بار واقعی، index حذف نشود.
+  - 35 مورد unused-index از نوع INFO باقی است؛ بدون شواهد بار واقعی، index حذف نشود.
   - دو هشدار unindexed foreign key در جدول مجوز مدیران با indexهای migration `20261101004212` برطرف شدند.
 
 ## 8. Build، مرورگر و انتشار
