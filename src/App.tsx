@@ -226,6 +226,8 @@ function App(){
   ]).then(async ([users,assigned]:any[])=>{
    if(!alive)return;
    if(users.error||assigned.error){setManagerError(users.error?.message||assigned.error?.message||'دریافت اطلاعات مدیران ناموفق بود.');return}
+   const {data:{user:ownerUser},error:ownerUserError}=await supabase.auth.getUser();
+   if(ownerUserError)throw ownerUserError;
    const rows=assigned.data||[];
    const ids=rows.map((x:any)=>x.user_id);
    const permissions=ids.length?await supabase.from('tournament_manager_section_permissions').select('user_id,permission_key').eq('tournament_id',managerTournamentId).in('user_id',ids):{data:[],error:null};
@@ -233,7 +235,7 @@ function App(){
    const defaults=['registrations','groups','schedule','results'];
    const selections:Record<string,string[]>={};
    rows.forEach((row:any)=>{selections[row.user_id]=row.permissions_configured?(permissions.data||[]).filter((p:any)=>p.user_id===row.user_id).map((p:any)=>p.permission_key):defaults;});
-   setManagerUsers((users.data||[]).filter((u:any)=>u.user_id));
+   setManagerUsers((users.data||[]).filter((u:any)=>u.user_id&&u.user_id!==ownerUser?.id));
    setManagerAssignments(rows);
    setManagerPermissions(selections);
   }).catch((err:any)=>{if(alive)setManagerError(err?.message||'خطای دریافت اطلاعات')})
