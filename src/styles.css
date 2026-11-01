@@ -460,3 +460,17 @@ img,video{max-width:100%}
 .login-card.auth-mode-login{border-color:rgba(215,173,89,.3)!important}
 .login-card .auth-lock{background:#302819;color:#d9b65d;border:1px solid #5c4b29}
 @media(max-width:680px){.login-screen{padding:24px 16px;gap:20px}.login-card{padding:23px!important}.login-brand strong{font-size:24px}}
+
+
+/* Tournament game selection and single-section navigation */
+.selected-game-banner{display:grid;grid-template-columns:minmax(110px,180px) 1fr auto;align-items:center;gap:18px;padding:16px;border:1px solid rgba(214,179,91,.28);border-radius:16px;background:linear-gradient(120deg,#211d15,#171717);margin:20px 0}
+.selected-game-banner>img,.selected-game-banner>.game-card-placeholder{width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:10px}
+.selected-game-banner h2{margin:4px 0;font-size:1.35rem}
+.selected-game-banner p{margin:0;color:var(--muted,#aaa49a);line-height:1.7}
+.competition-section-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:24px 0}
+.competition-section-cards button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;min-height:112px;padding:15px 10px;border:1px solid rgba(214,179,91,.22);border-radius:14px;background:#191919;color:#d7d1c4;cursor:pointer}
+.competition-section-cards button svg{color:var(--gold,#d6b35b)}
+.competition-section-cards button strong{font-size:clamp(.78rem,2.2vw,.98rem);text-align:center}
+.competition-section-cards button span{font-size:.78rem;color:var(--muted,#aaa49a)}
+.competition-section-cards button.active{border-color:var(--gold,#d6b35b);background:linear-gradient(145deg,#2b2417,#191919);box-shadow:0 0 0 1px rgba(214,179,91,.18)}
+@media(max-width:600px){.selected-game-banner{grid-template-columns:88px 1fr;gap:12px}.selected-game-banner>.outline-button{grid-column:1/-1;width:100%}.competition-section-cards{gap:7px}.competition-section-cards button{min-height:104px;padding:12px 5px}.competition-section-cards button strong{font-size:.72rem}}
