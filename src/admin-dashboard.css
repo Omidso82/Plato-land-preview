@@ -56,3 +56,11 @@
  .admin-section-nav button small{font-size:9px}
  .admin-layout>.admin-panel,.admin-layout .form-panel{padding:15px}
 }
+
+
+.manager-assignment-card{border:1px solid var(--line,#3a3327);border-radius:12px;padding:12px;margin-top:10px;background:rgba(255,255,255,.018)}
+.manager-assignment-card>.check-row{margin:0}
+.manager-permission-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;padding:10px 12px 2px 34px;margin-top:6px;border-top:1px solid var(--line,#3a3327)}
+.manager-permission-options>small{grid-column:1/-1;color:var(--muted,#aaa);margin-bottom:2px}
+.manager-permission-options .permission-row{font-size:.9rem;margin:0}
+@media(max-width:640px){.manager-permission-options{grid-template-columns:1fr;padding-right:0}}
