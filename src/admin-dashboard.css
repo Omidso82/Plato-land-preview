@@ -64,3 +64,21 @@
 .manager-permission-options>small{grid-column:1/-1;color:var(--muted,#aaa);margin-bottom:2px}
 .manager-permission-options .permission-row{font-size:.9rem;margin:0}
 @media(max-width:640px){.manager-permission-options{grid-template-columns:1fr;padding-right:0}}
+
+
+.tournament-operations-panel{display:grid;gap:18px}
+.operations-toolbar{align-items:end;gap:12px}
+.operations-toolbar label{flex:1;max-width:560px}
+.operations-form{display:grid;gap:12px}
+.operations-list{display:grid;gap:10px}
+.operations-list>h3{margin:0}
+.operation-match-row,.operation-result-row,.standing-editor-row{display:grid;gap:10px;padding:13px;border:1px solid var(--line,#3a3327);border-radius:12px;background:rgba(255,255,255,.018)}
+.operation-match-row{grid-template-columns:minmax(0,1fr) auto;align-items:center}
+.operation-match-row>div,.operation-match-title{display:grid;gap:4px}
+.operation-match-row small,.operation-match-title small,.standing-editor-row small{color:var(--muted,#aaa)}
+.operation-result-row .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.standing-editor-row>div:first-child{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.standing-fields{display:grid;grid-template-columns:repeat(6,minmax(75px,1fr));gap:8px}
+.standing-fields label{font-size:.82rem}
+@media(max-width:760px){.standing-fields{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:520px){.operation-match-row{grid-template-columns:1fr}.operation-result-row .form-grid{grid-template-columns:1fr}.standing-fields{grid-template-columns:repeat(2,minmax(0,1fr))}.operations-toolbar{align-items:stretch;flex-direction:column}}
