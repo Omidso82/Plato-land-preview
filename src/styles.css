@@ -48,7 +48,7 @@ button:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
 .auth-gate{max-width:560px;margin:24px auto;text-align:center}.auth-lock{width:68px;height:68px;border-radius:50%;display:grid;place-items:center;margin:0 auto 18px;background:rgba(196,160,76,.12);color:#c6a35b}.auth-gate h2{margin:0 0 12px}.auth-gate>p{line-height:1.9}.auth-gate .form-footnote{margin-top:20px;text-align:right}
 
 /* Version 7: login-only first screen */
-.login-only-shell{min-height:100vh;background:radial-gradient(ellipse at top,#172642 0%,#090d16 58%,#070a10 100%);color:#f7f4ec}.login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 18px;gap:26px}.login-brand{display:flex;flex-direction:column;align-items:center;gap:7px;color:#f3d38a}.login-brand strong{font-size:27px;letter-spacing:2px;color:#fff}.login-brand em{font-style:normal;color:#d7ad59}.login-brand small{font-size:13px;color:#d9c28f}.login-card{width:min(100%,440px);padding:28px!important;border:1px solid rgba(215,173,89,.28)!important;background:rgba(13,19,31,.94)!important;box-shadow:0 24px 80px rgba(0,0,0,.34)}.login-card h1{text-align:center;margin:10px 0;font-size:26px;color:#fff}.login-card>p{text-align:center;color:#b7bdc9;line-height:1.8}.login-card form{display:flex;flex-direction:column;gap:16px}.login-card label{display:flex;flex-direction:column;gap:7px}.login-card input{width:100%;box-sizing:border-box}.manager-login-link{display:block;margin:18px auto 0;background:transparent;border:0;color:#d8b66e;text-decoration:underline;padding:8px;cursor:pointer}.login-card .form-footnote{font-size:12px;margin-top:16px}.login-card .auth-lock{margin:0 auto}
+.login-only-shell{min-height:100vh;background:radial-gradient(ellipse at 50% -18%,#302719 0%,transparent 44%),#0d0e10;color:#f7f4ec}.login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 18px;gap:26px}.login-brand{display:flex;flex-direction:column;align-items:center;gap:7px;color:#f3d38a}.login-brand strong{font-size:27px;letter-spacing:2px;color:#fff}.login-brand em{font-style:normal;color:#d7ad59}.login-brand small{font-size:13px;color:#d9c28f}.login-card{width:min(100%,440px);padding:28px!important;border:1px solid rgba(215,173,89,.34)!important;background:linear-gradient(145deg,rgba(26,26,24,.98),rgba(17,18,20,.98))!important;box-shadow:0 24px 80px rgba(0,0,0,.42)}.login-card h1{text-align:center;margin:10px 0;font-size:26px;color:#fff}.login-card>p{text-align:center;color:#b7bdc9;line-height:1.8}.login-card form{display:flex;flex-direction:column;gap:16px}.login-card label{display:flex;flex-direction:column;gap:7px}.login-card input{width:100%;box-sizing:border-box}.manager-login-link{display:block;margin:18px auto 0;background:transparent;border:0;color:#d8b66e;text-decoration:underline;padding:8px;cursor:pointer}.login-card .form-footnote{font-size:12px;margin-top:16px}.login-card .auth-lock{margin:0 auto}
 
 /* v08 authentication mode switch */
 .auth-switch{display:block;width:100%;margin:12px 0 4px;padding:11px 14px;border:1px solid rgba(214,174,91,.42);border-radius:12px;background:transparent;color:#e6c477;font:inherit;font-weight:700;cursor:pointer}.auth-switch:hover{background:rgba(214,174,91,.08)}.login-card label input[type=password]{direction:ltr;text-align:left}
@@ -444,3 +444,19 @@ img,video{max-width:100%}
 .brand-mark{color:var(--brand-gold-light);background:linear-gradient(145deg,#332b19,#141414);border-color:rgba(217,182,93,.58);box-shadow:inset 0 0 20px rgba(178,138,41,.13),0 5px 18px rgba(0,0,0,.2)}
 .brand-copy small{color:#c4ad72}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+
+
+/* UI/UX v10.7 — Section 02: unified four-item navigation and branded authentication */
+.desktop-nav{gap:clamp(14px,2.1vw,27px)}
+.login-brand .brand-mark{width:64px;height:64px;border-radius:18px;background:linear-gradient(145deg,#332b19,#181714);border-color:#77602e;box-shadow:inset 0 0 20px #b28a2920}
+.login-brand .brand-mark svg{color:#e5c46c}
+.login-brand strong{font-family:Georgia,serif;letter-spacing:1.4px;color:#f0d991}
+.login-brand em{color:#fff}
+.login-brand small{color:#b2a276}
+.login-card h1{color:#f4f1e9}
+.login-card>p{color:#a7a5a0}
+.login-card .form-footnote{color:#99958b;line-height:1.9}
+.login-card.auth-mode-register{border-color:rgba(215,173,89,.48)!important}
+.login-card.auth-mode-login{border-color:rgba(215,173,89,.3)!important}
+.login-card .auth-lock{background:#302819;color:#d9b65d;border:1px solid #5c4b29}
+@media(max-width:680px){.login-screen{padding:24px 16px;gap:20px}.login-card{padding:23px!important}.login-brand strong{font-size:24px}}
