@@ -102,29 +102,11 @@ function App(){
   if(!canManage||!supabase||!managerTournamentId)return;
   setManagerBusy(true);setManagerError('');
   try{
-   const {data:{user},error:authError}=await supabase.auth.getUser();
-   if(authError)throw authError;if(!user)throw new Error('نشست مالک معتبر نیست.');
-   const desired=managerAssignments.map((x:any)=>x.user_id);
-   if(desired.length>2)throw new Error('برای هر مسابقه حداکثر دو مدیر می‌توان تعیین کرد.');
-   const {data:current,error:readError}=await supabase.from('tournament_manager_access').select('user_id').eq('tournament_id',managerTournamentId);
-   if(readError)throw readError;
-   const existing=(current||[]).map((x:any)=>x.user_id);
-   const remove=existing.filter((id:string)=>!desired.includes(id));
-   const insert=desired.filter((id:string)=>!existing.includes(id));
-   if(remove.length){
-    const {error}=await supabase.from('tournament_manager_section_permissions').delete().eq('tournament_id',managerTournamentId).in('user_id',remove);if(error)throw error;
-    const {error:removeError}=await supabase.from('tournament_manager_access').delete().eq('tournament_id',managerTournamentId).in('user_id',remove);if(removeError)throw removeError;
-   }
-   if(insert.length){
-    const {error}=await supabase.from('tournament_manager_access').insert(insert.map((user_id:string)=>({tournament_id:managerTournamentId,user_id,granted_by:user.id,permissions_configured:true})));if(error)throw error;
-   }
-   if(desired.length){
-    const {error}=await supabase.from('tournament_manager_access').update({permissions_configured:true}).eq('tournament_id',managerTournamentId).in('user_id',desired);if(error)throw error;
-    const {error:clearError}=await supabase.from('tournament_manager_section_permissions').delete().eq('tournament_id',managerTournamentId).in('user_id',desired);if(clearError)throw clearError;
-    const permissionRows=desired.flatMap((user_id:string)=>(managerPermissions[user_id]||[]).map(permission_key=>({tournament_id:managerTournamentId,user_id,permission_key,granted_by:user.id})));
-    if(permissionRows.length){const {error}=await supabase.from('tournament_manager_section_permissions').insert(permissionRows);if(error)throw error;}
-   }
-   setNotice('مدیران و دسترسی‌های اختصاصی این مسابقه با موفقیت ذخیره شدند.');
+   const assignments=managerAssignments.map((x:any)=>({user_id:x.user_id,permissions:managerPermissions[x.user_id]||[]}));
+   if(assignments.length>2)throw new Error('برای هر مسابقه حداکثر دو مدیر می‌توان تعیین کرد.');
+   const {error}=await supabase.rpc('save_tournament_manager_access',{p_tournament_id:managerTournamentId,p_assignments:assignments});
+   if(error)throw error;
+   setNotice('مدیران و دسترسی‌های اختصاصی این مسابقه به‌صورت یکپارچه ذخیره شدند.');
   }catch(err:any){setManagerError(err?.message||'ذخیره دسترسی مدیران ناموفق بود.')}
   finally{setManagerBusy(false)}
  }
