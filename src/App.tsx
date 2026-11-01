@@ -61,7 +61,7 @@ function jalaliToIso(value:string){return jalaliDateToIso(value);}
 function isSeriesOne(value:string){const normalized=value.trim().toLowerCase().replace(/[يى]/g,'ی').replace(/‌/g,' ').replace(/\s+/g,' ');return normalized==='سری اول'||normalized==='series 1'||normalized==='series one';}
 function JalaliDateInput({value,onChange,required=false}:{value:string;onChange:(value:string)=>void;required?:boolean}){const parts=jalaliParts(value);const shown=parts?String(parts.year).padStart(4,'0')+'/'+String(parts.month).padStart(2,'0')+'/'+String(parts.day).padStart(2,'0'):'';const [draft,setDraft]=useState(shown);useEffect(()=>setDraft(shown),[shown]);return <input type="text" inputMode="numeric" dir="ltr" className="jalali-date-input" aria-label="تاریخ شمسی" placeholder="۱۴۰۵/۰۸/۱۴" value={draft} required={required} onChange={e=>{const next=e.target.value.replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c)));setDraft(next);if(!next){onChange('');return;}const iso=jalaliToIso(next);if(iso)onChange(iso);}} onBlur={()=>{if(draft&&!jalaliToIso(draft))setDraft(shown);}}/>}
 function App(){
- const [tab,setTab]=useState('home'),[mobileMenu,setMobileMenu]=useState(false),[search,setSearch]=useState('');
+ const [tab,setTab]=useState(()=>{const value=new URLSearchParams(window.location.search).get('page');return value&&['home','tournaments','news','guide','about','profile','login','signup','register','admin','admin-users'].includes(value)?value:'home'}),[mobileMenu,setMobileMenu]=useState(false),[search,setSearch]=useState('');
  const [selectedGame,setSelectedGame]=useState('');
  const [competitionSection,setCompetitionSection]=useState<'active'|'upcoming'|'archive'>('active');
  const [archiveYear,setArchiveYear]=useState('all');
@@ -154,7 +154,7 @@ function App(){
   if(!supabase) return;
   let alive=true;
   const applySession=async(user:any)=>{
-   if(!user){if(alive){setProfile({...blankProfile,loggedIn:false});setAuthenticated(false);setRole('مدیر مسابقات');setRoleLoading(false);setAvatar('');setTab('home');setSessionResolved(true)}return}
+   if(!user){if(alive){setProfile({...blankProfile,loggedIn:false});setAuthenticated(false);setRole('مدیر مسابقات');setRoleLoading(false);setAvatar('');setSessionResolved(true)}return}
    // Fail closed while this session's server-side role is being resolved.
    if(alive){setAuthenticated(false);setRole('مدیر مسابقات');setRoleLoading(true);setSessionResolved(false);}
    try{
@@ -166,7 +166,7 @@ function App(){
     }
     if(!prof){if(alive){setNotice('ورود انجام شد، اما پروفایل پیدا نشد. لطفاً با مدیر سایت تماس بگیر.');setRoleLoading(false);setSessionResolved(true);}return}
     const resolvedAvatar=prof.avatar_url?await getPrivateAvatarUrl(prof.avatar_url,user.id):''; const p={name:prof.display_name,platoId:prof.plato_id,avatar:resolvedAvatar,loggedIn:true};
-    if(alive){setProfile(p);setAccountName(p.name);setAccountId(p.platoId);setAvatar(p.avatar);setAccountEmail(user.email||'');setTab('home');}
+    if(alive){setProfile(p);setAccountName(p.name);setAccountId(p.platoId);setAvatar(p.avatar);setAccountEmail(user.email||'');}
     const {data:roleValue,error:roleErr}=await supabase.rpc('current_user_role'); const roleRow=roleValue?{role:roleValue}:null;
     if(roleErr){
      if(alive){setRole('مدیر مسابقات');setAuthenticated(false);setNotice('پروفایل بارگذاری شد، اما خواندن نقش مدیریت از دیتابیس مجاز نبود: '+roleErr.message+' — سیاست SELECT جدول user_roles را بررسی کن.');}
@@ -249,7 +249,9 @@ function App(){
   return ()=>{alive=false};
  },[canManage,managerTournamentId]);
  const nav=[['home','صفحه اصلی'],['tournaments','مسابقات'],['news','اخبار و اطلاعیه‌ها'],['guide','راهنما']];
- function go(next:string){if((next==='profile'||next==='register')&&!profile.loggedIn){setNotice(next==='register'?'برای ثبت‌نام در مسابقه ابتدا وارد حساب کاربری شو.':'برای مشاهدهٔ پروفایل ابتدا وارد حساب کاربری شو.');next='login';}if(next==='login')setAuthMode('login');if(next==='signup'){setAuthMode('register');next='login';}setTab(next);setMobileMenu(false);if(next!=='login')setNotice('');window.scrollTo({top:0,behavior:'smooth'})}
+ useEffect(()=>{const onPopState=()=>{const value=new URLSearchParams(window.location.search).get('page');const next=value&&['home','tournaments','news','guide','about','profile','login','signup','register','admin','admin-users'].includes(value)?value:'home';setTab(next);setMobileMenu(false);};window.addEventListener('popstate',onPopState);return()=>window.removeEventListener('popstate',onPopState);},[]);
+ useEffect(()=>{const url=new URL(window.location.href);const current=url.searchParams.get('page')||'home';if(current!==tab){if(tab==='home')url.searchParams.delete('page');else url.searchParams.set('page',tab);window.history.replaceState({page:tab},'',url);}},[tab]);
+ function go(next:string){if((next==='profile'||next==='register')&&!profile.loggedIn){setNotice(next==='register'?'برای ثبت‌نام در مسابقه ابتدا وارد حساب کاربری شو.':'برای مشاهدهٔ پروفایل ابتدا وارد حساب کاربری شو.');next='login';}if(next==='login')setAuthMode('login');if(next==='signup'){setAuthMode('register');next='login';}const url=new URL(window.location.href);if(next==='home')url.searchParams.delete('page');else url.searchParams.set('page',next);window.history.pushState({page:next},'',url);setTab(next);setMobileMenu(false);if(next!=='login')setNotice('');window.scrollTo({top:0,behavior:'smooth'})}
  async function saveTournament(e:React.FormEvent){e.preventDefault();if(!canManage||!supabase){setNotice('فقط مالک کل با اتصال معتبر به پایگاه داده می‌تواند مسابقه را ذخیره کند.');return}if(!form.title.trim()||!form.rules.trim()){setNotice('عنوان مسابقه و قوانین الزامی است.');return}
   if(form.startTime&&!form.date){setNotice('برای وارد کردن ساعت شروع، ابتدا تاریخ شمسی مسابقه را مشخص کن.');return}
   if(form.date&&form.startTime&&!iranJalaliDateTimeToIso(formatIranJalaliDateInput(form.date),form.startTime)){setNotice('تاریخ یا ساعت شروع مسابقه معتبر نیست.');return}
