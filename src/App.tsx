@@ -86,6 +86,7 @@ function App(){
   const [managerTournamentId,setManagerTournamentId]=useState('');
   const [managerUsers,setManagerUsers]=useState<any[]>([]);
   const [managerAssignments,setManagerAssignments]=useState<any[]>([]);
+  const [managerPermissions,setManagerPermissions]=useState<Record<string,string[]>>({});
   const [managerBusy,setManagerBusy]=useState(false);
   const [managerError,setManagerError]=useState('');
   const [siteAnnouncement,setSiteAnnouncement]=useState<any>(null);
@@ -103,15 +104,27 @@ function App(){
    const {data:{user},error:authError}=await supabase.auth.getUser();
    if(authError)throw authError;if(!user)throw new Error('نشست مالک معتبر نیست.');
    const desired=managerAssignments.map((x:any)=>x.user_id);
+   if(desired.length>2)throw new Error('برای هر مسابقه حداکثر دو مدیر می‌توان تعیین کرد.');
    const {data:current,error:readError}=await supabase.from('tournament_manager_access').select('user_id').eq('tournament_id',managerTournamentId);
    if(readError)throw readError;
    const existing=(current||[]).map((x:any)=>x.user_id);
    const remove=existing.filter((id:string)=>!desired.includes(id));
    const insert=desired.filter((id:string)=>!existing.includes(id));
-   if(remove.length){const {error}=await supabase.from('tournament_manager_access').delete().eq('tournament_id',managerTournamentId).in('user_id',remove);if(error)throw error}
-   if(insert.length){const {error}=await supabase.from('tournament_manager_access').insert(insert.map((user_id:string)=>({tournament_id:managerTournamentId,user_id,granted_by:user.id})));if(error)throw error}
-   setNotice('مدیران این مسابقه با موفقیت به‌روزرسانی شدند.');
-  }catch(err:any){setManagerError(err?.message||'ذخیره مدیران ناموفق بود.')}
+   if(remove.length){
+    const {error}=await supabase.from('user_admin_permissions').delete().eq('tournament_id',managerTournamentId).in('user_id',remove);if(error)throw error;
+    const {error:removeError}=await supabase.from('tournament_manager_access').delete().eq('tournament_id',managerTournamentId).in('user_id',remove);if(removeError)throw removeError;
+   }
+   if(insert.length){
+    const {error}=await supabase.from('tournament_manager_access').insert(insert.map((user_id:string)=>({tournament_id:managerTournamentId,user_id,granted_by:user.id,permissions_configured:true})));if(error)throw error;
+   }
+   if(desired.length){
+    const {error}=await supabase.from('tournament_manager_access').update({permissions_configured:true}).eq('tournament_id',managerTournamentId).in('user_id',desired);if(error)throw error;
+    const {error:clearError}=await supabase.from('user_admin_permissions').delete().eq('tournament_id',managerTournamentId).in('user_id',desired);if(clearError)throw clearError;
+    const permissionRows=desired.flatMap((user_id:string)=>(managerPermissions[user_id]||[]).map(permission_key=>({tournament_id:managerTournamentId,user_id,permission_key,granted_by:user.id})));
+    if(permissionRows.length){const {error}=await supabase.from('user_admin_permissions').insert(permissionRows);if(error)throw error;}
+   }
+   setNotice('مدیران و دسترسی‌های اختصاصی این مسابقه با موفقیت ذخیره شدند.');
+  }catch(err:any){setManagerError(err?.message||'ذخیره دسترسی مدیران ناموفق بود.')}
   finally{setManagerBusy(false)}
  }
  useEffect(()=>{
@@ -226,12 +239,20 @@ function App(){
   setManagerBusy(true);setManagerError('');
   Promise.all([
    supabase.rpc('admin_list_site_users'),
-   supabase.from('tournament_manager_access').select('user_id').eq('tournament_id',managerTournamentId)
-  ]).then(([users,assigned]:any[])=>{
+   supabase.from('tournament_manager_access').select('user_id,permissions_configured').eq('tournament_id',managerTournamentId)
+  ]).then(async ([users,assigned]:any[])=>{
    if(!alive)return;
    if(users.error||assigned.error){setManagerError(users.error?.message||assigned.error?.message||'دریافت اطلاعات مدیران ناموفق بود.');return}
+   const rows=assigned.data||[];
+   const ids=rows.map((x:any)=>x.user_id);
+   const permissions=ids.length?await supabase.from('user_admin_permissions').select('user_id,permission_key').eq('tournament_id',managerTournamentId).in('user_id',ids):{data:[],error:null};
+   if(permissions.error)throw permissions.error;
+   const defaults=['registrations','groups','schedule','results'];
+   const selections:Record<string,string[]>={};
+   rows.forEach((row:any)=>{selections[row.user_id]=row.permissions_configured?(permissions.data||[]).filter((p:any)=>p.user_id===row.user_id).map((p:any)=>p.permission_key):defaults;});
    setManagerUsers((users.data||[]).filter((u:any)=>u.user_id));
-   setManagerAssignments(assigned.data||[]);
+   setManagerAssignments(rows);
+   setManagerPermissions(selections);
   }).catch((err:any)=>{if(alive)setManagerError(err?.message||'خطای دریافت اطلاعات')})
    .finally(()=>{if(alive)setManagerBusy(false)});
   return ()=>{alive=false};
@@ -424,7 +445,21 @@ function App(){
   </nav>{!canManage&&<div className="info-note"><ShieldCheck size={17}/> مدیر مسابقات اجازهٔ ساخت، ویرایش یا حذف مسابقه و تغییر تنظیمات سراسری را ندارد؛ دسترسی او به مسابقات واگذارشده محدود است و این محدودیت در پایگاه داده نیز اعمال می‌شود.</div>}
   {canManage&&adminSection==='news'&&<NewsCenter owner={true}/>}{canManage&&adminSection==='pages'&&<div className="site-pages-admin-grid"><SitePages slug="about" owner={true}/><SitePages slug="guide" owner={true}/></div>}{canManage&&adminSection==='games'&&<GameCatalog owner showEditor/>}{canManage&&adminSection==='workspace'&&<OwnerWorkspace/>}{canManage&&adminSection==='exports'&&<OwnerExports/>}{canManage&&adminSection==='maintenance'&&<MaintenanceManager/>}{canManage&&adminSection==='audit'&&<OwnerAuditLog/>}{canManage&&adminSection==='health'&&<OwnerSiteHealth/>}{canManage&&adminSection==='overview'&&<section className="owner-dashboard"><div className="owner-dashboard-heading"><div><span className="section-kicker">نمای کلی PLATO LAND</span><h2>داشبورد مالک</h2><p>خلاصهٔ وضعیت داده‌های فعلی سایت و دسترسی سریع به مدیریت بخش‌ها.</p></div><button type="button" className="outline-button" onClick={()=>{setSiteUsersRefresh(v=>v+1);go('admin-users')}}><Users size={16}/> فهرست کاربران</button></div><div className="owner-stat-grid"><article className="panel owner-stat"><span>مسابقات منتشرشده</span><strong>{tournaments.filter(t=>t.published).length.toLocaleString('fa-IR')}</strong><small>از داده‌های مسابقات</small></article><article className="panel owner-stat"><span>مسابقات در حال ثبت‌نام</span><strong>{tournaments.filter(t=>t.published&&t.status==='در حال ثبت‌نام').length.toLocaleString('fa-IR')}</strong><small>بر اساس وضعیت فعلی مسابقه</small></article><article className="panel owner-stat"><span>مسابقات در حال برگزاری</span><strong>{tournaments.filter(t=>t.published&&t.status==='در حال برگزاری').length.toLocaleString('fa-IR')}</strong><small>رقابت‌های فعال</small></article><article className="panel owner-stat"><span>مسابقات پایان‌یافته</span><strong>{tournaments.filter(t=>t.published&&t.status==='پایان‌یافته').length.toLocaleString('fa-IR')}</strong><small>سوابق ثبت‌شده</small></article><article className="panel owner-stat"><span>درخواست‌های ثبت‌نام</span><strong>{registrationCount.toLocaleString('fa-IR')}</strong><small>شمارش مستقیم از پایگاه داده</small></article><article className="panel owner-stat"><span>کاربران سایت</span><strong>{profileCount.toLocaleString('fa-IR')}</strong><small>شمارش مستقیم از پروفایل‌های ثبت‌شده</small></article></div><div className="owner-quick-links"><button type="button" className="panel owner-quick-link" onClick={()=>setAdminSection('tournaments')}><Trophy/><span><strong>مدیریت مسابقات</strong><small>ساخت، ویرایش و انتشار مسابقات</small></span><ChevronLeft/></button><button type="button" className="panel owner-quick-link" onClick={()=>setAdminSection('requests')}><ClipboardList/><span><strong>بررسی ثبت‌نام‌ها</strong><small>بررسی و تعیین وضعیت درخواست‌ها</small></span><ChevronLeft/></button><button type="button" className="panel owner-quick-link" onClick={()=>setAdminSection('managers')}><ShieldCheck/><span><strong>مدیران مسابقه</strong><small>تخصیص دسترسی محدود به مسابقه</small></span><ChevronLeft/></button><button type="button" className="panel owner-quick-link" onClick={()=>setAdminSection('content')}><Lucide.Video/><span><strong>محتوای صفحه اصلی</strong><small>مدیریت اطلاعیهٔ ویدیویی</small></span><ChevronLeft/></button></div></section>}{canManage&&adminSection==='content'&&<section className="panel admin-panel announcement-admin"><div className="admin-toolbar"><div><span className="section-kicker">مدیریت محتوای صفحهٔ اصلی</span><h2>ویدیوی اطلاع‌رسانی مسابقه</h2><p>ویدیو فقط پس از ورود کاربران در صفحهٔ اصلی نمایش داده می‌شود.</p></div><Lucide.Video size={23}/></div><form className="form-panel announcement-form" onSubmit={saveSiteAnnouncement}><label>عنوان ویدیو<input value={announcementTitle} onChange={e=>setAnnouncementTitle(e.target.value)} maxLength={120} required placeholder="مثلاً لیگ جدید PLATO LAND به‌زودی"/></label><label className="file-label">انتخاب فایل ویدیو<input id="site-announcement-video" type="file" accept="video/mp4,video/webm,video/quicktime" onChange={e=>setAnnouncementFile(e.target.files?.[0]||null)}/><small>MP4، WebM یا MOV · حداکثر ۵۰ مگابایت{announcementFile?(' · '+announcementFile.name+' · '+(announcementFile.size/1024/1024).toFixed(1)+' مگابایت'):''}</small></label>{siteAnnouncement?.video_path&&<p className="form-footnote">ویدیوی فعلی {announcementEnabled?'فعال است':'غیرفعال است'}. برای جایگزینی، فایل جدید انتخاب کن؛ فایل قبلی پس از ذخیره جایگزین می‌شود.</p>}<label className="check-row"><input type="checkbox" checked={announcementEnabled} onChange={e=>setAnnouncementEnabled(e.target.checked)}/><span>نمایش ویدیو در صفحهٔ اول کاربران</span></label>{announcementError&&<p className="auth-inline-error" role="alert">{announcementError}</p>}<button className="gold-button full-button" type="submit" disabled={announcementBusy}>{announcementBusy?'در حال ذخیره و آپلود…':<><Save size={16}/> ذخیره و انتشار ویدیو</>}</button>{siteAnnouncement?.video_path&&<button className="outline-button full-button" type="button" disabled={announcementBusy} onClick={()=>void deleteSiteAnnouncement()}><Trash2 size={15}/> حذف ویدیو از صفحهٔ اصلی</button>}</form></section>}
   
-  {canManage&&adminSection==='users'&&<button type="button" className="panel admin-panel site-users-entry" onClick={()=>go('admin-users')}><span className="site-users-entry-icon"><Users size={22}/></span><span className="site-users-entry-copy"><strong>کاربران سایت</strong><small>مشاهدهٔ فهرست حساب‌ها، نام‌ها و Plato ID کاربران</small></span><span className="site-users-entry-count">مشاهدهٔ فهرست</span><ChevronLeft size={19}/></button>}{canManage&&adminSection==='managers'&&<section className="panel admin-panel"><div className="admin-toolbar"><div><h2>مدیران اختصاصی مسابقه</h2><p>برای هر مسابقه، مدیران مجاز را از فهرست کاربران سایت انتخاب کن. این دسترسی فقط به همان مسابقه محدود است.</p></div><ShieldCheck size={22}/></div><label>انتخاب مسابقه<select value={managerTournamentId} onChange={e=>setManagerTournamentId(e.target.value)}><option value="">یک مسابقه انتخاب کن</option>{tournaments.map(t=><option key={t.id} value={t.id}>{t.title} — {t.series||t.game}</option>)}</select></label>{managerTournamentId&&<>{managerBusy?<p>در حال دریافت کاربران و دسترسی‌ها…</p>:<><div className="settings-section"><strong>کاربران سایت</strong>{managerUsers.length?managerUsers.map((u:any)=><label className="check-row" key={u.user_id}><input type="checkbox" checked={managerAssignments.some((a:any)=>a.user_id===u.user_id)} onChange={e=>setManagerAssignments(old=>e.target.checked?[...old.filter((a:any)=>a.user_id!==u.user_id),{user_id:u.user_id}]:old.filter((a:any)=>a.user_id!==u.user_id))}/><span>{u.display_name||'بدون نام'} · {u.plato_id||'بدون Plato ID'} · {u.email||'بدون ایمیل'}</span></label>):<p>کاربری برای انتخاب پیدا نشد.</p>}</div><button type="button" className="gold-button full-button" disabled={managerBusy} onClick={()=>void saveTournamentManagers()}><Save size={16}/> ذخیره مدیران این مسابقه ({managerAssignments.length})</button></>}</>}{managerError&&<p className="auth-inline-error" role="alert">{managerError}</p>}</section>}
+  {canManage&&adminSection==='users'&&<button type="button" className="panel admin-panel site-users-entry" onClick={()=>go('admin-users')}><span className="site-users-entry-icon"><Users size={22}/></span><span className="site-users-entry-copy"><strong>کاربران سایت</strong><small>مشاهدهٔ فهرست حساب‌ها، نام‌ها و Plato ID کاربران</small></span><span className="site-users-entry-count">مشاهدهٔ فهرست</span><ChevronLeft size={19}/></button>}{canManage&&adminSection==='managers'&&<section className="panel admin-panel"><div className="admin-toolbar"><div><h2>مدیران اختصاصی مسابقه</h2><p>برای هر مسابقه، مدیران مجاز را از فهرست کاربران سایت انتخاب کن. این دسترسی فقط به همان مسابقه محدود است.</p></div><ShieldCheck size={22}/></div><label>انتخاب مسابقه<select value={managerTournamentId} onChange={e=>setManagerTournamentId(e.target.value)}><option value="">یک مسابقه انتخاب کن</option>{tournaments.map(t=><option key={t.id} value={t.id}>{t.title} — {t.series||t.game}</option>)}</select></label>{managerTournamentId&&<>{managerBusy?<p>در حال دریافت کاربران و دسترسی‌ها…</p>:<><div className="settings-section"><strong>کاربران سایت</strong>{managerUsers.length?managerUsers.map((u:any)=>{
+ const selected=managerAssignments.some((a:any)=>a.user_id===u.user_id);
+ const permissionOptions=[['registrations','ثبت‌نام و مدارک'],['groups','گروه‌بندی و قرعه‌کشی'],['schedule','برنامه و زمان‌بندی'],['results','ثبت و مدیریت نتایج']];
+ return <div className="manager-assignment-card" key={u.user_id}>
+  <label className="check-row"><input type="checkbox" checked={selected} onChange={e=>{
+   if(e.target.checked){
+    if(managerAssignments.length>=2){setManagerError('برای هر مسابقه حداکثر دو مدیر می‌توان تعیین کرد.');return;}
+    setManagerError('');
+    setManagerAssignments(old=>[...old,{user_id:u.user_id,permissions_configured:true}]);
+    setManagerPermissions(old=>({...old,[u.user_id]:old[u.user_id]||['registrations','groups','schedule','results']}));
+   }else{setManagerAssignments(old=>old.filter((a:any)=>a.user_id!==u.user_id));}
+  }}/><span>{u.display_name||'بدون نام'} · {u.plato_id||'بدون Plato ID'} · {u.email||'بدون ایمیل'}</span></label>
+  {selected&&<div className="manager-permission-options"><small>دسترسی‌های این مدیر در همین مسابقه</small>{permissionOptions.map(([key,label])=><label className="check-row permission-row" key={key}><input type="checkbox" checked={(managerPermissions[u.user_id]||[]).includes(key)} onChange={e=>setManagerPermissions(old=>({...old,[u.user_id]:e.target.checked?[...(old[u.user_id]||[]),key]:(old[u.user_id]||[]).filter((x:string)=>x!==key)}))}/><span>{label}</span></label>)}</div>}
+ </div>;
+}):<p>کاربری برای انتخاب پیدا نشد.</p>}</div><button type="button" className="gold-button full-button" disabled={managerBusy} onClick={()=>void saveTournamentManagers()}><Save size={16}/> ذخیره مدیران این مسابقه ({managerAssignments.length})</button></>}</>}{managerError&&<p className="auth-inline-error" role="alert">{managerError}</p>}</section>}
 {authenticated&&!roleLoading&&(canManage||role==='مدیر مسابقات')&&adminSection==='requests'&&<TournamentManagerDashboard owner={canManage}/>}
   {canManage&&adminSection==='tournaments'&&<div className="admin-layout">{canManage?<form className="panel form-panel" onSubmit={saveTournament}><div className="admin-toolbar"><div><h2>{editing?'ویرایش مسابقه':'ساخت مسابقهٔ جدید'}</h2><p>مسابقات از پایگاه دادهٔ مشترک بارگذاری و در همان‌جا ذخیره می‌شوند.</p></div><Plus size={22}/></div><label>نام بازی<input required value={form.game} onChange={e=>setForm({...form,game:e.target.value})} placeholder="مثلاً تخته‌نرد، فوتبال، منچ"/></label><label>عنوان مسابقه<input required value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/></label><label>سری / دوره<input value={form.series} onChange={e=>setForm({...form,series:e.target.value})} placeholder="مثلاً سری اول"/></label><label>توضیحات<input value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/></label>
   <section className="builder-section"><h3>نحوه شرکت در مسابقه</h3><p>برای هر مسابقه جداگانه انتخاب کن.</p><label>نوع شرکت<select value={form.participation} onChange={e=>setForm({...form,participation:e.target.value,capacityUnit:e.target.value==='team'?'teams':'players'})}><option value="individual">انفرادی</option><option value="team">تیمی</option><option value="both">انفرادی یا تیمی (انتخاب بازیکن)</option></select></label>{form.participation!=='individual'&&<><div className="form-grid"><label>تعداد اعضای هر تیم<input type="number" min="2" max="50" value={form.teamSize} onChange={e=>setForm({...form,teamSize:e.target.value})}/></label><label>روش تشکیل تیم<select value={form.teamEntry} onChange={e=>setForm({...form,teamEntry:e.target.value})}><option value="preformed">ثبت‌نام تیم آماده با سرگروه</option><option value="solo_assignment" disabled>ثبت‌نام انفرادی و تیم‌بندی توسط مدیر (به‌زودی)</option></select></label></div></>}</section>
