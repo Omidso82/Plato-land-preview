@@ -97,3 +97,25 @@
 .owner-help-topic-body ul{margin:0;padding-inline-start:22px}
 .owner-help-topic-body li+li{margin-top:6px}
 @media(max-width:640px){.owner-help-topic summary{padding:12px}.owner-help-topic-body{padding:0 14px 12px}}
+
+
+/* Owner bulk operations */
+.owner-bulk-operations{display:grid;gap:18px}
+.bulk-safety-note,.bulk-limitation{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--line,#39332a);border-radius:12px;background:rgba(197,157,76,.07);color:var(--text,#eee)}
+.bulk-safety-note svg,.bulk-limitation svg{flex:0 0 auto;margin-top:2px}
+.bulk-controls{display:grid;grid-template-columns:minmax(180px,1fr) minmax(180px,1fr) auto;gap:12px;align-items:end}
+.bulk-controls label{display:grid;gap:7px}
+.bulk-list-toolbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line,#39332a)}
+.bulk-item-list{display:grid;gap:8px;max-height:460px;overflow:auto}
+.bulk-item{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line,#39332a);border-radius:10px;cursor:pointer;background:rgba(255,255,255,.015)}
+.bulk-item:hover{border-color:var(--gold,#b89550)}
+.bulk-item input{width:18px;height:18px;accent-color:var(--gold,#b89550);flex:0 0 auto}
+.bulk-item-copy{display:grid;gap:3px;min-width:0;flex:1}
+.bulk-item-copy strong{overflow-wrap:anywhere}
+.bulk-item-copy small,.bulk-item-state{color:var(--muted,#aaa);font-size:.86rem}
+.bulk-item-state{white-space:nowrap}
+.bulk-preview{display:grid;gap:12px;padding:16px;border:1px solid var(--gold,#b89550);border-radius:14px;background:rgba(197,157,76,.06)}
+.bulk-preview ul{margin:0;padding-inline-start:22px;display:grid;gap:5px;max-height:220px;overflow:auto}
+.bulk-preview-actions{display:flex;gap:10px;flex-wrap:wrap}
+.bulk-success{padding:12px 14px;border:1px solid rgba(60,160,100,.45);border-radius:10px;color:var(--text,#eee);background:rgba(60,160,100,.08)}
+@media(max-width:700px){.bulk-controls{grid-template-columns:1fr}.bulk-item{align-items:flex-start}.bulk-item-state{font-size:.78rem}.bulk-preview-actions>*{width:100%}}
