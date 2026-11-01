@@ -773,3 +773,17 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - پس از آن، مستندات تکمیلی در شاخه ثبت شدند؛ HEAD فعلی هنگام این یادداشت `1d5ffed466282880bea1ed3f54497f4cdbd393b5` است.
 - تغییرات بین commit آزموده‌شده و HEAD این یادداشت فقط مستنداتی هستند؛ کد برنامه، migrationها و داده‌های Supabase تغییر نکرده‌اند.
 - این CI موفق، آزمون TypeScript/Build را تأیید می‌کند و به معنی اجرای E2E مرورگر، انتشار یا تأیید دامنه زنده نیست.
+
+
+## 1 November 2026 — Owner help center and production release safeguards
+- Added `src/OwnerHelpCenter.tsx` with searchable, collapsible Persian guidance for owner roles, tournaments, registrations/evidence, manager permissions, groups, schedules/results, content, exports, maintenance, security and Tehran/Jalali time.
+- Added an owner-only navigation entry and rendering guard in `src/App.tsx`; ordinary users and tournament managers do not receive the owner help section.
+- The help center explicitly states that no official support contact channel has been configured; it does not invent contact details. The contextual help beside every complex control remains future work.
+- Updated `.github/workflows/deploy-preview.yml`: production build now runs `npm run typecheck` before `npm run build`; deployment job is guarded to run only on `refs/heads/main`, preventing manual dispatch from a working branch from deploying to the production domain.
+- Renamed workflow/job labels to identify the PLATO LAND website deployment.
+- Updated root `index.html` title and description to the approved brand/tagline. Removed obsolete duplicate `public/index.html` containing a stale Prototype title.
+- Rewrote README and `.env.example` to describe the actual single-primary-Supabase architecture and GitHub Pages deployment; removed misleading instructions to create a separate preview DB.
+- GitHub Actions run `41260894812` passed on code commit `da9ef025dec3e2632f308dc92d5d919fd7b5ace7`: npm install, TypeScript and production build all succeeded.
+- Security negative tests: owner call to `admin_list_site_users()` returned 9 rows as a count; non-owner call was denied with 42501. A non-owner attempting to withdraw a different user's registration was denied with P0002. No operational data was changed.
+- Supabase organization plan is Free; current Supabase documentation says leaked password protection is available on Pro and above. No plan upgrade or additional cost was made.
+- Current main remains at `4dc4dd38f3f772218318b7caa599fb141c6912a8`; last successful Pages deploy is run `41232233687` on that commit. PR #16 remains Draft/Unmerged, so the just-added features are not yet live.
