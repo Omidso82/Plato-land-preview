@@ -631,8 +631,8 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - No operational tournament, registration, result, profile or evidence rows were modified by these migrations.
 
 ### Migration history reconciliation
-- Primary Supabase project `dfrppbapaaydbjeflozw` now reports 78 applied migrations.
-- 58 repository migration files now use the exact version IDs recorded in the primary migration ledger.
+- Primary Supabase project `dfrppbapaaydbjeflozw` now reports 80 applied migrations.
+- 60 repository migration files now use the exact version IDs recorded in the primary migration ledger.
 - Twenty earlier applied baseline migrations have no corresponding SQL source file in this repository. Two implementation files whose migration versions were not in the primary ledger were moved to `supabase/migrations_reviewed_not_applied/` after their target objects/policies were verified as already present.
 - `supabase/migrations/README.md` records this state. Do not run `supabase db push` or replay historical migrations until the missing baseline source/history is reconciled. No migration was replayed as a duplicate.
 
@@ -687,7 +687,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 
 ### Migration ledger
 - Primary Supabase project `dfrppbapaaydbjeflozw`: 75 applied migrations.
-- Repository: 58 SQL migration files, all 55 version/name pairs match the primary migration ledger.
+- Repository: 60 SQL migration files, all 55 version/name pairs match the primary migration ledger.
 - Twenty older applied baseline migrations remain without source SQL files in the repository. Do not run `supabase db push` or replay migrations until this history is recovered/reconstructed.
 - Two non-ledger historical SQL files remain archived under `supabase/migrations_reviewed_not_applied/`.
 
@@ -730,3 +730,10 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - A transaction-scoped test executed the owner RPC as authenticated owner, switched to a temporary non-owner account, verified `tournament_admin`, verified groups-only permission and denial of registrations/schedule/results, then rolled back. No real manager assignment was left in production.
 - Primary database now reports 78 applied migrations; repository has 58 matching SQL migration files; 20 older applied baseline files remain missing from the source tree.
 - Security Advisor remains at two existing SECURITY DEFINER RPC warnings plus leaked-password protection disabled; the new save RPC is SECURITY INVOKER.
+
+
+## 1 November 2026 — Registration evidence cleanup and notification policy hardening
+- Migration `20261101004817_restore_registration_evidence_cleanup_for_scoped_managers` restores the Storage object path fallback for evidence cleanup after registration deletion. The fallback remains restricted to the registrations section permission; the original own-upload delete policy is preserved.
+- Migration `20261101004832_scope_notification_inserts_to_authorized_manager_sections` removes the broad legacy manager notification INSERT policy and consolidates INSERT into one policy: self-notifications are allowed; manager notifications for a participant require registrations, schedule or results permission on that participant's tournament.
+- The final Storage evidence policies were inspected directly in `pg_policies`; the final user_notifications policies were inspected and show one SELECT-own, one UPDATE-own and one consolidated INSERT policy.
+- Primary database: 80 applied migrations. Repository: 60 SQL migration files, all version/name pairs match; 20 baseline migrations remain without SQL source files.
