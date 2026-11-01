@@ -800,3 +800,13 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - No schema migration or DDL was applied.
 - Updated the GitHub Pages workflow to run TypeScript/Build on pull requests to main while retaining the deploy guard for `refs/heads/main`.
 - Current code remains in PR #16 Draft/Unmerged. Build status for the new HEAD and browser E2E are not yet verified; no merge or production deploy was performed.
+
+
+## 1 November 2026 — CI trigger and current review state after bulk operations
+
+- Added `pull_request: branches: [main]` to `.github/workflows/deploy-preview.yml` so the new branch changes can be verified by GitHub Actions before merge.
+- The deployment job remains guarded by `github.ref == 'refs/heads/main'`; a pull-request build cannot publish to `platoland.org`.
+- PR #16 head at the start of this check was `b342a881865cd75fa2a2a3efe435345880d13d60`; Build and typecheck run `41261452485` started and was still in progress when checked.
+- QA v1.4, Implementation Register v1.1 and Technical Handover v2.8 now record bulk operations, user-operation limits, audit verification and the release gate.
+- README now points to the current register/handover/QA documents.
+- No merge, production deploy, DB schema change or persistent operational data change was performed.
