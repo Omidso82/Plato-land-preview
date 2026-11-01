@@ -111,7 +111,7 @@ function App(){
    const remove=existing.filter((id:string)=>!desired.includes(id));
    const insert=desired.filter((id:string)=>!existing.includes(id));
    if(remove.length){
-    const {error}=await supabase.from('user_admin_permissions').delete().eq('tournament_id',managerTournamentId).in('user_id',remove);if(error)throw error;
+    const {error}=await supabase.from('tournament_manager_section_permissions').delete().eq('tournament_id',managerTournamentId).in('user_id',remove);if(error)throw error;
     const {error:removeError}=await supabase.from('tournament_manager_access').delete().eq('tournament_id',managerTournamentId).in('user_id',remove);if(removeError)throw removeError;
    }
    if(insert.length){
@@ -119,7 +119,7 @@ function App(){
    }
    if(desired.length){
     const {error}=await supabase.from('tournament_manager_access').update({permissions_configured:true}).eq('tournament_id',managerTournamentId).in('user_id',desired);if(error)throw error;
-    const {error:clearError}=await supabase.from('user_admin_permissions').delete().eq('tournament_id',managerTournamentId).in('user_id',desired);if(clearError)throw clearError;
+    const {error:clearError}=await supabase.from('tournament_manager_section_permissions').delete().eq('tournament_id',managerTournamentId).in('user_id',desired);if(clearError)throw clearError;
     const permissionRows=desired.flatMap((user_id:string)=>(managerPermissions[user_id]||[]).map(permission_key=>({tournament_id:managerTournamentId,user_id,permission_key,granted_by:user.id})));
     if(permissionRows.length){const {error}=await supabase.from('user_admin_permissions').insert(permissionRows);if(error)throw error;}
    }
@@ -245,7 +245,7 @@ function App(){
    if(users.error||assigned.error){setManagerError(users.error?.message||assigned.error?.message||'دریافت اطلاعات مدیران ناموفق بود.');return}
    const rows=assigned.data||[];
    const ids=rows.map((x:any)=>x.user_id);
-   const permissions=ids.length?await supabase.from('user_admin_permissions').select('user_id,permission_key').eq('tournament_id',managerTournamentId).in('user_id',ids):{data:[],error:null};
+   const permissions=ids.length?await supabase.from('tournament_manager_section_permissions').select('user_id,permission_key').eq('tournament_id',managerTournamentId).in('user_id',ids):{data:[],error:null};
    if(permissions.error)throw permissions.error;
    const defaults=['registrations','groups','schedule','results'];
    const selections:Record<string,string[]>={};
