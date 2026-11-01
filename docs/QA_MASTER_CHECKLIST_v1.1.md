@@ -123,7 +123,7 @@
 - [x] هشدارهای multiple permissive policies در profiles، tournament_results و site_settings با migration `20261101002449_consolidate_public_read_policies` رفع شدند.
 - [x] تعداد هشدارهای multiple permissive policies پس از migration صفر شد.
 - [ ] ۳۳ مورد unused-index از نوع INFO باقی مانده‌اند؛ تا زمان وجود شواهد workload، هیچ index حذف نمی‌شود.
-- [ ] CI جدید روی HEAD فعلی `a2567c826b1870af950bb9ddc2f8f472b4014b3d` هنوز تأیید نشده است.
+- [ ] CI جدید روی HEAD فعلی `1176e7dad278d22e97519bb227ce6a18a8319db2` هنوز تأیید نشده است.
 
 
 ### جداسازی ورودی پنل مدیر مسابقه — ۱ نوامبر ۲۰۲۶
