@@ -650,3 +650,11 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Security Advisor remains at two guarded SECURITY DEFINER RPC warnings and leaked-password protection disabled.
 - This migration changes policies only and does not modify operational rows.
 - Current branch HEAD after the implementation and QA documentation commits: `a2567c826b1870af950bb9ddc2f8f472b4014b3d`. A fresh CI run against this HEAD is still required; the last confirmed successful run remains on the earlier commit recorded above.
+
+
+## 1 November 2026 — Dedicated tournament-manager entry point
+- Added a separate header entry for authenticated `tournament_admin` users: “پنل مدیر مسابقه”, using a non-shield icon. The existing shield entry remains visible only to the owner.
+- The management page heading now distinguishes “پنل مالک” from “پنل مدیر مسابقه”; the manager view continues to show only the assigned-tournament request workflow and no owner-only sections.
+- Static source inspection confirms the owner shield condition is still restricted to role `مالک کل`; the manager entry requires `مدیر مسابقات`.
+- Real-browser verification with owner and assigned-manager accounts remains pending.
+- Source change commit: `1116cdfa01d3a66040a1f0b10aacca23d34b1e8c`. Latest branch CI is still required before release.
