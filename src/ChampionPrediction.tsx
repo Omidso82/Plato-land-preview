@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import playerSpriteBase64 from './assets/semifinal-players.jpg.b64?raw';
 
 const matches = [
-  { key: 'semifinal_one', title: 'نیمه‌نهایی اول', players: [{ key: 'ramesh', name: 'رامش', id: '95m', initial: 'ر' }, { key: 'saeed', name: 'سعید', id: '_34EED', initial: 'س' }] },
-  { key: 'semifinal_two', title: 'نیمه‌نهایی دوم', players: [{ key: 'hana', name: 'هانا', id: 'HANA1272', initial: 'ه' }, { key: 'lavin', name: 'لاوین', id: 'LVIN', initial: 'ل' }] },
+  { key: 'semifinal_one', title: 'نیمه‌نهایی اول', players: [{ key: 'ramesh', name: 'رامش', id: '95m', initial: 'ر', photoPosition: '0% 0%' }, { key: 'saeed', name: 'سعید', id: '_34EED', initial: 'س', photoPosition: '100% 0%' }] },
+  { key: 'semifinal_two', title: 'نیمه‌نهایی دوم', players: [{ key: 'hana', name: 'هانا', id: 'HANA1272', initial: 'ه', photoPosition: '0% 100%' }, { key: 'lavin', name: 'لاوین', id: 'LVIN', initial: 'ل', photoPosition: '100% 100%' }] },
 ];
 
 export default function ChampionPrediction() {
@@ -59,7 +60,7 @@ export default function ChampionPrediction() {
       .pred-card{border:1px solid #74531f;background:linear-gradient(145deg,#17130d,#090909);border-radius:14px;padding:14px 8px;text-align:center;color:white;cursor:pointer;min-width:0}
       .pred-card.selected{border:2px solid #ffd76a;box-shadow:0 0 22px #d99b2d55;background:linear-gradient(145deg,#4a310d,#17100a)}
       .pred-card:disabled{cursor:default;opacity:.9}
-      .pred-avatar{width:72px;height:72px;border-radius:50%;margin:0 auto 9px;border:3px solid #e9b64c;background:radial-gradient(circle at 35% 25%,#72552b,#17110a 70%);display:grid;place-items:center;font-size:32px;color:#ffe3a0}
+      .pred-avatar{width:82px;height:82px;border-radius:50%;margin:0 auto 9px;border:3px solid #e9b64c;background-color:#17110a;background-repeat:no-repeat;background-size:200% 200%;display:block;box-shadow:0 0 14px #d99b2d33}
       .pred-name{font-size:19px;font-weight:800}
       .pred-id{direction:ltr;font-family:Arial,sans-serif;font-size:13px;color:#f3d58a;margin-top:4px;overflow-wrap:anywhere}
       .pred-check{display:flex;justify-content:center;align-items:center;gap:7px;margin-top:10px;color:#d9c18a;font-size:13px}
@@ -81,7 +82,7 @@ export default function ChampionPrediction() {
         <h2>{match.title}</h2>
         <div className="pred-grid" aria-label={match.title}>
           {match.players.map(player => <button type="button" key={player.key} className={'pred-card '+(choices[match.key]===player.key?'selected':'')} onClick={()=>!done&&setChoices(current=>({...current,[match.key]:player.key}))} disabled={done}>
-            <span className="pred-avatar">{player.initial}</span><div className="pred-name">{player.name}</div><div className="pred-id">Plato ID: {player.id}</div><span className="pred-check"><input type="radio" name={match.key} checked={choices[match.key]===player.key} readOnly/> انتخاب این بازیکن</span>
+            <span className="pred-avatar" role="img" aria-label={`عکس پروفایل ${player.name}`} style={{backgroundImage:`url(data:image/jpeg;base64,${playerSpriteBase64.trim()})`,backgroundPosition:player.photoPosition}} /><div className="pred-name">{player.name}</div><div className="pred-id">Plato ID: {player.id}</div><span className="pred-check"><input type="radio" name={match.key} checked={choices[match.key]===player.key} readOnly/> انتخاب این بازیکن</span>
           </button>)}
         </div>
       </section>)}
