@@ -649,7 +649,7 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Supabase Performance Advisor no longer reports the previous three `multiple_permissive_policies` warnings on profiles, tournament_results and site_settings. Thirty-three unused-index INFO findings remain; no indexes were removed without workload evidence.
 - Security Advisor remains at two guarded SECURITY DEFINER RPC warnings and leaked-password protection disabled.
 - This migration changes policies only and does not modify operational rows.
-- Current branch HEAD after the implementation and QA documentation commits: `a2567c826b1870af950bb9ddc2f8f472b4014b3d`. A fresh CI run against this HEAD is still required; the last confirmed successful run remains on the earlier commit recorded above.
+- Source implementation commit: `1116cdfa01d3a66040a1f0b10aacca23d34b1e8c`; latest documentation commit at the time of this check: `1176e7dad278d22e97519bb227ce6a18a8319db2`. A fresh CI run against this HEAD is still required; the last confirmed successful run remains on the earlier commit recorded above.
 
 
 ## 1 November 2026 — Dedicated tournament-manager entry point
