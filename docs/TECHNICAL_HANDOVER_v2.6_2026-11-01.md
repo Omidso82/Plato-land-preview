@@ -1,0 +1,149 @@
+# PLATO LAND Tournament Platform — Technical Handover v2.6
+
+تاریخ: ۱ نوامبر ۲۰۲۶  
+مبنای مستند: UI/UX Design Checklist v10.7، Technical Handover v2.5، QA Master Checklist v1.2، وضعیت زنده GitHub و Supabase اصلی.
+
+## 1. شناسنامه و منبع حقیقت
+
+- Repository: `Omidso82/Plato-land-preview`
+- شاخه اصلی: `main`
+- شاخه کاری فعال: `implementation/uiux-v10-7-owner-foundation`
+- Pull Request: #16 — همچنان Draft و Unmerged
+- دامنه: `https://platoland.org`
+- Supabase اصلی: `dfrppbapaaydbjeflozw`
+- این پروژه فقط از دیتابیس اصلی استفاده می‌کند. هیچ پروژه یا دیتابیس آزمایشی جدید ساخته نشده است.
+- آخرین Commit شاخه که Build و TypeScript آن به‌طور قطعی موفق شده: `c72b92648fdd69585aa1214d2ca9f386d0981fd3`، GitHub Actions run `41258487565`.
+- این CI شامل کدهای مدیریت مجوزهای مدیر، زمان‌بندی و نتایج، migration ledger و مستندات ثبت‌شده تا commit مذکور است.
+
+## 2. معماری و داده
+
+- React + TypeScript + Vite.
+- Supabase Postgres/Auth/Storage و RLS برای داده‌های عملیاتی.
+- مرورگر از کلید publishable استفاده می‌کند؛ service_role در کد فرانت‌اند قرار داده نشده است.
+- داده‌های ثبت‌نام، مدارک، مسابقات، گروه‌بندی، بازی‌ها، نتایج، یادداشت‌ها، وظایف، اخبار، صفحات، اعلان‌ها، رویدادها و تنظیمات عملیاتی باید از Supabase خوانده/نوشته شوند؛ localStorage/sessionStorage برای نگهداری داده عملیاتی مجاز نیست.
+- نشست Auth در Supabase با persistSession مدیریت می‌شود؛ این با ذخیره‌سازی داده عملیاتی مسابقات در مرورگر تفاوت دارد.
+- Storage مدارک ثبت‌نام خصوصی است. دسترسی مدیران به فایل‌ها فقط با مجوز registrations و از مسیر signed URL انجام می‌شود.
+
+## 3. وضعیت شاخه و پنل‌ها
+
+### پنل مالک
+- ورودی و دکمه سپر فقط برای نقش مالک نمایش داده می‌شود.
+- داشبورد مالک، مسابقات، مدیران مسابقه، کاربران، اخبار، صفحات، بازی‌ها، یادداشت‌ها و وظایف، خروجی‌ها، تعمیرات، Audit و سلامت سایت در شاخه موجودند.
+- ورودی پنل مدیر مسابقه از پنل مالک جداست.
+
+### پنل مدیر مسابقه
+- نقش `tournament_admin` از وجود واگذاری فعال مسابقه استخراج می‌شود؛ به حساب مدیر نقش مالک داده نمی‌شود.
+- حداکثر دو مدیر برای هر مسابقه از پنل مالک قابل واگذاری‌اند.
+- چهار مجوز مستقل هر مسابقه:
+  - `registrations`: درخواست‌ها و مدارک ثبت‌نام
+  - `groups`: گروه‌بندی و قرعه‌کشی
+  - `schedule`: برنامه و زمان‌بندی
+  - `results`: ثبت نتایج و جدول
+- مدیر فاقد مجوز ثبت‌نام، درخواست‌های pending، مدارک خصوصی و فایل‌های signed را نمی‌بیند.
+- مدیر گروه‌بندی/زمان‌بندی/نتایج فقط اطلاعات بازیکنان تأییدشده و غیرذخیره را برای انجام وظیفه می‌بیند.
+- مدیر فقط مسابقات واگذارشده را مشاهده می‌کند.
+
+### زمان‌بندی و نتایج
+- فایل `src/TournamentManagerOperations.tsx` ایجاد/ویرایش بازی‌ها با تاریخ شمسی و ساعت ایران را فراهم می‌کند.
+- نتیجه هر بازی شامل امتیاز دو طرف و برنده ثبت می‌شود.
+- جدول امتیازات شامل امتیاز، برد، باخت، امتیاز گرفته/از دست‌رفته و رتبه است و دستی مطابق قوانین همان مسابقه تنظیم می‌شود.
+- هیچ فرمول امتیازدهی پیش‌فرضی اعمال نمی‌شود.
+- مدیریت نتایج تیمی و محاسبه خودکار جدول بر اساس قوانین اختصاصی مسابقه هنوز کامل نیست.
+
+## 4. اصلاحات امنیتی و حریم خصوصی
+
+- دو رکورد Series 1 در دیتابیس حفظ شده‌اند؛ سیاست‌های anon و authenticated عادی آن‌ها را مخفی می‌کنند و مالک دسترسی دارد.
+- ستون‌های public tournament read به فیلدهای لازم محدود شده‌اند.
+- دسترسی anon به جداول خصوصی مالک، وظایف، یادداشت‌ها، مدارک ثبت‌نام، مجوزها، اعلان‌ها، نسخه‌های محتوا، تنظیمات مسابقه و snapshotها لغو شده است.
+- سیاست‌های مسابقات، ثبت‌نام، اعضا، مدارک، Storage، گروه‌بندی، بازی‌ها و نتایج به مجوز بخش مربوطه متصل شده‌اند.
+- `public.current_user_role()` به SECURITY INVOKER تغییر کرده و نقش مدیر را از واگذاری مسابقه تشخیص می‌دهد.
+- جدول جدید `public.tournament_manager_section_permissions` با RLS فعال، فقط برای تغییر توسط مالک مجاز است. مدیر فقط مجوزهای خودش را می‌خواند.
+- جدول قدیمی `public.user_admin_permissions` همچنان برای مجوزهای عمومی/سراسری است و برای مجوزهای هر مسابقه استفاده نمی‌شود.
+
+## 5. آزمون‌های دیتابیس انجام‌شده
+
+- تراکنش آزمایشی موقت با یک پروفایل غیرمالک و یک مسابقه اجرا شد:
+  - مدیر فقط مجوز groups گرفت.
+  - `current_user_role()` مقدار `tournament_admin` را برگرداند.
+  - مجوز groups تأیید شد.
+  - مجوزهای registrations، schedule و results رد شدند.
+  - تراکنش rollback شد؛ هیچ واگذاری یا مجوز آزمایشی در دیتابیس باقی نماند.
+- تعداد واگذاری مدیران و مجوزهای scoped واقعی در لحظه بررسی صفر است.
+- دو رکورد Series 1 در دیتابیس باقی‌اند؛ داده عملیاتی حذف یا بازنویسی نشده است.
+
+## 6. Migration ledger
+
+- تعداد Migrationهای ثبت‌شده در Supabase اصلی: 75.
+- تعداد فایل‌های SQL در `supabase/migrations/`: 55.
+- همه 55 فایل با version ID ثبت‌شده در دیتابیس تطبیق دارند.
+- 20 Migration قدیمی در تاریخچه دیتابیس ثبت شده‌اند اما فایل SQL متناظرشان در مخزن موجود نیست.
+- دو فایل قدیمی که نسخه‌شان در ledger اصلی نبود و اثرشان از قبل در دیتابیس وجود داشت، در `supabase/migrations_reviewed_not_applied/` نگهداری می‌شوند.
+- تا بازیابی/بازسازی 20 فایل baseline، `supabase db push` اجرا نشود و migrationهای قبلی دوباره اعمال نشوند.
+- Migrationهای جدید این مرحله:
+  - `20261101003738_add_scoped_tournament_manager_section_permissions`
+  - `20261101003840_allow_group_managers_confirmed_participant_reads`
+  - `20261101003910_infer_tournament_admin_role_from_assignment`
+  - `20261101003936_use_dedicated_tournament_manager_section_permissions`
+  - `20261101004110_allow_schedule_results_managers_confirmed_participant_reads`
+  - `20261101004212_index_tournament_manager_permission_foreign_keys`
+  - `20261101004447_save_tournament_manager_permissions_atomically`
+  - `20261101004534_make_manager_permission_save_rpc_invoker`
+  - `20261101004548_grant_manager_access_update_for_owner_rpc`
+  - `20261101004817_restore_registration_evidence_cleanup_for_scoped_managers`
+  - `20261101004832_scope_notification_inserts_to_authorized_manager_sections`
+
+## 7. Advisorها و هشدارهای باقی‌مانده
+
+- Security Advisor:
+  - دو هشدار SECURITY DEFINER برای `admin_list_site_users()` و `withdraw_tournament_registration(uuid)`. هر دو دارای کنترل owner/مالکیت در بدنه تابع‌اند؛ بررسی عملی سوءاستفاده هنوز لازم است.
+  - Leaked Password Protection در Supabase Auth خاموش است. در ابزارهای فعلی تغییر این تنظیم قابل انجام نبود.
+- Performance Advisor:
+  - 35 مورد unused-index از نوع INFO باقی است؛ بدون شواهد بار واقعی، index حذف نشود.
+  - دو هشدار unindexed foreign key در جدول مجوز مدیران با indexهای migration `20261101004212` برطرف شدند.
+
+## 8. Build، مرورگر و انتشار
+
+- آخرین CI تأییدشده برای کد: run `41257846376` روی commit `2af6ac11e71bd7f783ee22f832955a8634e41c20`; مراحل `npm run typecheck` و `npm run build` موفق شدند.
+- آخرین commit branch و وضعیت CI پس از مستندات/migration ledger باید دوباره از GitHub بررسی شود.
+- آزمون مرورگر واقعی با مالک، مدیر واگذارشده، مدیر بدون واگذاری، بازیکن و بازدیدکننده ناشناس هنوز انجام نشده است.
+- آزمون واقعی signed URL و Storage در مرورگر هنوز انجام نشده است.
+- PR #16 هنوز Draft و ادغام‌نشده است.
+- انتشار روی دامنه و تأیید مستقل `https://platoland.org` انجام نشده است.
+- به دلیل نبود ابزار مرورگر واقعی در این نشست، ادعای E2E یا مشاهده نسخه زنده مطرح نمی‌شود.
+
+## 9. موارد باز اصلی
+
+1. تکمیل همه قابلیت‌های باقی‌مانده UI/UX نسخه‌های 5.4 تا 10.6؛ از جمله پیام‌ها/پشتیبانی، بازخورد، شکایت و اعتراض، نظرسنجی، مدیریت رویدادها، مدیریت فایل، قفل اضطراری، Backup/Restore، تنظیمات حریم خصوصی و عملیات گروهی.
+2. تکمیل فرم‌های عمومی/گردش‌کار کاربر برای پیام، شکایت، اعتراض و بازخورد؛ ایجاد صرفاً پنل مدیریتی بدون ورودی کاربر کافی نیست.
+3. تکمیل نتایج تیمی و محاسبه خودکار رتبه‌بندی مطابق تنظیمات/قوانین هر مسابقه؛ امتیاز پیش‌فرض ممنوع.
+4. تکمیل آزمون همه مسیرهای تاریخ شمسی و ساعت Asia/Tehran در مرورگر.
+5. بازیابی/بازسازی 20 Migration baseline قدیمی.
+6. بررسی دو تابع SECURITY DEFINER و فعال‌سازی Leaked Password Protection از تنظیمات مجاز Auth.
+7. اجرای CI روی آخرین HEAD، سپس آزمون مرورگر، بازبینی PR و در نهایت ادغام/انتشار با اجازه صریح.
+8. تأیید نهایی 17 قانون سری دوم از متن مرجع/داده واقعی؛ هیچ نسخه خلاصه یا 15‌قانونی جایگزین نشود.
+
+## 10. قواعد غیرقابل‌تغییر
+
+- فقط Supabase اصلی `dfrppbapaaydbjeflozw`.
+- هیچ دیتابیس آزمایشی جداگانه و هیچ سرویس/هزینه جدیدی ایجاد نشود.
+- هیچ داده عملیاتی حذف یا بازنویسی نشود.
+- تمام تاریخ‌ها شمسی و تمام ساعت‌ها بر اساس `Asia/Tehran`.
+- سری اول عمومی نشود.
+- قوانین نهایی 17گانه سری دوم حفظ شوند.
+- پنل مالک و مدیر مسابقات جدا؛ دکمه سپر فقط برای مالک.
+- قابلیت تأییدنشده بدون اجازه اجرا نشود.
+- Commit، Build، Deploy و مرورگر واقعی چهار وضعیت جداگانه‌اند؛ هرکدام فقط با شاهد واقعی تأیید شوند.
+
+
+### Atomic manager permission assignment — ۱ نوامبر ۲۰۲۶
+- `public.save_tournament_manager_access(uuid,jsonb)` now runs as SECURITY INVOKER and is granted only to authenticated/service_role; the function verifies the current caller is owner and uses owner-only table RLS for all writes.
+- Assignment replacement and permission inserts occur within one database transaction. The RPC enforces at most two managers, unique user IDs and the four allowed permission keys.
+- `authenticated` has UPDATE privilege on `tournament_manager_access`, but the UPDATE policy still allows only the owner.
+- A transaction-scoped test with owner + temporary non-owner manager successfully called the RPC, verified `tournament_admin` role and groups-only access, verified denial of registrations/schedule/results, then rolled back.
+- The owner is filtered out of the manager candidate list.
+
+
+### Storage cleanup and notification RLS follow-up
+- Migration `20261101004817_restore_registration_evidence_cleanup_for_scoped_managers` restores the UUID-path fallback used by the registration removal workflow, so the private evidence object can still be removed after its registration/evidence metadata has been deleted. The fallback requires the registrations section permission.
+- Migration `20261101004832_scope_notification_inserts_to_authorized_manager_sections` removes the broad legacy manager notification policy and allows notification INSERT only for the user themself or a manager with registrations/schedule/results permission for the participant's tournament.
+- Database inspection confirmed the final notification policies are one SELECT-own, one UPDATE-own and one consolidated INSERT policy. Storage evidence DELETE includes owner/manager scoped access plus the original own-upload policy.

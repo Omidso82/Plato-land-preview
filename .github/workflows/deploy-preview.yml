@@ -1,8 +1,10 @@
-name: Deploy mobile preview
+name: Deploy PLATO LAND website
 # Re-run production-domain deployment after registration preflight fix in dcddb39c569d74579d16ace544abf740328a9a64
 
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -27,7 +29,9 @@ jobs:
           node-version: 20
       - name: Install dependencies
         run: npm install
-      - name: Build preview
+      - name: TypeScript verification
+        run: npm run typecheck
+      - name: Build production site
         run: npm run build
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -37,12 +41,13 @@ jobs:
           path: dist
 
   deploy:
+    if: github.ref == 'refs/heads/main'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     needs: build
     steps:
-      - name: Deploy preview
+      - name: Deploy to platoland.org via GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

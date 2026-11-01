@@ -1,18 +1,53 @@
-# PLATO LAND — Preview
+# PLATO LAND — Tournament Platform
 
-This is a public preview copy of the PLATO LAND tournament platform. The private main repository is separate and is not changed by this preview.
+وب‌سایت رسمی پلتفرم مسابقات PLATO LAND.
 
-## Supabase preview connection
+## دامنه و انتشار
 
-The preview is intentionally disconnected from the production Supabase project. To enable real signup/login, create a **separate Supabase project** for preview and configure these environment variables in the StackBlitz project:
+- دامنه عمومی: https://platoland.org
+- کد منبع: شاخه `main` همین مخزن.
+- انتشار سایت از طریق GitHub Actions و GitHub Pages انجام می‌شود.
+- فایل `CNAME` دامنه `platoland.org` را برای GitHub Pages مشخص می‌کند.
+- هر push یا merge به `main` گردش انتشار را اجرا می‌کند؛ اجرای انتشار فقط از شاخه `main` مجاز است.
+- پیش از انتشار، نصب وابستگی‌ها، TypeScript و Build باید موفق باشند.
 
-- `REACT_APP_SUPABASE_URL`: the preview project's Project URL
-- `REACT_APP_SUPABASE_ANON_KEY`: the preview project's publishable/anon key
+## اتصال پایگاه داده
 
-Use only the publishable/anon key. **Never use a service_role or secret key in frontend code.** Do not connect this public preview to the production database.
+- این نسخه به تنها پروژه اصلی Supabase با شناسه `dfrppbapaaydbjeflozw` متصل است.
+- هیچ دیتابیس جداگانه Preview/Test ایجاد یا استفاده نمی‌شود.
+- تنظیم اتصال کلاینت در `src/supabase.ts` انجام شده است.
+- کلید مورد استفاده در مرورگر از نوع publishable است. هرگز کلید `service_role` یا secret را در کد فرانت‌اند، GitHub یا فایل‌های عمومی قرار ندهید.
+- داده‌های عملیاتی باید در Supabase ذخیره شوند؛ `localStorage` و `sessionStorage` برای داده‌های عملیاتی مجاز نیستند.
+- مدارک ثبت‌نام در Storage خصوصی نگهداری می‌شوند و دسترسی باید از مسیر مجاز و signed URL باشد.
 
-The current app also reads the `profiles` and `user_roles` tables and a private `avatars` Storage bucket. Those must be created/configured in the preview project with appropriate Row Level Security policies before account/profile features can work. Do not copy production user data.
+## قواعد انتشار و ایمنی
 
-## Run locally
+- تغییرات ابتدا در شاخه کاری و Pull Request بررسی می‌شوند.
+- Build موفق به‌تنهایی تأیید QA یا انتشار نیست.
+- انتشار فقط پس از بررسی کامل PR، آزمون‌های لازم و تأیید مالک انجام می‌شود.
+- اطلاعات و داده‌های عملیاتی موجود نباید برای آزمایش حذف یا بازنویسی شوند.
+- هیچ سرویس پولی یا دیتابیس دیگری بدون تأیید صریح اضافه نشود.
+- تاریخ‌های سایت باید شمسی و ساعت‌ها بر مبنای `Asia/Tehran` باشند.
+- سری اول تا زمان تأیید مالک نباید عمومی شود.
+- قوانین نهایی ۱۷گانه سری دوم نباید با نسخه ۱۵‌قانونی یا خلاصه جایگزین شوند.
 
-`npm install` then `npm start`.
+## اجرای محلی برای توسعه‌دهندگان
+
+برای اجرای محلی، Node.js 20 یا بالاتر لازم است:
+
+```bash
+npm install
+npm run typecheck
+npm run build
+npm run dev
+```
+
+این دستورات فقط برای بررسی کد هستند و به‌تنهایی سایت زنده را منتشر نمی‌کنند.
+
+## مستندات مرجع
+
+- `docs/IMPLEMENTATION_REGISTER_v1.1_2026-11-01.md`
+- `docs/TECHNICAL_HANDOVER_v2.8_2026-11-01.md`
+- `docs/QA_MASTER_CHECKLIST_v1.4.md`
+- `docs/PROJECT_HISTORY_AND_TECHNICAL_DOCUMENTATION.md`
+- `supabase/migrations/README.md`
