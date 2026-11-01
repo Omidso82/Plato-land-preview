@@ -4,7 +4,7 @@ import { CheckSquare, RefreshCw, ShieldCheck, Users, Trophy, Newspaper, Gamepad2
 
 type Target = 'tournaments' | 'news' | 'games' | 'users';
 type Operation = 'publish' | 'hide' | 'enable' | 'disable';
-type Item = { id: string; title: string; subtitle?: string; state: string; enabled?: boolean };
+type Item = { id: string; title: string; subtitle?: string; state: string; enabled?: boolean; publishAt?: string | null };
 
 const targetLabels: Record<Target,string> = {
   tournaments: 'مسابقات',
@@ -37,7 +37,7 @@ export default function OwnerBulkOperations() {
     try {
       const [t,n,g,p] = await Promise.all([
         supabase.from('tournaments').select('id,title,game_type,status').order('created_at',{ascending:false}),
-        supabase.from('site_news').select('id,title,status').order('created_at',{ascending:false}),
+        supabase.from('site_news').select('id,title,status,publish_at').order('created_at',{ascending:false}),
         supabase.from('site_games').select('id,name,slug,enabled').order('sort_order').order('name'),
         supabase.from('profiles').select('id,display_name,plato_id').order('created_at',{ascending:false})
       ]);
@@ -47,7 +47,7 @@ export default function OwnerBulkOperations() {
       if (p.error) throw p.error;
       setItems({
         tournaments:(t.data||[]).map((x:any)=>({id:x.id,title:x.title||'مسابقه بدون عنوان',subtitle:x.game_type||'',state:x.status||'unknown'})),
-        news:(n.data||[]).map((x:any)=>({id:x.id,title:x.title||'خبر بدون عنوان',state:x.status||'draft'})),
+        news:(n.data||[]).map((x:any)=>({id:x.id,title:x.title||'خبر بدون عنوان',state:x.status||'draft',publishAt:x.publish_at||null})),
         games:(g.data||[]).map((x:any)=>({id:x.id,title:x.name||x.slug||'بازی بدون نام',state:x.enabled?'فعال':'غیرفعال',enabled:!!x.enabled})),
         users:(p.data||[]).map((x:any)=>({id:x.id,title:x.display_name||'نام ثبت نشده',subtitle:x.plato_id||'بدون Plato ID',state:'حساب کاربری'}))
       });
@@ -73,7 +73,7 @@ export default function OwnerBulkOperations() {
 
   const actionable = useMemo(()=>currentItems.filter(item=>selectedIds.includes(item.id)).filter(item=>{
     if (target==='tournaments') return operation==='publish' ? item.state==='draft' : operation==='hide' ? item.state==='published' : false;
-    if (target==='news') return operation==='publish' ? item.state==='draft' : operation==='hide' ? item.state==='published' : false;
+    if (target==='news') return operation==='publish' ? item.state==='draft' && (!item.publishAt || new Date(item.publishAt).getTime()<=Date.now()) : operation==='hide' ? item.state==='published' : false;
     if (target==='games') return operation==='enable' ? item.enabled===false : operation==='disable' ? item.enabled===true : false;
     return false;
   }),[currentItems,selectedIds,target,operation]);
@@ -181,8 +181,8 @@ export default function OwnerBulkOperations() {
     {error&&<p className="auth-inline-error" role="alert">{error}</p>}
     {message&&<p className="bulk-success" role="status">{message}</p>}
     {loading?<div className="empty-state">در حال دریافت اطلاعات…</div>:currentItems.length===0?<div className="empty-state">موردی برای نمایش وجود ندارد.</div>:<>
-      <div className="bulk-list-toolbar"><label className="check-row"><input type="checkbox" checked={currentItems.length>0&&selectedIds.length===currentItems.length} onChange={e=>selectAll(e.target.checked)}/><span>انتخاب همهٔ موارد ({currentItems.length.toLocaleString('fa-IR')})</span></label><span>انتخاب‌شده: {selectedIds.length.toLocaleString('fa-IR')}</span><button type="button" className="text-link" onClick={clearSelection} disabled={!selectedIds.length}>پاک‌کردن انتخاب</button>{allowedOperations.length>0&&<button type="button" className="gold-button" onClick={preview} disabled={!selectedIds.length||busy}>پیش‌نمایش عملیات</button>}</div>
-      <div className="bulk-item-list">{currentItems.map(item=><label className="bulk-item" key={item.id}><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={e=>toggleItem(item.id,e.target.checked)}/><span className="bulk-item-copy"><strong>{item.title}</strong>{item.subtitle&&<small>{item.subtitle}</small>}</span><span className="bulk-item-state">{item.state}</span></label>)}</div>
+      <div className="bulk-list-toolbar"><label className="check-row"><input type="checkbox" checked={currentItems.length>0&&selectedIds.length===currentItems.length} onChange={e=>selectAll(e.target.checked)} disabled={busy}/><span>انتخاب همهٔ موارد ({currentItems.length.toLocaleString('fa-IR')})</span></label><span>انتخاب‌شده: {selectedIds.length.toLocaleString('fa-IR')}</span><button type="button" className="text-link" onClick={clearSelection} disabled={!selectedIds.length}>پاک‌کردن انتخاب</button>{allowedOperations.length>0&&<button type="button" className="gold-button" onClick={preview} disabled={!selectedIds.length||busy}>پیش‌نمایش عملیات</button>}</div>
+      <div className="bulk-item-list">{currentItems.map(item=><label className="bulk-item" key={item.id}><input type="checkbox" checked={selectedIds.includes(item.id)} onChange={e=>toggleItem(item.id,e.target.checked)} disabled={busy}/><span className="bulk-item-copy"><strong>{item.title}</strong>{item.subtitle&&<small>{item.subtitle}</small>}</span><span className="bulk-item-state">{item.state}</span></label>)}</div>
     </>}
     {previewOpen&&<section className="bulk-preview" aria-live="polite"><div className="section-heading"><div><span className="section-kicker">پیش‌نمایش قبل از اجرا</span><h3>{operationLabels[operation]}</h3></div><Eye size={20}/></div><p>تعداد انتخاب‌شده: <strong>{selectedIds.length.toLocaleString('fa-IR')}</strong> · تعداد قابل تغییر: <strong>{actionable.length.toLocaleString('fa-IR')}</strong> · بدون تغییر: <strong>{unchangedCount.toLocaleString('fa-IR')}</strong></p><ul>{actionable.map(item=><li key={item.id}>{item.title}</li>)}</ul><p className="form-footnote">این عملیات فقط وضعیت انتشار/فعال‌بودن موارد بالا را تغییر می‌دهد؛ متن، قوانین، نتایج، ثبت‌نام‌ها، نقش‌ها و داده‌های دیگر دست‌نخورده می‌مانند.</p><div className="bulk-preview-actions"><button type="button" className="outline-button" onClick={()=>setPreviewOpen(false)} disabled={busy}>بازگشت و اصلاح انتخاب</button><button type="button" className="gold-button" onClick={()=>void execute()} disabled={busy}>{busy?'در حال اجرا…':'تأیید و اجرای عملیات'}</button></div></section>}
   </section>;
