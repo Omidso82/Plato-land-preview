@@ -89,6 +89,8 @@
   - `20261101004447_save_tournament_manager_permissions_atomically`
   - `20261101004534_make_manager_permission_save_rpc_invoker`
   - `20261101004548_grant_manager_access_update_for_owner_rpc`
+  - `20261101004817_restore_registration_evidence_cleanup_for_scoped_managers`
+  - `20261101004832_scope_notification_inserts_to_authorized_manager_sections`
 
 ## 7. Advisorها و هشدارهای باقی‌مانده
 
@@ -139,3 +141,9 @@
 - `authenticated` has UPDATE privilege on `tournament_manager_access`, but the UPDATE policy still allows only the owner.
 - A transaction-scoped test with owner + temporary non-owner manager successfully called the RPC, verified `tournament_admin` role and groups-only access, verified denial of registrations/schedule/results, then rolled back.
 - The owner is filtered out of the manager candidate list.
+
+
+### Storage cleanup and notification RLS follow-up
+- Migration `20261101004817_restore_registration_evidence_cleanup_for_scoped_managers` restores the UUID-path fallback used by the registration removal workflow, so the private evidence object can still be removed after its registration/evidence metadata has been deleted. The fallback requires the registrations section permission.
+- Migration `20261101004832_scope_notification_inserts_to_authorized_manager_sections` removes the broad legacy manager notification policy and allows notification INSERT only for the user themself or a manager with registrations/schedule/results permission for the participant's tournament.
+- Database inspection confirmed the final notification policies are one SELECT-own, one UPDATE-own and one consolidated INSERT policy. Storage evidence DELETE includes owner/manager scoped access plus the original own-upload policy.
