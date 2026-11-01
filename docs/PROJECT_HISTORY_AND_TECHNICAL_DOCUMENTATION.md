@@ -631,8 +631,8 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - No operational tournament, registration, result, profile or evidence rows were modified by these migrations.
 
 ### Migration history reconciliation
-- Primary Supabase project `dfrppbapaaydbjeflozw` now reports 68 applied migrations.
-- 48 repository migration files now use the exact version IDs recorded in the primary migration ledger.
+- Primary Supabase project `dfrppbapaaydbjeflozw` now reports 75 applied migrations.
+- 55 repository migration files now use the exact version IDs recorded in the primary migration ledger.
 - Twenty earlier applied baseline migrations have no corresponding SQL source file in this repository. Two implementation files whose migration versions were not in the primary ledger were moved to `supabase/migrations_reviewed_not_applied/` after their target objects/policies were verified as already present.
 - `supabase/migrations/README.md` records this state. Do not run `supabase db push` or replay historical migrations until the missing baseline source/history is reconciled. No migration was replayed as a duplicate.
 
@@ -658,3 +658,52 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Static source inspection confirms the owner shield condition is still restricted to role `مالک کل`; the manager entry requires `مدیر مسابقات`.
 - Real-browser verification with owner and assigned-manager accounts remains pending.
 - Source change commit: `1116cdfa01d3a66040a1f0b10aacca23d34b1e8c`. Latest branch CI is still required before release.
+
+
+## 1 November 2026 — Scoped tournament-manager permissions and scheduling/results
+
+### Manager permission model
+- Production migration `20261101003738_add_scoped_tournament_manager_section_permissions` introduced `permissions_configured` and `private.can_manage_tournament_section(uuid,text)`, then bound registration review/removal, evidence access, group snapshots, matches, results and tournament notifications to the corresponding section permission.
+- Migration `20261101003840_allow_group_managers_confirmed_participant_reads` allows a groups-only manager to read only approved/registered non-reserve participants needed for the draw and adds an owner-only UPDATE policy for manager assignments.
+- Migration `20261101003910_infer_tournament_admin_role_from_assignment` makes `current_user_role()` return `tournament_admin` for an account with a tournament assignment, without granting a global role or owner rights.
+- The legacy `user_admin_permissions` table has a global `(user_id, permission_key)` primary key, so it was not reused for tournament-specific grants. Migration `20261101003936_use_dedicated_tournament_manager_section_permissions` created `public.tournament_manager_section_permissions` with scoped composite primary key and RLS; it also removed the unused extra column from the legacy table.
+- Migration `20261101004110_allow_schedule_results_managers_confirmed_participant_reads` permits schedule/results managers to read only approved/registered non-reserve participants.
+- Migration `20261101004212_index_tournament_manager_permission_foreign_keys` added FK indexes for the new permission table.
+- Owner UI now supports up to two managers per tournament and four separate permission switches. Existing legacy manager assignments with `permissions_configured=false` retain their previous access until explicitly reviewed and saved by the owner.
+- Manager UI now has a separate “پنل مدیر مسابقه” entry and shows only the sections assigned. The owner shield remains owner-only.
+
+### Schedule and results tools
+- Added `src/TournamentManagerOperations.tsx`.
+- Schedule section creates/edits match records with Jalali date and Iran-local time.
+- Results section records raw match scores/winner and permits manual standings fields (points, wins, losses, score for/against and placement). No default points formula is assumed.
+- Team tournament result workflows and automatic standings calculation from each tournament's specific scoring rules remain open.
+
+### Production SQL verification
+- A temporary transaction used one non-owner profile and one tournament to assign only the groups permission.
+- `current_user_role()` returned `tournament_admin`; `can_manage_tournament_section(...,'groups')` returned true; registrations, schedule and results returned false.
+- The transaction was rolled back. No manager assignment or scoped permission row was left in production.
+- At verification time, actual manager assignments and scoped permission rows were both zero.
+- Existing operational data was not deleted or rewritten.
+
+### Migration ledger
+- Primary Supabase project `dfrppbapaaydbjeflozw`: 75 applied migrations.
+- Repository: 55 SQL migration files, all 55 version/name pairs match the primary migration ledger.
+- Twenty older applied baseline migrations remain without source SQL files in the repository. Do not run `supabase db push` or replay migrations until this history is recovered/reconstructed.
+- Two non-ledger historical SQL files remain archived under `supabase/migrations_reviewed_not_applied/`.
+
+### Build and release
+- GitHub Actions run `41257846376` on code commit `2af6ac11e71bd7f783ee22f832955a8634e41c20` completed npm install, TypeScript and Build successfully.
+- Later commits in this phase add migration ledger/documentation files; a fresh CI run on the latest HEAD is required before release.
+- PR #16 remains Draft and unmerged. No production deploy was performed.
+- Real-browser E2E, signed Storage access testing and independent live-domain verification remain outstanding.
+
+### Security Advisor
+- Two SECURITY DEFINER warnings remain for `admin_list_site_users()` and `withdraw_tournament_registration(uuid)`; both include explicit authorization checks but need practical negative tests.
+- Leaked Password Protection remains disabled in Supabase Auth; the available tools did not expose the required Auth configuration change.
+- Performance Advisor reports 33 unused-index INFO findings. No index was removed without workload evidence.
+- The two new unindexed-FK INFO findings on `tournament_manager_section_permissions` were fixed with migration `20261101004212`.
+
+### New handover/checklist
+- Added `docs/TECHNICAL_HANDOVER_v2.6_2026-11-01.md`.
+- Added `docs/QA_MASTER_CHECKLIST_v1.2.md`.
+- Updated `supabase/migrations/README.md` to 75 database migrations / 55 source files.
