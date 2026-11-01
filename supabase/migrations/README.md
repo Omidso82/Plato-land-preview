@@ -3,10 +3,10 @@
 Last reconciled: 2026-11-01.
 
 - Primary Supabase project: `dfrppbapaaydbjeflozw`.
-- The 58 SQL files in `supabase/migrations/` have version prefixes matching 58 migrations recorded as applied in the primary database.
-- The primary database has 78 applied migrations. Twenty earlier applied migrations are not present as SQL files in this repository; their source must be recovered or reconstructed before treating this directory as a complete bootstrap history.
+- The 60 SQL files in `supabase/migrations/` have version prefixes matching 60 migrations recorded as applied in the primary database.
+- The primary database has 80 applied migrations. Twenty earlier applied migrations are not present as SQL files in this repository; their source must be recovered or reconstructed before treating this directory as a complete bootstrap history.
 - Do not run `supabase db push` or replay historical migrations against the primary database until the missing baseline history is reconciled.
-- Thirteen migrations added during this implementation phase cover Series 1 privacy, safe public reads, anonymous privilege reduction, public-policy consolidation, tournament-manager section permissions, assigned-manager role inference, confirmed-participant reads, and foreign-key indexing. All nine exact production version IDs are committed.
+- Fifteen migrations added during this implementation phase cover Series 1 privacy, safe public reads, anonymous privilege reduction, public-policy consolidation, tournament-manager section permissions, assigned-manager role inference, confirmed-participant reads, and foreign-key indexing. All nine exact production version IDs are committed.
 
 Two historical SQL files that are not present in the primary migration ledger have been moved to `supabase/migrations_reviewed_not_applied/`. Their target objects/policies already exist in the primary database. They are retained for audit context only and must not be run against the primary database as duplicates.
 
@@ -31,3 +31,6 @@ For every future schema change:
 - A transaction-scoped SQL test using a temporary non-owner profile verified that a manager with only the `groups` grant receives the manager role, can manage groups, and is denied registrations, schedule and results. The transaction was rolled back; no manager assignments or permission rows were persisted.
 
 - The owner saves manager assignments and section grants through `public.save_tournament_manager_access(uuid,jsonb)`, a SECURITY INVOKER RPC. It relies on owner-only table privileges/RLS and is atomic; its EXECUTE grant is limited to authenticated/service_role. The authenticated role has UPDATE table privilege on `tournament_manager_access`, with the RLS UPDATE policy still restricted to owner.
+
+- Migration `20261101004817_restore_registration_evidence_cleanup_for_scoped_managers` restores the scoped-manager fallback needed to delete the private Storage object after its registration/evidence metadata has been removed.
+- Migration `20261101004832_scope_notification_inserts_to_authorized_manager_sections` consolidates notification INSERT policy: users may create their own notification; managers may create notifications for a tournament participant only with registrations, schedule or results permission. The broad legacy manager INSERT policy is removed.
