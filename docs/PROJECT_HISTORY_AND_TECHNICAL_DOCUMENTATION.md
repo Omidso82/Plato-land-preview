@@ -693,17 +693,29 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 
 ### Build and release
 - GitHub Actions run `41257846376` on code commit `2af6ac11e71bd7f783ee22f832955a8634e41c20` completed npm install, TypeScript and Build successfully.
-- Later commits in this phase add migration ledger/documentation files; a fresh CI run on the latest HEAD is required before release.
+- GitHub Actions run `41257994066` on commit `b9d9752e7469737e74755d18474345de38908fb0` completed npm install, TypeScript and Build successfully, including the manager-permission and schedule/results implementation.
 - PR #16 remains Draft and unmerged. No production deploy was performed.
 - Real-browser E2E, signed Storage access testing and independent live-domain verification remain outstanding.
 
 ### Security Advisor
 - Two SECURITY DEFINER warnings remain for `admin_list_site_users()` and `withdraw_tournament_registration(uuid)`; both include explicit authorization checks but need practical negative tests.
 - Leaked Password Protection remains disabled in Supabase Auth; the available tools did not expose the required Auth configuration change.
-- Performance Advisor reports 33 unused-index INFO findings. No index was removed without workload evidence.
+- Performance Advisor reports 35 unused-index INFO findings; the two new foreign-key index warnings are resolved. No index was removed without workload evidence.
 - The two new unindexed-FK INFO findings on `tournament_manager_section_permissions` were fixed with migration `20261101004212`.
 
 ### New handover/checklist
 - Added `docs/TECHNICAL_HANDOVER_v2.6_2026-11-01.md`.
 - Added `docs/QA_MASTER_CHECKLIST_v1.2.md`.
 - Updated `supabase/migrations/README.md` to 75 database migrations / 55 source files.
+
+
+## 1 November 2026 — Final CI verification for implementation batch
+- Latest verified branch commit: `b9d9752e7469737e74755d18474345de38908fb0`.
+- GitHub Actions run `41257994066` completed `npm install`, `npm run typecheck`, and `npm run build` successfully.
+- PR #16 remains Draft and Unmerged; the `main` branch and live domain were not changed.
+- Latest Supabase migration ledger: 75 applied migrations; 55 source files matched exactly; 20 old baseline SQL files remain missing from the repository.
+- Latest Security Advisor: two guarded SECURITY DEFINER RPC warnings and Leaked Password Protection disabled.
+- Latest Performance Advisor: 35 unused-index INFO findings; no unindexed foreign-key finding remains after the two supporting indexes were added.
+- The manager section-permission test was transaction-scoped and rolled back. There are no real manager assignments in production at this time.
+- Browser E2E and independent live-domain checks remain pending because no authenticated browser automation capability was available in this session.
+- Updated artifacts: `docs/QA_MASTER_CHECKLIST_v1.2.md`, `docs/TECHNICAL_HANDOVER_v2.6_2026-11-01.md`, and `supabase/migrations/README.md`.
