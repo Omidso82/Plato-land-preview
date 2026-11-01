@@ -10,7 +10,7 @@ const queryRoute=new URLSearchParams(window.location.search).get('route');
 if(queryRoute==='semifinal-prediction') {
   window.history.replaceState(null,'','/semifinal-prediction');
 }
-const path=window.location.pathname.replace(/\\/+$/,'') || '/';
+const path=window.location.pathname.replace(/\/+$/,'') || '/';
 
 if(path==='/prediction-admin') {
   root.render(<React.StrictMode><PredictionOwnerPanel/></React.StrictMode>);
