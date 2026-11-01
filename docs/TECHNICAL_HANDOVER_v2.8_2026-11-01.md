@@ -161,7 +161,7 @@
 
 - آخرین HEAD هنگام ثبت این سند: `b342a881865cd75fa2a2a3efe435345880d13d60`.
 - PR #16 باز، Draft و Unmerged است.
-- run `41261452485` برای Build and typecheck روی PR اجرا شده و در زمان ثبت این سند هنوز در حال اجرا بود؛ نتیجه نهایی TypeScript/Build را تا تکمیل run اعلام نکنید.
+- run `41261452485` برای Build and typecheck روی commit کد `b342a881865cd75fa2a2a3efe435345880d13d60` با نتیجه success تکمیل شد؛ npm install، TypeScript و Build موفق بودند. پنج commit بعدی فقط مستندات/README را تغییر دادند.
 - workflow انتشار اکنون روی pull_request به main نیز اجرا می‌شود، اما job Deploy فقط برای ref اصلی main مجاز است.
 - عملیات گروهی مالک در بخش 12 این سند و الحاقیه QA ثبت شده است؛ هیچ migration یا تغییر دائمی در داده‌های اصلی برای آن لازم/اعمال نشده است.
 - E2E مرورگر با حساب واقعی و تأیید مستقل دامنه هنوز باز است. تا عبور CI و QA، merge و deploy انجام نشود.
