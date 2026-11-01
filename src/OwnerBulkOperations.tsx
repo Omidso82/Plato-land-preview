@@ -116,16 +116,13 @@ export default function OwnerBulkOperations() {
       const ids = actionable.map(x=>x.id);
       let result:any;
       let table = '';
-      let actionLabel = '';
       if (target==='tournaments') {
         table='tournaments';
         const nextStatus=operation==='publish'?'published':'draft';
         const expected=operation==='publish'?'draft':'published';
-        actionLabel=operationLabels[operation];
         result=await supabase.from(table).update({status:nextStatus,updated_at:new Date().toISOString()}).in('id',ids).eq('status',expected).select('id');
       } else if (target==='news') {
         table='site_news';
-        actionLabel=operationLabels[operation];
         const payload=operation==='publish'
           ? {status:'published',published_at:new Date().toISOString(),updated_at:new Date().toISOString()}
           : {status:'draft',updated_at:new Date().toISOString()};
@@ -133,7 +130,6 @@ export default function OwnerBulkOperations() {
         result=await supabase.from(table).update(payload).in('id',ids).eq('status',expected).select('id');
       } else if (target==='games') {
         table='site_games';
-        actionLabel=operationLabels[operation];
         const nextEnabled=operation==='enable';
         result=await supabase.from(table).update({enabled:nextEnabled,updated_at:new Date().toISOString()}).in('id',ids).eq('enabled',!nextEnabled).select('id');
       } else {
