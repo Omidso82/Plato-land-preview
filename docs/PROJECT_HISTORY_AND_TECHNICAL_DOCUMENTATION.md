@@ -641,3 +641,12 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - The last confirmed GitHub Actions success available during this check was run `41256383944` on commit `27788b4889c521e224af29441124527e76be59c8`; it is not evidence for the later App.tsx and migration-ledger commits. A fresh run against the latest head is required.
 - Authenticated owner/manager/player browser E2E, private-file access tests in a real browser, domain deployment and live-domain verification remain outstanding. No deployment or merge was performed.
 - The full UI/UX v10.7 scope is not complete. See `docs/QA_MASTER_CHECKLIST_v1.1.md` for implemented, partial and pending requirements. In particular, granular manager section permissions and several owner modules from versions 7.3–10.5 remain open.
+
+
+## 1 November 2026 — Consolidate public SELECT policies
+- Applied production migration `20261101002449_consolidate_public_read_policies`.
+- Consolidated authenticated profile reads into one policy and removed the redundant authenticated completed-results policy; consolidated `site_settings` reads so anonymous users see only the public invite setting and authenticated users use one combined policy.
+- Supabase Performance Advisor no longer reports the previous three `multiple_permissive_policies` warnings on profiles, tournament_results and site_settings. Thirty-three unused-index INFO findings remain; no indexes were removed without workload evidence.
+- Security Advisor remains at two guarded SECURITY DEFINER RPC warnings and leaked-password protection disabled.
+- This migration changes policies only and does not modify operational rows.
+- Current branch HEAD after the implementation and QA documentation commits: `a2567c826b1870af950bb9ddc2f8f472b4014b3d`. A fresh CI run against this HEAD is still required; the last confirmed successful run remains on the earlier commit recorded above.
