@@ -7,7 +7,7 @@
 - Repository: `Omidso82/Plato-land-preview`
 - شاخه اصلی: `main`
 - شاخه کاری: `implementation/uiux-v10-7-owner-foundation`
-- آخرین commit کد بررسی‌شده: `da9ef025dec3e2632f308dc92d5d919fd7b5ace7`
+- آخرین HEAD شاخه بررسی‌شده: `b342a881865cd75fa2a2a3efe435345880d13d60`
 - Pull Request: [#16](https://github.com/Omidso82/Plato-land-preview/pull/16) — باز، Draft و Unmerged.
 - دامنه: `https://platoland.org`
 - Supabase اصلی: `dfrppbapaaydbjeflozw`
@@ -90,7 +90,7 @@
   - `20261101004832_scope_notification_inserts_to_authorized_manager_sections`
 
 ## 6. تأییدهای قابل استناد
-- CI روی HEAD جاری: run `41258556282` موفق.
+- آخرین CI موفق پیش از عملیات گروهی: run `41260894812` روی commit `da9ef025dec3e2632f308dc92d5d919fd7b5ace7`؛ برای HEAD جدید باید run جداگانه بررسی شود.
 - CI پیشین روی کد: run `41258413750` روی commit `c72b92648fdd69585aa1214d2ca9f386d0981fd3` موفق.
 - تست مجوزهای scoped در تراکنش انجام شد و rollback شد.
 - سیاست‌های نهایی Storage و user_notifications مستقیماً از `pg_policies` بازخوانی شدند.
@@ -155,3 +155,13 @@
 - هیچ migration یا DDL جدیدی اعمال نشده است.
 - Workflow اکنون علاوه بر push به main، روی pull_request به main نیز Build/TypeScript را اجرا می‌کند؛ شرط job انتشار همچنان فقط `refs/heads/main` است تا CI مربوط به PR نتواند دامنه اصلی را deploy کند.
 - وضعیت این commit: CI/Build و E2E واقعی هنوز تأیید نشده‌اند؛ PR #16 باید Draft بماند تا بررسی‌ها تکمیل شوند.
+
+
+## 13. وضعیت نهایی ثبت‌شده در این به‌روزرسانی — ۱ نوامبر ۲۰۲۶
+
+- آخرین HEAD هنگام ثبت این سند: `b342a881865cd75fa2a2a3efe435345880d13d60`.
+- PR #16 باز، Draft و Unmerged است.
+- run `41261452485` برای Build and typecheck روی PR اجرا شده و در زمان ثبت این سند هنوز در حال اجرا بود؛ نتیجه نهایی TypeScript/Build را تا تکمیل run اعلام نکنید.
+- workflow انتشار اکنون روی pull_request به main نیز اجرا می‌شود، اما job Deploy فقط برای ref اصلی main مجاز است.
+- عملیات گروهی مالک در بخش 12 این سند و الحاقیه QA ثبت شده است؛ هیچ migration یا تغییر دائمی در داده‌های اصلی برای آن لازم/اعمال نشده است.
+- E2E مرورگر با حساب واقعی و تأیید مستقل دامنه هنوز باز است. تا عبور CI و QA، merge و deploy انجام نشود.
