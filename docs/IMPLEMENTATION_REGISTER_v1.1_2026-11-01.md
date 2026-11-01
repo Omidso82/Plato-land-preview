@@ -3,7 +3,7 @@
 تاریخ تهیه و تطبیق: ۱ نوامبر ۲۰۲۶  
 Repository: `Omidso82/Plato-land-preview`  
 Branch: `implementation/uiux-v10-7-owner-foundation`  
-آخرین HEAD شاخه بررسی‌شده: `b342a881865cd75fa2a2a3efe435345880d13d60`  
+آخرین HEAD شاخه پس از مستندسازی: `4a8faad0bed5adea08077490122ae82c2a91ac8c`؛ آخرین commit کد آزموده‌شده `b342a881865cd75fa2a2a3efe435345880d13d60` است.  
 PR: #16 (Draft / Unmerged)  
 Primary Supabase: `dfrppbapaaydbjeflozw`
 
@@ -181,7 +181,7 @@ Primary Supabase: `dfrppbapaaydbjeflozw`
 
 - HEAD هنگام ثبت: `b342a881865cd75fa2a2a3efe435345880d13d60`.
 - PR #16 باز، Draft و Unmerged است.
-- پس از افزودن trigger مربوط به pull_request، run `41261452485` برای Build and typecheck آغاز شد؛ در زمان این یادداشت هنوز در حال اجرا بود.
+- پس از افزودن trigger مربوط به pull_request، run `41261452485` روی commit کد `b342a881865cd75fa2a2a3efe435345880d13d60` با نتیجه `success` تکمیل شد؛ npm install، TypeScript و Build موفق بودند. پنج commit بعدی فقط مستندات/README را تغییر دادند.
 - هیچ Deploy از PR مجاز نیست؛ شرط job انتشار همچنان `refs/heads/main` است.
 - نسخه عملیات گروهی این شاخه هنوز روی دامنه اصلی منتشر نشده است.
-- آخرین آزمون موفق Build/TypeScript پیش از عملیات گروهی مربوط به commit قدیمی‌تر `da9ef025dec3e2632f308dc92d5d919fd7b5ace7` است؛ نباید آن را به HEAD فعلی تعمیم داد.
+- آخرین آزمون موفق Build/TypeScript برای کد عملیات گروهی، run `41261452485` روی commit `b342a881865cd75fa2a2a3efe435345880d13d60` است؛ پنج commit مستنداتی پس از آن کد را تغییر نداده‌اند.
