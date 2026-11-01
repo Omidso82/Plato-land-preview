@@ -46,7 +46,7 @@ export default function TournamentManagerDashboard({ owner = false }: { owner?: 
         const configuredIds=(assigned||[]).filter((x:any)=>x.permissions_configured).map((x:any)=>x.tournament_id);
         let permissionRows:any[]=[];
         if(configuredIds.length){
-          const {data,error:permissionError}=await supabase.from('user_admin_permissions').select('tournament_id,permission_key').eq('user_id',user.id).in('tournament_id',configuredIds);
+          const {data,error:permissionError}=await supabase.from('tournament_manager_section_permissions').select('tournament_id,permission_key').eq('user_id',user.id).in('tournament_id',configuredIds);
           if(permissionError)throw permissionError;
           permissionRows=data||[];
         }
