@@ -737,3 +737,13 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - Migration `20261101004832_scope_notification_inserts_to_authorized_manager_sections` removes the broad legacy manager notification INSERT policy and consolidates INSERT into one policy: self-notifications are allowed; manager notifications for a participant require registrations, schedule or results permission on that participant's tournament.
 - The final Storage evidence policies were inspected directly in `pg_policies`; the final user_notifications policies were inspected and show one SELECT-own, one UPDATE-own and one consolidated INSERT policy.
 - Primary database: 80 applied migrations. Repository: 60 SQL migration files, all version/name pairs match; 20 baseline migrations remain without SQL source files.
+
+
+## 1 November 2026 — Final verification after manager permissions and storage/notification hardening
+- Current fully verified implementation/docs commit: `c35145cbda8f08f509304145b0c8be8827f71753`.
+- GitHub Actions run `41258413750` completed npm install, `npm run typecheck`, and `npm run build` successfully.
+- Production Supabase ledger: 80 migrations; repository: 60 SQL files, all version/name pairs matched; 20 older baseline migration sources remain missing.
+- Storage evidence delete fallback was restored and is limited to registration-section managers after the registration metadata is removed.
+- Notification INSERT policies were consolidated; only self-notifications or managers with registrations/schedule/results permission can create notifications for the relevant participant.
+- Security Advisor remains at two existing SECURITY DEFINER warnings and Leaked Password Protection disabled. Performance Advisor reports 35 unused-index INFO findings.
+- PR #16 remains Draft/unmerged; no domain deployment or merge occurred. Browser E2E and live-domain verification remain outstanding.
