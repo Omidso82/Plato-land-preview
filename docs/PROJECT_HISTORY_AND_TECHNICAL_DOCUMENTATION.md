@@ -766,3 +766,10 @@ Verify on the live site that League A shows two confirmed team entrants (Omid an
 - آخرین CI تکمیل‌شده و موفقِ قابل استناد پیش از این اجرا: run `41258556282` روی commit `c5bc7d89d9eb3fec265dacaa4b68a5437970ef23`.
 - تغییرات انجام‌شده پس از commit کدِ تأییدشده، فقط مستنداتی بوده‌اند؛ هیچ فایل کد، migration، داده عملیاتی، main یا دامنه در این مرحله تغییر نکرده است.
 - وضعیت CI برای هر commit جدید باید از GitHub Actions همان commit خوانده شود؛ موفقیت یک commit را نباید به commit بعدی تعمیم داد.
+
+
+## 1 November 2026 — تکمیل CI پس از ثبت مستندات
+- GitHub Actions run `41259613218` با عنوان `Build and typecheck` برای commit `24ea7b91bf3c55ed29e9a2ac37280b42e9dce5df` با نتیجه نهایی `success` تکمیل شد.
+- پس از آن، مستندات تکمیلی در شاخه ثبت شدند؛ HEAD فعلی هنگام این یادداشت `1d5ffed466282880bea1ed3f54497f4cdbd393b5` است.
+- تغییرات بین commit آزموده‌شده و HEAD این یادداشت فقط مستنداتی هستند؛ کد برنامه، migrationها و داده‌های Supabase تغییر نکرده‌اند.
+- این CI موفق، آزمون TypeScript/Build را تأیید می‌کند و به معنی اجرای E2E مرورگر، انتشار یا تأیید دامنه زنده نیست.
