@@ -8,7 +8,7 @@ PR: #16 (Draft / Unmerged)
 Primary Supabase: `dfrppbapaaydbjeflozw`
 
 ## هدف و روش نگهداری
-این سند دفتر ثبت تجمیعی پیاده‌سازی‌هاست. برای جزئیات روزبه‌روز به `PROJECT_HISTORY_AND_TECHNICAL_DOCUMENTATION.md` و برای آزمون‌ها به `QA_MASTER_CHECKLIST_v1.3.md` مراجعه شود. این سند جایگزین UI/UX Design Checklist v10.7 یا تصمیم‌های نهایی مالک نیست.
+این سند دفتر ثبت تجمیعی پیاده‌سازی‌هاست. برای جزئیات روزبه‌روز به `PROJECT_HISTORY_AND_TECHNICAL_DOCUMENTATION.md` و برای آزمون‌ها به `QA_MASTER_CHECKLIST_v1.4.md` مراجعه شود. این سند جایگزین UI/UX Design Checklist v10.7 یا تصمیم‌های نهایی مالک نیست.
 
 وضعیت‌ها:
 - **پیاده‌سازی شده:** کد/ساختار در شاخه یا دیتابیس اصلی وجود دارد.
