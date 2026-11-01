@@ -55,6 +55,7 @@ function Brand({onClick}:{onClick:()=>void}) { return <button className="brand" 
 
 function jalaliParts(iso:string){if(!iso)return null;const d=new Date(iso+"T12:00:00Z");if(Number.isNaN(d.getTime()))return null;const p=new Intl.DateTimeFormat('en-US-u-ca-persian',{timeZone:'UTC',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(d);const v=(k:string)=>Number(p.find(x=>x.type===k)?.value);return {year:v('year'),month:v('month'),day:v('day')};}
 function jalaliToIso(value:string){return jalaliDateToIso(value);}
+function isSeriesOne(value:string){const normalized=value.trim().toLowerCase().replace(/[يى]/g,'ی').replace(/‌/g,' ').replace(/\s+/g,' ');return normalized==='سری اول'||normalized==='series 1'||normalized==='series one';}
 function JalaliDateInput({value,onChange,required=false}:{value:string;onChange:(value:string)=>void;required?:boolean}){const parts=jalaliParts(value);const shown=parts?String(parts.year).padStart(4,'0')+'/'+String(parts.month).padStart(2,'0')+'/'+String(parts.day).padStart(2,'0'):'';const [draft,setDraft]=useState(shown);useEffect(()=>setDraft(shown),[shown]);return <input type="text" inputMode="numeric" dir="ltr" className="jalali-date-input" aria-label="تاریخ شمسی" placeholder="۱۴۰۵/۰۸/۱۴" value={draft} required={required} onChange={e=>{const next=e.target.value.replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c)));setDraft(next);if(!next){onChange('');return;}const iso=jalaliToIso(next);if(iso)onChange(iso);}} onBlur={()=>{if(draft&&!jalaliToIso(draft))setDraft(shown);}}/>}
 function App(){
  const [tab,setTab]=useState('home'),[mobileMenu,setMobileMenu]=useState(false),[search,setSearch]=useState('');
@@ -149,7 +150,7 @@ function App(){
   })();
   return ()=>{alive=false};
  },[profile.loggedIn]);
- useEffect(()=>{if(!supabase||!sessionResolved)return;let alive=true;setTournamentsLoading(true);setTournamentsError('');(async()=>{const {data,error}=await supabase.from('tournaments').select('*').order('created_at',{ascending:false});if(!alive)return;if(error){setTournaments([]);setTournamentsError('دریافت مسابقات از پایگاه داده ناموفق بود: '+error.message);setTournamentsLoaded(true);setTournamentsLoading(false);return;}const shared=(data||[]).map(tournamentFromDb);setTournaments(shared);setTournamentsLoaded(true);setTournamentsLoading(false);})();return()=>{alive=false};},[sessionResolved,profile.loggedIn,authenticated,role,roleLoading]);
+ useEffect(()=>{if(!supabase||!sessionResolved)return;let alive=true;setTournamentsLoading(true);setTournamentsError('');(async()=>{const {data,error}=await supabase.from('tournaments').select('id,title,game_type,series_name,description,rules,status,registration_open,capacity,prize_details,registration_starts_at,registration_ends_at,starts_at,completed_at,platform_settings,created_at,updated_at').order('created_at',{ascending:false});if(!alive)return;if(error){setTournaments([]);setTournamentsError('دریافت مسابقات از پایگاه داده ناموفق بود: '+error.message);setTournamentsLoaded(true);setTournamentsLoading(false);return;}const shared=(data||[]).map(tournamentFromDb);setTournaments(shared);setTournamentsLoaded(true);setTournamentsLoading(false);})();return()=>{alive=false};},[sessionResolved,profile.loggedIn,authenticated,role,roleLoading]);
  useEffect(()=>{
   if(!supabase) return;
   let alive=true;
@@ -181,8 +182,8 @@ function App(){
   const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{void applySession(session?.user||null)});
   return ()=>{alive=false;subscription.unsubscribe()};
  },[]);
- const active=tournaments.filter(t=>t.published&&t.status==='در حال برگزاری');
- const publishedTournaments=tournaments.filter(t=>t.published&&t.status!=='پیش‌نویس');
+ const active=tournaments.filter(t=>t.published&&t.status==='در حال برگزاری'&&!isSeriesOne(t.series));
+ const publishedTournaments=tournaments.filter(t=>t.published&&t.status!=='پیش‌نویس'&&!isSeriesOne(t.series));
  const filtered=publishedTournaments.filter(t=>t.game.toLowerCase().includes(search.toLowerCase())||t.title.toLowerCase().includes(search.toLowerCase()));
  const archiveYears=Array.from(new Set(publishedTournaments.filter(t=>t.status==='پایان‌یافته'||t.status==='لغو شده').map(t=>formatIranJalaliDateInput(t.date).slice(0,4)).filter(Boolean))).sort((a,b)=>b.localeCompare(a));
  const matchesSelectedGame=(t:Tournament)=>!selectedGame||(selectedGame==='__mixed__'?/ترکیبی|mixed/i.test(t.game):t.game===selectedGame);
