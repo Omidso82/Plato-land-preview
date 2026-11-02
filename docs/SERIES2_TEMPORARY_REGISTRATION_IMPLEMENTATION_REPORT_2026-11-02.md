@@ -28,3 +28,10 @@
 - صفحه مورد انتظار: https://platoland.org/series2-registration
 - PR: https://github.com/Omidso82/Plato-land-preview/pull/40
 - Merge commit: `414508101948e3a790aa277292f5a8adab763979`
+
+
+## اصلاح مسیر دامنه اصلی — ۲ نوامبر ۲۰۲۶
+- طبق تصمیم مالک پروژه، مسیر ریشه `/` اکنون مستقیماً کامپوننت ثبت‌نام سری دوم را نمایش می‌دهد؛ بنابراین آدرس `https://platoland.org/` باید صفحه ثبت‌نام را باز کند.
+- تغییر فقط در `src/index.tsx` انجام شد؛ commit: `642ca4e87ea3f048ef8821d7721ccfb449abe522`.
+- مسیر `/series2-registration` همچنان فعال می‌ماند. پنل مالک `/prediction-admin` حفظ شده است. صفحه اصلی قبلی با مسیر `/home` قابل دسترسی است.
+- این commit روی `main` ثبت شده و workflow انتشار خودکار GitHub Pages با push به main باید اجرا شود. تأیید نهایی deployment و تست مرورگر زنده هنوز لازم است؛ صرف commit به معنی انتشار موفق نیست.
