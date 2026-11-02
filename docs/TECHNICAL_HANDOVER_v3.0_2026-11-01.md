@@ -258,3 +258,14 @@
 - هیچ migration، جدول، policy، رأی، Edge Function یا داده‌ای در PR #38 تغییر نکرد. ۱۲ رأی نیمه‌نهایی و ۱۸ رأی پیش‌بینی قهرمان قدیمی حفظ شده‌اند؛ این دو جدول مستقل‌اند.
 - صفحه عمومی `/semifinal-prediction` بازنشسته است و بدون دستور صریح جدید مالک نباید دوباره فعال شود.
 - وضعیت CI/Deploy خودکار PR #38 از workflow run مرتبط در بررسی اولیه اثبات نشد؛ تأیید فعلی بازگشت سایت، تأیید مشاهده‌ای مالک است.
+
+
+## 16. Temporary Series 2 registration page — 2 November 2026
+- PR #40 merged to `main`: https://github.com/Omidso82/Plato-land-preview/pull/40
+- Merge commit: `414508101948e3a790aa277292f5a8adab763979`; follow-up wording/flow commit: `3b9d90fc74aabe46b688cdef099f2bc45c8480eb`.
+- New isolated route: `/series2-registration` (entry in `src/index.tsx`, component `src/Series2Registration.tsx`, stylesheet `src/Series2Registration.css`). Homepage and unrelated routes were not intentionally changed.
+- Form submits Plato ID and rules acceptance to the already-deployed primary-project Edge Function `plato-land-series2-registration`; UI validates English letters/digits/underscore, 2–30 chars; duplicate response is surfaced to the user; successful response uses the approved confirmation message.
+- Database table and Edge Function were created earlier in the primary Supabase project only. No second database or preview environment was created.
+- **Not complete:** the 18 original poster images are not available as separate usable assets in the current repository/runtime. The page currently shows 18 clearly marked image placeholders, not the original rules artwork. It must not be treated as a final rules-reading page until the original images are restored in their approved order.
+- **Verification status:** PR merged. No GitHub Actions workflow run was returned for the merge commit; no local build/typecheck was run in this execution environment. Live site deployment and browser/mobile behavior could not be independently verified from this environment. Do not report the route as confirmed live until checked at `https://platoland.org/series2-registration`.
+- Registration submission has not been tested with a real Plato ID; no test registration records were inserted.
