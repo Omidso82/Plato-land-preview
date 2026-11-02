@@ -57,7 +57,7 @@ export default function Series2Registration() {
     <header className="s2reg-head"><div className="s2reg-crown">♛</div><div className="s2reg-brand">PLATO <b>LAND</b></div><div className="s2reg-tag">بازی، رقابت، قهرمانی</div></header>
     <section className="s2reg-panel">
       <div className="s2reg-kicker">PLATO LAND · BACKGAMMON</div>
-      <h1>ثبت‌نام سری دوم لیگ تخته‌نرد</h1>
+      <h1>ثبت‌نام سری دوم لیگ تخته‌نرد (ظرفیت ۴۸ نفر)</h1>
       <p className="s2reg-intro">برای ثبت درخواست، ابتدا قوانین مسابقات را تا پایان مطالعه کنید و سپس Plato ID خود را وارد کنید.</p>
       <div className="s2reg-progress"><span>مطالعه قوانین</span><strong>{slide} از ۱۸</strong></div>
       <div className="s2reg-track"><span style={{width: ((slide/18)*100)+'%'}} /></div>
