@@ -18,10 +18,15 @@ export default function Series2Registration() {
       const { data } = await supabase.storage.from('series2-slides').list('slides', { limit: 30, sortBy: { column: 'name', order: 'asc' } });
       if (!active || !data) return;
       const next: Record<number,string> = {};
+      // Canonical keys (01 ... 18) always win; legacy extension-based files are fallback only.
       for (const file of data) {
-        const match = /^(\d{2})\.(jpe?g|png|webp)$/i.exec(file.name);
-        if (!match) continue;
-        next[Number(match[1])] = supabase.storage.from('series2-slides').getPublicUrl('slides/' + file.name).data.publicUrl;
+        const canonical = /^(\d{2})$/i.exec(file.name);
+        const legacy = /^(\d{2})\.(jpe?g|png|webp)$/i.exec(file.name);
+        if (!canonical && !legacy) continue;
+        const number = Number((canonical || legacy)![1]);
+        if (canonical || !next[number]) {
+          next[number] = supabase.storage.from('series2-slides').getPublicUrl('slides/' + file.name).data.publicUrl;
+        }
       }
       setSlideImages(next);
     };
