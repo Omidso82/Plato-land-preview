@@ -11,7 +11,8 @@ export default function Series2SlidesManager() {
   const [checking,setChecking] = useState(true);
   const [owner,setOwner] = useState(false);
   const [files,setFiles] = useState<SlideFile[]>([]);
-  const [selected,setSelected] = useState<FileList|null>(null);
+  const [selected,setSelected] = useState<Record<number,File>>({});
+  const [busySlot,setBusySlot] = useState<number|null>(null);
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
 
@@ -31,9 +32,9 @@ export default function Series2SlidesManager() {
 
   async function loadSlides() {
     if (!supabase) return;
-    const {data,error} = await supabase.storage.from(BUCKET).list('slides',{limit:30,sortBy:{column:'name',order:'asc'}});
+    const {data,error} = await supabase.storage.from(BUCKET).list('slides',{limit:60,sortBy:{column:'name',order:'asc'}});
     if (error) { setMessage('خواندن فهرست تصاویر ناموفق بود: '+error.message); return; }
-    const rows = (data||[]).filter(x => /^\d{2}\.(jpe?g|png|webp)$/i.test(x.name));
+    const rows = (data||[]).filter(x => /^(\d{2})(\.(jpe?g|png|webp))?$/i.test(x.name));
     setFiles(rows.map(x => ({name:x.name,url:supabase.storage.from(BUCKET).getPublicUrl('slides/'+x.name).data.publicUrl,updated_at:x.updated_at})));
   }
 
@@ -48,27 +49,33 @@ export default function Series2SlidesManager() {
     setBusy(false);
   }
 
-  async function upload() {
-    if (!supabase || !selected || selected.length !== 18) { setMessage('برای ثبت کامل، دقیقاً ۱۸ تصویر انتخاب کن.'); return; }
-    const ordered = Array.from(selected).sort((a,b)=>a.name.localeCompare(b.name,'en',{numeric:true}));
-    const invalid = ordered.find(f=>!/^image\/(jpeg|png|webp)$/.test(f.type) || f.size>10*1024*1024);
-    if (invalid) { setMessage('فرمت تصاویر باید JPG، PNG یا WEBP و حجم هر تصویر حداکثر ۱۰ مگابایت باشد.'); return; }
-    setBusy(true); setMessage('در حال بارگذاری تصاویر…');
+  async function uploadSlide(number:number) {
+    const file=selected[number];
+    if (!supabase || !file) { setMessage('ابتدا تصویر همین اسلاید را انتخاب کن.'); return; }
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size>10*1024*1024) {
+      setMessage('فرمت تصویر باید JPG، PNG یا WEBP و حجم آن حداکثر ۱۰ مگابایت باشد.');
+      return;
+    }
+    setBusySlot(number); setMessage('در حال ذخیره تصویر اسلاید '+number+'…');
     try {
-      for (let i=0;i<ordered.length;i++) {
-        const file=ordered[i];
-        const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace('jpeg','jpg');
-        const path='slides/'+String(i+1).padStart(2,'0')+'.'+ext;
-        const {error}=await supabase.storage.from(BUCKET).upload(path,file,{upsert:true,contentType:file.type,cacheControl:'60'});
-        if(error) throw new Error('اسلاید '+(i+1)+': '+error.message);
+      const key=String(number).padStart(2,'0');
+      // Every slide has one stable storage key, independent of file name, extension or picker order.
+      const {error}=await supabase.storage.from(BUCKET).upload('slides/'+key,file,{
+        upsert:true,contentType:file.type,cacheControl:'0'
+      });
+      if(error) throw new Error('اسلاید '+number+': '+error.message);
+      // Remove legacy numbered files from the previous bulk uploader so they cannot override this slot.
+      const {data:legacy}=await supabase.storage.from(BUCKET).list('slides',{limit:60});
+      const old=(legacy||[]).filter(x=>new RegExp('^'+key+'\\.(jpe?g|png|webp)$','i').test(x.name)).map(x=>'slides/'+x.name);
+      if(old.length) {
+        const {error:removeError}=await supabase.storage.from(BUCKET).remove(old);
+        if(removeError) throw new Error('تصویر ذخیره شد، اما پاک‌سازی نسخه قدیمی اسلاید '+number+' ناموفق بود: '+removeError.message);
       }
-      setSelected(null);
-      const input=document.getElementById('series2-slide-files') as HTMLInputElement|null;
-      if(input) input.value='';
+      setSelected(prev=>{const next={...prev};delete next[number];return next;});
       await loadSlides();
-      setMessage('هر ۱۸ تصویر با موفقیت ذخیره شد. صفحه عمومی اکنون تصاویر جدید را نمایش می‌دهد.');
-    } catch(e) { setMessage(e instanceof Error?e.message:'بارگذاری تصاویر ناموفق بود.'); }
-    finally { setBusy(false); }
+      setMessage('تصویر اسلاید '+number+' با موفقیت ذخیره شد.');
+    } catch(e) { setMessage(e instanceof Error?e.message:'بارگذاری تصویر ناموفق بود.'); }
+    finally { setBusySlot(null); }
   }
 
   async function signOut() { await supabase?.auth.signOut(); setSignedIn(false); setOwner(false); setFiles([]); }
@@ -87,29 +94,33 @@ export default function Series2SlidesManager() {
 
   return <main dir="rtl" style={shell}><section style={panel}>
     <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}>
-      <div><h1 style={heading}>مدیریت خصوصی اسلایدهای سری دوم</h1><p style={muted}>این صفحه فقط برای مالک است و در صفحه عمومی هیچ منو یا پیوندی به آن وجود ندارد.</p></div>
+      <div><h1 style={heading}>مدیریت خصوصی اسلایدهای سری دوم</h1><p style={muted}>هر جایگاه مستقل است؛ تصویر انتخابی فقط در همان شماره ذخیره می‌شود. ترتیب انتخاب فایل‌ها هیچ اثری ندارد.</p></div>
       <button style={secondary} onClick={signOut}>خروج از پنل</button>
     </div>
-    <div style={{border:'1px solid #6b572e',borderRadius:12,padding:16,marginTop:18}}>
-      <strong style={{color:'#f0d991'}}>بارگذاری مجموعه ۱۸ اسلاید</strong>
-      <p style={muted}>۱۸ تصویر را با نام‌های مرتب‌شده انتخاب کن؛ ترتیب نام فایل‌ها مبنای اتصال به اسلایدهای ۰۱ تا ۱۸ است. هر تصویر حداکثر ۱۰ مگابایت.</p>
-      <input id="series2-slide-files" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={e=>setSelected(e.target.files)} style={{...field,padding:10}}/>
-      <p style={muted}>{selected?selected.length+' فایل انتخاب شده':'هنوز فایلی انتخاب نشده است.'}</p>
-      <button style={primary} disabled={busy||!selected||selected.length!==18} onClick={()=>void upload()}>{busy?'در حال انجام…':'ذخیره هر ۱۸ تصویر'}</button>
-    </div>
-    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(125px,1fr))',gap:10,marginTop:20}}>
-      {Array.from({length:18},(_,i)=>{const n=String(i+1).padStart(2,'0');const f=files.find(x=>x.name.startsWith(n+'.'));return <div key={n} style={{border:'1px solid #39352b',borderRadius:9,padding:8}}>
-        <div style={{color:'#d9b65d',fontSize:12,marginBottom:6}}>اسلاید {n}</div>
-        {f?<img src={f.url} alt={'اسلاید '+n} style={{width:'100%',height:110,objectFit:'contain',background:'#090a0c'}}/>:<div style={{height:110,display:'grid',placeItems:'center',color:'#8e8778',background:'#111214'}}>تصویر ثبت نشده</div>}
-        <small style={{color:'#a9a08e'}}>{f?'بارگذاری شده':'در انتظار تصویر'}</small>
-      </div>})}
+    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12,marginTop:20}}>
+      {Array.from({length:18},(_,i)=>{
+        const number=i+1,key=String(number).padStart(2,'0');
+        const f=files.find(x=>x.name===key)||files.find(x=>x.name.toLowerCase().startsWith(key+'.'));
+        return <div key={key} style={{border:'1px solid #51452d',borderRadius:12,padding:12,background:'#111214'}}>
+          <div style={{color:'#d9b65d',fontWeight:700,marginBottom:8}}>اسلاید {number}</div>
+          {f?<img src={f.url+'?v='+(f.updated_at||'current')} alt={'اسلاید '+number} style={{width:'100%',height:145,objectFit:'contain',background:'#090a0c',borderRadius:8}}/>:<div style={{height:145,display:'grid',placeItems:'center',color:'#8e8778',background:'#090a0c',borderRadius:8}}>تصویر ثبت نشده</div>}
+          <label style={{...muted,display:'block',marginTop:10}}>انتخاب تصویر مخصوص اسلاید {number}
+            <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0];if(file)setSelected(prev=>({...prev,[number]:file}));}} style={{...field,padding:8,fontSize:12}}/>
+          </label>
+          {selected[number]&&<p style={{...muted,margin:'6px 0'}}>انتخاب‌شده: {selected[number].name}</p>}
+          <button style={{...primary,width:'100%',marginTop:8}} disabled={busySlot!==null||!selected[number]} onClick={()=>void uploadSlide(number)}>
+            {busySlot===number?'در حال ذخیره…':f?'جایگزینی تصویر اسلاید '+number:'ذخیره تصویر اسلاید '+number}
+          </button>
+          <small style={{display:'block',color:'#a9a08e',marginTop:7}}>{f?'تصویر در سایت ثبت شده':'در انتظار بارگذاری'} · حداکثر ۱۰ مگابایت</small>
+        </div>;
+      })}
     </div>
     {message&&<p role="status" style={{...muted,marginTop:16}}>{message}</p>}
   </section></main>;
 }
 
 const shell:React.CSSProperties={minHeight:'100vh',background:'radial-gradient(ellipse at 50% 0%,#292216 0,#111214 48%,#090a0c 100%)',color:'#f4f0e8',padding:'28px 16px',fontFamily:'inherit'};
-const panel:React.CSSProperties={maxWidth:850,margin:'30px auto',padding:24,border:'1px solid #705b31',borderRadius:16,background:'#171819',boxShadow:'0 20px 70px #0008'};
+const panel:React.CSSProperties={maxWidth:1050,margin:'30px auto',padding:24,border:'1px solid #705b31',borderRadius:16,background:'#171819',boxShadow:'0 20px 70px #0008'};
 const heading:React.CSSProperties={color:'#f6e8c5',fontSize:24,margin:'0 0 8px'};
 const muted:React.CSSProperties={color:'#c9c4b8',fontSize:13,lineHeight:1.9};
 const field:React.CSSProperties={display:'block',width:'100%',marginTop:7,background:'#101113',border:'1px solid #6a5a37',borderRadius:8,color:'#fff',padding:12};
