@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { supabase } from './supabase';
 import './Series2Registration.css';
 
 const SUPABASE_URL = 'https://dfrppbapaaydbjeflozw.supabase.co';
@@ -9,6 +10,24 @@ export default function Series2Registration() {
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<{type:'success'|'error'; text:string}|null>(null);
   const [finished, setFinished] = useState(false);
+  const [slideImages, setSlideImages] = useState<Record<number,string>>({});
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (!supabase) return;
+      const { data } = await supabase.storage.from('series2-slides').list('slides', { limit: 30, sortBy: { column: 'name', order: 'asc' } });
+      if (!active || !data) return;
+      const next: Record<number,string> = {};
+      for (const file of data) {
+        const match = /^(\d{2})\.(jpe?g|png|webp)$/i.exec(file.name);
+        if (!match) continue;
+        next[Number(match[1])] = supabase.storage.from('series2-slides').getPublicUrl('slides/' + file.name).data.publicUrl;
+      }
+      setSlideImages(next);
+    };
+    void load();
+    return () => { active = false; };
+  }, []);
   const validId = useMemo(() => /^[A-Za-z0-9_]{2,30}$/.test(platoId.trim()), [platoId]);
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,10 +59,10 @@ export default function Series2Registration() {
       <div className="s2reg-track"><span style={{width: ((slide/18)*100)+'%'}} /></div>
       <div className="s2reg-slide">
         <div className="s2reg-slide-number">اسلاید {String(slide).padStart(2,'0')}</div>
-        <div className="s2reg-slide-placeholder"><span className="s2reg-image-icon">▧</span><strong>{slide===18?'پیام پایانی':'قانون '+slide}</strong><p>جایگاه تصویر اصلی این اسلاید</p><small>تصویر ارسالی باید با کیفیت اصلی و بدون برش در این قسمت نمایش داده شود.</small></div>
+        {slideImages[slide] ? <img className="s2reg-slide-image" src={slideImages[slide]} alt={'اسلاید '+slide} /> : <div className="s2reg-slide-placeholder"><strong>{slide===18?'پیام پایانی':'قانون '+slide}</strong><p>تصویر این اسلاید هنوز بارگذاری نشده است.</p></div>}
       </div>
-      <div className="s2reg-nav"><button type="button" className="s2reg-secondary" disabled={slide===1} onClick={()=>setSlide(s=>Math.max(1,s-1))}>قبلی</button><button type="button" className="s2reg-primary" onClick={()=>{if(slide<18){setSlide(s=>s+1);setAccepted(false)}else document.getElementById('s2reg-form')?.scrollIntoView({behavior:'smooth'})}}>{slide===18?'ادامه به ثبت‌نام':'قانون بعدی'}</button></div>
-      <form id="s2reg-form" className="s2reg-form" onSubmit={submit}>
+      <div className="s2reg-nav"><button type="button" className="s2reg-secondary" disabled={slide===1} onClick={()=>setSlide(s=>Math.max(1,s-1))}>قبلی</button>{slide<18&&<button type="button" className="s2reg-primary" onClick={()=>{setSlide(s=>Math.min(18,s+1));setAccepted(false)}}>قانون بعدی</button>}</div>
+      {slide===18&&<form id="s2reg-form" className="s2reg-form" onSubmit={submit}>
         <h2>ثبت درخواست شرکت در مسابقات</h2>
         <label className="s2reg-check"><input type="checkbox" checked={accepted} onChange={e=>setAccepted(e.target.checked)} disabled={finished||slide!==18}/><span>تمام ۱۸ اسلاید قوانین را مطالعه کردم و با قوانین نهایی سری دوم موافقم.</span></label>
         <label className="s2reg-label" htmlFor="s2-plato-id">Plato ID</label>
@@ -51,7 +70,7 @@ export default function Series2Registration() {
         <p className="s2reg-hint">فقط حروف انگلیسی، اعداد و زیرخط مجاز است.</p>
         <button className="s2reg-submit" type="submit" disabled={!accepted||!validId||sending||finished}>{sending?'در حال ارسال…':finished?'درخواست ارسال شد':'ارسال درخواست ثبت‌نام'}</button>
         {message&&<div role="status" className={'s2reg-message '+message.type}>{message.text}</div>}
-      </form>
+      </form>}
     </section>
     <footer className="s2reg-footer">© PLATO LAND · Series 2</footer>
   </main>;
