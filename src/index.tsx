@@ -8,15 +8,17 @@ import './styles.css';
 const root=createRoot(document.getElementById('root')!);
 const path=window.location.pathname.replace(/\/+$/,'') || '/';
 
-if(path==='/series2-registration') {
+if(path==='/' || path==='/series2-registration') {
   root.render(<React.StrictMode><Series2Registration/></React.StrictMode>);
 } else if(path==='/prediction-admin') {
   root.render(<React.StrictMode><PredictionOwnerPanel/></React.StrictMode>);
 } else {
-  // The temporary semifinal prediction page is retired.
-  // Keep the owner report route available and restore the main platform homepage.
+  // The root domain is temporarily assigned to Series 2 registration.
+  // Keep the existing platform homepage available at /home and preserve admin routes.
   if(path==='/semifinal-prediction') {
     window.history.replaceState(null,'','/');
+    root.render(<React.StrictMode><Series2Registration/></React.StrictMode>);
+  } else {
+    root.render(<React.StrictMode><App/></React.StrictMode>);
   }
-  root.render(<React.StrictMode><App/></React.StrictMode>);
 }
