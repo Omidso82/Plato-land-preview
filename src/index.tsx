@@ -1,23 +1,19 @@
 import React from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App';
-import ChampionPrediction from './ChampionPrediction';
 import PredictionOwnerPanel from './PredictionOwnerPanel';
 import './styles.css';
 
 const root=createRoot(document.getElementById('root')!);
-const queryRoute=new URLSearchParams(window.location.search).get('route');
-if(queryRoute==='semifinal-prediction') {
-  window.history.replaceState(null,'','/semifinal-prediction');
-}
 const path=window.location.pathname.replace(/\/+$/,'') || '/';
 
 if(path==='/prediction-admin') {
   root.render(<React.StrictMode><PredictionOwnerPanel/></React.StrictMode>);
-} else if(path==='/semifinal-prediction' || queryRoute==='semifinal-prediction' || path==='/') {
-  // Temporary public landing page: keep the full platform out of public view
-  // while PLATO LAND semifinal predictions are being collected.
-  root.render(<React.StrictMode><ChampionPrediction/></React.StrictMode>);
 } else {
+  // The temporary semifinal prediction page is retired.
+  // Keep the owner report route available and restore the main platform homepage.
+  if(path==='/semifinal-prediction') {
+    window.history.replaceState(null,'','/');
+  }
   root.render(<React.StrictMode><App/></React.StrictMode>);
 }
