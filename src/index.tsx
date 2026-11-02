@@ -3,12 +3,15 @@ import {createRoot} from 'react-dom/client';
 import App from './App';
 import PredictionOwnerPanel from './PredictionOwnerPanel';
 import Series2Registration from './Series2Registration';
+import Series2SlidesManager from './Series2SlidesManager';
 import './styles.css';
 
 const root=createRoot(document.getElementById('root')!);
 const path=window.location.pathname.replace(/\/+$/,'') || '/';
 
-if(path==='/' || path==='/series2-registration') {
+if(path==='/series2-slides-manager') {
+  root.render(<React.StrictMode><Series2SlidesManager/></React.StrictMode>);
+} else if(path==='/' || path==='/series2-registration') {
   root.render(<React.StrictMode><Series2Registration/></React.StrictMode>);
 } else if(path==='/prediction-admin') {
   root.render(<React.StrictMode><PredictionOwnerPanel/></React.StrictMode>);
