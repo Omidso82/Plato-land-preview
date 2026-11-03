@@ -46,3 +46,52 @@
 هر آیتم باید یکی از این وضعیت‌ها را داشته باشد: طراحی‌شده، پیاده‌سازی‌شده، commit، build، deploy، مشاهده زنده، آزمون مرورگر، تأیید نقش/داده. این مراحل جایگزین یکدیگر نیستند.
 
 **وضعیت کلی QA: PARTIAL.** شواهد تازه ثبت‌نام موجود است؛ Preview Cloudflare و آزمون‌های مرورگر هنوز انجام نشده‌اند.
+
+
+## الحاقیه QA — Preview مستقل (۳ نوامبر ۲۰۲۶)
+- [x] صفحه Preview مستقل با داده‌های ثابت و بدون فرم ثبت‌نام ایجاد شد.
+- [x] نقطه ورود به فلگ صریح `VITE_PLATO_PREVIEW=true` وابسته شد.
+- [x] import برنامه عملیاتی، ثبت‌نام و پنل‌های مدیریتی در حالت Preview حذف/جدا شد و فقط در مسیر غیر Preview به‌صورت dynamic import انجام می‌شود.
+- [x] Workflow CI مستقل برای شاخه `cloudflare-preview` اضافه شد؛ بدون مرحله Deploy.
+- [ ] نتیجه واقعی GitHub Actions برای typecheck و build بررسی نشده است.
+- [ ] نبود کد/رشته‌های backend در artifact باید با نتیجه Workflow تأیید شود.
+- [ ] تنظیم `VITE_PLATO_PREVIEW=true` در هر دو Environment scope در Cloudflare انجام نشده/تأیید نشده است.
+- [ ] Cloudflare Pages project و URL pages.dev ساخته/تأیید نشده‌اند.
+- [ ] آزمون مرورگر موبایل/دسکتاپ روی Preview زنده انجام نشده است.
+- [ ] بررسی مستقل اینکه URL Preview فقط محتوای نمایشی دارد، پس از Deploy لازم است.
+
+
+## اصلاحیه وضعیت آزمون CI — ۳ نوامبر ۲۰۲۶
+- [x] اجرای GitHub Actions برای شاخه cloudflare-preview با نتیجه Success (run 41656110849).
+- [x] نصب وابستگی‌ها با Workflow اصلاح‌شده موفق شد.
+- [x] TypeScript verification موفق شد.
+- [x] Build با VITE_PLATO_PREVIEW=true موفق شد.
+- [x] کنترل artifact شامل وجود dist/index.html و نبود رشته‌های شناخته‌شده backend/admin موفق شد.
+- [ ] ممیزی جامع bundle و وابستگی‌ها (کنترل فعلی محدود و مبتنی بر الگوهای مشخص است).
+- [ ] تنظیم env در Cloudflare در هر دو scope.
+- [ ] ساخت/اتصال Cloudflare Pages و Deploy به pages.dev.
+- [ ] آزمون مرورگر موبایل/دسکتاپ و بررسی مسیرها روی URL زنده.
+- [ ] تأیید بصری و عملکردی با کاربر.
+نتیجه QA این مرحله: CI/Build PASS؛ Cloudflare و Browser QA NOT RUN.
+
+
+## الحاقیه QA v1.9 — استقرار واقعی Preview (۳ نوامبر ۲۰۲۶)
+- [x] پروژه Cloudflare Pages با نام `plato-land-preview` ایجاد شد.
+- [x] اتصال به مخزن GitHub و شاخه `cloudflare-preview` در فرم تنظیمات مشاهده شد.
+- [x] Build command `npm run build` و خروجی `dist` ثبت شد.
+- [x] متغیر `VITE_PLATO_PREVIEW=true` در فرم پیش از Deploy مشاهده شد.
+- [x] Save and Deploy اجرا شد و URL `https://plato-land-preview.pages.dev` در مرورگر موبایل باز شد.
+- [x] صفحهٔ نمایشی در موبایل قابل مشاهده است.
+- [ ] آزمون تمام لینک‌ها و مقصدهای صفحه.
+- [ ] آزمون مسیرهای داخلی و refresh.
+- [ ] آزمون اندازه‌های مختلف موبایل و دسکتاپ.
+- [ ] مقایسهٔ جزءبه‌جزء با سایت اصلی و ثبت تفاوت‌های مورد انتظار/ناخواسته.
+- [ ] بررسی مجدد تنظیمات Environment در داشبورد و scopeها پس از Deploy.
+- [ ] بررسی امنیتی مستقل bundle و تنظیمات پروژه.
+- [ ] تأیید نهایی مالک پس از رفع اختلاف‌های طراحی.
+- نتیجه: `DEPLOYED / INITIAL VISUAL CHECK PASS / FULL QA PENDING`.
+
+### اصلاح Snapshot ثبت‌نام
+- Snapshot قدیمی ۲۰ درخواست، مربوط به Query قبلی است و به‌عنوان تاریخچه حفظ می‌شود.
+- آخرین Query فقط‌خواندنی بررسی‌شده در ۳ نوامبر، ۲۵ درخواست و ۲۵ Plato ID یکتا را گزارش کرد.
+- وضعیت تأیید مدیر یا قطعی‌شدن فهرست شرکت‌کنندگان از این تعداد قابل استنتاج نیست.
