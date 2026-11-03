@@ -20,7 +20,6 @@ async function start() {
 
   // Production modules are loaded only outside Preview mode.
   // The Cloudflare Preview build never imports Supabase-backed pages or admin panels.
-  const path = window.location.pathname.replace(/\/+$/,'') || '/';
   if (path === '/series2-slides-manager') {
     const { default: Series2SlidesManager } = await import('./Series2SlidesManager');
     root.render(<React.StrictMode><Series2SlidesManager /></React.StrictMode>);
