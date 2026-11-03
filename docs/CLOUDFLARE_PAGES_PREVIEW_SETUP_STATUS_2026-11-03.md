@@ -36,3 +36,44 @@
 ساخت مسیر `/preview` در همان artifact سایت GitHub Pages، محیط Preview مستقل نیست: کد آزمایشی همراه Production منتشر می‌شود و مبدأ/تنظیمات اجرایی مشترک می‌ماند. برای توسعه مستقل، پروژه Pages جداگانه و شاخه جدا لازم است.
 
 **وضعیت:** WAITING_FOR_DASHBOARD_SCREENSHOT — هیچ تغییر زیرساختی انجام نشده است.
+
+
+## الحاقیه ۳ نوامبر ۲۰۲۶ — جداسازی ایمن کد Preview
+- شاخه هدف: `cloudflare-preview`؛ هیچ commit این مرحله به `main` ارسال نشده است.
+- `src/PreviewApp.tsx` و `src/preview.css` اضافه شدند: صفحه نمایشی مستقل RTL، موبایل‌پذیر و هم‌راستا با ساختار تأییدشده صفحه اصلی؛ داده‌ها mock و ثابت‌اند.
+- `src/index.tsx` بازنویسی شد تا در صورت `VITE_PLATO_PREVIEW=true` فقط PreviewApp را import کند. ماژول‌های عملیاتی و Supabase فقط در شاخه اجرای غیر Preview به‌صورت dynamic import بارگذاری می‌شوند.
+- Workflow بررسی `.github/workflows/cloudflare-preview-check.yml` اضافه شد: `npm ci`، `npm run typecheck`، `npm run build` با env Preview و بررسی نبود شناسه پروژه Supabase/مسیر ثبت‌نام/پنل مدیریت در bundle. این Workflow deploy نمی‌کند.
+
+### مقادیر لازم در فرم Cloudflare
+- Branch: `cloudflare-preview`
+- Framework: React (Vite) یا `None`
+- Build command: `npm run build`
+- Output directory: `dist`
+- Root directory: خالی
+- Environment variable در هر دو scope یعنی Production و Preview: `VITE_PLATO_PREVIEW=true`
+- فعلاً فقط `*.pages.dev`؛ هیچ DNS یا Custom Domain تغییر نکند.
+
+### شواهد و وضعیت
+- کد و Workflow commit شده‌اند؛ شناسه آخرین commit در این مرحله پس از اجرای workflow ثبت می‌شود.
+- هنوز اجرای موفق Workflow، تنظیم Environment Variable در داشبورد، ساخت Pages project، Deploy و آزمون زنده تأیید نشده‌اند.
+- تا زمان تأیید env و Build موفق، دکمه Save and Deploy را نزنید.
+
+
+## اصلاحیه نتیجه Build/CI — ۳ نوامبر ۲۰۲۶
+- اجرای موفق نهایی: https://github.com/Omidso82/Plato-land-preview/actions/runs/41656110849 ، commit ad75eb736ad581873fd56abf4a581d6eef27be79.
+- نتیجه تمام مراحل: Setup Node موفق، Install dependencies موفق، TypeScript verification موفق، Build ایزوله موفق، Verify Preview artifact موفق.
+- Workflow نهایی به‌جای npm ci از npm install استفاده می‌کند، چون مخزن فایل lock قابل استفاده برای cache/npm ci ندارد. تلاش‌های اولیه شکست خوردند و پس از اصلاح، اجرای نهایی موفق شد.
+- آزمون artifact وجود dist/index.html و نبود چند رشته شناخته‌شده مربوط به Supabase/ثبت‌نام/پنل را تأیید کرده است؛ این کنترل محدود است و ادعای ممیزی کامل امنیتی نیست.
+- وضعیت جدید: کد و CI آماده Build هستند؛ هنوز Cloudflare Environment Variables، ساخت Pages project، اتصال GitHub، Deploy و تست زنده انجام/تأیید نشده‌اند.
+- اقدام بعدی: در داشبورد Cloudflare، پیش از Save and Deploy، مقدار VITE_PLATO_PREVIEW=true را در هر دو scope Production و Preview تنظیم و تصویر تنظیمات را برای بازبینی ارائه کنید.
+
+
+## اصلاح وضعیت نهایی راه‌اندازی — ۳ نوامبر ۲۰۲۶
+- مالک در داشبورد Cloudflare پروژه `plato-land-preview` را با اتصال مخزن `Omidso82/Plato-land-preview` ایجاد کرد.
+- شاخهٔ Production در تنظیمات همین پروژهٔ آزمایشی روی `cloudflare-preview` قرار گرفت؛ این نام‌گذاری Cloudflare به معنی تغییر شاخهٔ Production اصلی سایت نیست.
+- Build command برابر `npm run build`، خروجی `dist` و متغیر `VITE_PLATO_PREVIEW=true` در فرم تنظیم شد. در تصویر نهایی فرم، متغیر و مقدار آن قابل مشاهده بود.
+- دکمه Save and Deploy اجرا شد و صفحهٔ `https://plato-land-preview.pages.dev` در مرورگر موبایل باز شد؛ بنابراین ساخت پروژه و Deploy اولیه تأیید شده است.
+- مشاهدهٔ بصری صفحهٔ Preview انجام شد؛ این صرفاً تأیید بازشدن صفحه است، نه تأیید کامل QA، امنیت یا برابری با Production.
+- هیچ Custom Domain یا DNS برای `platoland.org` تنظیم نشد و هیچ تغییر عمدی در GitHub Pages یا Supabase اصلی انجام نشد.
+- تفاوت‌های ظاهری Preview با سایت اصلی مورد انتظار است: Preview یک نمونهٔ نمایشی مستقل با محتوای mock است، نه نسخهٔ کامل و عملیاتی سایت.
+- وضعیت: `PREVIEW_DEPLOYED — VISUAL REVIEW STARTED — FULL QA PENDING`.
