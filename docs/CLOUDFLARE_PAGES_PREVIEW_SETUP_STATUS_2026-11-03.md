@@ -66,3 +66,14 @@
 - آزمون artifact وجود dist/index.html و نبود چند رشته شناخته‌شده مربوط به Supabase/ثبت‌نام/پنل را تأیید کرده است؛ این کنترل محدود است و ادعای ممیزی کامل امنیتی نیست.
 - وضعیت جدید: کد و CI آماده Build هستند؛ هنوز Cloudflare Environment Variables، ساخت Pages project، اتصال GitHub، Deploy و تست زنده انجام/تأیید نشده‌اند.
 - اقدام بعدی: در داشبورد Cloudflare، پیش از Save and Deploy، مقدار VITE_PLATO_PREVIEW=true را در هر دو scope Production و Preview تنظیم و تصویر تنظیمات را برای بازبینی ارائه کنید.
+
+
+## اصلاح وضعیت نهایی راه‌اندازی — ۳ نوامبر ۲۰۲۶
+- مالک در داشبورد Cloudflare پروژه `plato-land-preview` را با اتصال مخزن `Omidso82/Plato-land-preview` ایجاد کرد.
+- شاخهٔ Production در تنظیمات همین پروژهٔ آزمایشی روی `cloudflare-preview` قرار گرفت؛ این نام‌گذاری Cloudflare به معنی تغییر شاخهٔ Production اصلی سایت نیست.
+- Build command برابر `npm run build`، خروجی `dist` و متغیر `VITE_PLATO_PREVIEW=true` در فرم تنظیم شد. در تصویر نهایی فرم، متغیر و مقدار آن قابل مشاهده بود.
+- دکمه Save and Deploy اجرا شد و صفحهٔ `https://plato-land-preview.pages.dev` در مرورگر موبایل باز شد؛ بنابراین ساخت پروژه و Deploy اولیه تأیید شده است.
+- مشاهدهٔ بصری صفحهٔ Preview انجام شد؛ این صرفاً تأیید بازشدن صفحه است، نه تأیید کامل QA، امنیت یا برابری با Production.
+- هیچ Custom Domain یا DNS برای `platoland.org` تنظیم نشد و هیچ تغییر عمدی در GitHub Pages یا Supabase اصلی انجام نشد.
+- تفاوت‌های ظاهری Preview با سایت اصلی مورد انتظار است: Preview یک نمونهٔ نمایشی مستقل با محتوای mock است، نه نسخهٔ کامل و عملیاتی سایت.
+- وضعیت: `PREVIEW_DEPLOYED — VISUAL REVIEW STARTED — FULL QA PENDING`.
