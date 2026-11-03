@@ -46,7 +46,7 @@
     padding: 16px 12px 0;
   }
   .pl-preview-logo-wrap a {
-    width: min(270px, 74vw);
+    width: min(170px, 42vw);
   }
   .pl-preview-hero {
     padding: 18px 16px 34px;
