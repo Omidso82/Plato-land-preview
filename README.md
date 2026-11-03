@@ -64,3 +64,9 @@ npm run dev
 - Preview فعلی فقط UI نمایشی و داده mock دارد و نباید برای ثبت‌نام یا عملیات واقعی استفاده شود.
 - Workflow `.github/workflows/cloudflare-preview-check.yml` صرفاً CI است و deploy نمی‌کند.
 - تا زمان تأیید Build، تنظیم env، و مشاهده امن URL pages.dev هیچ Deploy یا QA زنده‌ای ادعا نشود.
+
+
+### آخرین نتیجه CI — ۳ نوامبر ۲۰۲۶
+- اجرای موفق کنترل Preview: https://github.com/Omidso82/Plato-land-preview/actions/runs/41656110849.
+- TypeScript، Build ایزوله و بررسی محدود artifact موفق شده‌اند.
+- Cloudflare هنوز Deploy نشده است؛ پیش از Deploy مقدار VITE_PLATO_PREVIEW=true باید در هر دو scope محیطی تنظیم شود.
