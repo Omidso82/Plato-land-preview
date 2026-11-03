@@ -107,3 +107,11 @@ Supabase اصلی: `dfrppbapaaydbjeflozw`
 - این تغییرات فقط روی شاخه `cloudflare-preview` هستند؛ `main` و Production دست‌نخورده‌اند.
 - وضعیت GitHub Actions برای شاخه Preview هنوز باید پس از اجرای Workflow بررسی شود. Cloudflare Pages، تنظیم env، Deploy و URL زنده همچنان تأیید نشده‌اند.
 - قبل از اولین Deploy در Cloudflare باید `VITE_PLATO_PREVIEW=true` در Environment Variables مربوط به هر دو محیط Production و Preview تنظیم شود؛ در غیر این صورت کد به مسیر عملیاتی می‌رود و انتشار آن ممنوع است.
+
+
+## اصلاحیه وضعیت CI — ۳ نوامبر ۲۰۲۶
+- اجرای نهایی GitHub Actions برای شاخه cloudflare-preview موفق شد: https://github.com/Omidso82/Plato-land-preview/actions/runs/41656110849 ، commit ad75eb736ad581873fd56abf4a581d6eef27be79.
+- مراحل نصب وابستگی‌ها، TypeScript، Build با VITE_PLATO_PREVIEW=true و بررسی artifact موفق شدند.
+- تلاش‌های اولیه به‌دلیل تنظیم cache وابسته به lockfile و نبود lockfile در مخزن شکست خوردند؛ Workflow اصلاح شد و اکنون از npm install استفاده می‌کند.
+- Build و کنترل‌های bundle تأیید شده‌اند؛ اما Cloudflare Pages project، env، Deploy، URL زنده و QA مرورگر هنوز تأیید نشده‌اند.
+- بررسی artifact کنترل محدود روی چند رشته/مسیر مشخص است و به‌تنهایی معادل ممیزی امنیتی جامع نیست.
