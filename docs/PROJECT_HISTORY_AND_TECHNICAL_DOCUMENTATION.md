@@ -913,3 +913,12 @@ Query فقط‌خواندنی مستقیماً روی جدول `public.plato_lan
 - هیچ پروژه Pages، Deploy، URL زنده، اتصال GitHub در Cloudflare یا تنظیم Environment Variable هنوز از ابزار قابل مشاهده تأیید نشده است.
 - تا زمان موفقیت Workflow و تعیین فلگ در Cloudflare، انتشار Preview مجاز/تأییدشده تلقی نمی‌شود.
 - این Preview یک mock طراحی است، نه نسخه عملیاتی کامل سایت و نه اتصال به داده‌های عمومی زنده.
+
+
+## اصلاحیه و تکمیل الحاقیه v1.2 — نتیجه CI (۳ نوامبر ۲۰۲۶)
+- Workflow ابتدا به‌علت نبود lockfile در مخزن متوقف شد؛ تنظیم cache و دستور نصب اصلاح شد و Workflow نهایی با npm install اجرا گردید. ادعای قبلی «نصب قفل‌شده وابستگی‌ها» صحیح نبود و اینجا اصلاح می‌شود.
+- اجرای موفق: https://github.com/Omidso82/Plato-land-preview/actions/runs/41656110849 ، commit مبنا ad75eb736ad581873fd56abf4a581d6eef27be79.
+- مراحل Setup Node، نصب وابستگی‌ها، TypeScript verification، Build با VITE_PLATO_PREVIEW=true و بررسی artifact همگی Success شدند.
+- بررسی artifact وجود dist/index.html و نبود رشته‌های شناخته‌شده شناسه پروژه Supabase، endpoint ثبت‌نام سری دوم و مسیر پنل پیش‌بینی را بررسی کرده و موفق بوده است. این آزمون تضمین امنیت کامل bundle نیست؛ فقط کنترل‌های مشخص‌شده را اثبات می‌کند.
+- بنابراین Build/CI ایزوله Preview تأیید شد؛ Cloudflare env، Pages project، Deploy، URL زنده و آزمون مرورگر همچنان تأیید نشده‌اند.
+- نسخه مستندات به v1.3 ارتقا یافت؛ تاریخ به‌روزرسانی ۳ نوامبر ۲۰۲۶.
