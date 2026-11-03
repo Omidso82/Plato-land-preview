@@ -16,7 +16,7 @@ export default function PreviewApp() {
         </nav>
       </header>
       <div className="pl-preview-logo-wrap">
-        <a href="#home" aria-label="PLATO LAND — صفحه اصلی"><img className="pl-preview-logo" src="/plato-land-logo.jpg" alt="لوگوی PLATO LAND؛ بازی، رقابت، قهرمانی" /></a>
+        <a href="#home" aria-label="PLATO LAND — صفحه اصلی"><img className="pl-preview-logo" src="https://dfrppbapaaydbjeflozw.supabase.co/storage/v1/object/public/series2-slides/branding/plato-land-logo" onError={(e) => { e.currentTarget.src = "/plato-land-logo.jpg"; }} alt="لوگوی PLATO LAND؛ بازی، رقابت، قهرمانی" /></a>
       </div>
 
       <main id="home">
