@@ -22,7 +22,6 @@ export default function PreviewApp() {
       <main id="home">
         <section className="pl-preview-hero">
           <div className="pl-preview-copy">
-            <span className="pl-preview-kicker">دنیای رقابت‌های PLATO LAND</span>
             <h1>بازی، رقابت، <em>قهرمانی</em></h1>
             <p>جایی برای رقابت منصفانه، تجربه بازی و ثبت لحظه‌های قهرمانی.</p>
             <a className="pl-preview-button" href="#competitions">مشاهده مسابقات</a>
