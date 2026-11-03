@@ -44,10 +44,14 @@ npm run dev
 
 این دستورات فقط برای بررسی کد هستند و به‌تنهایی سایت زنده را منتشر نمی‌کنند.
 
-## مستندات مرجع
+## مستندات مرجع (به‌روز تا ۳ نوامبر ۲۰۲۶)
 
-- `docs/IMPLEMENTATION_REGISTER_v1.1_2026-11-01.md`
-- `docs/TECHNICAL_HANDOVER_v2.8_2026-11-01.md`
-- `docs/QA_MASTER_CHECKLIST_v1.4.md`
-- `docs/PROJECT_HISTORY_AND_TECHNICAL_DOCUMENTATION.md`
+- `docs/PROJECT_STATUS_AND_DECISIONS_2026-11-03.md` — مرجع وضعیت و تصمیم‌های جاری.
+- `docs/IMPLEMENTATION_REGISTER_v1.4_2026-11-03.md` — ثبت تغییرات و شواهد.
+- `docs/TECHNICAL_HANDOVER_v3.2_2026-11-03.md` — بسته انتقال فنی جاری.
+- `docs/QA_MASTER_CHECKLIST_v1.8_2026-11-03.md` — چک‌لیست QA جاری.
+- `docs/SERIES2_REGISTRATION_LIVE_DATABASE_SNAPSHOT_2026-11-03.md` — آمار تازه دیتابیس ثبت‌نام.
+- `docs/CLOUDFLARE_PAGES_PREVIEW_SETUP_STATUS_2026-11-03.md` — وضعیت آماده‌سازی Preview.
+- `docs/PLATO_LAND_HANDOVER_PROTOCOL_v1.0_2026-11-02.md` — پروتکل انتقال.
+- اسناد نسخه‌های قبلی تاریخچه‌اند و حذف یا جایگزین مخرب نشده‌اند.
 - `supabase/migrations/README.md`
