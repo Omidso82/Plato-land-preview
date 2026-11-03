@@ -1,0 +1,37 @@
+name: Cloudflare Preview Safety Check
+
+on:
+  push:
+    branches: [cloudflare-preview]
+  pull_request:
+    branches: [cloudflare-preview]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  preview-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install locked dependencies
+        run: npm ci
+      - name: TypeScript verification
+        run: npm run typecheck
+      - name: Build isolated Preview
+        run: npm run build
+        env:
+          VITE_PLATO_PREVIEW: 'true'
+      - name: Verify Preview artifact
+        run: |
+          test -s dist/index.html
+          if grep -R -E 'dfrppbapaaydbjeflozw|plato-land-series2-registration|prediction-admin' dist/assets; then
+            echo "Production backend or admin references found in Preview bundle."
+            exit 1
+          fi
+          echo "Preview artifact exists and contains no known production backend/admin references."
