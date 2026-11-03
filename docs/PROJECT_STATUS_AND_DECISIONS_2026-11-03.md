@@ -118,11 +118,11 @@ Supabase اصلی: `dfrppbapaaydbjeflozw`
 
 
 ## به‌روزرسانی وضعیت — ۳ نوامبر ۲۰۲۶، یکپارچه‌سازی مستندات و Preview
-- مرجع مستندات پروژه به `main` یکپارچه شد؛ مستندات تکمیلی از `cloudflare-preview` به‌صورت انتخابی منتقل شدند.
+- مرجع مستندات پروژه به main یکپارچه شد؛ مستندات تکمیلی از cloudflare-preview به‌صورت انتخابی منتقل شدند.
 - کد اختصاصی Preview و workflow آن در این انتقال وارد main نشدند.
-- Cloudflare Pages با نام `plato-land-preview` روی شاخه `cloudflare-preview` ایجاد شد و URL آزمایشی در مرورگر موبایل باز شد.
-- URL: `https://plato-land-preview.pages.dev`.
-- Preview صرفاً نمایش mock است و با سایت عملیاتی `https://platoland.org` یکسان نیست.
+- Cloudflare Pages با نام plato-land-preview روی شاخه cloudflare-preview ایجاد شد و URL آزمایشی در مرورگر موبایل باز شد.
+- URL: https://plato-land-preview.pages.dev.
+- Preview صرفاً نمایش mock است و با سایت عملیاتی https://platoland.org یکسان نیست.
 - هیچ DNS/Custom Domain برای Production تغییر نکرد.
 - وضعیت QA: بازبینی بصری اولیه انجام شده؛ آزمون کامل موبایل/دسکتاپ، لینک‌ها، مسیرها، دسترس‌پذیری و مقایسه با سایت اصلی باقی است.
-- مرجع تصمیم‌ها و وضعیت جاری از این پس همین فایل در شاخه `main` است.
+- مرجع تصمیم‌ها و وضعیت جاری از این پس همین فایل در شاخه main است.
