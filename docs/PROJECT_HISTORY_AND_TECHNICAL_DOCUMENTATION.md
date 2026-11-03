@@ -927,24 +927,22 @@ Query فقط‌خواندنی مستقیماً روی جدول `public.plato_lan
 ---
 
 # الحاقیه v1.4 — مرجع واحد مستندات و استقرار Preview (۳ نوامبر ۲۰۲۶)
-
-## یکپارچه‌سازی شاخه‌ها
-- در بررسی GitHub، شاخه `cloudflare-preview` نسبت به `main` دارای ۱۹ کامیت جلوتر و صفر کامیت عقب‌تر بود.
-- اختلاف شامل فایل‌های مستندات/README و همچنین فایل‌های کد Preview و workflow بود.
-- برای جلوگیری از ورود ناخواسته کد Preview به مسیر انتشار Production، فقط مستندات و README به‌صورت انتخابی در `main` یکپارچه شدند.
-- از این پس `main` مرجع واحد وضعیت، تصمیم‌ها، QA و مستندات پروژه است. شاخه `cloudflare-preview` فقط شاخهٔ فنی محیط آزمایشی باقی می‌ماند.
+- بررسی GitHub نشان داد cloudflare-preview نسبت به main نوزده کامیت جلوتر و صفر کامیت عقب‌تر بود.
+- اختلاف شامل فایل‌های مستندات/README و همچنین کد Preview و workflow بود.
+- برای جلوگیری از ورود ناخواسته کد Preview به مسیر انتشار Production، فقط مستندات و README به‌صورت انتخابی در main یکپارچه شدند.
+- از این پس main مرجع واحد وضعیت، تصمیم‌ها، QA و مستندات پروژه است. شاخه cloudflare-preview فقط شاخه فنی محیط آزمایشی باقی می‌ماند.
 
 ## Cloudflare Preview
-- پروژه `plato-land-preview` به مخزن `Omidso82/Plato-land-preview` متصل شد.
-- شاخهٔ مورد استفاده در پروژهٔ Cloudflare: `cloudflare-preview`.
-- Build command: `npm run build`؛ output: `dist`.
-- متغیر `VITE_PLATO_PREVIEW=true` در فرم تنظیمات مشاهده و Save and Deploy اجرا شد.
-- URL آزمایشی در مرورگر موبایل باز شد: `https://plato-land-preview.pages.dev`.
-- این URL فقط Preview نمایشی است؛ Production همچنان `https://platoland.org` و GitHub Pages روی `main` است.
+- پروژه plato-land-preview به مخزن Omidso82/Plato-land-preview متصل شد.
+- شاخه مورد استفاده در پروژه Cloudflare: cloudflare-preview.
+- Build command: npm run build؛ output: dist.
+- متغیر VITE_PLATO_PREVIEW=true در فرم تنظیمات مشاهده و Save and Deploy اجرا شد.
+- URL آزمایشی در مرورگر موبایل باز شد: https://plato-land-preview.pages.dev.
+- این URL فقط Preview نمایشی است؛ Production همچنان https://platoland.org و GitHub Pages روی main است.
 - Deploy اولیه و بازشدن صفحه تأیید شده؛ QA کامل مسیرها، محتوا، مرورگرها و امنیت هنوز باز است.
 - DNS و Custom Domain تغییر نکرده‌اند.
 
 ## وضعیت ثبت‌نام سری دوم
 - یادداشت‌های قدیمی‌تر QA که تعداد ۲۰ درخواست را ثبت کرده‌اند، Snapshot تاریخی همان زمان هستند.
-- Snapshot تازه‌تر بررسی‌شده در ۳ نوامبر، ۲۵ درخواست و ۲۵ Plato ID یکتا را نشان داد؛ این Query فقط‌خواندنی بود.
+- Snapshot تازه‌تر بررسی‌شده در ۳ نوامبر، ۲۵ درخواست و ۲۵ Plato ID یکتا را نشان داد؛ Query فقط‌خواندنی بود.
 - این تعداد، درخواست‌های ثبت‌شده است و نباید با تأیید مدیر یا فهرست قطعی شرکت‌کنندگان یکسان تلقی شود.
