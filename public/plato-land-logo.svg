@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 900" role="img" aria-labelledby="title desc">
+<title id="title">PLATO LAND</title><desc id="desc">نشان طلایی پلاتولند با تاج، تاس و شعار بازی، رقابت، قهرمانی</desc>
+<defs>
+ <radialGradient id="bg"><stop stop-color="#352716"/><stop offset=".72" stop-color="#14110e"/><stop offset="1" stop-color="#0d0e10"/></radialGradient>
+ <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff0a6"/><stop offset=".32" stop-color="#e5b94e"/><stop offset=".7" stop-color="#a96d19"/><stop offset="1" stop-color="#f7dc83"/></linearGradient>
+ <linearGradient id="red" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#a91d25"/><stop offset="1" stop-color="#3a080d"/></linearGradient>
+ <filter id="glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="9" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<circle cx="450" cy="450" r="390" fill="url(#bg)" stroke="url(#gold)" stroke-width="5"/>
+<circle cx="450" cy="450" r="365" fill="none" stroke="#9b742e" stroke-width="2" opacity=".75"/>
+<path d="M170 500 Q95 400 165 300 M730 500 Q805 400 735 300" fill="none" stroke="url(#gold)" stroke-width="8"/>
+<g fill="url(#gold)" stroke="#9d6c20" stroke-width="2">
+ <path d="M180 470 Q105 440 130 370 Q190 385 205 445 Q160 420 145 395 Q155 445 180 470Z"/>
+ <path d="M205 390 Q145 345 185 285 Q235 320 230 375 Q195 340 195 315 Q180 360 205 390Z"/>
+ <path d="M720 470 Q795 440 770 370 Q710 385 695 445 Q740 420 755 395 Q745 445 720 470Z"/>
+ <path d="M695 390 Q755 345 715 285 Q665 320 670 375 Q705 340 705 315 Q720 360 695 390Z"/>
+</g>
+<g filter="url(#glow)" stroke="url(#gold)" stroke-width="13" stroke-linejoin="round" fill="#21180e">
+ <path d="M280 300 L245 170 L355 235 L450 105 L545 235 L655 170 L620 300 Q450 360 280 300Z"/>
+ <path d="M280 300 Q450 365 620 300 L600 355 Q450 410 300 355Z"/>
+</g>
+<g fill="url(#red)" stroke="url(#gold)" stroke-width="7"><path d="M450 118 L478 160 L450 202 L422 160Z"/><path d="M315 265 L329 286 L315 307 L301 286Z"/><path d="M585 265 L599 286 L585 307 L571 286Z"/></g>
+<g transform="translate(450 440)" stroke="url(#gold)" stroke-width="10" fill="#b78025">
+ <g transform="translate(-88 0) rotate(-12)"><rect x="-58" y="-62" width="116" height="116" rx="18" fill="#d7a844"/><g fill="#25190b" stroke="none"><circle cx="-28" cy="-30" r="9"/><circle cx="25" cy="-30" r="9"/><circle cx="-28" cy="25" r="9"/><circle cx="25" cy="25" r="9"/><circle cx="0" cy="-2" r="9"/></g></g>
+ <g transform="translate(83 0) rotate(12)"><rect x="-58" y="-62" width="116" height="116" rx="18" fill="#edc66c"/><g fill="#25190b" stroke="none"><circle cx="-28" cy="-30" r="9"/><circle cx="25" cy="-30" r="9"/><circle cx="0" cy="-2" r="9"/><circle cx="-28" cy="25" r="9"/><circle cx="25" cy="25" r="9"/></g></g>
+</g>
+<path d="M125 540 Q450 495 775 540 L750 685 Q450 745 150 685Z" fill="#11100e" stroke="url(#gold)" stroke-width="8"/>
+<text x="450" y="625" text-anchor="middle" font-family="Georgia,serif" font-size="76" font-weight="bold" letter-spacing="5" fill="url(#gold)">PLATO LAND</text>
+<path d="M210 710 Q450 770 690 710" fill="none" stroke="url(#gold)" stroke-width="4"/>
+<text x="450" y="765" text-anchor="middle" direction="rtl" font-family="Tahoma,Arial,sans-serif" font-size="38" font-weight="bold" fill="#f0d27b">بازی، رقابت، قهرمانی</text>
+<g fill="url(#gold)" font-size="34" text-anchor="middle"><text x="350" y="825">♠</text><text x="415" y="825">♥</text><text x="485" y="825">♦</text><text x="550" y="825">♣</text></g>
+</svg>
