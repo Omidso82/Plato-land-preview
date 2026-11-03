@@ -37,3 +37,12 @@
 - commitهای کد: `ce8ff872b57ca6f8ebf921efc83cc8e80ec8d435`، `e995a308f38df892f9c89fadb8f05d2bd1347c97`، `90cb21bea59e411ff5b660eaa50ff31d4a5e923a`.
 - commit Workflow: `c84817f238a289e2eed3e4729c416e84bf83ba2f`.
 - Build/CI، Cloudflare config، Deploy، مشاهده زنده و QA مرورگر هنوز تأیید نشده‌اند.
+
+
+## اصلاحیه شواهد اجرای CI — ۳ نوامبر ۲۰۲۶
+- Workflow نهایی: https://github.com/Omidso82/Plato-land-preview/actions/runs/41656110849 ، commit ad75eb736ad581873fd56abf4a581d6eef27be79.
+- نتیجه: Success برای setup، نصب dependencies، typecheck، build و بررسی artifact.
+- Workflow به‌علت نبود lockfile از npm ci به npm install تغییر کرد؛ اجرای نهایی موفق است.
+- CI بررسی کرد dist/index.html موجود باشد و رشته‌های مشخص Supabase project / registration endpoint / prediction admin در assets نباشند.
+- محدودیت: این بررسی تضمین امنیت جامع نیست و جایگزین مرور artifact یا QA دستی نمی‌شود.
+- وضعیت: CODE COMMITTED = YES؛ CI/BUILD = PASS؛ CLOUDFLARE CONFIG = NOT VERIFIED؛ DEPLOY = NOT DONE/NOT VERIFIED؛ LIVE QA = NOT RUN.
