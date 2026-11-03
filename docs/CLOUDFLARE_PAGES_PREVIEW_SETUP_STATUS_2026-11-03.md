@@ -36,3 +36,24 @@
 ساخت مسیر `/preview` در همان artifact سایت GitHub Pages، محیط Preview مستقل نیست: کد آزمایشی همراه Production منتشر می‌شود و مبدأ/تنظیمات اجرایی مشترک می‌ماند. برای توسعه مستقل، پروژه Pages جداگانه و شاخه جدا لازم است.
 
 **وضعیت:** WAITING_FOR_DASHBOARD_SCREENSHOT — هیچ تغییر زیرساختی انجام نشده است.
+
+
+## الحاقیه ۳ نوامبر ۲۰۲۶ — جداسازی ایمن کد Preview
+- شاخه هدف: `cloudflare-preview`؛ هیچ commit این مرحله به `main` ارسال نشده است.
+- `src/PreviewApp.tsx` و `src/preview.css` اضافه شدند: صفحه نمایشی مستقل RTL، موبایل‌پذیر و هم‌راستا با ساختار تأییدشده صفحه اصلی؛ داده‌ها mock و ثابت‌اند.
+- `src/index.tsx` بازنویسی شد تا در صورت `VITE_PLATO_PREVIEW=true` فقط PreviewApp را import کند. ماژول‌های عملیاتی و Supabase فقط در شاخه اجرای غیر Preview به‌صورت dynamic import بارگذاری می‌شوند.
+- Workflow بررسی `.github/workflows/cloudflare-preview-check.yml` اضافه شد: `npm ci`، `npm run typecheck`، `npm run build` با env Preview و بررسی نبود شناسه پروژه Supabase/مسیر ثبت‌نام/پنل مدیریت در bundle. این Workflow deploy نمی‌کند.
+
+### مقادیر لازم در فرم Cloudflare
+- Branch: `cloudflare-preview`
+- Framework: React (Vite) یا `None`
+- Build command: `npm run build`
+- Output directory: `dist`
+- Root directory: خالی
+- Environment variable در هر دو scope یعنی Production و Preview: `VITE_PLATO_PREVIEW=true`
+- فعلاً فقط `*.pages.dev`؛ هیچ DNS یا Custom Domain تغییر نکند.
+
+### شواهد و وضعیت
+- کد و Workflow commit شده‌اند؛ شناسه آخرین commit در این مرحله پس از اجرای workflow ثبت می‌شود.
+- هنوز اجرای موفق Workflow، تنظیم Environment Variable در داشبورد، ساخت Pages project، Deploy و آزمون زنده تأیید نشده‌اند.
+- تا زمان تأیید env و Build موفق، دکمه Save and Deploy را نزنید.
