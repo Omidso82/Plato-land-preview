@@ -97,3 +97,13 @@ Supabase اصلی: `dfrppbapaaydbjeflozw`
 - `docs/UIUX_V10_7_SECTION_02_IMPLEMENTATION_REPORT_2026-11-01.md`
 
 **وضعیت Snapshot:** PARTIAL — اطلاعات دیتابیس ثبت‌نام با Query تازه تأیید شده؛ وضعیت Cloudflare، مشاهده زنده دامنه و آزمون‌های مرورگر هنوز تأیید نشده‌اند.
+
+
+## الحاقیه وضعیت — ۳ نوامبر ۲۰۲۶، جداسازی کد Preview
+- در شاخه `cloudflare-preview`، نقطه ورود `src/index.tsx` به‌روزرسانی شد: فقط وقتی `VITE_PLATO_PREVIEW=true` باشد، `PreviewApp` مستقل بارگذاری می‌شود؛ در غیر این صورت مسیرهای عملیاتی قبلی حفظ می‌شوند.
+- `PreviewApp` از محتوای نمایشی ثابت استفاده می‌کند و فرم ثبت‌نام، ورود، داده واقعی، پنل مدیریت یا عملیات Supabase ندارد.
+- بارگذاری برنامه عملیاتی به dynamic import منتقل شد تا build Preview ماژول‌های App، صفحات ثبت‌نام و پنل‌های Owner/Admin را وارد گراف بارگذاری Preview نکند.
+- Workflow مستقل `.github/workflows/cloudflare-preview-check.yml` برای typecheck/build و بررسی نبود رشته‌های شناخته‌شده backend/admin در artifact اضافه شد؛ این Workflow Deploy نمی‌کند.
+- این تغییرات فقط روی شاخه `cloudflare-preview` هستند؛ `main` و Production دست‌نخورده‌اند.
+- وضعیت GitHub Actions برای شاخه Preview هنوز باید پس از اجرای Workflow بررسی شود. Cloudflare Pages، تنظیم env، Deploy و URL زنده همچنان تأیید نشده‌اند.
+- قبل از اولین Deploy در Cloudflare باید `VITE_PLATO_PREVIEW=true` در Environment Variables مربوط به هر دو محیط Production و Preview تنظیم شود؛ در غیر این صورت کد به مسیر عملیاتی می‌رود و انتشار آن ممنوع است.
