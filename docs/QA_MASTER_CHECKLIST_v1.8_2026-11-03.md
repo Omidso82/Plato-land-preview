@@ -59,3 +59,17 @@
 - [ ] Cloudflare Pages project و URL pages.dev ساخته/تأیید نشده‌اند.
 - [ ] آزمون مرورگر موبایل/دسکتاپ روی Preview زنده انجام نشده است.
 - [ ] بررسی مستقل اینکه URL Preview فقط محتوای نمایشی دارد، پس از Deploy لازم است.
+
+
+## اصلاحیه وضعیت آزمون CI — ۳ نوامبر ۲۰۲۶
+- [x] اجرای GitHub Actions برای شاخه cloudflare-preview با نتیجه Success (run 41656110849).
+- [x] نصب وابستگی‌ها با Workflow اصلاح‌شده موفق شد.
+- [x] TypeScript verification موفق شد.
+- [x] Build با VITE_PLATO_PREVIEW=true موفق شد.
+- [x] کنترل artifact شامل وجود dist/index.html و نبود رشته‌های شناخته‌شده backend/admin موفق شد.
+- [ ] ممیزی جامع bundle و وابستگی‌ها (کنترل فعلی محدود و مبتنی بر الگوهای مشخص است).
+- [ ] تنظیم env در Cloudflare در هر دو scope.
+- [ ] ساخت/اتصال Cloudflare Pages و Deploy به pages.dev.
+- [ ] آزمون مرورگر موبایل/دسکتاپ و بررسی مسیرها روی URL زنده.
+- [ ] تأیید بصری و عملکردی با کاربر.
+نتیجه QA این مرحله: CI/Build PASS؛ Cloudflare و Browser QA NOT RUN.
