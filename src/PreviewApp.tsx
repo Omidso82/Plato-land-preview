@@ -16,7 +16,7 @@ export default function PreviewApp() {
         </nav>
       </header>
       <div className="pl-preview-logo-wrap">
-        <a href="#home" aria-label="PLATO LAND — صفحه اصلی"><img className="pl-preview-logo" src="/plato-land-logo.svg" alt="لوگوی PLATO LAND؛ بازی، رقابت، قهرمانی" /></a>
+        <a href="#home" aria-label="PLATO LAND — صفحه اصلی"><img className="pl-preview-logo" src="/plato-land-logo.jpg" alt="لوگوی PLATO LAND؛ بازی، رقابت، قهرمانی" /></a>
       </div>
 
       <main id="home">
