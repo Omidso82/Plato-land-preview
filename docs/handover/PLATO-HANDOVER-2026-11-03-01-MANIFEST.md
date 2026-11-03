@@ -28,7 +28,8 @@
 
 - `main` HEAD: `7db8d4bf9e8ed6ad38e7f9d45641022cf2e96537`
 - `docs/staging-release-master-plan-v1` HEAD: `2046ed644b046e73a8973094b8721e0caa7e9fca`
-- Handover branch created from `docs/staging-release-master-plan-v1`; its resulting HEAD will be recorded after commit.
+- Handover branch created from `docs/staging-release-master-plan-v1`.
+- Final handover branch HEAD: `4a0b33068a0e72b8f149d8c7804bc08591fdb607`.
 - No changes were made to `main`.
 
 ## Validation checklist
@@ -38,9 +39,9 @@
 - [x] Current `main` branch HEAD read.
 - [x] Master Plan documentation branch HEAD read.
 - [x] Dedicated handover branch created.
-- [ ] Package file committed.
-- [ ] Package file read back from GitHub.
-- [ ] Final branch HEAD recorded.
+- [x] Package file committed.
+- [x] Package file read back from GitHub.
+- [x] Final branch HEAD recorded.
 
 ## Unverified / unavailable in this Seal
 
