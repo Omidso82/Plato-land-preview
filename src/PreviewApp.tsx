@@ -16,7 +16,7 @@ export default function PreviewApp() {
           <span><strong>PLATO LAND</strong><small>بازی، رقابت، قهرمانی</small></span>
         </a>
         <nav aria-label="ناوبری اصلی">
-          <a href="#home">خانه</a><a href="#competitions">مسابقات</a><a href="#news">اخبار و اطلاعیه‌ها</a><a href="#guide">راهنما</a><a href="#about">درباره ما</a>
+          <a href="#home">خانه</a><a href="#competitions">مسابقات</a><a href="#news">اخبار و اطلاعیه‌ها</a><a href="#guide">راهنما</a><a href="#about">درباره ما</a><span className="pl-preview-auth-link" aria-disabled="true" title="ورود و ثبت‌نام در محیط آزمایشی غیرفعال است">ورود / ثبت‌نام</span>
         </nav>
       </header>
 
