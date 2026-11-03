@@ -56,3 +56,30 @@
     line-height: 1.5;
   }
 }
+
+
+/* Approved Section A refinement — brand-first hierarchy and mobile-first spacing. */
+.pl-preview-logo-wrap { padding: 24px 20px 0; }
+.pl-preview-logo-wrap a { width: min(300px, 76vw); }
+.pl-preview-logo { max-height: 260px; object-fit: contain; }
+.pl-preview-hero { padding-top: 24px; padding-bottom: 52px; }
+.pl-preview-copy h1 { margin: 8px 0 18px; }
+.pl-preview-copy > p { max-width: 680px; margin: 0 auto; }
+.pl-preview-button { min-height: 48px; padding: 13px 28px; }
+@media (max-width: 720px) {
+  .pl-preview-logo-wrap { padding: 18px 16px 0; }
+  .pl-preview-logo-wrap a { width: min(250px, 70vw); }
+  .pl-preview-hero { padding: 18px 18px 38px; }
+  .pl-preview-copy h1 { font-size: clamp(30px, 8.2vw, 42px); line-height: 1.45; margin: 4px 0 14px; }
+  .pl-preview-copy > p { font-size: 13px; line-height: 1.9; }
+  .pl-preview-button { width: min(100%, 280px); min-height: 50px; }
+  .pl-preview-note { line-height: 1.9; padding: 0 8px; }
+}
+@media (max-width: 360px) {
+  .pl-preview-header nav { gap: 8px 10px; font-size: 11px; }
+  .pl-preview-logo-wrap a { width: min(220px, 68vw); }
+  .pl-preview-copy h1 { font-size: 29px; }
+  .pl-preview-stats { grid-template-columns: 1fr; gap: 12px; }
+  .pl-preview-stats div { border-left: 0; border-bottom: 1px solid #39342a; padding-bottom: 10px; }
+  .pl-preview-stats div:last-child { border-bottom: 0; }
+}
