@@ -886,3 +886,65 @@ Query فقط‌خواندنی مستقیماً روی جدول `public.plato_lan
 7. بررسی SQL دقیق migrationهای مفقود و یافته‌های امنیتی بدون اجرای تغییرات حدسی یا مخرب.
 
 **وضعیت نسخه ۱.۱:** اسناد مرجع به‌روزرسانی شده‌اند؛ راه‌اندازی Cloudflare Preview و آزمون‌های زنده فوق هنوز باز هستند.
+
+
+---
+
+# الحاقیه v1.2 — جداسازی محیط Cloudflare Preview (۳ نوامبر ۲۰۲۶)
+
+## دامنه تغییر
+- تغییرات فقط روی شاخه `cloudflare-preview` انجام شد؛ شاخه `main` و دامنه Production تغییر نکردند.
+- `src/index.tsx` اکنون با فلگ زمان Build یعنی `VITE_PLATO_PREVIEW=true` مسیر Preview مستقل را بارگذاری می‌کند.
+- در حالت Preview فقط `src/PreviewApp.tsx` و استایل اختصاصی آن بارگذاری می‌شود؛ ماژول‌های برنامه عملیاتی، Supabase، ثبت‌نام سری دوم و پنل‌های Owner/Admin به‌صورت پویا وارد نمی‌شوند.
+- صفحه Preview با داده‌های نمایشی ثابت ساخته شده و هیچ فرم ثبت‌نام، احراز هویت، خواندن یا نوشتن دیتابیس ندارد. بخش‌های آمار و کارت‌ها عمداً داده واقعی نشان نمی‌دهند.
+- Workflow جدید `.github/workflows/cloudflare-preview-check.yml` برای شاخه `cloudflare-preview`، نصب قفل‌شده وابستگی‌ها، TypeScript، Build با فلگ Preview و بررسی artifact تعریف شد. Workflow فقط Build/Check است و Deploy انجام نمی‌دهد.
+
+## تنظیم لازم در Cloudflare Pages
+- Framework preset: React (Vite) در صورت وجود؛ در غیر این صورت None.
+- Build command: `npm run build`.
+- Build output directory: `dist`.
+- Root directory: خالی.
+- Environment variable برای Production و Preview deployment این پروژه: `VITE_PLATO_PREVIEW=true`.
+- فقط شاخه `cloudflare-preview`؛ ابتدا فقط دامنه پیش‌فرض `pages.dev` و بدون Custom Domain یا تغییر DNS.
+
+## وضعیت اثبات‌شده و محدودیت
+- Commitهای تغییر کد و Workflow روی `cloudflare-preview` ثبت شده‌اند.
+- پیش از ثبت این الحاقیه، هیچ GitHub Actions run برای این شاخه وجود نداشت؛ نتیجه Build/TypeScript هنوز تأیید نشده و باید از اجرای Workflow تازه بررسی شود.
+- هیچ پروژه Pages، Deploy، URL زنده، اتصال GitHub در Cloudflare یا تنظیم Environment Variable هنوز از ابزار قابل مشاهده تأیید نشده است.
+- تا زمان موفقیت Workflow و تعیین فلگ در Cloudflare، انتشار Preview مجاز/تأییدشده تلقی نمی‌شود.
+- این Preview یک mock طراحی است، نه نسخه عملیاتی کامل سایت و نه اتصال به داده‌های عمومی زنده.
+
+
+## اصلاحیه و تکمیل الحاقیه v1.2 — نتیجه CI (۳ نوامبر ۲۰۲۶)
+- Workflow ابتدا به‌علت نبود lockfile در مخزن متوقف شد؛ تنظیم cache و دستور نصب اصلاح شد و Workflow نهایی با npm install اجرا گردید. ادعای قبلی «نصب قفل‌شده وابستگی‌ها» صحیح نبود و اینجا اصلاح می‌شود.
+- اجرای موفق: https://github.com/Omidso82/Plato-land-preview/actions/runs/41656110849 ، commit مبنا ad75eb736ad581873fd56abf4a581d6eef27be79.
+- مراحل Setup Node، نصب وابستگی‌ها، TypeScript verification، Build با VITE_PLATO_PREVIEW=true و بررسی artifact همگی Success شدند.
+- بررسی artifact وجود dist/index.html و نبود رشته‌های شناخته‌شده شناسه پروژه Supabase، endpoint ثبت‌نام سری دوم و مسیر پنل پیش‌بینی را بررسی کرده و موفق بوده است. این آزمون تضمین امنیت کامل bundle نیست؛ فقط کنترل‌های مشخص‌شده را اثبات می‌کند.
+- بنابراین Build/CI ایزوله Preview تأیید شد؛ Cloudflare env، Pages project، Deploy، URL زنده و آزمون مرورگر همچنان تأیید نشده‌اند.
+- نسخه مستندات به v1.3 ارتقا یافت؛ تاریخ به‌روزرسانی ۳ نوامبر ۲۰۲۶.
+
+
+---
+
+# الحاقیه v1.4 — مرجع واحد مستندات و استقرار Preview (۳ نوامبر ۲۰۲۶)
+
+## یکپارچه‌سازی شاخه‌ها
+- در بررسی GitHub، شاخه `cloudflare-preview` نسبت به `main` دارای ۱۹ کامیت جلوتر و صفر کامیت عقب‌تر بود.
+- اختلاف شامل فایل‌های مستندات/README و همچنین فایل‌های کد Preview و workflow بود.
+- برای جلوگیری از ورود ناخواسته کد Preview به مسیر انتشار Production، فقط مستندات و README به‌صورت انتخابی در `main` یکپارچه شدند.
+- از این پس `main` مرجع واحد وضعیت، تصمیم‌ها، QA و مستندات پروژه است. شاخه `cloudflare-preview` فقط شاخهٔ فنی محیط آزمایشی باقی می‌ماند.
+
+## Cloudflare Preview
+- پروژه `plato-land-preview` به مخزن `Omidso82/Plato-land-preview` متصل شد.
+- شاخهٔ مورد استفاده در پروژهٔ Cloudflare: `cloudflare-preview`.
+- Build command: `npm run build`؛ output: `dist`.
+- متغیر `VITE_PLATO_PREVIEW=true` در فرم تنظیمات مشاهده و Save and Deploy اجرا شد.
+- URL آزمایشی در مرورگر موبایل باز شد: `https://plato-land-preview.pages.dev`.
+- این URL فقط Preview نمایشی است؛ Production همچنان `https://platoland.org` و GitHub Pages روی `main` است.
+- Deploy اولیه و بازشدن صفحه تأیید شده؛ QA کامل مسیرها، محتوا، مرورگرها و امنیت هنوز باز است.
+- DNS و Custom Domain تغییر نکرده‌اند.
+
+## وضعیت ثبت‌نام سری دوم
+- یادداشت‌های قدیمی‌تر QA که تعداد ۲۰ درخواست را ثبت کرده‌اند، Snapshot تاریخی همان زمان هستند.
+- Snapshot تازه‌تر بررسی‌شده در ۳ نوامبر، ۲۵ درخواست و ۲۵ Plato ID یکتا را نشان داد؛ این Query فقط‌خواندنی بود.
+- این تعداد، درخواست‌های ثبت‌شده است و نباید با تأیید مدیر یا فهرست قطعی شرکت‌کنندگان یکسان تلقی شود.
