@@ -11,14 +11,13 @@ export default function PreviewApp() {
     <div className="pl-preview" dir="rtl">
       <div className="pl-preview-banner">محیط آزمایشی PLATO LAND — داده‌ها نمایشی هستند؛ ثبت‌نام و ورود غیرفعال است.</div>
       <header className="pl-preview-header">
-        <a className="pl-preview-brand" href="#home" aria-label="PLATO LAND">
-          <span className="pl-preview-crown">♛</span>
-          <span><strong>PLATO LAND</strong><small>بازی، رقابت، قهرمانی</small></span>
-        </a>
         <nav aria-label="ناوبری اصلی">
           <a href="#home">خانه</a><a href="#competitions">مسابقات</a><a href="#news">اخبار و اطلاعیه‌ها</a><a href="#guide">راهنما</a><a href="#about">درباره ما</a><span className="pl-preview-auth-link" aria-disabled="true" title="ورود و ثبت‌نام در محیط آزمایشی غیرفعال است">ورود / ثبت‌نام</span>
         </nav>
       </header>
+      <div className="pl-preview-logo-wrap">
+        <a href="#home" aria-label="PLATO LAND — صفحه اصلی"><img className="pl-preview-logo" src="/plato-land-logo.svg" alt="لوگوی PLATO LAND؛ بازی، رقابت، قهرمانی" /></a>
+      </div>
 
       <main id="home">
         <section className="pl-preview-hero">
@@ -29,7 +28,6 @@ export default function PreviewApp() {
             <a className="pl-preview-button" href="#competitions">مشاهده مسابقات</a>
             <small className="pl-preview-note">این نسخه صرفاً پیش‌نمایش طراحی است؛ هیچ عملیاتی روی حساب یا اطلاعات واقعی انجام نمی‌دهد.</small>
           </div>
-          <div className="pl-preview-emblem" aria-hidden="true"><span>♛</span><strong>PLATO LAND</strong><small>PLAY • COMPETE • WIN</small></div>
         </section>
 
         <section className="pl-preview-stats" aria-label="آمار نمایشی">
