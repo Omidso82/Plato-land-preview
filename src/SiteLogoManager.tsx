@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 
 const BUCKET = 'series2-slides';
-const LOGO_PATH = 'branding/plato-land-logo';
+const LOGO_PATH = 'slides/branding-logo';
 const MAX_BYTES = 10 * 1024 * 1024;
 
 export default function SiteLogoManager() {
