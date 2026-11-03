@@ -57,3 +57,12 @@
 - کد و Workflow commit شده‌اند؛ شناسه آخرین commit در این مرحله پس از اجرای workflow ثبت می‌شود.
 - هنوز اجرای موفق Workflow، تنظیم Environment Variable در داشبورد، ساخت Pages project، Deploy و آزمون زنده تأیید نشده‌اند.
 - تا زمان تأیید env و Build موفق، دکمه Save and Deploy را نزنید.
+
+
+## اصلاحیه نتیجه Build/CI — ۳ نوامبر ۲۰۲۶
+- اجرای موفق نهایی: https://github.com/Omidso82/Plato-land-preview/actions/runs/41656110849 ، commit ad75eb736ad581873fd56abf4a581d6eef27be79.
+- نتیجه تمام مراحل: Setup Node موفق، Install dependencies موفق، TypeScript verification موفق، Build ایزوله موفق، Verify Preview artifact موفق.
+- Workflow نهایی به‌جای npm ci از npm install استفاده می‌کند، چون مخزن فایل lock قابل استفاده برای cache/npm ci ندارد. تلاش‌های اولیه شکست خوردند و پس از اصلاح، اجرای نهایی موفق شد.
+- آزمون artifact وجود dist/index.html و نبود چند رشته شناخته‌شده مربوط به Supabase/ثبت‌نام/پنل را تأیید کرده است؛ این کنترل محدود است و ادعای ممیزی کامل امنیتی نیست.
+- وضعیت جدید: کد و CI آماده Build هستند؛ هنوز Cloudflare Environment Variables، ساخت Pages project، اتصال GitHub، Deploy و تست زنده انجام/تأیید نشده‌اند.
+- اقدام بعدی: در داشبورد Cloudflare، پیش از Save and Deploy، مقدار VITE_PLATO_PREVIEW=true را در هر دو scope Production و Preview تنظیم و تصویر تنظیمات را برای بازبینی ارائه کنید.
