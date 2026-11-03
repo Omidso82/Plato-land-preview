@@ -7,11 +7,6 @@ const previewMode = (import.meta as any).env?.VITE_PLATO_PREVIEW === 'true';
 
 async function start() {
   const path = window.location.pathname.replace(/\/+$/,'') || '/';
-  if (path === '/site-logo-manager') {
-    const { default: SiteLogoManager } = await import('./SiteLogoManager');
-    root.render(<React.StrictMode><SiteLogoManager /></React.StrictMode>);
-    return;
-  }
   if (previewMode) {
     const { default: PreviewApp } = await import('./PreviewApp');
     root.render(<React.StrictMode><PreviewApp /></React.StrictMode>);
