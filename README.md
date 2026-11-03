@@ -55,3 +55,12 @@ npm run dev
 - `docs/PLATO_LAND_HANDOVER_PROTOCOL_v1.0_2026-11-02.md` — پروتکل انتقال.
 - اسناد نسخه‌های قبلی تاریخچه‌اند و حذف یا جایگزین مخرب نشده‌اند.
 - `supabase/migrations/README.md`
+
+
+## Cloudflare Preview مستقل
+- شاخه آزمایشی: `cloudflare-preview`؛ هرگز معادل شاخه انتشار تولید `main` نیست.
+- برای Build ایزوله Preview در Cloudflare، متغیر `VITE_PLATO_PREVIEW=true` را در هر دو scope (Production و Preview) تنظیم کنید.
+- Build command: `npm run build`؛ output directory: `dist`؛ root directory خالی.
+- Preview فعلی فقط UI نمایشی و داده mock دارد و نباید برای ثبت‌نام یا عملیات واقعی استفاده شود.
+- Workflow `.github/workflows/cloudflare-preview-check.yml` صرفاً CI است و deploy نمی‌کند.
+- تا زمان تأیید Build، تنظیم env، و مشاهده امن URL pages.dev هیچ Deploy یا QA زنده‌ای ادعا نشود.
