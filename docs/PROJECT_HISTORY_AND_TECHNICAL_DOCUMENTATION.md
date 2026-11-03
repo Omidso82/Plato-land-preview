@@ -886,3 +886,30 @@ Query فقط‌خواندنی مستقیماً روی جدول `public.plato_lan
 7. بررسی SQL دقیق migrationهای مفقود و یافته‌های امنیتی بدون اجرای تغییرات حدسی یا مخرب.
 
 **وضعیت نسخه ۱.۱:** اسناد مرجع به‌روزرسانی شده‌اند؛ راه‌اندازی Cloudflare Preview و آزمون‌های زنده فوق هنوز باز هستند.
+
+
+---
+
+# الحاقیه v1.2 — جداسازی محیط Cloudflare Preview (۳ نوامبر ۲۰۲۶)
+
+## دامنه تغییر
+- تغییرات فقط روی شاخه `cloudflare-preview` انجام شد؛ شاخه `main` و دامنه Production تغییر نکردند.
+- `src/index.tsx` اکنون با فلگ زمان Build یعنی `VITE_PLATO_PREVIEW=true` مسیر Preview مستقل را بارگذاری می‌کند.
+- در حالت Preview فقط `src/PreviewApp.tsx` و استایل اختصاصی آن بارگذاری می‌شود؛ ماژول‌های برنامه عملیاتی، Supabase، ثبت‌نام سری دوم و پنل‌های Owner/Admin به‌صورت پویا وارد نمی‌شوند.
+- صفحه Preview با داده‌های نمایشی ثابت ساخته شده و هیچ فرم ثبت‌نام، احراز هویت، خواندن یا نوشتن دیتابیس ندارد. بخش‌های آمار و کارت‌ها عمداً داده واقعی نشان نمی‌دهند.
+- Workflow جدید `.github/workflows/cloudflare-preview-check.yml` برای شاخه `cloudflare-preview`، نصب قفل‌شده وابستگی‌ها، TypeScript، Build با فلگ Preview و بررسی artifact تعریف شد. Workflow فقط Build/Check است و Deploy انجام نمی‌دهد.
+
+## تنظیم لازم در Cloudflare Pages
+- Framework preset: React (Vite) در صورت وجود؛ در غیر این صورت None.
+- Build command: `npm run build`.
+- Build output directory: `dist`.
+- Root directory: خالی.
+- Environment variable برای Production و Preview deployment این پروژه: `VITE_PLATO_PREVIEW=true`.
+- فقط شاخه `cloudflare-preview`؛ ابتدا فقط دامنه پیش‌فرض `pages.dev` و بدون Custom Domain یا تغییر DNS.
+
+## وضعیت اثبات‌شده و محدودیت
+- Commitهای تغییر کد و Workflow روی `cloudflare-preview` ثبت شده‌اند.
+- پیش از ثبت این الحاقیه، هیچ GitHub Actions run برای این شاخه وجود نداشت؛ نتیجه Build/TypeScript هنوز تأیید نشده و باید از اجرای Workflow تازه بررسی شود.
+- هیچ پروژه Pages، Deploy، URL زنده، اتصال GitHub در Cloudflare یا تنظیم Environment Variable هنوز از ابزار قابل مشاهده تأیید نشده است.
+- تا زمان موفقیت Workflow و تعیین فلگ در Cloudflare، انتشار Preview مجاز/تأییدشده تلقی نمی‌شود.
+- این Preview یک mock طراحی است، نه نسخه عملیاتی کامل سایت و نه اتصال به داده‌های عمومی زنده.
