@@ -46,8 +46,8 @@ npm run dev
 
 ## مستندات مرجع (به‌روز تا ۳ نوامبر ۲۰۲۶)
 
-- `docs/PROJECT_STATUS_AND_DECISIONS_2026-11-03.md` — مرجع وضعیت و تصمیم‌های جاری.
-- `docs/IMPLEMENTATION_REGISTER_v1.4_2026-11-03.md` — ثبت تغییرات و شواهد.
+- `docs/PROJECT_STATUS_AND_DECISIONS_2026-11-03.md` — مرجع واحد وضعیت و تصمیم‌های جاری.
+- `docs/IMPLEMENTATION_REGISTER_v1.4_2026-11-03.md` (الحاقیه جاری v1.5) — ثبت تغییرات و شواهد.
 - `docs/TECHNICAL_HANDOVER_v3.2_2026-11-03.md (الحاقیه جاری v3.5)` — بسته انتقال فنی جاری.
 - `docs/QA_MASTER_CHECKLIST_v1.8_2026-11-03.md (الحاقیه جاری v1.9)` — چک‌لیست QA جاری.
 - `docs/SERIES2_REGISTRATION_LIVE_DATABASE_SNAPSHOT_2026-11-03.md` — آمار تازه دیتابیس ثبت‌نام.
@@ -63,13 +63,13 @@ npm run dev
 - Build command: `npm run build`؛ output directory: `dist`؛ root directory خالی.
 - Preview فعلی فقط UI نمایشی و داده mock دارد و نباید برای ثبت‌نام یا عملیات واقعی استفاده شود.
 - Workflow `.github/workflows/cloudflare-preview-check.yml` صرفاً CI است و deploy نمی‌کند.
-- تا زمان تأیید Build، تنظیم env، و مشاهده امن URL pages.dev هیچ Deploy یا QA زنده‌ای ادعا نشود.
+- Deploy اولیهٔ Preview انجام و URL pages.dev در مرورگر موبایل مشاهده شده است؛ QA کامل همچنان باز است.
 
 
 ### آخرین نتیجه CI — ۳ نوامبر ۲۰۲۶
 - اجرای موفق کنترل Preview: https://github.com/Omidso82/Plato-land-preview/actions/runs/41656110849.
 - TypeScript، Build ایزوله و بررسی محدود artifact موفق شده‌اند.
-- Cloudflare هنوز Deploy نشده است؛ پیش از Deploy مقدار VITE_PLATO_PREVIEW=true باید در هر دو scope محیطی تنظیم شود.
+- پروژه Cloudflare Preview اکنون Deploy شده است؛ مقدار VITE_PLATO_PREVIEW=true در فرم تنظیمات پیش از Deploy مشاهده شد.
 
 
 ## وضعیت یکپارچه‌سازی مستندات — ۳ نوامبر ۲۰۲۶
@@ -77,3 +77,8 @@ npm run dev
 - شاخه `cloudflare-preview` فقط محیط مستقل آزمایشی است؛ مستندات تکمیلی آن به main منتقل شده‌اند، اما کد اختصاصی Preview در این انتقال وارد main نشده است.
 - Technical Handover: الحاقیه v3.5؛ Project History: الحاقیه v1.4؛ QA: v1.9؛ Implementation Register: v1.5.
 - محیط نمایشی Cloudflare در `https://plato-land-preview.pages.dev` ساخته و مشاهده شده است؛ این محیط، سایت Production نیست.
+
+
+## قانون نگهداری مرجع
+- مستندات وضعیت، تصمیم‌ها، QA و تحویل فنی فقط در شاخه `main` مرجع هستند.
+- شاخه `cloudflare-preview` برای اجرای محیط آزمایشی است و نباید به‌عنوان مرجع دوم مستندات استفاده شود.
