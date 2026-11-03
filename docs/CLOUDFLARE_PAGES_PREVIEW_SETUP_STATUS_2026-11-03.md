@@ -77,3 +77,17 @@
 - هیچ Custom Domain یا DNS برای `platoland.org` تنظیم نشد و هیچ تغییر عمدی در GitHub Pages یا Supabase اصلی انجام نشد.
 - تفاوت‌های ظاهری Preview با سایت اصلی مورد انتظار است: Preview یک نمونهٔ نمایشی مستقل با محتوای mock است، نه نسخهٔ کامل و عملیاتی سایت.
 - وضعیت: `PREVIEW_DEPLOYED — VISUAL REVIEW STARTED — FULL QA PENDING`.
+
+
+---
+
+## الحاقیه وضعیت — نقش Preview در چرخه سه‌محیطی (۳ نوامبر ۲۰۲۶)
+
+- Preview جاری، نمونه نمایشی mock برای تأیید ظاهر است؛ از آن برای تأیید کارکرد Auth، ثبت‌نام، پنل مالک، دیتابیس یا Storage واقعی استفاده نمی‌شود.
+- شاخه بررسی‌شده: `cloudflare-preview`، HEAD `cbbe46bbbcb16ebbab1e9432a2a520da42426646`.
+- دو اجرای اخیر CI با شناسه‌های `41727267304` و `41727277808` موفق‌اند؛ دامنه این CI، Build نمونه نمایشی است و قابلیت‌های عملیاتی را پوشش نمی‌دهد.
+- URL Preview: `https://plato-land-preview.pages.dev`.
+- گام بعد از تأیید طراحی: آماده‌سازی محیط Staging مستقل برای برنامه واقعی و تست با داده ساختگی. Staging هنوز ایجاد نشده است.
+- Staging نباید به Supabase اصلی متصل شود؛ ایجاد پروژه و هرگونه هزینه/ارتقا منوط به بررسی و تأیید صریح مالک است.
+- هیچ تغییر در DNS، Custom Domain، GitHub Pages تولید یا Supabase اصلی در این مرحله انجام نشده است.
+- مرجع فنی Staging و معیارهای QA: `docs/STAGING_AND_QUALITY_ASSURANCE_PLAN_v1.0_2026-11-03.md`.
