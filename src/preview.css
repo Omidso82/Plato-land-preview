@@ -6,7 +6,7 @@
 .pl-preview-header{justify-content:center;padding:16px 22px}
 .pl-preview-header nav{justify-content:center;align-items:center;gap:clamp(12px,2.2vw,26px);width:100%;text-align:center}
 .pl-preview-logo-wrap{display:flex;justify-content:center;align-items:center;padding:18px 20px 0}
-.pl-preview-logo-wrap a{display:block;width:min(310px,72vw);line-height:0}
+.pl-preview-logo-wrap a{display:block;width:min(256px,72vw);line-height:0}
 .pl-preview-logo{display:block;width:100%;height:auto;filter:drop-shadow(0 10px 22px #0008)}
 .pl-preview-hero{grid-template-columns:1fr;min-height:0;padding-top:28px;text-align:center}
 .pl-preview-copy{max-width:850px;margin:0 auto}
