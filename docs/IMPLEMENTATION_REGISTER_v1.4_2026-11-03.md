@@ -55,3 +55,37 @@
 - URL آزمایشی: https://plato-land-preview.pages.dev.
 - هیچ ادعایی درباره برابری کامل Preview با سایت اصلی یا تکمیل QA ثبت نمی‌شود.
 - وضعیت انتشار Production و دیتابیس اصلی در این اقدام تغییر داده نشد.
+
+
+---
+
+## الحاقیه v1.6 — تصمیم Staging و ثبت وضعیت واقعی Preview (۳ نوامبر ۲۰۲۶)
+
+### بررسی منابع جاری
+- GitHub `main`: `1ba638207299b6c12dbb8659846958427a5cdf28`.
+- GitHub `cloudflare-preview`: `cbbe46bbbcb16ebbab1e9432a2a520da42426646`.
+- Cloudflare Preview URL: `https://plato-land-preview.pages.dev`.
+- دو اجرای CI اخیر Preview با شناسه‌های `41727267304` و `41727277808` موفق گزارش شده‌اند.
+- این اجراها فقط Build برنامه نمایشی Preview را بررسی می‌کنند و تست قابلیت‌های عملیاتی نیستند.
+
+### تغییرات تصمیم/مستندات در این نوبت
+- سه محیط Preview / Staging / Production به‌صورت رسمی تفکیک شدند.
+- تأیید شد Preview فعلی برای نهایی‌کردن ظاهر است و نه تست امکانات واقعی.
+- Staging آینده باید برنامه واقعی با Supabase مستقل، داده‌های ساختگی و Storage/Auth/Functions مستقل داشته باشد.
+- Production و Supabase اصلی نباید محیط آزمایش باشند.
+- ایجاد Staging هنوز انجام نشده؛ هزینه/پلن و تأیید مالک پیش‌نیاز است.
+- سند جدید: `docs/STAGING_AND_QUALITY_ASSURANCE_PLAN_v1.0_2026-11-03.md`.
+- QA Master Checklist با دروازه‌های Staging و انتشار تکمیل شد.
+- Project Status و Technical Handover با وضعیت فعلی و نقطه ادامه تکمیل شدند.
+
+### وضعیت لوگو و قابلیت بارگذاری
+- نیاز طراحی برای گزینه مستقل «لوگوی سایت» ثبت شد.
+- قابلیت واقعی upload هنوز قابل اعلام به‌عنوان آماده/فعال نیست؛ CI Preview آن را تست نکرده است.
+- بررسی bucket و policyها و پیاده‌سازی/آزمون upload باید در مرحله Staging انجام شود.
+
+### تفکیک وضعیت
+- مستندسازی برنامه QA/Staging: ثبت شد.
+- ایجاد Supabase Staging: انجام نشده.
+- انتقال schema/migrations: انجام نشده.
+- تست Auth/roles/registration/storage واقعی در Staging: انجام نشده.
+- انتشار Production: در این اقدام انجام نشده.
