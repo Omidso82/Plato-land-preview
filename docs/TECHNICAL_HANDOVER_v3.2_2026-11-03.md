@@ -42,3 +42,16 @@ Query مستقیم و فقط‌خواندنی در ۳ نوامبر ۲۰۲۶:
 
 ## نقطه ادامه
 در انتظار اسکرین‌شات صفحه Workers & Pages. تا آن زمان هیچ زیرساخت، DNS، مخزن یا دیتابیسی تغییر نکند.
+
+
+---
+
+# الحاقیه v3.3 — Cloudflare Preview مستقل
+
+- نقطه ورود اکنون از `VITE_PLATO_PREVIEW` استفاده می‌کند. مقدار دقیق رشته‌ای `true`، برنامه Preview مستقل را انتخاب می‌کند.
+- PreviewApp فقط داده نمایشی ثابت دارد؛ فرم/عملیات ثبت‌نام، ورود، Auth، Supabase، Owner و Admin ندارد.
+- importهای برنامه عملیاتی به dynamic import منتقل شدند تا در build Preview فراخوانی/بارگذاری نشوند.
+- Workflow شاخه `cloudflare-preview` با `npm ci`، typecheck، build و کنترل bundle اضافه شد؛ این workflow صرفاً CI است، نه Deploy.
+- Cloudflare Pages باید Build command=`npm run build`، output=`dist` و `VITE_PLATO_PREVIEW=true` را در scopeهای Production و Preview داشته باشد.
+- شاخه `main` و تنظیمات Production تغییر نکرده‌اند.
+- آخرین وضعیت CI/Cloudflare باید پس از اجرای Workflow و دریافت تصویر داشبورد بررسی شود؛ هنوز Deploy یا آزمون زنده تأیید نشده است.
