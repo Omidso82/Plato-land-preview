@@ -76,20 +76,20 @@
 
 
 ## الحاقیه QA v1.9 — استقرار واقعی Preview (۳ نوامبر ۲۰۲۶)
-- [x] پروژه Cloudflare Pages با نام `plato-land-preview` ایجاد شد.
-- [x] اتصال به مخزن GitHub و شاخه `cloudflare-preview` در فرم تنظیمات مشاهده شد.
-- [x] Build command `npm run build` و خروجی `dist` ثبت شد.
-- [x] متغیر `VITE_PLATO_PREVIEW=true` در فرم پیش از Deploy مشاهده شد.
-- [x] Save and Deploy اجرا شد و URL `https://plato-land-preview.pages.dev` در مرورگر موبایل باز شد.
-- [x] صفحهٔ نمایشی در موبایل قابل مشاهده است.
+- [x] پروژه Cloudflare Pages با نام plato-land-preview ایجاد شد.
+- [x] اتصال به مخزن GitHub و شاخه cloudflare-preview در فرم تنظیمات مشاهده شد.
+- [x] Build command npm run build و خروجی dist ثبت شد.
+- [x] متغیر VITE_PLATO_PREVIEW=true در فرم پیش از Deploy مشاهده شد.
+- [x] Save and Deploy اجرا شد و URL https://plato-land-preview.pages.dev در مرورگر موبایل باز شد.
+- [x] صفحه نمایشی در موبایل قابل مشاهده است.
 - [ ] آزمون تمام لینک‌ها و مقصدهای صفحه.
 - [ ] آزمون مسیرهای داخلی و refresh.
 - [ ] آزمون اندازه‌های مختلف موبایل و دسکتاپ.
-- [ ] مقایسهٔ جزءبه‌جزء با سایت اصلی و ثبت تفاوت‌های مورد انتظار/ناخواسته.
+- [ ] مقایسه جزءبه‌جزء با سایت اصلی و ثبت تفاوت‌های مورد انتظار/ناخواسته.
 - [ ] بررسی مجدد تنظیمات Environment در داشبورد و scopeها پس از Deploy.
 - [ ] بررسی امنیتی مستقل bundle و تنظیمات پروژه.
 - [ ] تأیید نهایی مالک پس از رفع اختلاف‌های طراحی.
-- نتیجه: `DEPLOYED / INITIAL VISUAL CHECK PASS / FULL QA PENDING`.
+- نتیجه: DEPLOYED / INITIAL VISUAL CHECK PASS / FULL QA PENDING.
 
 ### اصلاح Snapshot ثبت‌نام
 - Snapshot قدیمی ۲۰ درخواست، مربوط به Query قبلی است و به‌عنوان تاریخچه حفظ می‌شود.
