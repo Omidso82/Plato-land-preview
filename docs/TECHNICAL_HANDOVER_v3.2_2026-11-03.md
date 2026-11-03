@@ -95,3 +95,31 @@ Query مستقیم و فقط‌خواندنی در ۳ نوامبر ۲۰۲۶:
 
 ## نقطه ادامه
 بازبینی اختلاف‌های Preview با Production را به‌عنوان کار QA/طراحی ادامه دهید؛ هیچ انتقال خودکار UI یا انتشار Production بدون مقایسه با سند UI/UX v10.7 و تأیید مالک انجام نشود.
+
+
+---
+
+# الحاقیه v3.6 — معماری چرخه توسعه امن و وضعیت فعلی (۳ نوامبر ۲۰۲۶)
+
+## شاخه‌ها و محیط‌ها — بررسی مجدد GitHub
+- `main` HEAD هنگام بررسی: `1ba638207299b6c12dbb8659846958427a5cdf28`.
+- `cloudflare-preview` HEAD هنگام بررسی: `cbbe46bbbcb16ebbab1e9432a2a520da42426646`.
+- Cloudflare Preview روی شاخه `cloudflare-preview` اجرا می‌شود و برنامه نمایشی `PreviewApp` را با داده mock ارائه می‌کند.
+- دو اجرای CI اخیر Preview با شناسه‌های `41727267304` و `41727277808` موفق گزارش شده‌اند؛ این نتیجه، فقط Build ایزوله Preview را پوشش می‌دهد.
+- Preview فعلی برای تست Auth، ثبت‌نام واقعی، پنل عملیاتی، دیتابیس یا Storage واقعی طراحی نشده است.
+- Supabase Staging مستقل هنوز ایجاد/تأیید نشده است.
+- Production همچنان `main`، GitHub Pages و Supabase اصلی `dfrppbapaaydbjeflozw` است.
+
+## تصمیم Staging برای مرحله بعد
+برنامه مصوب: پس از نهایی‌شدن طراحی، قابلیت‌های واقعی در Staging مستقل با Supabase جداگانه و داده‌های ساختگی تست شوند. این محیط باید Auth، Storage، Edge Functions، RLS و secrets مستقل داشته باشد. هیچ اتصال نوشتنی به Supabase اصلی مجاز نیست. ساخت منابع جدید منوط به بررسی هزینه و تأیید صریح مالک است.
+
+## قاعده تفکیک تست‌ها
+- Preview = Visual/UI review.
+- Staging = Functional, integration, permission, security and regression tests.
+- Production = Real users and real operational data; no destructive testing.
+
+## وضعیت لوگو
+طرح گزینه جداگانه «لوگوی سایت» برای مدیریت از پنل به‌عنوان نیاز طراحی ثبت شده است. نسخه بارگذاری واقعی هنوز تأیید/آزمایش نشده؛ اجرای واقعی آن باید در Staging و پس از بررسی Storage bucket و policies انجام شود. CI موفق Preview اثبات‌کننده این قابلیت نیست.
+
+## گام بعد
+ادامه بازبینی چک‌لیست UI/UX v10.7 از ابتدا، موردبه‌مورد. برای هر بخش تأییدشده، رفتار مورد انتظار و معیار پذیرش ثبت شود. پس از پایان طراحی، Staging طبق سند `docs/STAGING_AND_QUALITY_ASSURANCE_PLAN_v1.0_2026-11-03.md` آماده شود.
