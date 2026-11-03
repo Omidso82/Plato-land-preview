@@ -20,3 +20,39 @@
  .pl-preview-logo-wrap a{width:min(270px,74vw)}
  .pl-preview-hero{padding:22px 18px 42px;text-align:center}
 }
+
+
+/* Mobile correction: keep the brand mark compact and navigation balanced. */
+@media (max-width: 900px) {
+  .pl-preview-header {
+    display: block;
+    padding: 12px 10px;
+  }
+  .pl-preview-header nav {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px 16px;
+    width: 100%;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .pl-preview-auth-link {
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .pl-preview-logo-wrap {
+    padding: 16px 12px 0;
+  }
+  .pl-preview-logo-wrap a {
+    width: min(170px, 42vw);
+  }
+  .pl-preview-hero {
+    padding: 18px 16px 34px;
+  }
+  .pl-preview-copy h1 {
+    font-size: clamp(30px, 8vw, 42px);
+    line-height: 1.5;
+  }
+}
