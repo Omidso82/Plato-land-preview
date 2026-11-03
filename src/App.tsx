@@ -54,7 +54,7 @@ async function getPrivateAvatarUrl(value:string,userId:string){
  const {data,error}=await supabase.storage.from('avatars').createSignedUrl(path,3600);
  return error||!data?.signedUrl?'':data.signedUrl;
 }
-function Brand({onClick}:{onClick:()=>void}) { return <button className="brand" onClick={onClick} aria-label="صفحه اصلی"><span className="brand-mark"><Crown size={27}/></span><span className="brand-copy"><strong>PLATO <em>LAND</em></strong><small>بازی، رقابت، قهرمانی</small></span></button> }
+function Brand({onClick}:{onClick:()=>void}) { const logoUrl=supabase?.storage.from('series2-slides').getPublicUrl('branding/plato-land-logo').data.publicUrl; return <button className="brand" onClick={onClick} aria-label="صفحه اصلی"><span className="brand-mark brand-logo-mark">{logoUrl?<img src={logoUrl} alt="لوگوی PLATO LAND"/>:<Crown size={27}/>}</span><span className="brand-copy"><strong>PLATO <em>LAND</em></strong><small>بازی، رقابت، قهرمانی</small></span></button> }
 
 function jalaliParts(iso:string){if(!iso)return null;const d=new Date(iso+"T12:00:00Z");if(Number.isNaN(d.getTime()))return null;const p=new Intl.DateTimeFormat('en-US-u-ca-persian',{timeZone:'UTC',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(d);const v=(k:string)=>Number(p.find(x=>x.type===k)?.value);return {year:v('year'),month:v('month'),day:v('day')};}
 function jalaliToIso(value:string){return jalaliDateToIso(value);}
