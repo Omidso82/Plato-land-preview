@@ -55,3 +55,14 @@ Query مستقیم و فقط‌خواندنی در ۳ نوامبر ۲۰۲۶:
 - Cloudflare Pages باید Build command=`npm run build`، output=`dist` و `VITE_PLATO_PREVIEW=true` را در scopeهای Production و Preview داشته باشد.
 - شاخه `main` و تنظیمات Production تغییر نکرده‌اند.
 - آخرین وضعیت CI/Cloudflare باید پس از اجرای Workflow و دریافت تصویر داشبورد بررسی شود؛ هنوز Deploy یا آزمون زنده تأیید نشده است.
+
+
+---
+
+# الحاقیه v3.4 — نتیجه CI و وضعیت دقیق تحویل (۳ نوامبر ۲۰۲۶)
+- اجرای نهایی Workflow: https://github.com/Omidso82/Plato-land-preview/actions/runs/41656110849 ، commit ad75eb736ad581873fd56abf4a581d6eef27be79، نتیجه Success.
+- نصب وابستگی‌ها، TypeScript verification، Build ایزوله و Verify artifact همگی موفق شدند.
+- به‌علت نبود lockfile، Workflow نهایی npm install دارد؛ تلاش اولیه با cache/npm ci ناموفق بود و اصلاح شد.
+- آزمون artifact فقط کنترل‌های صریح workflow را پوشش می‌دهد؛ ممیزی جامع امنیتی نیست.
+- Cloudflare Pages project، متغیر VITE_PLATO_PREVIEW=true در هر دو scope، Deploy، URL زنده و QA مرورگر هنوز تأیید نشده‌اند.
+- اقدام بعدی: بررسی تنظیمات Cloudflare توسط کاربر؛ قبل از Save and Deploy باید env دقیقاً تنظیم شود. هیچ تغییر DNS یا Custom Domain انجام نشود.
