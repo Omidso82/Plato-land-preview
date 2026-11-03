@@ -46,3 +46,12 @@
 - CI بررسی کرد dist/index.html موجود باشد و رشته‌های مشخص Supabase project / registration endpoint / prediction admin در assets نباشند.
 - محدودیت: این بررسی تضمین امنیت جامع نیست و جایگزین مرور artifact یا QA دستی نمی‌شود.
 - وضعیت: CODE COMMITTED = YES؛ CI/BUILD = PASS؛ CLOUDFLARE CONFIG = NOT VERIFIED؛ DEPLOY = NOT DONE/NOT VERIFIED؛ LIVE QA = NOT RUN.
+
+
+## الحاقیه v1.5 — یکپارچه‌سازی مستندات و Preview (۳ نوامبر ۲۰۲۶)
+- اختلاف مستندات شاخه cloudflare-preview با main شناسایی شد: ۱۹ کامیت جلوتر در زمان بررسی اولیه.
+- فایل‌های مستنداتی و README تکمیلی به main منتقل شدند؛ کد Preview و workflow اختصاصی آن در این انتقال کپی نشدند.
+- Cloudflare Pages project با نام plato-land-preview روی شاخه cloudflare-preview ساخته و Deploy اولیه مشاهده شد.
+- URL آزمایشی: https://plato-land-preview.pages.dev.
+- هیچ ادعایی درباره برابری کامل Preview با سایت اصلی یا تکمیل QA ثبت نمی‌شود.
+- وضعیت انتشار Production و دیتابیس اصلی در این اقدام تغییر داده نشد.
