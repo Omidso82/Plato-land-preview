@@ -97,3 +97,32 @@ Supabase اصلی: `dfrppbapaaydbjeflozw`
 - `docs/UIUX_V10_7_SECTION_02_IMPLEMENTATION_REPORT_2026-11-01.md`
 
 **وضعیت Snapshot:** PARTIAL — اطلاعات دیتابیس ثبت‌نام با Query تازه تأیید شده؛ وضعیت Cloudflare، مشاهده زنده دامنه و آزمون‌های مرورگر هنوز تأیید نشده‌اند.
+
+
+## الحاقیه وضعیت — ۳ نوامبر ۲۰۲۶، جداسازی کد Preview
+- در شاخه `cloudflare-preview`، نقطه ورود `src/index.tsx` به‌روزرسانی شد: فقط وقتی `VITE_PLATO_PREVIEW=true` باشد، `PreviewApp` مستقل بارگذاری می‌شود؛ در غیر این صورت مسیرهای عملیاتی قبلی حفظ می‌شوند.
+- `PreviewApp` از محتوای نمایشی ثابت استفاده می‌کند و فرم ثبت‌نام، ورود، داده واقعی، پنل مدیریت یا عملیات Supabase ندارد.
+- بارگذاری برنامه عملیاتی به dynamic import منتقل شد تا build Preview ماژول‌های App، صفحات ثبت‌نام و پنل‌های Owner/Admin را وارد گراف بارگذاری Preview نکند.
+- Workflow مستقل `.github/workflows/cloudflare-preview-check.yml` برای typecheck/build و بررسی نبود رشته‌های شناخته‌شده backend/admin در artifact اضافه شد؛ این Workflow Deploy نمی‌کند.
+- این تغییرات فقط روی شاخه `cloudflare-preview` هستند؛ `main` و Production دست‌نخورده‌اند.
+- وضعیت GitHub Actions برای شاخه Preview هنوز باید پس از اجرای Workflow بررسی شود. Cloudflare Pages، تنظیم env، Deploy و URL زنده همچنان تأیید نشده‌اند.
+- قبل از اولین Deploy در Cloudflare باید `VITE_PLATO_PREVIEW=true` در Environment Variables مربوط به هر دو محیط Production و Preview تنظیم شود؛ در غیر این صورت کد به مسیر عملیاتی می‌رود و انتشار آن ممنوع است.
+
+
+## اصلاحیه وضعیت CI — ۳ نوامبر ۲۰۲۶
+- اجرای نهایی GitHub Actions برای شاخه cloudflare-preview موفق شد: https://github.com/Omidso82/Plato-land-preview/actions/runs/41656110849 ، commit ad75eb736ad581873fd56abf4a581d6eef27be79.
+- مراحل نصب وابستگی‌ها، TypeScript، Build با VITE_PLATO_PREVIEW=true و بررسی artifact موفق شدند.
+- تلاش‌های اولیه به‌دلیل تنظیم cache وابسته به lockfile و نبود lockfile در مخزن شکست خوردند؛ Workflow اصلاح شد و اکنون از npm install استفاده می‌کند.
+- Build و کنترل‌های bundle تأیید شده‌اند؛ اما Cloudflare Pages project، env، Deploy، URL زنده و QA مرورگر هنوز تأیید نشده‌اند.
+- بررسی artifact کنترل محدود روی چند رشته/مسیر مشخص است و به‌تنهایی معادل ممیزی امنیتی جامع نیست.
+
+
+## به‌روزرسانی وضعیت — ۳ نوامبر ۲۰۲۶، یکپارچه‌سازی مستندات و Preview
+- مرجع مستندات پروژه به `main` یکپارچه شد؛ مستندات تکمیلی از `cloudflare-preview` به‌صورت انتخابی منتقل شدند.
+- کد اختصاصی Preview و workflow آن در این انتقال وارد main نشدند.
+- Cloudflare Pages با نام `plato-land-preview` روی شاخه `cloudflare-preview` ایجاد شد و URL آزمایشی در مرورگر موبایل باز شد.
+- URL: `https://plato-land-preview.pages.dev`.
+- Preview صرفاً نمایش mock است و با سایت عملیاتی `https://platoland.org` یکسان نیست.
+- هیچ DNS/Custom Domain برای Production تغییر نکرد.
+- وضعیت QA: بازبینی بصری اولیه انجام شده؛ آزمون کامل موبایل/دسکتاپ، لینک‌ها، مسیرها، دسترس‌پذیری و مقایسه با سایت اصلی باقی است.
+- مرجع تصمیم‌ها و وضعیت جاری از این پس همین فایل در شاخه `main` است.
