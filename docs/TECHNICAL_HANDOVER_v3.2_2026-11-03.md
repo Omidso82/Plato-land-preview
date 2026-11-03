@@ -66,3 +66,32 @@ Query مستقیم و فقط‌خواندنی در ۳ نوامبر ۲۰۲۶:
 - آزمون artifact فقط کنترل‌های صریح workflow را پوشش می‌دهد؛ ممیزی جامع امنیتی نیست.
 - Cloudflare Pages project، متغیر VITE_PLATO_PREVIEW=true در هر دو scope، Deploy، URL زنده و QA مرورگر هنوز تأیید نشده‌اند.
 - اقدام بعدی: بررسی تنظیمات Cloudflare توسط کاربر؛ قبل از Save and Deploy باید env دقیقاً تنظیم شود. هیچ تغییر DNS یا Custom Domain انجام نشود.
+
+
+---
+
+# الحاقیه v3.5 — یکپارچه‌سازی مستندات و استقرار Cloudflare Preview (۳ نوامبر ۲۰۲۶)
+
+## مرجع واحد
+- بررسی GitHub نشان داد cloudflare-preview نسبت به main نوزده کامیت جلوتر و صفر کامیت عقب‌تر است.
+- تغییرات مستنداتی و README به‌صورت انتخابی در main یکپارچه شدند.
+- کد PreviewApp، CSS و workflow اختصاصی Preview در این انتقال وارد main نشدند.
+- main مرجع واحد مستندات و تصمیم‌های پروژه است؛ cloudflare-preview فقط شاخه محیط آزمایشی است.
+
+## Cloudflare
+- پروژه plato-land-preview به مخزن Omidso82/Plato-land-preview متصل شد.
+- شاخه تنظیم‌شده در Cloudflare: cloudflare-preview.
+- Build command: npm run build؛ output directory: dist.
+- متغیر VITE_PLATO_PREVIEW=true در فرم تنظیمات مشاهده شد.
+- Save and Deploy اجرا شد و https://plato-land-preview.pages.dev در مرورگر موبایل باز شد.
+- این Deploy صرفاً محیط نمایشی است؛ Production اصلی همچنان GitHub Pages و دامنه https://platoland.org است.
+- DNS و Custom Domain تغییر نکردند.
+- QA کامل و تطبیق نهایی با سایت اصلی هنوز انجام نشده است.
+
+## آخرین Snapshot ثبت‌نام
+- Snapshot قبلی ۲۰ درخواست، تاریخچه یک Query قدیمی‌تر است.
+- Query جدیدتر در ۳ نوامبر، ۲۵ درخواست و ۲۵ Plato ID یکتا نشان داد؛ فقط‌خواندنی.
+- تعداد درخواست‌ها به‌تنهایی نشان‌دهنده تأیید مدیر یا فهرست نهایی نیست.
+
+## نقطه ادامه
+بازبینی اختلاف‌های Preview با Production را به‌عنوان کار QA/طراحی ادامه دهید؛ هیچ انتقال خودکار UI یا انتشار Production بدون مقایسه با سند UI/UX v10.7 و تأیید مالک انجام نشود.
