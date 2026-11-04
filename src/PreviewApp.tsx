@@ -70,7 +70,7 @@ function HomePage({ account }: { account: AccountContext }) {
 }
 
 function InnerPage({ title, eyebrow, description, children, account, accountHome = false }: { title: string; eyebrow: string; description: string; children?: React.ReactNode; account: AccountContext; accountHome?: boolean }) {
-  return <><Header account={account}/><main className="pl-inner-main"><section className={accountHome ? "pl-inner-intro pl-account-home-intro" : "pl-inner-intro"}><h1>{title}</h1><span>{eyebrow}</span><p>{description}</p></section>{children}</main><Footer/></>;
+  return <><Header account={account}/><main className="pl-inner-main"><section className={accountHome ? "pl-inner-intro pl-account-home-intro" : "pl-inner-intro"}><h1>{title}</h1>{!accountHome&&<span>{eyebrow}</span>}<p>{description}</p></section>{children}</main><Footer/></>;
 }
 
 type PreviewTournament = { id: string; title: string; game_type: string; series_name: string | null; description: string | null; status: string; registration_open: boolean; capacity: number | null; starts_at: string | null };
@@ -114,7 +114,7 @@ function ProfilePage({account}:{account:AccountContext}) {
   };
   if(!account.user)return <InnerPage account={account} title="پروفایل من" eyebrow="حساب کاربری" description="برای مشاهده و ویرایش پروفایل ابتدا وارد حساب شو."><a className="pl-primary-button" href="/login-register">ورود به حساب</a></InnerPage>;
   return <InnerPage account={account} title="پروفایل من" eyebrow="اطلاعات شخصی بازیکن" description="نام نمایشی، شناسه فعلی و تصویر عمومی پروفایل خودت را ویرایش کن.">
-    <div className="pl-account-subnav"><a href="/account">نمای کلی حساب</a><a href="/account/profile" aria-current="page">پروفایل من</a><a href="/account/competitions">مسابقات من</a></div>
+    <a className="pl-back-link" href="/account">بازگشت به حساب من</a>
     <form className="pl-profile-form" onSubmit={save}>
       <div className="pl-profile-photo">{account.profile?.avatar_url?<img src={account.profile.avatar_url} alt="عکس فعلی پروفایل"/>:<div className="pl-account-avatar-placeholder">PL</div>}<label>تغییر عکس پروفایل<input type="file" accept="image/*" onChange={e=>setAvatar(e.target.files?.[0]??null)}/></label><small>فرمت تصویر، حداکثر ۵ مگابایت</small></div>
       <label>نام نمایشی<input value={name} onChange={e=>setName(e.target.value)} required maxLength={80}/></label>
@@ -132,7 +132,6 @@ function MyCompetitionsPage({account}:{account:AccountContext}) {
   const [rows,setRows]=useState<any[]>([]);const [loading,setLoading]=useState(true);const [error,setError]=useState('');
   useEffect(()=>{let active=true;const load=async()=>{if(!supabase||!account.user){setRows([]);setLoading(false);return;}const {data,error:e}=await supabase.from('registrations').select('id,tournament_id,status,created_at,display_name,plato_id,is_reserve,reserve_position,registration_type').eq('player_id',account.user.id).order('created_at',{ascending:false});if(!active)return;if(e){setError('اطلاعات مسابقات بارگذاری نشد.');setLoading(false);return;}const ids=[...new Set((data??[]).map(r=>r.tournament_id))];let tournaments:any[]=[];if(ids.length){const result=await supabase.from('tournaments').select('id,title,game_type,status,starts_at').in('id',ids);tournaments=result.data??[];}if(active){setRows((data??[]).map(r=>({...r,tournament:tournaments.find(t=>t.id===r.tournament_id)})));setLoading(false);}};void load();return()=>{active=false;};},[account.user?.id]);
   return <InnerPage account={account} title="مسابقات من" eyebrow="سوابق رقابتی بازیکن" description="ثبت‌نام‌ها و وضعیت حضور تو در مسابقات PLATO LAND.">
-    <div className="pl-account-subnav"><a href="/account">نمای کلی حساب</a><a href="/account/profile">پروفایل من</a><a href="/account/competitions" aria-current="page">مسابقات من</a></div>
     {!account.user?<article className="pl-preview-card"><p>برای مشاهده مسابقات خودت وارد حساب شو.</p><a href="/login-register">ورود به حساب</a></article>:loading?<article className="pl-preview-card">در حال بارگذاری مسابقات…</article>:error?<article className="pl-preview-card" role="alert">{error}</article>:rows.length?<div className="pl-my-competitions">{rows.map(r=><article className="pl-preview-card" key={r.id}><h2>{r.tournament?.title??'مسابقه'}</h2><p>بازی: {r.tournament?.game_type??'—'}</p><p>وضعیت ثبت‌نام: {({pending:'در انتظار بررسی',approved:'تأیید شده',registered:'ثبت‌نام نهایی',rejected:'رد شده',withdrawn:'انصراف داده'} as Record<string,string>)[r.status]??r.status}</p><p>Plato ID هنگام ثبت‌نام: {r.plato_id??account.profile?.plato_id??'—'}</p>{r.is_reserve&&<p>جایگاه ذخیره: {r.reserve_position??'ثبت نشده'}</p>}<small>تاریخ درخواست: {new Intl.DateTimeFormat('fa-IR-u-ca-persian',{dateStyle:'medium'}).format(new Date(r.created_at))}</small></article>)}</div>:<article className="pl-preview-card"><h2>هنوز در مسابقه‌ای ثبت‌نام نکرده‌ای</h2><p>پس از ثبت‌نام در یک رقابت، وضعیت و اطلاعات آن در این بخش نمایش داده می‌شود.</p><a href="/competitions">مشاهده مسابقات</a></article>}
   </InnerPage>;
 }
