@@ -29,7 +29,7 @@
 | Public indexes | Present; extracted by table from `pg_indexes` |
 | Public tables with RLS enabled | 29 / 29 |
 | Storage buckets | 5 |
-| Storage object policies | 18 |
+| Storage object policies | 21 |
 | Edge Functions | 7 active |
 | Applied Production migrations | 81 |
 | SQL migration files currently in repository | 61 |
