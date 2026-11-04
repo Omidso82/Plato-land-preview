@@ -27,7 +27,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const token = authorization.replace(/^Bearer\s+/i, "");
+    const token = authorization.toLowerCase().startsWith("bearer ") ? authorization.slice(7).trim() : authorization.trim();
     const authClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
       auth: { persistSession: false, autoRefreshToken: false },
