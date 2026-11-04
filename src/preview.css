@@ -20,10 +20,10 @@
 .pl-primary-nav a:hover,.pl-primary-nav a:focus-visible,.pl-preview-footer a:hover,.pl-text-link:hover{color:#f0d991}
 .pl-primary-nav .pl-auth-link{margin-right:0;padding:0;color:#f0d991;font-weight:700;min-height:48px;border:0;border-radius:0;background:transparent}
 .pl-menu-toggle{display:none}
-.pl-home-hero{max-width:1180px;margin:0 auto;padding:38px 22px 54px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.pl-home-hero{max-width:1180px;margin:0 auto;padding:28px 22px 44px;display:flex;flex-direction:column;align-items:center;text-align:center}
 .pl-brand-home{align-items:center;gap:8px}
-.pl-brand-home a{width:min(300px,76vw)}
-.pl-brand-home img{max-height:220px;object-position:center}
+.pl-brand-home a{width:min(230px,62vw)}
+.pl-brand-home img{max-height:170px;object-position:center}
 .pl-brand-home p{font-size:14px}
 .pl-home-copy{max-width:850px;margin:10px auto 0}
 .pl-home-copy h1{font-size:clamp(34px,5.5vw,62px);margin:8px 0 14px;line-height:1.45}
@@ -52,7 +52,7 @@
 .pl-breadcrumb{display:flex;gap:10px;align-items:center;color:#8f8b80;font-size:12px;margin-bottom:34px}
 .pl-breadcrumb a{color:#d9bd76}
 .pl-inner-intro{padding:0 0 25px;border-bottom:1px solid #302e29;margin-bottom:28px}
-.pl-inner-intro h1{font-size:clamp(30px,4vw,44px);margin:8px 0 10px}
+.pl-inner-intro h1{font-size:clamp(24px,2.6vw,32px);line-height:1.5;margin:4px 0 8px}
 .pl-inner-intro p{color:#aaa9a4;line-height:2;font-size:14px;max-width:820px;margin:0}
 .pl-empty-state{max-width:760px}
 .pl-guide-list{display:grid;gap:14px}
@@ -85,9 +85,9 @@
  .pl-primary-nav a{flex:0 0 auto;min-height:46px;padding:0 2px;border:0;border-radius:0;background:transparent;font-size:12px;white-space:nowrap}
  .pl-primary-nav a:hover{background:transparent;color:#f0d991}
  .pl-primary-nav .pl-auth-link{margin:0;padding:0;justify-content:center;border:0;border-radius:0;background:transparent}
- .pl-home-hero{padding:28px 18px 42px}
- .pl-brand-home a{width:min(250px,70vw)}
- .pl-brand-home img{max-height:190px}
+ .pl-home-hero{padding:20px 18px 34px}
+ .pl-brand-home a{width:min(210px,62vw)}
+ .pl-brand-home img{max-height:155px}
  .pl-brand-home p{font-size:13px}
  .pl-home-copy h1{font-size:clamp(30px,8.2vw,42px);line-height:1.45;margin:5px 0 13px}
  .pl-home-copy>p{font-size:13px;line-height:1.9}
@@ -100,7 +100,7 @@
  .pl-section-heading h2{font-size:23px}
  .pl-inner-main{padding-top:22px;padding-bottom:52px}
  .pl-breadcrumb{margin-bottom:25px}
- .pl-inner-intro h1{font-size:30px}
+ .pl-inner-intro h1{font-size:24px}
  .pl-preview-footer nav{gap:12px 18px}
 }
 @media(max-width:360px){
@@ -144,9 +144,8 @@
 .pl-account-link-grid .pl-preview-card h2{margin:0 0 8px}
 .pl-account-link-grid .pl-preview-card p{min-height:48px}
 .pl-account-link-grid .pl-preview-card strong{color:#e6cb83;font-size:12px}
-.pl-account-subnav{display:flex;gap:9px;flex-wrap:wrap;margin:0 0 18px}
-.pl-account-subnav a{padding:9px 13px;border:1px solid #514329;border-radius:8px;color:#c9c5ba;font-size:12px}
-.pl-account-subnav a[aria-current=page]{background:#302719;border-color:#a18443;color:#f0d991}
+.pl-back-link{display:inline-flex;align-items:center;min-height:40px;margin:0 0 16px;padding:8px 14px;border:1px solid #514329;border-radius:8px;color:#e6cb83;font-size:13px;transition:background .18s ease,border-color .18s ease}
+.pl-back-link:hover,.pl-back-link:focus-visible{background:#302719;border-color:#a18443;color:#f0d991}
 .pl-profile-form{display:grid;gap:14px;max-width:680px;padding:20px;border:1px solid #514329;border-radius:14px;background:#171613}
 .pl-profile-form>label{display:grid;gap:7px;color:#d9bd76;font-size:13px}
 .pl-profile-form input:not([type=file]){width:100%;min-height:47px;padding:10px 12px;border:1px solid #5a4a2c;border-radius:8px;background:#101114;color:#f4f1e9}
@@ -178,10 +177,9 @@
 
 /* Account home heading refinement */
 .pl-account-home-intro{padding:4px 0 20px;margin-bottom:24px}
-.pl-account-home-intro h1{font-size:clamp(23px,3vw,30px);line-height:1.5;margin:0 0 2px;font-weight:700}
-.pl-account-home-intro>span{display:block;font-size:12px;color:#d9bd76;line-height:1.8}
+.pl-account-home-intro h1{font-size:clamp(24px,2.6vw,32px);line-height:1.5;margin:0 0 8px;font-weight:700}
 .pl-account-home-intro p{margin-top:8px;font-size:13px;line-height:1.9}
 @media(max-width:720px){
  .pl-account-home-intro{padding-top:0;margin-bottom:20px}
- .pl-account-home-intro h1{font-size:25px}
+ .pl-account-home-intro h1{font-size:24px}
 }
