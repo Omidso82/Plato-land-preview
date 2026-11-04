@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import Series2RegistrationReport from './Series2RegistrationReport';
 
 const BUCKET = 'series2-slides';
 type SlideFile = { name: string; url: string; updated_at?: string };
@@ -115,6 +116,7 @@ export default function Series2SlidesManager() {
         </div>;
       })}
     </div>
+    <Series2RegistrationReport />
     {message&&<p role="status" style={{...muted,marginTop:16}}>{message}</p>}
   </section></main>;
 }
