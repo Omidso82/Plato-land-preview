@@ -111,3 +111,14 @@
  .pl-preview-stats div:last-child{border-bottom:0}
  .pl-preview-footer nav{gap:10px 14px}
 }
+
+.pl-auth-form{display:grid;gap:10px;padding:20px;border:1px solid #514329;border-radius:10px;margin-bottom:18px}
+.pl-auth-form h2{margin:0 0 8px;font-size:19px}
+.pl-auth-form label{color:#d9bd76;font-size:13px;margin-top:5px}
+.pl-auth-form input{width:100%;min-height:48px;padding:10px 13px;border:1px solid #5a4a2c;border-radius:8px;background:#101114;color:#f4f1e9;font:inherit;direction:ltr;text-align:left}
+.pl-auth-form input:focus{outline:2px solid #c69e42;outline-offset:2px}
+.pl-auth-form .pl-primary-button{width:100%;border:0;cursor:pointer}
+.pl-auth-form .pl-primary-button:disabled,.pl-auth-placeholder .pl-primary-button:disabled{opacity:.6;cursor:not-allowed}
+.pl-auth-message{padding:10px 12px;border:1px solid #67552e;border-radius:8px;color:#f0d991;font-size:13px;line-height:1.8}
+.pl-auth-note{color:#969188;font-size:11px;line-height:1.9;margin:4px 0 0}
+.pl-auth-placeholder p{overflow-wrap:anywhere}
