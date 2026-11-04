@@ -4,7 +4,7 @@
 .pl-preview a{color:inherit;text-decoration:none}
 .pl-preview button{font:inherit}
 .pl-preview-banner{padding:9px 16px;text-align:center;background:#302719;border-bottom:1px solid #8d7137;color:#f0d991;font-size:12px;line-height:1.8}
-.pl-site-header{max-width:1180px;margin:0 auto;padding:0 22px}
+.pl-site-header{position:sticky;top:0;z-index:100;max-width:1180px;margin:0 auto;padding:0 22px;background:#0d0e10}
 .pl-site-header-home{padding-top:0}
 .pl-site-header-inner{padding-top:24px}
 .pl-brand{display:flex;flex-direction:column;align-items:flex-start;gap:5px}
@@ -14,7 +14,7 @@
 .pl-brand-compact{align-items:flex-start;margin-bottom:15px}
 .pl-brand-compact a{width:160px}
 .pl-brand-compact p{font-size:12px}
-.pl-nav-shell{position:sticky;top:0;z-index:100;background:#0d0e10;border-bottom:1px solid #302e29;box-shadow:0 8px 18px #0005}
+.pl-nav-shell{position:relative;border-bottom:1px solid #302e29}
 .pl-primary-nav{display:flex;align-items:center;justify-content:flex-start;gap:clamp(18px,2.5vw,34px);min-height:62px;color:#c9c5ba;font-size:14px}
 .pl-primary-nav a{display:inline-flex;align-items:center;min-height:48px;transition:color .18s ease}
 .pl-primary-nav a:hover,.pl-primary-nav a:focus-visible,.pl-preview-footer a:hover,.pl-text-link:hover{color:#f0d991}
