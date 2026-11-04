@@ -35,7 +35,7 @@ function PreviewBanner() {
 
   return (
     <div className="pl-preview-banner" role="status" aria-live="polite">
-      محیط آزمایشی PLATO LAND — {message} عملیات حساب کاربری و مسابقات تا پایان QA غیرفعال‌اند.
+      محیط آزمایشی PLATO LAND — {message} ورود حساب‌های آزمایشی فعال است؛ ثبت‌نام و عملیات مسابقات تا پایان QA غیرفعال‌اند.
     </div>
   );
 }
@@ -94,7 +94,7 @@ function HomePage() {
           <div className="pl-home-copy">
             <h1>بازی، رقابت، <em>قهرمانی</em></h1>
             <p>جایی برای رقابت منصفانه، تجربه بازی و ثبت لحظه‌های قهرمانی.</p>
-            <small>این نسخه صرفاً پیش‌نمایش طراحی است و هیچ عملیاتی روی حساب یا اطلاعات واقعی انجام نمی‌دهد.</small>
+            <small>این نسخه آزمایشی فقط به دیتابیس Staging متصل است و به دیتابیس اصلی دسترسی ندارد.</small>
           </div>
         </section>
       </main>
