@@ -10,8 +10,10 @@ Use only against Supabase project `vgezfuztgzxbmvkmaoqn`. Never execute these sn
 4. `production_views_2026-11-04.sql` — `recent_tournament_champions`, applied after its `private.is_tournament_public()` helper; retains `security_invoker=true` and `security_barrier=true`.
 5. `production_security_objects_2026-11-04.sql` — 29 RLS enablement statements, 102 public policies, and 12 application trigger objects (29 event registrations).
 6. `production_grants_2026-11-04.sql` — captured app schema, table/view, and routine grants for anon/authenticated/service_role; review before use.
-7. `production_storage_policies_2026-11-04.sql` — 21 application Storage object policies. Apply only after bucket configuration and dependencies are ready.
-8. `production_application_schema_2026-11-04.sql` — combined raw catalog snapshot retained as a reference; do not use as a single migration because functions must precede RLS policies and triggers.
+7. `production_storage_buckets_2026-11-04.json` — exact five-bucket configuration manifest; configure through supported Storage administration without copying objects.
+8. `production_storage_policies_2026-11-04.sql` — 21 application Storage object policies. Apply only after bucket configuration and dependencies are ready.
+9. `production_realtime_publication_2026-11-04.sql` — adds `site_maintenance` and `user_notifications` to the existing `supabase_realtime` publication.
+10. `production_application_schema_2026-11-04.sql` — combined raw catalog snapshot retained as a reference; do not use as a single migration because functions must precede RLS policies and triggers.
 
 ## Required order
 
