@@ -154,18 +154,97 @@ function AboutPage() {
 
 function LoginRegisterPage() {
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
-  return <InnerPage title="ورود / ثبت‌نام" eyebrow="حساب کاربری" description="دو فرایند ورود و ثبت‌نام مستقل هستند؛ در این محیط Preview هیچ حساب واقعی ساخته یا بررسی نمی‌شود.">
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  const [sessionUser, setSessionUser] = useState<{ id: string; email?: string } | null>(null);
+  const [profile, setProfile] = useState<{ display_name: string | null; plato_id: string | null } | null>(null);
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!supabase) return;
+    let active = true;
+    const loadAccount = async (user: { id: string; email?: string } | null) => {
+      if (!active) return;
+      setSessionUser(user);
+      setProfile(null);
+      setRole(null);
+      if (!user) return;
+      const [{ data: profileData }, { data: roleData }] = await Promise.all([
+        supabase.from('profiles').select('display_name, plato_id').eq('id', user.id).maybeSingle(),
+        supabase.rpc('current_user_role'),
+      ]);
+      if (!active) return;
+      setProfile(profileData ?? null);
+      setRole(roleData ?? 'player');
+    };
+    void supabase.auth.getSession().then(({ data }) => loadAccount(data.session?.user ?? null));
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      void loadAccount(session?.user ?? null);
+    });
+    return () => {
+      active = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogin = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!supabase || busy) return;
+    setBusy(true);
+    setMessage('');
+    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+    setBusy(false);
+    if (error) {
+      setMessage('ورود انجام نشد. ایمیل و رمز عبور را بررسی کن و دوباره تلاش کن.');
+      return;
+    }
+    setPassword('');
+    setMessage('ورود موفق بود؛ اطلاعات حساب از Staging بارگذاری شد.');
+  };
+
+  const handleLogout = async () => {
+    if (!supabase || busy) return;
+    setBusy(true);
+    const { error } = await supabase.auth.signOut();
+    setBusy(false);
+    setMessage(error ? 'خروج انجام نشد؛ دوباره تلاش کن.' : 'از حساب خارج شدی.');
+  };
+
+  return <InnerPage title="ورود / ثبت‌نام" eyebrow="حساب کاربری" description="ورود آزمایشی به حساب‌های موجود در دیتابیس Staging فعال است. ثبت‌نام جدید تا تکمیل تنظیمات امنیتی و QA غیرفعال می‌ماند.">
     <section className="pl-auth-panel">
       <div className="pl-auth-tabs" role="tablist" aria-label="انتخاب فرم">
-        <button type="button" role="tab" aria-selected={activeTab === 'login'} className={activeTab === 'login' ? 'active' : ''} onClick={() => setActiveTab('login')}>ورود</button>
-        <button type="button" role="tab" aria-selected={activeTab === 'register'} className={activeTab === 'register' ? 'active' : ''} onClick={() => setActiveTab('register')}>ثبت‌نام</button>
+        <button type="button" role="tab" aria-selected={activeTab === 'login'} className={activeTab === 'login' ? 'active' : ''} onClick={() => { setActiveTab('login'); setMessage(''); }}>ورود</button>
+        <button type="button" role="tab" aria-selected={activeTab === 'register'} className={activeTab === 'register' ? 'active' : ''} onClick={() => { setActiveTab('register'); setMessage(''); }}>ثبت‌نام</button>
       </div>
-      {activeTab === 'login' ? (
-        <div className="pl-auth-placeholder" role="tabpanel"><h2>فرم ورود</h2><p>فرم ورود در نسخه عملیاتی به‌صورت مستقل ارائه می‌شود. برای جلوگیری از ارسال اطلاعات واقعی، این فرم در Preview غیرفعال است.</p></div>
+      {sessionUser ? (
+        <div className="pl-auth-placeholder" role="status">
+          <h2>ورود موفق</h2>
+          <p>ایمیل: {sessionUser.email}</p>
+          <p>نام نمایشی: {profile?.display_name ?? 'هنوز ثبت نشده'}</p>
+          <p>Plato ID: {profile?.plato_id ?? 'هنوز ثبت نشده'}</p>
+          <p>نقش در Staging: {role ?? 'در حال بررسی'}</p>
+          <button className="pl-primary-button" type="button" onClick={handleLogout} disabled={busy}>{busy ? 'لطفاً صبر کن…' : 'خروج از حساب'}</button>
+        </div>
+      ) : activeTab === 'login' ? (
+        <form className="pl-auth-form" onSubmit={handleLogin}>
+          <h2>ورود به حساب آزمایشی</h2>
+          <label htmlFor="pl-login-email">آدرس ایمیل</label>
+          <input id="pl-login-email" type="email" autoComplete="username" inputMode="email" value={email} onChange={(event) => setEmail(event.target.value)} required />
+          <label htmlFor="pl-login-password">رمز عبور</label>
+          <input id="pl-login-password" type="password" autoComplete="current-password" value={password} onChange={(event) => setPassword(event.target.value)} required />
+          <button className="pl-primary-button" type="submit" disabled={busy || !supabase}>{busy ? 'در حال ورود…' : 'ورود'}</button>
+          {message && <p className="pl-auth-message" role="status">{message}</p>}
+          <p className="pl-auth-note">این فرم فقط به پروژه Staging متصل است؛ اطلاعات ورود به دیتابیس اصلی ارسال نمی‌شود.</p>
+        </form>
       ) : (
-        <div className="pl-auth-placeholder" role="tabpanel"><h2>فرم ثبت‌نام</h2><p>فرم ثبت‌نام مستقل از ورود است و فیلدهای مخصوص خود را خواهد داشت. ثبت‌نام در Preview غیرفعال است.</p></div>
+        <div className="pl-auth-placeholder" role="tabpanel">
+          <h2>ثبت‌نام غیرفعال</h2>
+          <p>فعلاً فقط ورود به حساب‌های آزمایشی موجود فعال است. ثبت‌نام جدید پس از تکمیل تنظیمات Auth و بررسی سیاست‌های امنیتی فعال خواهد شد.</p>
+        </div>
       )}
-      <span className="pl-preview-chip">غیرفعال در محیط آزمایشی</span>
+      {!sessionUser && <span className="pl-preview-chip">محیط آزمایشی Staging</span>}
     </section>
   </InnerPage>;
 }
