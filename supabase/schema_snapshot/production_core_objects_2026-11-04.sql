@@ -527,34 +527,4 @@ CREATE INDEX user_notifications_user_created_idx ON public.user_notifications US
 CREATE UNIQUE INDEX profiles_plato_id_lower_idx ON public.profiles USING btree (lower(plato_id));
 CREATE UNIQUE INDEX registration_members_unique_registration_plato ON public.registration_members USING btree (registration_id, lower(btrim(plato_id)));
 
--- 4) Public view definitions
-CREATE OR REPLACE VIEW public.recent_tournament_champions WITH (security_invoker=true, security_barrier=true) AS\n WITH candidates AS (
-         SELECT t.id AS tournament_id,
-            t.title AS tournament_title,
-            t.game_type,
-            t.series_name,
-            COALESCE((t.prize_details ->> 'text'::text), (t.prize_details ->> 'display'::text), ''::text) AS prize_text,
-            t.completed_at,
-            p.display_name,
-            p.plato_id,
-            p.public_avatar_path,
-            count(*) OVER (PARTITION BY t.id) AS champion_rows
-           FROM ((tournaments t
-             JOIN tournament_results r ON (((r.tournament_id = t.id) AND (r.placement = 1))))
-             JOIN profiles p ON ((p.id = r.player_id)))
-          WHERE ((t.status = 'completed'::text) AND (t.completed_at IS NOT NULL) AND private.is_tournament_public(t.id))
-        )
- SELECT tournament_id,
-    tournament_title,
-    game_type,
-    series_name,
-    prize_text,
-    completed_at,
-    display_name,
-    plato_id,
-    public_avatar_path
-   FROM candidates
-  WHERE (champion_rows = 1)
-  ORDER BY completed_at DESC
- LIMIT 3;;
-
+-- Public view creation is deferred until private helper functions are installed.
