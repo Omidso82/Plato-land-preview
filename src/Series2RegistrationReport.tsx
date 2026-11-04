@@ -30,7 +30,7 @@ export default function Series2RegistrationReport() {
   useEffect(()=>{void load();},[load]);
 
   const updateDraft=(id:string,key:keyof Draft,value:string)=>{
-    if(!/^\\d*$/.test(value))return;
+    if(!/^\d*$/.test(value))return;
     setDrafts(old=>({...old,[id]:{...(old[id]||{gamesPlayed:'',gamesWon:''}),[key]:value}}));
   };
   const saveStats=async(row:RequestRow)=>{
