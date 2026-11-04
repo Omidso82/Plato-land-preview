@@ -215,3 +215,31 @@ Query مستقیم و فقط‌خواندنی در ۳ نوامبر ۲۰۲۶:
 
 ### آزمون و محدودیت
 پذیرش A/B فقط پذیرش مالک در Preview است. QA ماتریسی، E2E، دسترس‌پذیری، Auth/DB عملیاتی، Staging و Production approval همچنان مستقل و باز هستند تا با شواهد واقعی انجام شوند. این الحاقیه مستنداتی است و هیچ تغییر اجرایی/انتشاری انجام نمی‌دهد.
+
+
+---
+
+## الحاقیه فنی v4.0 — تنظیمات امنیت حساب در Preview (۵ نوامبر ۲۰۲۶)
+
+### مرجع تغییر
+- PR #53: https://github.com/Omidso82/Plato-land-preview/pull/53
+- Merge commit: `622a404ba83645438dd8958d6c4d866e57102e64`
+- Source branch: `feat/account-security-settings`; target: `cloudflare-preview`.
+- Cloudflare Pages project: `plato-land-preview`; deployment commit: `622a404ba83645438dd8958d6c4d866e57102e64`; URL: https://94deeab5.plato-land-preview.pages.dev/ .
+
+### رفتارهای اضافه‌شده
+1. تغییر رمز: بررسی رمز فعلی از طریق Auth پیش از update؛ حداقل طول رمز جدید در رابط ۸ نویسه.
+2. بازیابی رمز: درخواست reset email برای ایمیل حساب؛ redirect به `/account/settings?mode=recovery` روی origin جاری.
+3. تکمیل بازیابی: فرم تعیین رمز جدید پس از بازگشت از لینک.
+4. خروج سراسری: `signOut({scope:'global'})` با تأیید؛ پس از موفقیت انتقال به صفحه ورود.
+5. خروج عادی: `signOut({scope:'local'})` برای نشست مرورگر فعلی.
+6. هشدار ورود جدید به‌عنوان پیکربندی‌نشده نمایش داده می‌شود؛ این PR آن را فعال نمی‌کند.
+
+### وابستگی‌ها و ریسک‌های باز
+- URL بازیابی باید در Supabase Auth URL Configuration پروژه Staging مجاز باشد؛ هنوز تأیید نشده است.
+- مرورگر در بررسی خودکار به Cloudflare Access gate رسید؛ تست عملی فرم‌ها و callback انجام نشد.
+- انقضای access token ممکن است به این معنی باشد که خروج سراسری فوراً همه access tokenهای صادرشده را بی‌اعتبار نکند؛ متن UI این محدودیت را توضیح می‌دهد.
+- فهرست نشست‌ها/دستگاه‌ها و هشدار ورود جدید در این PR پیاده‌سازی نشده‌اند.
+
+### حفاظت محیط
+این PR فقط شاخه Preview را تغییر داده است. بدون migration، SQL، schema، secrets جدید، تغییر main، Production، دامنه اصلی، Supabase Production، Storage یا DNS.
