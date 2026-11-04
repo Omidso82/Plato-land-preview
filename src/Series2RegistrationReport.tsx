@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
 
 type RequestRow = { id:string; plato_id:string; created_at:string; games_played:number|null; games_won:number|null };
@@ -12,6 +12,7 @@ export default function Series2RegistrationReport() {
   const [error,setError]=useState('');
   const [notice,setNotice]=useState('');
   const [updatedAt,setUpdatedAt]=useState<Date|null>(null);
+  const [showWinRateReport,setShowWinRateReport]=useState(false);
 
   const load=useCallback(async()=>{
     if(!supabase){setError('اتصال به پایگاه داده برقرار نیست.');setLoading(false);return;}
@@ -29,7 +30,7 @@ export default function Series2RegistrationReport() {
   useEffect(()=>{void load();},[load]);
 
   const updateDraft=(id:string,key:keyof Draft,value:string)=>{
-    if(!/^\d*$/.test(value))return;
+    if(!/^\\d*$/.test(value))return;
     setDrafts(old=>({...old,[id]:{...(old[id]||{gamesPlayed:'',gamesWon:''}),[key]:value}}));
   };
   const saveStats=async(row:RequestRow)=>{
@@ -53,12 +54,24 @@ export default function Series2RegistrationReport() {
   const capacity=48,remaining=Math.max(0,capacity-rows.length);
   const fa=(value:number)=>value.toLocaleString('fa-IR');
   const date=(value:string)=>new Intl.DateTimeFormat('fa-IR',{dateStyle:'short',timeStyle:'short',timeZone:'Europe/Copenhagen'}).format(new Date(value));
+  const winRateRows=useMemo(()=>rows.map(row=>{
+    const played=row.games_played,won=row.games_won;
+    const hasRate=played!==null&&won!==null&&played>0&&won>=0&&won<=played;
+    return {...row,hasRate,rate:hasRate?(won!/played!*100):null};
+  }).sort((a,b)=>{
+    if(a.hasRate!==b.hasRate)return a.hasRate?-1:1;
+    if(a.rate!==null&&b.rate!==null&&a.rate!==b.rate)return b.rate-a.rate;
+    return a.plato_id.localeCompare(b.plato_id,'en',{sensitivity:'base'});
+  }),[rows]);
 
   return <section dir="rtl" aria-labelledby="series2-report-title" style={{marginTop:28,border:'1px solid #705b31',borderRadius:14,padding:18,background:'#171819'}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
       <div><h2 id="series2-report-title" style={{margin:'0 0 6px',color:'#f6e8c5',fontSize:20}}>گزارش ثبت‌نام و آمار بازیکنان سری دوم</h2>
       <p style={{margin:0,color:'#c9c4b8',fontSize:12,lineHeight:1.8}}>گزارش خصوصی مالک · آمار بازی و برد برای هر Plato ID قابل ویرایش و ذخیره است.</p></div>
-      <button type="button" onClick={()=>void load()} disabled={loading||saving!==null} style={secondary}>{loading?'در حال به‌روزرسانی…':'به‌روزرسانی فهرست'}</button>
+      <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+        <button type="button" onClick={()=>setShowWinRateReport(value=>!value)} disabled={loading||rows.length===0} style={secondary}>{showWinRateReport?'بستن گزارش درصد برد':'مشاهده گزارش درصد برد'}</button>
+        <button type="button" onClick={()=>void load()} disabled={loading||saving!==null} style={secondary}>{loading?'در حال به‌روزرسانی…':'به‌روزرسانی فهرست'}</button>
+      </div>
     </div>
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(145px,1fr))',gap:10,margin:'18px 0'}}>
       <Metric label="تعداد درخواست‌ها" value={fa(rows.length)}/><Metric label="ظرفیت اولیه" value={fa(capacity)}/><Metric label="ظرفیت باقی‌مانده تا ۴۸" value={fa(remaining)}/>
@@ -66,6 +79,27 @@ export default function Series2RegistrationReport() {
     <p style={{fontSize:11,color:'#b9b2a4',margin:'0 0 12px',lineHeight:1.9}}>تعداد بازی و برد را به‌صورت عدد صحیح وارد کن. درصد برد خودکار محاسبه می‌شود. برای ذخیره هر بازیکن، دکمهٔ همان ردیف را بزن. مقدار خالی هنگام ذخیره صفر محسوب می‌شود؛ برد نمی‌تواند از بازی بیشتر باشد.</p>
     {error&&<p role="alert" style={{color:'#ffc5c5',background:'#301819',padding:10,borderRadius:8}}>{error}</p>}
     {notice&&<p role="status" style={{color:'#bce8c9',background:'#14281d',padding:10,borderRadius:8}}>{notice}</p>}
+    {showWinRateReport&&<section aria-label="گزارش درصد برد بازیکنان" style={{margin:'16px 0',padding:14,border:'1px solid #8a7445',borderRadius:11,background:'#101113'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:10}}>
+        <strong style={{color:'#f3d58d',fontSize:16}}>گزارش درصد برد بازیکنان</strong>
+        <small style={{color:'#b9b2a4'}}>مرتب‌سازی: بیشترین درصد برد</small>
+      </div>
+      {winRateRows.length===0?<p style={muted}>اطلاعاتی برای نمایش وجود ندارد.</p>:<div style={{overflowX:'auto'}}>
+        <table style={{width:'100%',minWidth:480,borderCollapse:'collapse',color:'#eee',fontSize:13}}>
+          <thead><tr style={{color:'#d9bd7d',textAlign:'right'}}>
+            <th style={reportCell}>ردیف</th><th style={reportCell}>Plato ID</th><th style={reportCell}>تعداد بازی</th><th style={reportCell}>تعداد برد</th><th style={reportCell}>درصد برد</th>
+          </tr></thead>
+          <tbody>{winRateRows.map((row,index)=><tr key={row.id}>
+            <td style={reportCell}>{fa(index+1)}</td>
+            <td dir="ltr" style={{...reportCell,textAlign:'left',fontWeight:700,color:'#f3d58d'}}>{row.plato_id}</td>
+            <td style={reportCell}>{row.games_played===null?'—':fa(row.games_played)}</td>
+            <td style={reportCell}>{row.games_won===null?'—':fa(row.games_won)}</td>
+            <td style={{...reportCell,fontWeight:700,color:row.rate===null?'#aaa':'#f3d58d'}}>{row.rate===null?'—':row.rate.toLocaleString('fa-IR',{maximumFractionDigits:2})+'٪'}</td>
+          </tr>)}</tbody>
+        </table>
+      </div>}
+      <small style={{display:'block',color:'#918a7b',marginTop:10,lineHeight:1.8}}>بازیکنانی که آمار کامل ندارند یا تعداد بازی آن‌ها صفر است، با علامت «—» در انتهای جدول قرار می‌گیرند. این جدول فقط‌خواندنی است.</small>
+    </section>}
     {loading&&rows.length===0?<p style={muted}>در حال دریافت فهرست…</p>:rows.length===0?<p style={muted}>هنوز درخواستی ثبت نشده است.</p>:
       <div style={{display:'grid',gap:10}}>
         {rows.map((row,index)=>{
@@ -97,3 +131,4 @@ const numberStyle:React.CSSProperties={boxSizing:'border-box',display:'block',wi
 const primary:React.CSSProperties={minHeight:40,background:'linear-gradient(120deg,#a98239,#e4c77e)',border:'1px solid #e3c77d',borderRadius:8,color:'#17130b',padding:'9px 12px',fontWeight:700,cursor:'pointer'};
 const secondary:React.CSSProperties={background:'#252525',border:'1px solid #8a7445',color:'#f2dfb1',borderRadius:8,padding:'10px 14px',cursor:'pointer'};
 const muted:React.CSSProperties={color:'#c9c4b8',fontSize:13,lineHeight:1.9};
+const reportCell:React.CSSProperties={padding:'10px 8px',borderBottom:'1px solid #34312a',whiteSpace:'nowrap'};
