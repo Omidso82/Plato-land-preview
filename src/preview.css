@@ -187,6 +187,8 @@
 /* Account QA fixes — avatar feedback and three-category competition view */
 .pl-profile-photo>img{display:block;width:76px;height:76px;object-fit:cover;border-radius:50%;border:1px solid #8d7137}
 .pl-profile-photo .pl-selected-avatar{color:#e6cb83;overflow-wrap:anywhere}
+.pl-profile-photo .pl-avatar-inline-error{width:100%;margin:2px 0 0;padding:10px 12px;border:1px solid #a94b42;border-radius:8px;background:#351b1a;color:#ffd0ca;font-size:12px;line-height:1.9;overflow-wrap:anywhere}
+.pl-profile-photo input[aria-invalid="true"]{outline:2px solid #a94b42;outline-offset:3px;border-radius:4px}
 .pl-competition-category-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:1000px}
 .pl-competition-category{display:block;width:100%;min-height:190px;text-align:right;color:#f4f1e9;cursor:pointer;transition:border-color .18s ease,transform .18s ease}
 .pl-competition-category:hover,.pl-competition-category:focus-visible{border-color:#a18443;transform:translateY(-2px);outline:none}
