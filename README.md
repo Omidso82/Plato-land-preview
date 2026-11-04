@@ -44,12 +44,12 @@ npm run dev
 
 این دستورات فقط برای بررسی کد هستند و به‌تنهایی سایت زنده را منتشر نمی‌کنند.
 
-## مستندات مرجع (به‌روز تا ۳ نوامبر ۲۰۲۶)
+## مستندات مرجع (وضعیت ثبت‌شده تا ۴ نوامبر ۲۰۲۶)
 
 - `docs/PROJECT_STATUS_AND_DECISIONS_2026-11-03.md` — مرجع واحد وضعیت و تصمیم‌های جاری.
-- `docs/IMPLEMENTATION_REGISTER_v1.4_2026-11-03.md` (الحاقیه جاری v1.5) — ثبت تغییرات و شواهد.
-- `docs/TECHNICAL_HANDOVER_v3.2_2026-11-03.md (الحاقیه جاری v3.5)` — بسته انتقال فنی جاری.
-- `docs/QA_MASTER_CHECKLIST_v1.8_2026-11-03.md (الحاقیه جاری v1.9)` — چک‌لیست QA جاری.
+- `docs/IMPLEMENTATION_REGISTER_v1.4_2026-11-03.md` (الحاقیه جاری v1.10) — ثبت تغییرات و شواهد.
+- `docs/TECHNICAL_HANDOVER_v3.2_2026-11-03.md` (الحاقیه جاری v3.9) — بسته انتقال فنی جاری.
+- `docs/QA_MASTER_CHECKLIST_v1.8_2026-11-03.md` (الحاقیه جاری v1.13) — چک‌لیست QA جاری.
 - `docs/SERIES2_REGISTRATION_LIVE_DATABASE_SNAPSHOT_2026-11-03.md` — آمار تازه دیتابیس ثبت‌نام.
 - `docs/CLOUDFLARE_PAGES_PREVIEW_SETUP_STATUS_2026-11-03.md` — وضعیت آماده‌سازی Preview.
 - `docs/PLATO_LAND_HANDOVER_PROTOCOL_v1.0_2026-11-02.md` — پروتکل انتقال.
@@ -106,8 +106,15 @@ npm run dev
 - این اسناد در شاخه مستنداتی جدا آماده شده‌اند؛ تا Merge و تأیید مالک، main و Production تغییر نکرده‌اند.
 
 
-## وضعیت طراحی Preview — ۴ نوامبر ۲۰۲۶
-- بخش A از UI/UX پس از مشاهده Preview توسط مالک تأیید شد (OWNER ACCEPTED).
-- شواهد و گزارش جزئیات: `docs/UIUX_V10_7_SECTION_A_PREVIEW_OWNER_ACCEPTANCE_2026-11-04.md`.
-- بخش B (منوی اصلی) هنوز منتظر تصمیم مالک درباره حضور «درباره ما» در Header است؛ تا پاسخ مالک تغییر منو انجام نمی‌شود.
-- این پذیرش به معنی انتشار Production یا تکمیل QA جامع نیست.
+## وضعیت طراحی Preview — وضعیت جاری تا ۴ نوامبر ۲۰۲۶
+- بخش A: `OWNER ACCEPTED`؛ گزارش: `docs/UIUX_V10_7_SECTION_A_PREVIEW_OWNER_ACCEPTANCE_2026-11-04.md`.
+- بخش B: `OWNER ACCEPTED`؛ گزارش: `docs/UIUX_V10_7_SECTION_B_PREVIEW_OWNER_ACCEPTANCE_2026-11-04.md`.
+- تصمیم نهایی Header: خانه، مسابقات، اخبار و اطلاعیه‌ها، راهنما، ورود / ثبت‌نام.
+- «درباره ما» فقط در Footer قرار می‌گیرد؛ صفحه مستقل دارد اما در Header نیست. «بازی‌ها» منوی مستقل نیست.
+- وضعیت‌های قدیمیِ «B pending» در Snapshotهای قبلی تاریخی‌اند و با پذیرش مالک در ۴ نوامبر superseded شده‌اند.
+- بخش C هنوز بررسی/تأیید نشده و باید پیش از پیاده‌سازی از سند UI/UX v10.7 استخراج و به مالک ارائه شود.
+- پذیرش A/B فقط پذیرش مالک در Preview است؛ QA جامع، E2E، Staging، Auth/DB عملیاتی یا مجوز Production محسوب نمی‌شود.
+
+
+## اصلاحیه مرجع جاری — ۴ نوامبر ۲۰۲۶
+این README نقطه ورود اسناد است. وضعیت معتبر طراحی در حال حاضر A و B برابر `OWNER ACCEPTED` در Preview است؛ بخش C باز است. برای جزئیات و حدود پذیرش به دو گزارش مستقل A/B و الحاقیه‌های جاری Project Status، Implementation Register، Technical Handover و QA مراجعه شود. متن‌های قدیمی‌تر در همین README و Snapshotهای تاریخی، وضعیت زمان ثبت خود را توصیف می‌کنند و در صورت تعارض، این اصلاحیه جدیدتر مرجع است.
