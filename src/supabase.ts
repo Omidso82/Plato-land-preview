@@ -1,9 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 
-// PLATO LAND live site uses the single main Supabase project.
-// Keep browser credentials publishable only; never place a service_role key here.
-const SUPABASE_URL = 'https://dfrppbapaaydbjeflozw.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_fuY9xR6e5pGB-6SnoV4-Hg_LNr23RzE';
+// PLATO LAND Preview is intentionally isolated from Production.
+// This branch uses only the dedicated Staging Supabase project.
+// Browser-safe publishable key only; never place a service_role key here.
+const SUPABASE_URL = 'https://vgezfuztgzxbmvkmaoqn.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_RFIjvnuyKTODRMCud21nvQ_4IM8wm4c';
 
 export const supabaseConfigured =
   SUPABASE_URL.startsWith('https://') &&
