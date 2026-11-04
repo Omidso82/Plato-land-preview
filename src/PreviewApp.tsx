@@ -5,7 +5,7 @@ const navItems = [
   { label: 'خانه', href: '/' },
   { label: 'مسابقات', href: '/competitions' },
   { label: 'اخبار و اطلاعیه‌ها', href: '/news' },
-  { label: 'آموزش', href: '/guide' },
+  { label: 'راهنما', href: '/guide' },
 ];
 
 function PreviewBanner() {
