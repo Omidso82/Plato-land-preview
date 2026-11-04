@@ -198,3 +198,22 @@
 .pl-category-back{background:transparent;cursor:pointer}
 .pl-category-title{margin:4px 0 16px;font-size:20px}
 @media(max-width:720px){.pl-competition-category-grid{grid-template-columns:1fr}.pl-competition-category{min-height:0}.pl-competition-category p{min-height:0}}
+
+
+/* Account settings — working staging auth controls */
+.pl-settings-identity h2,.pl-settings-section h2{margin:0 0 12px;color:#e6cb83;font-size:18px}
+.pl-settings-identity p,.pl-settings-section p{line-height:1.9}
+.pl-settings-section{margin-top:16px}
+.pl-settings-form{display:grid;gap:13px;margin-top:16px;max-width:620px}
+.pl-settings-form label{display:grid;gap:7px;color:#e9e3d5;font-size:14px}
+.pl-settings-form input{width:100%;min-height:46px;padding:10px 12px;border:1px solid #66532f;border-radius:9px;background:#101011;color:#f7f3e9;font:inherit;direction:ltr;text-align:left}
+.pl-settings-form input:focus{outline:2px solid #c5a452;outline-offset:2px}
+.pl-settings-form .pl-primary-button{justify-self:start;min-width:180px}
+.pl-settings-text-button{margin-top:15px;padding:8px 0;border:0;background:transparent;color:#e6cb83;text-decoration:underline;text-underline-offset:4px;cursor:pointer;font:inherit;text-align:right}
+.pl-settings-text-button:disabled,.pl-danger-button:disabled,.pl-settings-form button:disabled{opacity:.55;cursor:not-allowed}
+.pl-danger-button{margin-top:12px;padding:12px 18px;border:1px solid #a94b42;border-radius:9px;background:#351b1a;color:#ffd0ca;font:inherit;cursor:pointer}
+.pl-settings-message{margin:14px 0;padding:12px 14px;border:1px solid #78602e;border-radius:9px;line-height:1.9}
+.pl-settings-message.is-success{border-color:#477d58;background:#17271c;color:#c9f1d2}
+.pl-settings-message.is-error{border-color:#a94b42;background:#351b1a;color:#ffd0ca}
+.pl-settings-message.is-info{background:#201d16;color:#f0dfb0}
+@media(max-width:720px){.pl-settings-form .pl-primary-button{width:100%}.pl-settings-section{padding:16px}.pl-settings-identity{overflow-wrap:anywhere}}
