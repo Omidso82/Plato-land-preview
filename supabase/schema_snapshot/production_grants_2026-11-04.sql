@@ -1,0 +1,100 @@
+-- Production application grants snapshot, extracted 2026-11-04.
+-- Review each grant in context with RLS and function authorization before applying to Staging.
+-- Excludes postgres ownership and Supabase-managed schemas.
+
+-- Schema USAGE
+GRANT USAGE ON SCHEMA private TO authenticated;
+GRANT USAGE ON SCHEMA public TO anon;
+GRANT USAGE ON SCHEMA public TO authenticated;
+GRANT USAGE ON SCHEMA public TO service_role;
+
+-- Table and view grants
+GRANT INSERT, SELECT ON TABLE public.audit_logs TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.audit_logs TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.competition_snapshots TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.competition_snapshots TO service_role;
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE public.matches TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.matches TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.owner_admin_tasks TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.owner_admin_tasks TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.owner_private_notes TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.owner_private_notes TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.plato_land_prediction_votes TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.plato_land_semifinal_prediction_votes TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.plato_land_series2_registration_requests TO service_role;
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE public.player_bans TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.player_bans TO service_role;
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE public.profiles TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.profiles TO service_role;
+GRANT SELECT ON TABLE public.recent_tournament_champions TO anon;
+GRANT SELECT ON TABLE public.recent_tournament_champions TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.recent_tournament_champions TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.registration_evidence TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.registration_evidence TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.registration_members TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.registration_members TO service_role;
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE public.registrations TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.registrations TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_announcements TO anon;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_announcements TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_announcements TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_games TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_games TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_maintenance TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_maintenance TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_news TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_news TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_news_versions TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_news_versions TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_page_versions TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_page_versions TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_pages TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_pages TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_settings TO anon;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_settings TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.site_settings TO service_role;
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE public.tournament_manager_access TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.tournament_manager_access TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.tournament_manager_section_permissions TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.tournament_manager_section_permissions TO service_role;
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE public.tournament_results TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.tournament_results TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.tournament_settings TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.tournament_settings TO service_role;
+GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE public.tournaments TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.tournaments TO service_role;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.user_admin_permissions TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.user_admin_permissions TO service_role;
+GRANT INSERT, SELECT ON TABLE public.user_notifications TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.user_notifications TO service_role;
+GRANT SELECT ON TABLE public.user_roles TO authenticated;
+GRANT DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE public.user_roles TO service_role;
+
+-- Routine grants
+GRANT EXECUTE ON FUNCTION private.can_manage_tournament(p_tournament_id uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION private.can_manage_tournament_section(p_tournament_id uuid, p_permission_key text) TO authenticated;
+GRANT EXECUTE ON FUNCTION private.can_manage_tournament_section(p_tournament_id uuid, p_permission_key text) TO service_role;
+GRANT EXECUTE ON FUNCTION private.has_role(required_roles text[]) TO authenticated;
+GRANT EXECUTE ON FUNCTION private.is_banned(p_plato_id text, p_tournament_id uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION private.is_tournament_public(p_tournament_id uuid) TO anon;
+GRANT EXECUTE ON FUNCTION private.is_tournament_public(p_tournament_id uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_list_site_users() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.admin_list_site_users() TO service_role;
+GRANT EXECUTE ON FUNCTION public.capture_audit_event() TO service_role;
+GRANT EXECUTE ON FUNCTION public.capture_site_news_version() TO service_role;
+GRANT EXECUTE ON FUNCTION public.capture_site_page_version() TO service_role;
+GRANT EXECUTE ON FUNCTION public.current_user_role() TO authenticated;
+GRANT EXECUTE ON FUNCTION public.current_user_role() TO service_role;
+GRANT EXECUTE ON FUNCTION public.notify_registration_change() TO service_role;
+GRANT EXECUTE ON FUNCTION public.protect_player_display_name() TO service_role;
+GRANT EXECUTE ON FUNCTION public.remove_tournament_registration(p_registration_id uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.remove_tournament_registration(p_registration_id uuid) TO service_role;
+GRANT EXECUTE ON FUNCTION public.review_tournament_registration(p_registration_id uuid, p_approved boolean) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.review_tournament_registration(p_registration_id uuid, p_approved boolean) TO service_role;
+GRANT EXECUTE ON FUNCTION public.save_tournament_manager_access(p_tournament_id uuid, p_assignments jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.save_tournament_manager_access(p_tournament_id uuid, p_assignments jsonb) TO service_role;
+GRANT EXECUTE ON FUNCTION public.submit_tournament_registration(p_tournament_id uuid, p_evidence_path text, p_extracted_data jsonb) TO service_role;
+GRANT EXECUTE ON FUNCTION public.submit_tournament_registration(p_tournament_id uuid, p_evidence_path text, p_extracted_data jsonb, p_display_name text, p_plato_id text, p_rules_text text, p_registration_type text, p_team_name text, p_members jsonb) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.submit_tournament_registration(p_tournament_id uuid, p_evidence_path text, p_extracted_data jsonb, p_display_name text, p_plato_id text, p_rules_text text, p_registration_type text, p_team_name text, p_members jsonb) TO service_role;
+GRANT EXECUTE ON FUNCTION public.withdraw_tournament_registration(p_registration_id uuid) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.withdraw_tournament_registration(p_registration_id uuid) TO service_role;
