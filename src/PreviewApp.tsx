@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import './preview.css';
 
 const navItems = [
-  { label: 'صفحه اصلی', href: '/' },
+  { label: 'خانه', href: '/' },
   { label: 'مسابقات', href: '/competitions' },
   { label: 'اخبار و اطلاعیه‌ها', href: '/news' },
-  { label: 'راهنما', href: '/guide' },
+  { label: 'آموزش', href: '/guide' },
 ];
 
 function PreviewBanner() {
@@ -24,26 +24,15 @@ function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 function Header({ home = false }: { home?: boolean }) {
-  const [menuOpen, setMenuOpen] = useState(false);
   return (
     <header className={home ? 'pl-site-header pl-site-header-home' : 'pl-site-header pl-site-header-inner'}>
       {!home && <Brand compact />}
       <div className="pl-nav-shell">
-        <button
-          type="button"
-          className="pl-menu-toggle"
-          aria-expanded={menuOpen}
-          aria-controls="pl-primary-navigation"
-          onClick={() => setMenuOpen((value) => !value)}
-        >
-          <span className="pl-menu-icon" aria-hidden="true"><i></i><i></i><i></i></span>
-          <span>منو</span>
-        </button>
-        <nav id="pl-primary-navigation" className={menuOpen ? 'pl-primary-nav is-open' : 'pl-primary-nav'} aria-label="منوی اصلی">
+        <nav id="pl-primary-navigation" className="pl-primary-nav" aria-label="منوی اصلی">
           {navItems.map((item) => (
-            <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)}>{item.label}</a>
+            <a key={item.href} href={item.href}>{item.label}</a>
           ))}
-          <a className="pl-auth-link" href="/login-register" onClick={() => setMenuOpen(false)}>ورود / ثبت‌نام</a>
+          <a className="pl-auth-link" href="/login-register">ورود / ثبت‌نام</a>
         </nav>
       </div>
     </header>
@@ -77,36 +66,8 @@ function HomePage() {
           <div className="pl-home-copy">
             <h1>بازی، رقابت، <em>قهرمانی</em></h1>
             <p>جایی برای رقابت منصفانه، تجربه بازی و ثبت لحظه‌های قهرمانی.</p>
-            <a className="pl-primary-button" href="/competitions">مشاهده مسابقات</a>
             <small>این نسخه صرفاً پیش‌نمایش طراحی است و هیچ عملیاتی روی حساب یا اطلاعات واقعی انجام نمی‌دهد.</small>
           </div>
-        </section>
-        <section className="pl-preview-stats" aria-label="آمار">
-          <div><strong>—</strong><span>مسابقات فعال</span></div>
-          <div><strong>—</strong><span>بازیکنان</span></div>
-          <div><strong>—</strong><span>قهرمانان</span></div>
-        </section>
-        <section className="pl-content-section">
-          <div className="pl-section-heading"><span>رقابت‌ها</span><h2>مسابقات فعال</h2><p>اطلاعات واقعی مسابقات در این پیش‌نمایش بارگذاری نمی‌شود.</p></div>
-          <div className="pl-preview-cards">
-            <article className="pl-preview-card"><span className="pl-preview-chip">نمونه نمایشی</span><h3>مسابقات تخته‌نرد</h3><p>این کارت فقط برای نمایش ساختار صفحه است و داده واقعی محسوب نمی‌شود.</p></article>
-            <article className="pl-preview-card"><span className="pl-preview-chip">در حال طراحی</span><h3>رقابت‌های آینده</h3><p>جزئیات مسابقات پس از تکمیل بخش عمومی نمایش داده خواهد شد.</p></article>
-          </div>
-        </section>
-        <section className="pl-content-section">
-          <div className="pl-section-heading"><span>دنیای بازی</span><h2>بازی‌ها</h2><p>معرفی بازی‌ها بخشی از محتوای صفحه اصلی است، نه گزینه‌ای مستقل در منوی بالا.</p></div>
-          <article className="pl-preview-card"><h3>تخته‌نرد</h3><p>فضای معرفی رقابت‌ها و رویدادهای مرتبط با بازی.</p></article>
-        </section>
-        <section className="pl-content-section">
-          <div className="pl-section-heading"><span>افتخارآفرینان</span><h2>قهرمانان اخیر</h2></div>
-          <article className="pl-preview-card"><p>اطلاعات قهرمانان در این پیش‌نمایش بارگذاری نشده است.</p></article>
-        </section>
-        <section className="pl-content-section pl-section-disabled">
-          <div className="pl-section-heading"><span>تالار افتخار</span><h2>Hall of Fame</h2><p>این بخش در حال حاضر غیرفعال است.</p></div>
-        </section>
-        <section className="pl-content-section">
-          <div className="pl-section-heading"><span>تازه‌ها</span><h2>اخبار و اطلاعیه‌ها</h2><p>برای مشاهده صفحه مستقل اخبار از منوی اصلی استفاده کنید.</p></div>
-          <a className="pl-text-link" href="/news">رفتن به اخبار و اطلاعیه‌ها ←</a>
         </section>
       </main>
       <Footer />
