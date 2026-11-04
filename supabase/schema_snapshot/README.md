@@ -20,14 +20,16 @@ Use only against Supabase project `vgezfuztgzxbmvkmaoqn`. Never execute these sn
 1. Confirm Staging target project ref before every destructive or DDL operation.
 2. Clear/reconcile only the legacy application objects in Staging, according to the approved reset authorization. Do not drop Supabase-managed schemas.
 3. Apply bootstrap prelude.
-4. Apply core objects.
+4. Apply core tables, constraints, and indexes.
 5. Apply function definitions.
-6. Apply RLS and application triggers.
-7. Apply reviewed grants.
-8. Create/verify the five bucket configurations using supported Storage administration, without copying objects.
-9. Apply Storage policies.
-10. Deploy Edge Functions separately using Staging-specific secrets; do not copy Production secrets.
-11. Run schema comparison, advisors, RLS access tests, RPC tests, Storage tests, and synthetic-data QA.
+6. Apply the champion view after its private helper function exists.
+7. Apply RLS enablement, policies, and application triggers.
+8. Apply reviewed least-privilege grants (the script revokes default PUBLIC function execution and omits TRUNCATE/TRIGGER/REFERENCES table grants).
+9. Create/verify the five bucket configurations using supported Storage administration, without copying objects.
+10. Apply Storage policies.
+11. Add the two Realtime publication tables.
+12. Deploy Edge Functions separately using Staging-specific secrets; do not copy Production secrets.
+13. Run schema comparison, advisors, RLS access tests, RPC tests, Storage tests, and synthetic-data QA.
 
 ## Important compatibility and safety notes
 
