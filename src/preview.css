@@ -174,3 +174,14 @@
  .pl-account-link-grid .pl-preview-card p{min-height:0}
  .pl-profile-form{padding:15px}
 }
+
+
+/* Account home heading refinement */
+.pl-account-home-intro{padding:4px 0 20px;margin-bottom:24px}
+.pl-account-home-intro h1{font-size:clamp(23px,3vw,30px);line-height:1.5;margin:0 0 2px;font-weight:700}
+.pl-account-home-intro>span{display:block;font-size:12px;color:#d9bd76;line-height:1.8}
+.pl-account-home-intro p{margin-top:8px;font-size:13px;line-height:1.9}
+@media(max-width:720px){
+ .pl-account-home-intro{padding-top:0;margin-bottom:20px}
+ .pl-account-home-intro h1{font-size:25px}
+}
