@@ -23,7 +23,7 @@
 | Public views | 1 |
 | Public functions/procedures | 13 |
 | Private-schema functions | 6 |
-| Public triggers | 29 |
+| Public trigger objects | 12 (29 event registrations) |
 | Public RLS policies | 102 |
 | Public constraints | 135 (53 CHECK, 44 FOREIGN KEY, 29 PRIMARY KEY, 9 UNIQUE) |
 | Public indexes | Present; extracted by table from `pg_indexes` |
