@@ -12,7 +12,7 @@
 .pl-brand img{display:block;width:100%;height:auto;max-height:180px;object-fit:contain;object-position:right center;filter:drop-shadow(0 8px 18px #0007)}
 .pl-brand p{margin:0;color:#d9bd76;font-size:13px;letter-spacing:.1px}
 .pl-brand-compact{align-items:flex-start;margin-bottom:15px}
-.pl-brand-compact a{width:160px}
+.pl-brand-compact a{width:125px}
 .pl-brand-compact p{font-size:12px}
 .pl-nav-shell{position:relative;border-bottom:1px solid #302e29}
 .pl-primary-nav{display:flex;align-items:center;justify-content:flex-start;gap:clamp(18px,2.5vw,34px);min-height:62px;color:#c9c5ba;font-size:14px;font-weight:500}
@@ -22,8 +22,8 @@
 .pl-menu-toggle{display:none}
 .pl-home-hero{max-width:1180px;margin:0 auto;padding:20px 22px 38px;display:flex;flex-direction:column;align-items:center;text-align:center}
 .pl-brand-home{align-items:center;gap:8px}
-.pl-brand-home a{width:min(210px,60vw)}
-.pl-brand-home img{max-height:155px;object-position:center}
+.pl-brand-home a{width:min(145px,48vw)}
+.pl-brand-home img{max-height:108px;object-position:center}
 .pl-brand-home p{font-size:14px}
 .pl-home-copy{max-width:850px;margin:10px auto 0}
 .pl-home-copy h1{font-size:clamp(34px,5.5vw,62px);margin:8px 0 14px;line-height:1.45}
@@ -77,7 +77,7 @@
 @media(max-width:720px){
  .pl-site-header-inner{padding-top:18px}
  .pl-brand-compact{margin-bottom:12px}
- .pl-brand-compact a{width:132px}
+ .pl-brand-compact a{width:104px}
  .pl-brand-compact p{font-size:11px}
  .pl-nav-shell{border:0}
  .pl-primary-nav{display:flex;flex-wrap:nowrap;justify-content:flex-start;gap:8px;min-height:58px;padding:5px 2px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -85,9 +85,9 @@
  .pl-primary-nav a{flex:0 0 auto;min-height:46px;padding:0 2px;border:0;border-radius:0;background:transparent;font-size:13px;white-space:nowrap}
  .pl-primary-nav a:hover{background:transparent;color:#f0d991}
  .pl-primary-nav .pl-auth-link{margin:0;padding:0;justify-content:center;border:0;border-radius:0;background:transparent}
- .pl-home-hero{padding:16px 18px 30px}
- .pl-brand-home a{width:min(190px,60vw)}
- .pl-brand-home img{max-height:140px}
+ .pl-home-hero{padding:14px 18px 26px}
+ .pl-brand-home a{width:min(128px,46vw)}
+ .pl-brand-home img{max-height:96px}
  .pl-brand-home p{font-size:13px}
  .pl-home-copy h1{font-size:clamp(30px,8.2vw,42px);line-height:1.45;margin:5px 0 13px}
  .pl-home-copy>p{font-size:13px;line-height:1.9}
@@ -104,7 +104,7 @@
  .pl-preview-footer nav{gap:12px 18px}
 }
 @media(max-width:360px){
- .pl-brand-compact a{width:118px}
+ .pl-brand-compact a{width:96px}
  .pl-home-copy h1{font-size:29px}
  .pl-preview-stats{grid-template-columns:1fr;gap:12px}
  .pl-preview-stats div{border-left:0;border-bottom:1px solid #39342a;padding-bottom:10px}
@@ -183,3 +183,16 @@
  .pl-account-home-intro{padding-top:0;margin-bottom:20px}
  .pl-account-home-intro h1{font-size:23px}
 }
+
+/* Account QA fixes — avatar feedback and three-category competition view */
+.pl-profile-photo>img{display:block;width:76px;height:76px;object-fit:cover;border-radius:50%;border:1px solid #8d7137}
+.pl-profile-photo .pl-selected-avatar{color:#e6cb83;overflow-wrap:anywhere}
+.pl-competition-category-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;max-width:1000px}
+.pl-competition-category{display:block;width:100%;min-height:190px;text-align:right;color:#f4f1e9;cursor:pointer;transition:border-color .18s ease,transform .18s ease}
+.pl-competition-category:hover,.pl-competition-category:focus-visible{border-color:#a18443;transform:translateY(-2px);outline:none}
+.pl-competition-category h2{margin:14px 0 8px;font-size:19px}
+.pl-competition-category p{min-height:54px}
+.pl-competition-category strong{display:block;color:#e6cb83;font-size:12px}
+.pl-category-back{background:transparent;cursor:pointer}
+.pl-category-title{margin:4px 0 16px;font-size:20px}
+@media(max-width:720px){.pl-competition-category-grid{grid-template-columns:1fr}.pl-competition-category{min-height:0}.pl-competition-category p{min-height:0}}
