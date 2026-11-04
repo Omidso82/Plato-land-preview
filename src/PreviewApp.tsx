@@ -122,11 +122,90 @@ function InnerPage({ title, eyebrow, description, children }: { title: string; e
 }
 
 function CompetitionsPage() {
-  return <InnerPage title="مسابقات" eyebrow="رقابت‌های PLATO LAND" description="در این صفحه، فهرست مسابقات و وضعیت آن‌ها نمایش داده می‌شود. در این نسخه پیش‌نمایش، اطلاعات عملیاتی بارگذاری نشده است.">
-    <section className="pl-preview-cards">
-      <article className="pl-preview-card"><span className="pl-preview-chip">پیش‌نمایش</span><h2>مسابقات فعال</h2><p>در حال حاضر داده واقعی مسابقات به این محیط متصل نیست.</p></article>
-      <article className="pl-preview-card"><span className="pl-preview-chip">پیش‌نمایش</span><h2>مسابقات آینده</h2><p>پس از تکمیل طراحی و اتصال مجاز داده‌ها نمایش داده خواهد شد.</p></article>
-    </section>
+  type PreviewTournament = {
+    id: string; title: string; game_type: string; series_name: string | null;
+    description: string | null; status: string; registration_open: boolean;
+    capacity: number | null; starts_at: string | null;
+  };
+  const [items, setItems] = useState<PreviewTournament[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    const loadTournaments = async () => {
+      if (!supabase) {
+        if (active) { setError('اتصال به دیتابیس Staging برقرار نیست.'); setLoading(false); }
+        return;
+      }
+      setLoading(true);
+      setError('');
+      const { data, error: queryError } = await supabase
+        .from('tournaments')
+        .select('id,title,game_type,series_name,description,status,registration_open,capacity,starts_at')
+        .order('created_at', { ascending: false });
+      if (!active) return;
+      if (queryError) {
+        setError('بارگذاری مسابقات از Staging انجام نشد. سطح دسترسی یا اتصال دیتابیس را بررسی می‌کنیم.');
+        setItems([]);
+      } else {
+        setItems((data ?? []) as PreviewTournament[]);
+      }
+      setLoading(false);
+    };
+    void loadTournaments();
+    return () => { active = false; };
+  }, []);
+
+  const statusLabel = (status: string) => ({
+    draft: 'پیش‌نویس', published: 'در حال ثبت‌نام', ongoing: 'در حال برگزاری',
+    scheduled: 'آینده', completed: 'پایان‌یافته', cancelled: 'لغوشده',
+    archived: 'بایگانی‌شده',
+  }[status] ?? status);
+  const dateLabel = (value: string | null) => {
+    if (!value) return 'اعلام نشده';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'اعلام نشده';
+    return new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+      year: 'numeric', month: 'long', day: 'numeric',
+    }).format(date);
+  };
+  const isDraft = (item: PreviewTournament) => item.status === 'draft';
+  const groups = [
+    { title: 'مسابقات آزمایشی و پیش‌نویس', rows: items.filter(isDraft) },
+    { title: 'مسابقات فعال', rows: items.filter((item) => ['published', 'ongoing'].includes(item.status)) },
+    { title: 'مسابقات آینده', rows: items.filter((item) => item.status === 'scheduled') },
+    { title: 'مسابقات پایان‌یافته', rows: items.filter((item) => ['completed', 'cancelled', 'archived'].includes(item.status)) },
+  ];
+  const card = (item: PreviewTournament) => (
+    <article className="pl-preview-card" key={item.id}>
+      <span className="pl-preview-chip">{isDraft(item) ? 'فقط آزمایشی — خصوصی' : statusLabel(item.status)}</span>
+      <h2>{item.title}</h2>
+      <p>{item.description || 'توضیحات این مسابقه هنوز ثبت نشده است.'}</p>
+      <p>بازی: {item.game_type}{item.series_name ? ' · ' + item.series_name : ''}</p>
+      <p>ظرفیت: {item.capacity ?? 'اعلام نشده'}</p>
+      <p>شروع: {dateLabel(item.starts_at)}</p>
+      {isDraft(item) && <small>این پیش‌نویس فقط برای حساب‌های دارای مجوز در Staging قابل مشاهده است و برای عموم منتشر نشده است.</small>}
+    </article>
+  );
+
+  return <InnerPage title="مسابقات" eyebrow="رقابت‌های PLATO LAND" description="فهرست مسابقات از دیتابیس آزمایشی Staging بارگذاری می‌شود. نمایش هر مسابقه بر اساس مجوزهای دیتابیس کنترل می‌شود.">
+    {loading ? (
+      <article className="pl-preview-card" role="status"><h2>در حال بارگذاری مسابقات…</h2></article>
+    ) : error ? (
+      <article className="pl-preview-card" role="alert"><h2>بارگذاری مسابقات ناموفق بود</h2><p>{error}</p></article>
+    ) : (
+      <div className="pl-preview-cards">
+        {groups.map((group) => (
+          <section key={group.title}>
+            <h2>{group.title}</h2>
+            {group.rows.length
+              ? <div className="pl-preview-cards">{group.rows.map(card)}</div>
+              : <article className="pl-preview-card"><p>مسابقه‌ای برای نمایش وجود ندارد.</p></article>}
+          </section>
+        ))}
+      </div>
+    )}
   </InnerPage>;
 }
 
