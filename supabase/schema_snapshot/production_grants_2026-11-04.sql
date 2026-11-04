@@ -72,6 +72,9 @@ GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE public.user_notifications TO servi
 GRANT SELECT ON TABLE public.user_roles TO authenticated;
 GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE public.user_roles TO service_role;
 
+-- Remove PostgreSQL's default PUBLIC EXECUTE on newly created functions, then restore only the captured role grants.
+REVOKE EXECUTE ON ALL FUNCTIONS IN SCHEMA public, private FROM PUBLIC;
+
 -- Routine EXECUTE grants (SECURITY DEFINER functions retain their own authorization checks)
 GRANT EXECUTE ON FUNCTION private.can_manage_tournament(p_tournament_id uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION private.can_manage_tournament_section(p_tournament_id uuid, p_permission_key text) TO authenticated;
