@@ -69,8 +69,8 @@ function HomePage({ account }: { account: AccountContext }) {
   return <><Header home account={account}/><main><section className="pl-home-hero"><Brand/><div className="pl-home-copy"><h1>بازی، رقابت، <em>قهرمانی</em></h1><p>جایی برای رقابت منصفانه، تجربه بازی و ثبت لحظه‌های قهرمانی.</p><small>این نسخه آزمایشی فقط به دیتابیس Staging متصل است و به دیتابیس اصلی دسترسی ندارد.</small></div></section></main><Footer/></>;
 }
 
-function InnerPage({ title, eyebrow, description, children, account }: { title: string; eyebrow: string; description: string; children?: React.ReactNode; account: AccountContext }) {
-  return <><Header account={account}/><main className="pl-inner-main"><div className="pl-breadcrumb"><a href="/">صفحه اصلی</a><span>/</span><span>{title}</span></div><section className="pl-inner-intro"><span>{eyebrow}</span><h1>{title}</h1><p>{description}</p></section>{children}</main><Footer/></>;
+function InnerPage({ title, eyebrow, description, children, account, accountHome = false }: { title: string; eyebrow: string; description: string; children?: React.ReactNode; account: AccountContext; accountHome?: boolean }) {
+  return <><Header account={account}/><main className="pl-inner-main"><section className={accountHome ? "pl-inner-intro pl-account-home-intro" : "pl-inner-intro"}><h1>{title}</h1><span>{eyebrow}</span><p>{description}</p></section>{children}</main><Footer/></>;
 }
 
 type PreviewTournament = { id: string; title: string; game_type: string; series_name: string | null; description: string | null; status: string; registration_open: boolean; capacity: number | null; starts_at: string | null };
@@ -84,7 +84,7 @@ function CompetitionsPage({ account }: { account: AccountContext }) {
 }
 
 function AccountHome({account}:{account:AccountContext}) {
-  return <InnerPage account={account} title="حساب کاربری من" eyebrow="فضای شخصی بازیکن" description="از این بخش می‌توانی اطلاعات پروفایل، مسابقات و سوابق حساب خودت را مدیریت و مشاهده کنی.">
+  return <InnerPage account={account} accountHome title="حساب کاربری من" eyebrow="فضای شخصی بازیکن" description="از این بخش می‌توانی اطلاعات پروفایل، مسابقات و سوابق حساب خودت را مدیریت و مشاهده کنی.">
     <div className="pl-account-summary">
       <div className="pl-account-summary-main">{account.profile?.avatar_url?<img src={account.profile.avatar_url} alt="عکس پروفایل"/>:<div className="pl-account-avatar-placeholder">PL</div>}<div><h2>{account.profile?.display_name||'بازیکن'}</h2><p>Plato ID: {account.profile?.plato_id||'ثبت نشده'}</p><small>{account.user?.email}</small></div></div>
       <span className="pl-preview-chip">{account.user?.email_confirmed_at?'ایمیل تأیید شده':'ایمیل هنوز تأیید نشده'}</span>
