@@ -112,7 +112,7 @@ function ProfilePage({account}:{account:AccountContext}) {
     if(updateError){if(avatarPath&&avatarPath!==account.profile?.public_avatar_path)await supabase.storage.from('public-profile-avatars').remove([avatarPath]);setBusy(false);setMessage(updateError.code==='23505'?'این Plato ID قبلاً ثبت شده است.':'ذخیره اطلاعات انجام نشد؛ لطفاً دوباره تلاش کن.');return;}
     await account.refresh();setAvatar(null);setBusy(false);setMessage('تغییرات پروفایل با موفقیت ذخیره شد.');
   };
-  if(!account.user)return <InnerPage account={account} title="پروفایل من" eyebrow="حساب کاربری" description="برای مشاهده و ویرایش پروفایل ابتدا وارد حساب شو."><a className="pl-primary-button" href="/login-register">ورود به حساب</a></InnerPage>;
+  if(!account.user)return <InnerPage account={account} title="پروفایل من" eyebrow="حساب کاربری" description="برای مشاهده و ویرایش پروفایل ابتدا وارد حساب شو."><a className="pl-back-link" href="/account">بازگشت به حساب من</a><a className="pl-primary-button" href="/login-register">ورود به حساب</a></InnerPage>;
   return <InnerPage account={account} title="پروفایل من" eyebrow="اطلاعات شخصی بازیکن" description="نام نمایشی، شناسه فعلی و تصویر عمومی پروفایل خودت را ویرایش کن.">
     <a className="pl-back-link" href="/account">بازگشت به حساب من</a>
     <form className="pl-profile-form" onSubmit={save}>
