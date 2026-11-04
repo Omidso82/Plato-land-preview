@@ -13,15 +13,12 @@ export default function Series2RegistrationReport() {
     if (!supabase) { setError('اتصال به پایگاه داده برقرار نیست.'); setLoading(false); return; }
     setLoading(true);
     setError('');
-    const { data, error: queryError } = await supabase
-      .from('plato_land_series2_registration_requests')
-      .select('id,plato_id,created_at')
-      .order('created_at', { ascending: true });
+    const { data, error: queryError } = await supabase.functions.invoke('plato-land-series2-registration-report');
     if (queryError) {
       setError('دریافت گزارش ناموفق بود: ' + queryError.message);
       setRows([]);
     } else {
-      setRows((data || []) as RequestRow[]);
+      setRows((data?.requests || []) as RequestRow[]);
       setUpdatedAt(new Date());
     }
     setLoading(false);
