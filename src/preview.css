@@ -14,11 +14,11 @@
 .pl-brand-compact{align-items:flex-start;margin-bottom:15px}
 .pl-brand-compact a{width:160px}
 .pl-brand-compact p{font-size:12px}
-.pl-nav-shell{position:relative;border-bottom:1px solid #302e29}
+.pl-nav-shell{position:sticky;top:0;z-index:100;background:#0d0e10;border-bottom:1px solid #302e29;box-shadow:0 8px 18px #0005}
 .pl-primary-nav{display:flex;align-items:center;justify-content:flex-start;gap:clamp(18px,2.5vw,34px);min-height:62px;color:#c9c5ba;font-size:14px}
 .pl-primary-nav a{display:inline-flex;align-items:center;min-height:48px;transition:color .18s ease}
 .pl-primary-nav a:hover,.pl-primary-nav a:focus-visible,.pl-preview-footer a:hover,.pl-text-link:hover{color:#f0d991}
-.pl-primary-nav .pl-auth-link{margin-right:auto;padding:0 18px;border:1px solid #8d7137;border-radius:8px;color:#f0d991;font-weight:700;min-height:42px}
+.pl-primary-nav .pl-auth-link{margin-right:0;padding:0 18px;border:1px solid #8d7137;border-radius:8px;color:#f0d991;font-weight:700;min-height:42px}
 .pl-menu-toggle{display:none}
 .pl-home-hero{max-width:1180px;margin:0 auto;padding:38px 22px 54px;display:flex;flex-direction:column;align-items:center;text-align:center}
 .pl-brand-home{align-items:center;gap:8px}
@@ -80,14 +80,11 @@
  .pl-brand-compact a{width:132px}
  .pl-brand-compact p{font-size:11px}
  .pl-nav-shell{border:0}
- .pl-menu-toggle{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:50px;padding:8px 14px;border:1px solid #514329;border-radius:9px;background:#191815;color:#f0d991;font-size:13px;font-weight:700}
- .pl-menu-icon{display:flex;flex-direction:column;gap:4px;width:18px}
- .pl-menu-icon i{display:block;width:18px;height:2px;border-radius:2px;background:#e3c775}
- .pl-primary-nav{display:none;position:absolute;z-index:20;top:56px;right:0;left:0;min-height:0;padding:10px;border:1px solid #514329;border-radius:10px;background:#151513;box-shadow:0 14px 30px #0009;align-items:stretch;gap:2px;flex-direction:column}
- .pl-primary-nav.is-open{display:flex}
- .pl-primary-nav a{width:100%;min-height:46px;padding:0 12px;border-radius:7px}
+ .pl-primary-nav{display:flex;flex-wrap:nowrap;justify-content:flex-start;gap:8px;min-height:58px;padding:5px 2px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+ .pl-primary-nav::-webkit-scrollbar{display:none}
+ .pl-primary-nav a{flex:0 0 auto;min-height:46px;padding:0 11px;border:1px solid #393125;border-radius:8px;font-size:12px;white-space:nowrap}
  .pl-primary-nav a:hover{background:#252117}
- .pl-primary-nav .pl-auth-link{margin:6px 0 0;justify-content:center;border-radius:8px}
+ .pl-primary-nav .pl-auth-link{margin:0;justify-content:center;border-color:#8d7137;border-radius:8px}
  .pl-home-hero{padding:28px 18px 42px}
  .pl-brand-home a{width:min(250px,70vw)}
  .pl-brand-home img{max-height:190px}
