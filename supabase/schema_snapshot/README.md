@@ -5,12 +5,13 @@ Use only against Supabase project `vgezfuztgzxbmvkmaoqn`. Never execute these sn
 ## Extracted files
 
 1. `production_bootstrap_prelude_2026-11-04.sql` — creates the application-owned `private` schema.
-2. `production_core_objects_2026-11-04.sql` — 29 public table shells, 135 constraints, 49 non-constraint indexes, and the `recent_tournament_champions` view. The view retains `security_invoker=true` and `security_barrier=true`.
+2. `production_core_objects_2026-11-04.sql` — 29 public table shells, 135 constraints, and 49 non-constraint indexes.
 3. `production_functions_2026-11-04.sql` — all 13 public and 6 private function definitions.
-4. `production_security_objects_2026-11-04.sql` — 29 RLS enablement statements, 102 public policies, and 12 application trigger objects (29 event registrations).
-5. `production_grants_2026-11-04.sql` — captured app schema, table/view, and routine grants for anon/authenticated/service_role; review before use.
-6. `production_storage_policies_2026-11-04.sql` — 21 application Storage object policies. Apply only after bucket configuration and dependencies are ready.
-7. `production_application_schema_2026-11-04.sql` — combined raw catalog snapshot retained as a reference; do not use as a single migration because functions must precede RLS policies and triggers.
+4. `production_views_2026-11-04.sql` — `recent_tournament_champions`, applied after its `private.is_tournament_public()` helper; retains `security_invoker=true` and `security_barrier=true`.
+5. `production_security_objects_2026-11-04.sql` — 29 RLS enablement statements, 102 public policies, and 12 application trigger objects (29 event registrations).
+6. `production_grants_2026-11-04.sql` — captured app schema, table/view, and routine grants for anon/authenticated/service_role; review before use.
+7. `production_storage_policies_2026-11-04.sql` — 21 application Storage object policies. Apply only after bucket configuration and dependencies are ready.
+8. `production_application_schema_2026-11-04.sql` — combined raw catalog snapshot retained as a reference; do not use as a single migration because functions must precede RLS policies and triggers.
 
 ## Required order
 
