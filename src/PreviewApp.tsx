@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './preview.css';
+import { supabase } from './supabase';
 
 const navItems = [
   { label: 'خانه', href: '/' },
@@ -9,7 +10,34 @@ const navItems = [
 ];
 
 function PreviewBanner() {
-  return <div className="pl-preview-banner">محیط آزمایشی PLATO LAND — اطلاعات نمایشی است؛ ورود، ثبت‌نام و عملیات واقعی غیرفعال‌اند.</div>;
+  const [connection, setConnection] = useState<'checking' | 'connected' | 'failed'>('checking');
+
+  useEffect(() => {
+    let active = true;
+    const verifyStaging = async () => {
+      if (!supabase) {
+        if (active) setConnection('failed');
+        return;
+      }
+      const { data, error } = await supabase.rpc('preview_connection_check');
+      if (!active) return;
+      setConnection(!error && data?.status === 'ok' && data?.environment === 'staging' ? 'connected' : 'failed');
+    };
+    void verifyStaging();
+    return () => { active = false; };
+  }, []);
+
+  const message = connection === 'connected'
+    ? 'اتصال مرورگر به دیتابیس آزمایشی Staging برقرار است.'
+    : connection === 'failed'
+      ? 'اتصال مرورگر به دیتابیس آزمایشی تأیید نشد؛ وضعیت فنی در حال بررسی است.'
+      : 'در حال بررسی اتصال مرورگر به دیتابیس آزمایشی…';
+
+  return (
+    <div className="pl-preview-banner" role="status" aria-live="polite">
+      محیط آزمایشی PLATO LAND — {message} عملیات حساب کاربری و مسابقات تا پایان QA غیرفعال‌اند.
+    </div>
+  );
 }
 
 function Brand({ compact = false }: { compact?: boolean }) {
