@@ -49,7 +49,7 @@ function Header({ home = false, account }: { home?: boolean; account: AccountCon
             <a href="/account/profile">پروفایل من</a>
             <a href="/account/competitions">مسابقات من</a>
             <a href="/account/history">تاریخچه حساب</a>
-            <button type="button" onClick={() => { void supabase?.auth.signOut().then(() => { window.location.href = '/'; }); }}>خروج از حساب</button>
+            <button type="button" onClick={() => { void supabase?.auth.signOut({scope:'local'}).then(() => { window.location.href = '/'; }); }}>خروج از حساب</button>
           </div>
         </details> : <a className="pl-auth-link" href="/login-register">ورود / ثبت‌نام</a>}
       </nav>
@@ -162,7 +162,67 @@ function AccountHistoryPage({account}:{account:AccountContext}) {
 }
 
 function AccountSettingsPage({account}:{account:AccountContext}) {
-  return <InnerPage account={account} title="تنظیمات حساب" eyebrow="امنیت و دسترسی" description="اطلاعات پایه و وضعیت امنیتی حساب."><a className="pl-back-link" href="/account">بازگشت به حساب من</a><article className="pl-preview-card"><p>ایمیل: {account.user?.email??'—'}</p><p>وضعیت تأیید ایمیل: {account.user?.email_confirmed_at?'تأیید شده':'تأیید نشده'}</p><p>نقش در Staging: {account.role??'بازیکن'}</p><p>رمز عبور در این صفحه نمایش داده یا ذخیره نمی‌شود.</p></article></InnerPage>;
+  const [currentPassword,setCurrentPassword]=useState('');
+  const [newPassword,setNewPassword]=useState('');
+  const [confirmPassword,setConfirmPassword]=useState('');
+  const [recoveryPassword,setRecoveryPassword]=useState('');
+  const [recoveryConfirm,setRecoveryConfirm]=useState('');
+  const [busy,setBusy]=useState(false);
+  const [message,setMessage]=useState('');
+  const [messageType,setMessageType]=useState<'success'|'error'|'info'>('info');
+  const recoveryMode=new URLSearchParams(window.location.search).get('mode')==='recovery';
+  const notify=(text:string,type:'success'|'error'|'info'='info')=>{setMessage(text);setMessageType(type);};
+  const changePassword=async(e:React.FormEvent)=>{
+    e.preventDefault();if(!supabase||busy)return;
+    if(newPassword.length<8){notify('رمز جدید باید حداقل ۸ نویسه داشته باشد.','error');return;}
+    if(newPassword!==confirmPassword){notify('تکرار رمز جدید با رمز واردشده یکسان نیست.','error');return;}
+    if(!account.user?.email){notify('ایمیل حساب در دسترس نیست؛ امکان تغییر رمز وجود ندارد.','error');return;}
+    setBusy(true);notify('در حال بررسی رمز فعلی و ذخیره رمز جدید…');
+    const verified=await supabase.auth.signInWithPassword({email:account.user.email,password:currentPassword});
+    if(verified.error){setBusy(false);notify('رمز فعلی درست نیست. دوباره بررسی کن.','error');return;}
+    const updated=await supabase.auth.updateUser({password:newPassword});
+    setBusy(false);
+    if(updated.error){notify('تغییر رمز انجام نشد: '+updated.error.message,'error');return;}
+    setCurrentPassword('');setNewPassword('');setConfirmPassword('');
+    notify('رمز عبور با موفقیت تغییر کرد.','success');
+  };
+  const sendRecovery=async()=>{
+    if(!supabase||busy||!account.user?.email)return;
+    setBusy(true);notify('در حال ارسال لینک بازیابی به ایمیل حساب…');
+    const {error}=await supabase.auth.resetPasswordForEmail(account.user.email,{redirectTo:window.location.origin+'/account/settings?mode=recovery'});
+    setBusy(false);
+    if(error){notify('ارسال لینک بازیابی انجام نشد: '+error.message,'error');return;}
+    notify('درخواست بازیابی ارسال شد. ایمیل خود را بررسی کن و لینک را در همین مرورگر باز کن.','success');
+  };
+  const finishRecovery=async(e:React.FormEvent)=>{
+    e.preventDefault();if(!supabase||busy)return;
+    if(recoveryPassword.length<8){notify('رمز جدید باید حداقل ۸ نویسه داشته باشد.','error');return;}
+    if(recoveryPassword!==recoveryConfirm){notify('تکرار رمز با رمز جدید یکسان نیست.','error');return;}
+    setBusy(true);notify('در حال ذخیره رمز جدید…');
+    const {error}=await supabase.auth.updateUser({password:recoveryPassword});
+    setBusy(false);
+    if(error){notify('تغییر رمز انجام نشد: '+error.message,'error');return;}
+    setRecoveryPassword('');setRecoveryConfirm('');
+    window.history.replaceState({},'', '/account/settings');
+    notify('رمز عبور با موفقیت بازیابی و تغییر کرد.','success');
+  };
+  const signOutEverywhere=async()=>{
+    if(!supabase||busy)return;
+    if(!window.confirm('از حساب کاربری در همه دستگاه‌ها و مرورگرها خارج می‌شوی. ادامه می‌دهی؟'))return;
+    setBusy(true);notify('در حال خروج از همه نشست‌ها…');
+    const {error}=await supabase.auth.signOut({scope:'global'});
+    setBusy(false);
+    if(error){notify('خروج از همه دستگاه‌ها انجام نشد: '+error.message,'error');return;}
+    window.location.replace('/login-register');
+  };
+  return <InnerPage account={account} title="تنظیمات حساب" eyebrow="امنیت و دسترسی" description="مدیریت رمز عبور و نشست‌های ورود حساب آزمایشی.">
+    <a className="pl-back-link" href="/account">بازگشت به حساب من</a>
+    <article className="pl-preview-card pl-settings-identity"><h2>اطلاعات حساب</h2><p>ایمیل: <bdi>{account.user?.email??'—'}</bdi></p><p>وضعیت تأیید ایمیل: {account.user?.email_confirmed_at?'تأیید شده':'تأیید نشده'}</p><p>نقش در Staging: {account.role??'بازیکن'}</p></article>
+    {message&&<p className={'pl-settings-message is-'+messageType} role="status" aria-live="polite">{message}</p>}
+    {recoveryMode ? <section className="pl-preview-card pl-settings-section"><h2>تعیین رمز جدید</h2>{account.loading?<p>در حال بررسی لینک بازیابی…</p>:!account.user?<p>نشست بازیابی معتبر پیدا نشد یا لینک منقضی شده است. از گزینه «ارسال لینک بازیابی» در صفحه تنظیمات دوباره درخواست بده.</p>:<form className="pl-settings-form" onSubmit={finishRecovery}><label>رمز جدید<input type="password" autoComplete="new-password" minLength={8} value={recoveryPassword} onChange={e=>setRecoveryPassword(e.target.value)} required/></label><label>تکرار رمز جدید<input type="password" autoComplete="new-password" minLength={8} value={recoveryConfirm} onChange={e=>setRecoveryConfirm(e.target.value)} required/></label><button className="pl-primary-button" type="submit" disabled={busy}>{busy?'در حال ذخیره…':'ثبت رمز جدید'}</button></form>}</section> : <section className="pl-preview-card pl-settings-section"><h2>تغییر رمز عبور</h2><p>برای تغییر رمز، ابتدا رمز فعلی را تأیید کن و سپس رمز جدید را دو بار وارد کن.</p><form className="pl-settings-form" onSubmit={changePassword}><label>رمز فعلی<input type="password" autoComplete="current-password" value={currentPassword} onChange={e=>setCurrentPassword(e.target.value)} required/></label><label>رمز جدید<input type="password" autoComplete="new-password" minLength={8} value={newPassword} onChange={e=>setNewPassword(e.target.value)} required/></label><label>تکرار رمز جدید<input type="password" autoComplete="new-password" minLength={8} value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} required/></label><button className="pl-primary-button" type="submit" disabled={busy||!supabase}>{busy?'در حال بررسی…':'ذخیره رمز جدید'}</button></form><button className="pl-settings-text-button" type="button" onClick={sendRecovery} disabled={busy||!account.user?.email}>فراموشی رمز عبور؟ ارسال لینک بازیابی به ایمیل</button></section>}
+    <section className="pl-preview-card pl-settings-section"><h2>دستگاه‌ها و نشست‌های ورود</h2><p>با این گزینه، نشست‌های ورود حساب در دستگاه‌ها و مرورگرهای دیگر نیز لغو می‌شوند. ممکن است توکن دسترسی فعلی تا زمان انقضایش معتبر بماند.</p><button className="pl-danger-button" type="button" onClick={signOutEverywhere} disabled={busy||!supabase}>خروج از همه دستگاه‌ها</button></section>
+    <section className="pl-preview-card pl-settings-section"><h2>هشدارهای امنیتی</h2><p>اعلان ورود جدید برای این حساب هنوز در محیط آزمایشی پیکربندی نشده است. در این نسخه هیچ گزینه‌ای به‌صورت ظاهری فعال نشان داده نمی‌شود.</p><small>اعلان‌های امنیتی ایمیلی باید از تنظیمات Auth پروژه Staging بررسی و فعال شوند.</small></section>
+  </InnerPage>;
 }
 
 function NewsPage({account}:{account:AccountContext}) { return <InnerPage account={account} title="اخبار و اطلاعیه‌ها" eyebrow="تازه‌های PLATO LAND" description="خبرها و اطلاعیه‌های رسمی پلتفرم در این بخش گردآوری می‌شوند."><article className="pl-preview-card pl-empty-state"><h2>هنوز خبری برای نمایش وجود ندارد</h2><p>این یک وضعیت خالی در محیط Preview است؛ هیچ خبر ساختگی یا اطلاعیه عملیاتی نمایش داده نمی‌شود.</p></article></InnerPage>; }
