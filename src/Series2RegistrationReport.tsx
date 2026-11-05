@@ -82,34 +82,27 @@ export default function Series2RegistrationReport() {
     <p style={{fontSize:11,color:'#b9b2a4',margin:'0 0 12px',lineHeight:1.9}}>تعداد بازی و برد را به‌صورت عدد صحیح وارد کن. درصد برد خودکار محاسبه می‌شود. برای ذخیره هر بازیکن، دکمهٔ همان ردیف را بزن. مقدار خالی هنگام ذخیره صفر محسوب می‌شود؛ برد نمی‌تواند از بازی بیشتر باشد.</p>
     {error&&<p role="alert" style={{color:'#ffc5c5',background:'#301819',padding:10,borderRadius:8}}>{error}</p>}
     {notice&&<p role="status" style={{color:'#bce8c9',background:'#14281d',padding:10,borderRadius:8}}>{notice}</p>}
-    {showWinRateReport&&<section aria-label="گزارش درصد برد بازیکنان" style={{margin:'16px 0',padding:14,border:'1px solid #8a7445',borderRadius:11,background:'#101113'}}>
+    {showWinRateReport&&<section aria-label="گزارش درصد برد بازیکنان" style={{margin:'16px 0',padding:10,border:'1px solid #8a7445',borderRadius:11,background:'#101113'}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:10}}>
-        <strong style={{color:'#f3d58d',fontSize:16}}>گزارش درصد برد بازیکنان</strong>
-        <small style={{color:'#b9b2a4'}}>مرتب‌سازی: بیشترین درصد برد</small>
+        <strong style={{color:'#f3d58d',fontSize:16}}>جدول رتبه‌بندی بازیکنان</strong>
+        <small style={{color:'#b9b2a4'}}>مرتب‌سازی بر اساس درصد برد</small>
       </div>
       {winRateRows.length===0?<p style={muted}>اطلاعاتی برای نمایش وجود ندارد.</p>:
-        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr)',gap:9}}>
-          {winRateRows.map((row,index)=><article key={row.id} style={{display:'grid',gridTemplateColumns:'38px minmax(0,1fr)',gap:10,alignItems:'center',padding:'12px 10px',border:'1px solid #51452d',borderRadius:10,background:'#171819'}}>
-            <div style={{display:'grid',placeItems:'center',width:34,height:34,borderRadius:9,background:'#292317',color:'#f3d58d',fontWeight:800,fontSize:14}}>{fa(index+1)}</div>
-            <div style={{minWidth:0}}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:9}}>
-                <strong dir="ltr" style={{color:'#f3d58d',fontSize:15,overflowWrap:'anywhere'}}>{row.plato_id}</strong>
-                <strong style={{color:row.rate===null?'#aaa':'#f3d58d',fontSize:17}}>{row.rate===null?'—':row.rate.toLocaleString('fa-IR',{maximumFractionDigits:2})+'٪'}</strong>
-              </div>
-              <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:7}}>
-                <div style={{padding:'7px 9px',borderRadius:7,background:'#101113'}}>
-                  <small style={{display:'block',color:'#b9a77d',fontSize:11}}>تعداد بازی</small>
-                  <strong style={{color:'#eee',fontSize:14}}>{row.games_played===null?'—':fa(row.games_played)}</strong>
-                </div>
-                <div style={{padding:'7px 9px',borderRadius:7,background:'#101113'}}>
-                  <small style={{display:'block',color:'#b9a77d',fontSize:11}}>تعداد برد</small>
-                  <strong style={{color:'#eee',fontSize:14}}>{row.games_won===null?'—':fa(row.games_won)}</strong>
-                </div>
-              </div>
+        <div role="table" aria-label="جدول رتبه‌بندی درصد برد" style={{display:'grid',gap:5}}>
+          <div role="row" style={{display:'grid',gridTemplateColumns:'minmax(0,1.8fr) repeat(3,minmax(0,1fr))',gap:4,padding:'7px 5px',color:'#d9c38f',fontSize:10,fontWeight:700,textAlign:'center',borderBottom:'1px solid #8a7445'}}>
+            <span role="columnheader" style={{textAlign:'right'}}>رتبه · Plato ID</span><span role="columnheader">بازی</span><span role="columnheader">برد</span><span role="columnheader">درصد</span>
+          </div>
+          {winRateRows.map((row,index)=><div role="row" key={row.id} style={{display:'grid',gridTemplateColumns:'minmax(0,1.8fr) repeat(3,minmax(0,1fr))',gap:4,alignItems:'center',minWidth:0,padding:'8px 5px',border:'1px solid #393329',borderRadius:7,background:index<8?'#201c14':'#171819'}}>
+            <div role="cell" style={{display:'flex',alignItems:'center',gap:5,minWidth:0,textAlign:'right'}}>
+              <strong style={{flex:'0 0 20px',color:index<8?'#f3d58d':'#aaa08d',fontSize:11,textAlign:'center'}}>{fa(index+1)}</strong>
+              <strong dir="ltr" style={{minWidth:0,color:'#f3d58d',fontSize:11,overflowWrap:'anywhere',lineHeight:1.35}}>{row.plato_id}</strong>
             </div>
-          </article>)}
+            <strong role="cell" style={{color:'#eee',fontSize:11,textAlign:'center',overflowWrap:'anywhere'}}>{row.games_played===null?'—':fa(row.games_played)}</strong>
+            <strong role="cell" style={{color:'#eee',fontSize:11,textAlign:'center',overflowWrap:'anywhere'}}>{row.games_won===null?'—':fa(row.games_won)}</strong>
+            <strong role="cell" style={{color:row.rate===null?'#aaa':'#f3d58d',fontSize:11,textAlign:'center',overflowWrap:'anywhere'}}>{row.rate===null?'—':row.rate.toLocaleString('fa-IR',{maximumFractionDigits:2})+'٪'}</strong>
+          </div>)}
         </div>}
-      <small style={{display:'block',color:'#918a7b',marginTop:10,lineHeight:1.8}}>بازیکنانی که آمار کامل ندارند یا تعداد بازی آن‌ها صفر است، با علامت «—» در انتهای جدول قرار می‌گیرند. این جدول فقط‌خواندنی است.</small>
+      <small style={{display:'block',color:'#918a7b',marginTop:9,lineHeight:1.8,fontSize:10}}>بازیکنانی که هنوز آمار بازی ندارند، با صفر نمایش داده می‌شوند و در انتهای جدول قرار می‌گیرند. این جدول فقط‌خواندنی است.</small>
     </section>}
     {loading&&rows.length===0?<p style={muted}>در حال دریافت فهرست…</p>:rows.length===0?<p style={muted}>هنوز درخواستی ثبت نشده است.</p>:
       <div style={{display:'grid',gap:10}}>
