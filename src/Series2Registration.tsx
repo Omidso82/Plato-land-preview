@@ -14,8 +14,8 @@ export default function Series2Registration() {
       const next: Record<number,string> = {};
       // Canonical keys (01 ... 18) always win; legacy extension-based files are fallback only.
       for (const file of data) {
-        const canonical = /^(\\d{2})$/i.exec(file.name);
-        const legacy = /^(\\d{2})\\.(jpe?g|png|webp)$/i.exec(file.name);
+        const canonical = /^(\d{2})$/i.exec(file.name);
+        const legacy = /^(\d{2})\.(jpe?g|png|webp)$/i.exec(file.name);
         if (!canonical && !legacy) continue;
         const number = Number((canonical || legacy)![1]);
         if (canonical || !next[number]) {
