@@ -61,6 +61,9 @@ export default function Series2RegistrationReport() {
   }).sort((a,b)=>{
     if(a.hasRate!==b.hasRate)return a.hasRate?-1:1;
     if(a.rate!==null&&b.rate!==null&&a.rate!==b.rate)return b.rate-a.rate;
+    // When win rates tie, fewer games ranks higher; then more wins; finally Plato ID.
+    if(a.games_played!==null&&b.games_played!==null&&a.games_played!==b.games_played)return a.games_played-b.games_played;
+    if(a.games_won!==null&&b.games_won!==null&&a.games_won!==b.games_won)return b.games_won-a.games_won;
     return a.plato_id.localeCompare(b.plato_id,'en',{sensitivity:'base'});
   }),[rows]);
 
@@ -84,20 +87,28 @@ export default function Series2RegistrationReport() {
         <strong style={{color:'#f3d58d',fontSize:16}}>گزارش درصد برد بازیکنان</strong>
         <small style={{color:'#b9b2a4'}}>مرتب‌سازی: بیشترین درصد برد</small>
       </div>
-      {winRateRows.length===0?<p style={muted}>اطلاعاتی برای نمایش وجود ندارد.</p>:<div style={{overflowX:'auto'}}>
-        <table style={{width:'100%',minWidth:480,borderCollapse:'collapse',color:'#eee',fontSize:13}}>
-          <thead><tr style={{color:'#d9bd7d',textAlign:'right'}}>
-            <th style={reportCell}>ردیف</th><th style={reportCell}>Plato ID</th><th style={reportCell}>تعداد بازی</th><th style={reportCell}>تعداد برد</th><th style={reportCell}>درصد برد</th>
-          </tr></thead>
-          <tbody>{winRateRows.map((row,index)=><tr key={row.id}>
-            <td style={reportCell}>{fa(index+1)}</td>
-            <td dir="ltr" style={{...reportCell,textAlign:'left',fontWeight:700,color:'#f3d58d'}}>{row.plato_id}</td>
-            <td style={reportCell}>{row.games_played===null?'—':fa(row.games_played)}</td>
-            <td style={reportCell}>{row.games_won===null?'—':fa(row.games_won)}</td>
-            <td style={{...reportCell,fontWeight:700,color:row.rate===null?'#aaa':'#f3d58d'}}>{row.rate===null?'—':row.rate.toLocaleString('fa-IR',{maximumFractionDigits:2})+'٪'}</td>
-          </tr>)}</tbody>
-        </table>
-      </div>}
+      {winRateRows.length===0?<p style={muted}>اطلاعاتی برای نمایش وجود ندارد.</p>:
+        <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr)',gap:9}}>
+          {winRateRows.map((row,index)=><article key={row.id} style={{display:'grid',gridTemplateColumns:'38px minmax(0,1fr)',gap:10,alignItems:'center',padding:'12px 10px',border:'1px solid #51452d',borderRadius:10,background:'#171819'}}>
+            <div style={{display:'grid',placeItems:'center',width:34,height:34,borderRadius:9,background:'#292317',color:'#f3d58d',fontWeight:800,fontSize:14}}>{fa(index+1)}</div>
+            <div style={{minWidth:0}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:9}}>
+                <strong dir="ltr" style={{color:'#f3d58d',fontSize:15,overflowWrap:'anywhere'}}>{row.plato_id}</strong>
+                <strong style={{color:row.rate===null?'#aaa':'#f3d58d',fontSize:17}}>{row.rate===null?'—':row.rate.toLocaleString('fa-IR',{maximumFractionDigits:2})+'٪'}</strong>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:7}}>
+                <div style={{padding:'7px 9px',borderRadius:7,background:'#101113'}}>
+                  <small style={{display:'block',color:'#b9a77d',fontSize:11}}>تعداد بازی</small>
+                  <strong style={{color:'#eee',fontSize:14}}>{row.games_played===null?'—':fa(row.games_played)}</strong>
+                </div>
+                <div style={{padding:'7px 9px',borderRadius:7,background:'#101113'}}>
+                  <small style={{display:'block',color:'#b9a77d',fontSize:11}}>تعداد برد</small>
+                  <strong style={{color:'#eee',fontSize:14}}>{row.games_won===null?'—':fa(row.games_won)}</strong>
+                </div>
+              </div>
+            </div>
+          </article>)}
+        </div>}
       <small style={{display:'block',color:'#918a7b',marginTop:10,lineHeight:1.8}}>بازیکنانی که آمار کامل ندارند یا تعداد بازی آن‌ها صفر است، با علامت «—» در انتهای جدول قرار می‌گیرند. این جدول فقط‌خواندنی است.</small>
     </section>}
     {loading&&rows.length===0?<p style={muted}>در حال دریافت فهرست…</p>:rows.length===0?<p style={muted}>هنوز درخواستی ثبت نشده است.</p>:
