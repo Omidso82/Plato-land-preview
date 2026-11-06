@@ -48,9 +48,7 @@ export default function Series2Registration() {
     <main className="s2leaderboard" dir="rtl">
       <div className="s2leaderboard-shell">
         <header className="s2brand-header">
-          <div className="s2brand-emblem" aria-hidden="true">
-            <Crown size={31} strokeWidth={1.65} />
-          </div>
+          <div className="s2brand-emblem" aria-hidden="true"><Crown size={32} strokeWidth={1.6} /></div>
           <div className="s2brand-name">PLATO <span>LAND</span></div>
           <div className="s2brand-tagline">بازی، رقابت، قهرمانی</div>
           <div className="s2brand-rule"><i /><span>✦</span><i /></div>
@@ -60,7 +58,7 @@ export default function Series2Registration() {
         <section className="s2leaderboard-panel" aria-labelledby="s2leaderboard-title">
           <div className="s2leaderboard-heading">
             <div className="s2heading-icon"><Trophy size={21} /></div>
-            <div>
+            <div className="s2heading-copy">
               <span className="s2eyebrow">PLAYER STANDINGS</span>
               <h1 id="s2leaderboard-title">جدول رتبه‌بندی بازیکنان</h1>
               <p className="s2heading-subtitle">رده‌بندی بر پایه میانگین درصد برد</p>
@@ -70,7 +68,7 @@ export default function Series2Registration() {
 
           <p className="s2leaderboard-note">
             <span className="s2note-mark">i</span>
-            این آمار بر اساس اطلاعات ثبت‌شده هنگام ثبت‌نام بازیکنان تهیه شده است. بازی‌ها و بردهای احتمالی پس از زمان ثبت‌نام در این جدول لحاظ نشده‌اند.
+            <span>این آمار بر اساس اطلاعات ثبت‌شده هنگام ثبت‌نام بازیکنان تهیه شده است. بازی‌ها و بردهای احتمالی پس از زمان ثبت‌نام در این جدول لحاظ نشده‌اند.</span>
           </p>
 
           {loading ? (
@@ -80,40 +78,23 @@ export default function Series2Registration() {
           ) : rows.length === 0 ? (
             <p className="s2leaderboard-state">اطلاعاتی برای نمایش وجود ندارد.</p>
           ) : (
-            <div className="s2leaderboard-table-wrap">
-              <table className="s2leaderboard-table">
-                <thead>
-                  <tr>
-                    <th scope="col">رتبه</th>
-                    <th scope="col" className="s2leaderboard-id">بازیکن / Plato ID</th>
-                    <th scope="col">تعداد بازی</th>
-                    <th scope="col">تعداد برد</th>
-                    <th scope="col">درصد برد</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, index) => (
-                    <tr key={row.plato_id} className={index < 3 ? `s2top-rank s2top-rank-${index + 1}` : undefined}>
-                      <td className="s2leaderboard-rank">
-                        <span className="s2rank-medal">
-                          {index === 0 ? <Crown size={16} /> : index === 1 ? <Medal size={16} /> : index === 2 ? <Medal size={16} /> : fa(index + 1)}
-                        </span>
-                      </td>
-                      <td className="s2leaderboard-id">
-                        <span dir="ltr">{row.plato_id}</span>
-                        <small className="s2mobile-stats">
-                          {row.games_played === null ? '—' : fa(row.games_played)} بازی
-                          <b>·</b>
-                          {row.games_won === null ? '—' : fa(row.games_won)} برد
-                        </small>
-                      </td>
-                      <td className="s2desktop-stat">{row.games_played === null ? '—' : fa(row.games_played)}</td>
-                      <td className="s2desktop-stat">{row.games_won === null ? '—' : fa(row.games_won)}</td>
-                      <td className="s2leaderboard-rate">{row.win_rate === null ? '—' : percent(row.win_rate)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="s2player-list">
+              {rows.map((row, index) => (
+                <article key={row.plato_id} className={`s2player-card ${index < 3 ? `s2player-card-top s2player-card-top-${index + 1}` : ''}`}>
+                  <div className="s2player-identity">
+                    <span className="s2player-rank">
+                      {index === 0 ? <Crown size={19} /> : index === 1 || index === 2 ? <Medal size={18} /> : fa(index + 1)}
+                    </span>
+                    <span className="s2player-id" dir="ltr">{row.plato_id}</span>
+                    {index === 0 && <span className="s2champion-label">قهرمان جدول</span>}
+                  </div>
+                  <div className="s2player-metrics">
+                    <div className="s2metric"><span>تعداد بازی</span><strong>{row.games_played === null ? '—' : fa(row.games_played)}</strong></div>
+                    <div className="s2metric"><span>تعداد برد</span><strong>{row.games_won === null ? '—' : fa(row.games_won)}</strong></div>
+                    <div className="s2metric s2metric-rate"><span>درصد برد</span><strong>{row.win_rate === null ? '—' : percent(row.win_rate)}</strong></div>
+                  </div>
+                </article>
+              ))}
             </div>
           )}
           <footer className="s2leaderboard-footer">
@@ -121,7 +102,6 @@ export default function Series2Registration() {
             <span>بازی، رقابت، قهرمانی</span>
           </footer>
         </section>
-        <div className="s2page-bottom-glow" aria-hidden="true" />
       </div>
     </main>
   );
