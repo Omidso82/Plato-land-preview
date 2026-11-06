@@ -147,3 +147,45 @@
  .s2primary-actions{grid-template-columns:1fr}
  .s2fixture-day .s2bracket-list{grid-template-columns:1fr}
 }
+
+
+/* Series 2 readability refinement — restrained, mobile-first typography increase */
+.s2leaderboard-note{font-size:10px;line-height:1.8}
+.s2seed-open-button{font-size:13px}
+.s2primary-actions .s2seed-open-button span{font-size:12px}
+.s2seed-button-count{font-size:11px}
+.s2progress-heading h2{font-size:17px}
+.s2progress-heading p{font-size:11px}
+.s2progress-card strong{font-size:12px}
+.s2progress-card small{font-size:10px}
+.s2stage-nav button{font-size:12px;padding:10px 12px}
+.s2stage-content{font-size:14px}
+.s2standings-table th{font-size:10px;height:34px;padding:6px 3px}
+.s2standings-table td{font-size:12px;height:39px;padding:6px 3px}
+.s2standings-table td.s2rank-number{font-size:12px}
+.s2standings-table td.s2table-player{font-size:11px}
+.s2standings-table td.s2table-rate{font-size:12px}
+.s2seed-table th{font-size:13px}
+.s2seed-table td,.s2seed-table td:nth-child(2){font-size:14px;height:45px}
+.s2group-card h3{font-size:14px}
+.s2group-card li{font-size:12px;padding:9px 2px}
+.s2group-card li b{font-size:12px}
+.s2fixture-section>h3{font-size:15px}
+.s2fixture-day h4{font-size:13px}
+.s2match-card>span{font-size:11px}
+.s2match-card>div{font-size:11px}
+.s2match-card i{font-size:10px}
+.s2match-card small{font-size:10px}
+.s2stage-empty strong{font-size:15px}
+.s2stage-empty p{font-size:12px}
+.s2leaderboard-state,.s2leaderboard-error{font-size:12px}
+.s2seed-dialog-footer{font-size:12px}
+@media(max-width:390px){
+ .s2standings-table th{font-size:9px}
+ .s2standings-table td{font-size:11px;height:36px}
+ .s2standings-table td.s2table-player{font-size:10px}
+ .s2seed-table td,.s2seed-table td:nth-child(2){font-size:13px}
+ .s2group-card li,.s2group-card li b{font-size:11px}
+ .s2match-card>div{font-size:10px}
+ .s2progress-card strong{font-size:11px}
+}
