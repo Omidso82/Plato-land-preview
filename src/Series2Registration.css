@@ -79,3 +79,19 @@
 .s2seed-dialog-footer button{padding:7px 15px;border:1px solid #b8954f77;border-radius:8px;background:#302617;color:#f0d99f;font:inherit;font-size:10px;font-weight:750;cursor:pointer}
 @media(max-width:600px){.s2seed-backdrop{padding:0;align-items:stretch}.s2seed-dialog{width:100%;max-height:100dvh;height:100dvh;border:0;border-radius:0;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom)}.s2seed-dialog-header{padding:calc(16px + env(safe-area-inset-top)) 15px 12px}.s2seed-tabs{padding:11px 12px}.s2seed-panel{flex:1;min-height:0;overflow:auto;padding:0 12px 14px}.s2seed-table td{height:43px}.s2seed-dialog-footer{padding:12px 14px calc(12px + env(safe-area-inset-bottom))}}
 @media(prefers-reduced-motion:no-preference){.s2seed-dialog{animation:s2seed-enter .16s ease-out}@keyframes s2seed-enter{from{opacity:.7;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}}
+
+/* Readability refinement: Series 2 seed viewer */
+.s2seed-open-button{font-size:12px}
+.s2seed-button-count{font-size:10px}
+.s2seed-eyebrow{font-size:9px}
+.s2seed-dialog-header h2{font-size:20px}
+.s2seed-dialog-header p{font-size:12px}
+.s2seed-tabs button{font-size:13px;padding:10px 5px}
+.s2seed-tabs small{font-size:10px}
+.s2seed-panel-heading{font-size:13px}
+.s2seed-panel-heading span{font-size:11px}
+.s2seed-table th{font-size:12px;padding:10px 7px}
+.s2seed-table td{font-size:13px;height:43px;padding:8px 7px}
+.s2seed-table td:nth-child(2){font-size:13px}
+.s2seed-dialog-footer{font-size:11px}
+.s2seed-dialog-footer button{font-size:12px;padding:8px 16px}
