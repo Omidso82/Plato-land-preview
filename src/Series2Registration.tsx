@@ -61,7 +61,19 @@ export default function Series2Registration() {
   }, []);
 
   useEffect(() => {
-    if (!seedViewerOpen) return;
+    let active = true;
+    fetch('https://dfrppbapaaydbjeflozw.supabase.co/functions/v1/plato-land-series2-progression', {
+      method: 'GET', headers: { Accept: 'application/json' }, cache: 'no-store',
+    })
+      .then((response) => { if (!response.ok) throw new Error('Progression request failed'); return response.json(); })
+      .then((data) => { if (active) setProgression(data?.progression ?? null); })
+      .catch((loadError) => console.error('Series 2 progression load failed:', loadError))
+      .finally(() => { if (active) setProgressionLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    if (!seedViewerOpen && !stageViewerOpen) return;
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') { setSeedViewerOpen(false); setStageViewerOpen(false); } };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
