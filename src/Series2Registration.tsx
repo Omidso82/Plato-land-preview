@@ -16,6 +16,15 @@ export default function Series2Registration() {
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [seedViewerOpen, setSeedViewerOpen] = useState(false);
+  const [activeSeed, setActiveSeed] = useState(0);
+
+  const seeds = [0, 1, 2, 3].map((seedIndex) =>
+    rows.slice(seedIndex * 8, seedIndex * 8 + 8).map((row, playerIndex) => ({
+      ...row,
+      rank: seedIndex * 8 + playerIndex + 1,
+    })),
+  );
 
   useEffect(() => {
     let active = true;
@@ -47,6 +56,13 @@ export default function Series2Registration() {
     return () => { active = false; };
   }, []);
 
+  useEffect(() => {
+    if (!seedViewerOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setSeedViewerOpen(false); };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [seedViewerOpen]);
+
   return (
     <main className="s2leaderboard" dir="rtl">
       <div className="s2leaderboard-shell">
@@ -73,6 +89,14 @@ export default function Series2Registration() {
             <span className="s2note-mark">i</span>
             <span>این آمار بر اساس اطلاعات ثبت‌شده هنگام ثبت‌نام بازیکنان تهیه شده است. بازی‌ها و بردهای احتمالی پس از زمان ثبت‌نام در این جدول لحاظ نشده‌اند.</span>
           </p>
+
+          {!loading && !error && rows.length > 0 && (
+            <button type="button" className="s2seed-open-button" onClick={() => { setActiveSeed(0); setSeedViewerOpen(true); }} aria-haspopup="dialog" aria-expanded={seedViewerOpen}>
+              <Trophy size={15} />
+              <span>مشاهده سیدبندی</span>
+              <span className="s2seed-button-count">۳۲ بازیکن · ۴ سید</span>
+            </button>
+          )}
 
           {loading ? (
             <p className="s2leaderboard-state" role="status">در حال دریافت جدول رتبه‌بندی…</p>
@@ -104,6 +128,28 @@ export default function Series2Registration() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+          {seedViewerOpen && (
+            <div className="s2seed-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSeedViewerOpen(false); }}>
+              <section className="s2seed-dialog" role="dialog" aria-modal="true" aria-labelledby="s2seed-title">
+                <header className="s2seed-dialog-header">
+                  <div><span className="s2seed-eyebrow">SERIES 2 · PLAYER SEEDING</span><h2 id="s2seed-title">سیدبندی بازیکنان</h2><p>۳۲ بازیکن بر اساس رتبهٔ جدول، در چهار سید ۸ نفره</p></div>
+                  <button type="button" className="s2seed-close" onClick={() => setSeedViewerOpen(false)} aria-label="بستن پنجره">×</button>
+                </header>
+                <div className="s2seed-tabs" role="tablist" aria-label="انتخاب سید">
+                  {seeds.map((seed, index) => (
+                    <button key={index} type="button" role="tab" id={'s2seed-tab-' + index} aria-selected={activeSeed === index} aria-controls="s2seed-panel" className={activeSeed === index ? 'active' : ''} onClick={() => setActiveSeed(index)}>سید {fa(index + 1)}<small>{fa(seed.length)} نفر</small></button>
+                  ))}
+                </div>
+                <div className="s2seed-panel" id="s2seed-panel" role="tabpanel" aria-labelledby={'s2seed-tab-' + activeSeed}>
+                  <div className="s2seed-panel-heading"><strong>سید {fa(activeSeed + 1)}</strong><span>رتبه‌های {fa(activeSeed * 8 + 1)} تا {fa(activeSeed * 8 + 8)}</span></div>
+                  <div className="s2seed-table-wrap"><table className="s2seed-table"><thead><tr><th>رتبه</th><th>شناسه بازیکن</th><th>درصد برد</th></tr></thead><tbody>
+                    {seeds[activeSeed].map((player) => <tr key={player.plato_id}><td>{fa(player.rank)}</td><td dir="ltr">{player.plato_id}</td><td>{player.win_rate === null ? '—' : percent(player.win_rate)}</td></tr>)}
+                  </tbody></table></div>
+                </div>
+                <footer className="s2seed-dialog-footer"><span>مبنای سیدبندی: درصد برد ثبت‌شده</span><button type="button" onClick={() => setSeedViewerOpen(false)}>بستن</button></footer>
+              </section>
             </div>
           )}
           <footer className="s2leaderboard-footer">
