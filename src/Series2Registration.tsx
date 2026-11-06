@@ -1,50 +1,94 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
-import './Series2Registration.css';
+
+type LeaderboardRow = {
+  plato_id: string;
+  games_played: number | null;
+  games_won: number | null;
+  win_rate: number | null;
+};
+
+const fa = (value: number) => value.toLocaleString('fa-IR');
+const percent = (value: number) =>
+  value.toLocaleString('fa-IR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '٪';
 
 export default function Series2Registration() {
-  const [slide, setSlide] = useState(1);
-  const [slideImages, setSlideImages] = useState<Record<number,string>>({});
+  const [rows, setRows] = useState<LeaderboardRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   useEffect(() => {
     let active = true;
+
     const load = async () => {
-      if (!supabase) return;
-      const { data } = await supabase.storage.from('series2-slides').list('slides', { limit: 30, sortBy: { column: 'name', order: 'asc' } });
-      if (!active || !data) return;
-      const next: Record<number,string> = {};
-      // Canonical keys (01 ... 18) always win; legacy extension-based files are fallback only.
-      for (const file of data) {
-        const canonical = /^(\d{2})$/i.exec(file.name);
-        const legacy = /^(\d{2})\.(jpe?g|png|webp)$/i.exec(file.name);
-        if (!canonical && !legacy) continue;
-        const number = Number((canonical || legacy)![1]);
-        if (canonical || !next[number]) {
-          next[number] = supabase.storage.from('series2-slides').getPublicUrl('slides/' + file.name).data.publicUrl;
+      if (!supabase) {
+        if (active) {
+          setError('ارتباط با پایگاه داده برقرار نشد. لطفاً کمی بعد دوباره تلاش کنید.');
+          setLoading(false);
         }
+        return;
       }
-      setSlideImages(next);
+
+      setLoading(true);
+      setError('');
+      const { data, error: requestError } = await supabase.functions.invoke('plato-land-series2-public-leaderboard');
+
+      if (!active) return;
+
+      if (requestError || !Array.isArray(data?.players)) {
+        setError('دریافت جدول رتبه‌بندی انجام نشد. لطفاً صفحه را دوباره بارگذاری کنید.');
+        setRows([]);
+      } else {
+        setRows(data.players as LeaderboardRow[]);
+      }
+      setLoading(false);
     };
+
     void load();
     return () => { active = false; };
   }, []);
-  return <main className="s2reg" dir="rtl">
-    <header className="s2reg-head"><div className="s2reg-crown">♛</div><div className="s2reg-brand">PLATO <b>LAND</b></div><div className="s2reg-tag">بازی، رقابت، قهرمانی</div></header>
-    <section className="s2reg-panel">
-      <h1>ظرفیت ثبت‌نام لیگ سری دوم لیگ تخته‌نرد تکمیل شد (۳۲ نفر)</h1>
-      <div className="s2reg-kicker">PLATO LAND · BACKGAMMON</div>
-      <div className="s2reg-progress"><span>مرور قوانین مسابقات</span><strong>{slide} از ۱۸</strong></div>
-      <div className="s2reg-track"><span style={{width: ((slide/18)*100)+'%'}} /></div>
-      <div className="s2reg-slide">
-        <div className="s2reg-slide-number">اسلاید {String(slide).padStart(2,'0')}</div>
-        {slideImages[slide] ? <img className="s2reg-slide-image" src={slideImages[slide]} alt={'اسلاید '+slide} /> : <div className="s2reg-slide-placeholder"><strong>{slide===18?'پیام پایانی':'قانون '+slide}</strong><p>تصویر این اسلاید هنوز بارگذاری نشده است.</p></div>}
-      </div>
-      <div className="s2reg-nav"><button type="button" className="s2reg-secondary" disabled={slide===1} onClick={()=>setSlide(s=>Math.max(1,s-1))}>قبلی</button>{slide<18&&<button type="button" className="s2reg-primary" onClick={()=>setSlide(s=>Math.min(18,s+1))}>قانون بعدی</button>}</div>
-      {slide===18&&<section id="s2reg-form" className="s2reg-form" aria-label="ثبت‌نام بسته است">
-        <label className="s2reg-label" htmlFor="s2-plato-id">Plato ID</label>
-        <input id="s2-plato-id" className="s2reg-input" dir="ltr" autoComplete="off" placeholder="" value="" disabled readOnly aria-disabled="true" />
-        <button className="s2reg-submit" type="button" disabled aria-disabled="true">ثبت‌نام</button>
-      </section>}
-    </section>
-    <footer className="s2reg-footer">© PLATO LAND · Series 2</footer>
-  </main>;
+
+  return (
+    <main className="s2leaderboard" dir="rtl">
+      <section className="s2leaderboard-panel" aria-labelledby="s2leaderboard-title">
+        <h1 id="s2leaderboard-title">جدول رتبه‌بندی بازیکنان سری دوم</h1>
+        <p className="s2leaderboard-note">
+          این آمار بر اساس اطلاعات ثبت‌شده هنگام ثبت‌نام بازیکنان تهیه شده است. بازی‌ها و بردهای احتمالی پس از زمان ثبت‌نام در این جدول لحاظ نشده‌اند.
+        </p>
+
+        {loading ? (
+          <p className="s2leaderboard-state" role="status">در حال دریافت جدول رتبه‌بندی…</p>
+        ) : error ? (
+          <p className="s2leaderboard-error" role="alert">{error}</p>
+        ) : rows.length === 0 ? (
+          <p className="s2leaderboard-state">اطلاعاتی برای نمایش وجود ندارد.</p>
+        ) : (
+          <div className="s2leaderboard-table-wrap">
+            <table className="s2leaderboard-table">
+              <thead>
+                <tr>
+                  <th scope="col">رتبه</th>
+                  <th scope="col" className="s2leaderboard-id">Plato ID</th>
+                  <th scope="col">تعداد بازی</th>
+                  <th scope="col">تعداد برد</th>
+                  <th scope="col">درصد برد</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row, index) => (
+                  <tr key={row.plato_id}>
+                    <td className="s2leaderboard-rank">{fa(index + 1)}</td>
+                    <td className="s2leaderboard-id" dir="ltr">{row.plato_id}</td>
+                    <td>{row.games_played === null ? '—' : fa(row.games_played)}</td>
+                    <td>{row.games_won === null ? '—' : fa(row.games_won)}</td>
+                    <td className="s2leaderboard-rate">{row.win_rate === null ? '—' : percent(row.win_rate)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </main>
+  );
 }
