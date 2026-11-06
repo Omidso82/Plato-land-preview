@@ -130,3 +130,20 @@
 .s2match-card i{color:#b8954f;font:9px Georgia,serif}
 .s2match-card small{display:block;margin-top:8px;color:#a99e89;font-size:9px}
 @media(max-width:390px){.s2groups-grid,.s2bracket-list{grid-template-columns:1fr}.s2progress-card{min-height:70px}.s2progress-card strong{font-size:10px}}
+
+/* Unified mobile-first Series 2 stage viewer */
+.s2primary-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0 16px}
+.s2primary-actions .s2seed-open-button{min-height:48px;display:flex;align-items:center;justify-content:center;gap:7px;padding:10px 9px;text-align:center}
+.s2primary-actions .s2seed-open-button span{font-size:11px;line-height:1.65}
+.s2fixture-section{margin-top:18px}
+.s2fixture-section>h3{margin:0 0 12px;color:#f0d99f;font-size:14px}
+.s2fixture-day{margin:12px 0 18px}
+.s2fixture-day h4{margin:0 0 8px;color:#d8b66d;font-size:12px}
+.s2fixture-day .s2bracket-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+.s2stage-content .s2seed-panel{border:0;padding:0;background:transparent}
+.s2stage-content .s2seed-tabs{margin:0 0 12px}
+.s2stage-content .s2seed-panel-heading{margin:8px 0}
+@media(max-width:390px){
+ .s2primary-actions{grid-template-columns:1fr}
+ .s2fixture-day .s2bracket-list{grid-template-columns:1fr}
+}
