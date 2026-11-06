@@ -226,3 +226,22 @@
   .s2fixed-poster-dialog{max-height:132px}
   .s2fixed-poster-dialog img{max-height:120px}
 }
+
+
+/* Homepage prize poster: remove the frame and preserve the source image proportions */
+.s2leaderboard-shell > .s2fixed-poster{
+  padding:0;
+  border:0;
+  border-radius:0;
+  background:transparent;
+  box-shadow:none;
+}
+.s2leaderboard-shell > .s2fixed-poster img{
+  display:block;
+  width:auto;
+  max-width:100%;
+  max-height:none;
+  height:auto;
+  object-fit:contain;
+  border-radius:0;
+}
