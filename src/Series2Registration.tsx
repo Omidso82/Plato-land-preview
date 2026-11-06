@@ -31,9 +31,6 @@ export default function Series2Registration() {
     <header className="s2reg-head"><div className="s2reg-crown">♛</div><div className="s2reg-brand">PLATO <b>LAND</b></div><div className="s2reg-tag">بازی، رقابت، قهرمانی</div></header>
     <section className="s2reg-panel">
       <div className="s2reg-kicker">PLATO LAND · BACKGAMMON</div>
-      <h1>ظرفیت ثبت‌نام لیگ سری دوم لیگ تخته‌نرد تکمیل شد (۳۲ نفر)</h1>
-      <p className="s2reg-intro">ظرفیت ثبت‌نام لیگ سری دوم لیگ تخته‌نرد تکمیل شد (۳۲ نفر). امکان ثبت درخواست جدید وجود ندارد؛ می‌توانید همچنان ۱۸ اسلاید قوانین مسابقات را مرور کنید.</p>
-      <div className="s2reg-closed-notice" role="status">ثبت‌نام بسته شده است · ظرفیت نهایی: ۳۲ نفر</div>
       <div className="s2reg-progress"><span>مرور قوانین مسابقات</span><strong>{slide} از ۱۸</strong></div>
       <div className="s2reg-track"><span style={{width: ((slide/18)*100)+'%'}} /></div>
       <div className="s2reg-slide">
@@ -42,11 +39,9 @@ export default function Series2Registration() {
       </div>
       <div className="s2reg-nav"><button type="button" className="s2reg-secondary" disabled={slide===1} onClick={()=>setSlide(s=>Math.max(1,s-1))}>قبلی</button>{slide<18&&<button type="button" className="s2reg-primary" onClick={()=>setSlide(s=>Math.min(18,s+1))}>قانون بعدی</button>}</div>
       {slide===18&&<section id="s2reg-form" className="s2reg-form" aria-label="ثبت‌نام بسته است">
-        <h2>ثبت‌نام بسته است</h2>
-        <div className="s2reg-closed-notice" role="status">ظرفیت ۳۲ نفر تکمیل شده و امکان ارسال درخواست جدید وجود ندارد.</div>
         <label className="s2reg-label" htmlFor="s2-plato-id">Plato ID</label>
-        <input id="s2-plato-id" className="s2reg-input" dir="ltr" autoComplete="off" placeholder="ثبت‌نام به پایان رسیده است" value="" disabled readOnly aria-disabled="true" />
-        <button className="s2reg-submit" type="button" disabled aria-disabled="true">ظرفیت تکمیل است</button>
+        <input id="s2-plato-id" className="s2reg-input" dir="ltr" autoComplete="off" placeholder="" value="" disabled readOnly aria-disabled="true" />
+        <button className="s2reg-submit" type="button" disabled aria-disabled="true">ثبت‌نام</button>
       </section>}
     </section>
     <footer className="s2reg-footer">© PLATO LAND · Series 2</footer>
