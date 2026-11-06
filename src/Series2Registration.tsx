@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { supabase } from './supabase';
 import { Crown, Trophy, Medal, Sparkles } from 'lucide-react';
 
 type LeaderboardRow = {
@@ -21,24 +20,28 @@ export default function Series2Registration() {
   useEffect(() => {
     let active = true;
     const load = async () => {
-      if (!supabase) {
-        if (active) {
-          setError('ارتباط با پایگاه داده برقرار نشد. لطفاً کمی بعد دوباره تلاش کنید.');
-          setLoading(false);
-        }
-        return;
-      }
       setLoading(true);
       setError('');
-      const { data, error: requestError } = await supabase.functions.invoke('plato-land-series2-public-leaderboard');
-      if (!active) return;
-      if (requestError || !Array.isArray(data?.players)) {
-        setError('دریافت جدول رتبه‌بندی انجام نشد. لطفاً صفحه را دوباره بارگذاری کنید.');
-        setRows([]);
-      } else {
-        setRows(data.players as LeaderboardRow[]);
+      try {
+        // This endpoint is intentionally public and read-only. A plain GET avoids
+        // client SDK invoke/auth-header issues on the static GitHub Pages site.
+        const response = await fetch(
+          'https://dfrppbapaaydbjeflozw.supabase.co/functions/v1/plato-land-series2-public-leaderboard',
+          { method: 'GET', headers: { Accept: 'application/json' }, cache: 'no-store' },
+        );
+        if (!response.ok) throw new Error(`Leaderboard request failed (${response.status})`);
+        const data = await response.json();
+        if (!Array.isArray(data?.players)) throw new Error('Invalid leaderboard response');
+        if (active) setRows(data.players as LeaderboardRow[]);
+      } catch (loadError) {
+        console.error('Series 2 leaderboard load failed:', loadError);
+        if (active) {
+          setError('دریافت جدول رتبه‌بندی انجام نشد. لطفاً صفحه را دوباره بارگذاری کنید.');
+          setRows([]);
+        }
+      } finally {
+        if (active) setLoading(false);
       }
-      setLoading(false);
     };
     void load();
     return () => { active = false; };
