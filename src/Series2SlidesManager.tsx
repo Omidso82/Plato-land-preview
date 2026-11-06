@@ -103,13 +103,19 @@ export default function Series2SlidesManager() {
     }
     setPosterBusy(true); setMessage('در حال ذخیره پوستر ثابت مسابقات…');
     try {
-      const {error}=await supabase.storage.from(BUCKET).upload(POSTER_PATH,posterSelected,{
-        upsert:true,contentType:posterSelected.type,cacheControl:'0'
-      });
-      if(error) throw new Error('ذخیره پوستر: '+error.message);
+      const storage=supabase.storage.from(BUCKET);
+      // Update the existing stable object directly; use upload only for the first poster.
+      const {data:existing,error:listError}=await storage.list('poster',{limit:10});
+      if(listError) throw new Error('بررسی پوستر فعلی ناموفق بود: '+listError.message);
+      const exists=(existing||[]).some(item=>item.name==='series2-prize-poster');
+      const result=exists
+        ? await storage.update(POSTER_PATH,posterSelected,{contentType:posterSelected.type,cacheControl:'0'})
+        : await storage.upload(POSTER_PATH,posterSelected,{upsert:false,contentType:posterSelected.type,cacheControl:'0'});
+      if(result.error) throw new Error('ذخیره پوستر: '+result.error.message);
+      const freshUrl=storage.getPublicUrl(POSTER_PATH).data.publicUrl;
+      setPoster({name:'series2-prize-poster',url:freshUrl,updated_at:new Date().toISOString()});
       setPosterSelected(null);
-      await loadPoster();
-      setMessage('پوستر ثابت مسابقات با موفقیت ذخیره شد. در صفحه عمومی نمایش داده می‌شود.');
+      setMessage('پوستر جدید ذخیره شد. نسخه تازه برای نمایش عمومی آماده است.');
     } catch(e) { setMessage(e instanceof Error?e.message:'بارگذاری پوستر ناموفق بود.'); }
     finally { setPosterBusy(false); }
   }
