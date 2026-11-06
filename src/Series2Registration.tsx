@@ -18,6 +18,10 @@ export default function Series2Registration() {
   const [error, setError] = useState('');
   const [seedViewerOpen, setSeedViewerOpen] = useState(false);
   const [activeSeed, setActiveSeed] = useState(0);
+  const [activeStage, setActiveStage] = useState('groups');
+  const [stageViewerOpen, setStageViewerOpen] = useState(false);
+  const [progression, setProgression] = useState<any>(null);
+  const [progressionLoading, setProgressionLoading] = useState(true);
 
   const seeds = [0, 1, 2, 3].map((seedIndex) =>
     rows.slice(seedIndex * 8, seedIndex * 8 + 8).map((row, playerIndex) => ({
@@ -58,10 +62,10 @@ export default function Series2Registration() {
 
   useEffect(() => {
     if (!seedViewerOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setSeedViewerOpen(false); };
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') { setSeedViewerOpen(false); setStageViewerOpen(false); } };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [seedViewerOpen]);
+  }, [seedViewerOpen, stageViewerOpen]);
 
   return (
     <main className="s2leaderboard" dir="rtl">
@@ -128,6 +132,60 @@ export default function Series2Registration() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          <section className="s2progress-section" aria-labelledby="s2progress-title">
+            <div className="s2progress-heading">
+              <span className="s2eyebrow">TOURNAMENT ROADMAP</span>
+              <h2 id="s2progress-title">مسیر رقابت تا قهرمانی</h2>
+              <p>از مرحله گروهی تا فینال؛ نتایج ثبت‌شده برای همه قابل مشاهده خواهد بود.</p>
+            </div>
+            <div className="s2progress-grid">
+              <button type="button" className="s2progress-card" onClick={() => { setActiveStage('groups'); setStageViewerOpen(true); }}>
+                <span className="s2progress-number">۰۱</span><strong>قرعه‌کشی / مشاهده گروه‌ها</strong><small>۸ گروه · ۴ بازیکن در هر گروه</small>
+              </button>
+              <button type="button" className="s2progress-card" onClick={() => { setActiveStage('round16'); setStageViewerOpen(true); }}>
+                <span className="s2progress-number">۰۲</span><strong>مرحله یک‌هشتم نهایی</strong><small>۱۶ بازیکن · ۸ مسابقه</small>
+              </button>
+              <button type="button" className="s2progress-card" onClick={() => { setActiveStage('quarter'); setStageViewerOpen(true); }}>
+                <span className="s2progress-number">۰۳</span><strong>مرحله یک‌چهارم نهایی</strong><small>۸ بازیکن · ۴ مسابقه</small>
+              </button>
+              <button type="button" className="s2progress-card" onClick={() => { setActiveStage('semi'); setStageViewerOpen(true); }}>
+                <span className="s2progress-number">۰۴</span><strong>نیمه‌نهایی</strong><small>۴ بازیکن · ۲ مسابقه</small>
+              </button>
+              <button type="button" className="s2progress-card s2progress-card-final" onClick={() => { setActiveStage('final'); setStageViewerOpen(true); }}>
+                <span className="s2progress-number">۰۵</span><strong>فینال و رده‌بندی</strong><small>تعیین قهرمان و مقام سوم</small>
+              </button>
+            </div>
+          </section>
+          {stageViewerOpen && (
+            <div className="s2seed-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setStageViewerOpen(false); }}>
+              <section className="s2seed-dialog s2stage-dialog" role="dialog" aria-modal="true" aria-labelledby="s2stage-title">
+                <header className="s2seed-dialog-header">
+                  <div><span className="s2seed-eyebrow">SERIES 2 · TOURNAMENT</span><h2 id="s2stage-title">مسیر مسابقات سری دوم</h2><p>صعود دو نفر اول و دوم هر گروه؛ مجموعاً ۱۶ بازیکن</p></div>
+                  <button type="button" className="s2seed-close" onClick={() => setStageViewerOpen(false)} aria-label="بستن پنجره">×</button>
+                </header>
+                <nav className="s2stage-nav" aria-label="مراحل مسابقات">
+                  {[['groups','گروه‌ها'],['round16','یک‌هشتم'],['quarter','یک‌چهارم'],['semi','نیمه‌نهایی'],['final','فینال و رده‌بندی']].map(([key,label]) => (
+                    <button key={key} type="button" className={activeStage === key ? 'active' : ''} onClick={() => setActiveStage(key)}>{label}</button>
+                  ))}
+                </nav>
+                <div className="s2stage-content">
+                  {progressionLoading ? <p className="s2leaderboard-state">در حال دریافت اطلاعات مراحل مسابقات…</p> : !progression ? (
+                    <div className="s2stage-empty"><Trophy size={28}/><strong>قرعه‌کشی هنوز ثبت نشده است</strong><p>پس از انجام و تأیید قرعه‌کشی توسط مدیریت، گروه‌ها و جدول مسابقات در همین بخش نمایش داده می‌شوند.</p></div>
+                  ) : activeStage === 'groups' ? (
+                    <div className="s2groups-grid">
+                      {(progression.groups || []).map((group: any) => <article className="s2group-card" key={group.name}><h3>گروه {group.name}</h3><ol>{(group.players || []).map((player: any, index: number) => <li key={player.plato_id || player}><span>{fa(index + 1)}</span><b dir="ltr">{player.plato_id || player}</b></li>)}</ol></article>)}
+                    </div>
+                  ) : (
+                    <div className="s2bracket-list">
+                      {((progression.brackets || {})[activeStage] || []).length ? ((progression.brackets || {})[activeStage]).map((match: any, index: number) => <article className="s2match-card" key={match.id || index}><span>مسابقه {fa(index + 1)}</span><div><b dir="ltr">{match.player1 || 'صعودکننده'}</b><i>VS</i><b dir="ltr">{match.player2 || 'صعودکننده'}</b></div><small>{match.winner ? 'برنده: ' + match.winner : 'در انتظار ثبت نتیجه'}</small></article>) : <div className="s2stage-empty"><Trophy size={26}/><strong>این مرحله هنوز تکمیل نشده است</strong><p>پس از مشخص‌شدن صعودکنندگان و ثبت نتایج مرحله قبل، جدول این مرحله نمایش داده می‌شود.</p></div>}
+                    </div>
+                  )}
+                </div>
+                <footer className="s2seed-dialog-footer"><span>اطلاعات مسابقات از دیتابیس اصلی خوانده می‌شود.</span><button type="button" onClick={() => setStageViewerOpen(false)}>بستن</button></footer>
+              </section>
             </div>
           )}
           {seedViewerOpen && (
