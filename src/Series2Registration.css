@@ -281,3 +281,24 @@
 @media(min-width:480px){
   .s2leaderboard-shell .s2fixed-poster img{max-width:360px !important}
 }
+
+
+/* Fine-tune homepage Series 2 poster and series label proportions */
+.s2leaderboard-shell .s2fixed-poster img{
+  max-width:280px !important;
+}
+.s2brand-header .s2series-label{
+  padding:8px 16px !important;
+  font-size:16px !important;
+  line-height:1.55 !important;
+  gap:9px !important;
+}
+.s2brand-header .s2series-label svg{
+  width:17px !important;
+  height:17px !important;
+}
+@media(min-width:480px){
+  .s2leaderboard-shell .s2fixed-poster img{
+    max-width:320px !important;
+  }
+}
