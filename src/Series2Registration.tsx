@@ -165,11 +165,6 @@ export default function Series2Registration() {
                   <div><span className="s2seed-eyebrow">SERIES 2 · TOURNAMENT</span><h2 id="s2stage-title">مسیر مسابقات سری دوم</h2><p>رتبه‌بندی، سیدبندی، گروه‌ها و مراحل حذفی</p></div>
                   <button type="button" className="s2seed-close" onClick={() => setStageViewerOpen(false)} aria-label="بستن پنجره">×</button>
                 </header>
-                {fixedPosterUrl && (
-                  <div className="s2fixed-poster s2fixed-poster-dialog" aria-label="پوستر ثابت مسابقات سری دوم">
-                    <img src={fixedPosterUrl} alt="پوستر جوایز قهرمانی سری دوم PLATO LAND" />
-                  </div>
-                )}
                 <nav className="s2stage-nav" aria-label="مراحل مسابقات">
                   {[['ranking','رتبه‌بندی'],['seeds','سیدبندی'],['groups','گروه‌ها'],['round16','یک‌هشتم'],['quarter','یک‌چهارم'],['semi','نیمه‌نهایی'],['final','فینال و رده‌بندی']].map(([key,label]) => (
                     <button key={key} type="button" className={activeStage === key ? 'active' : ''} onClick={() => setActiveStage(key)}>{label}</button>
