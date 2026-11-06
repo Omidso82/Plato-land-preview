@@ -143,6 +143,7 @@ export default function Series2Registration() {
                 <div className="s2stage-content">
                   {activeStage === 'ranking' ? (
                     loading ? <p className="s2leaderboard-state">در حال دریافت جدول رتبه‌بندی…</p> : error ? <p className="s2leaderboard-error" role="alert">{error}</p> : (
+                      <>
                       <p className="s2leaderboard-note">
                         <span className="s2note-mark">i</span>
                         <span>این آمار بر اساس اطلاعات ثبت‌شده هنگام ثبت‌نام بازیکنان تهیه شده است. بازی‌ها و بردهای احتمالی پس از زمان ثبت‌نام در این جدول لحاظ نشده‌اند.</span>
@@ -151,6 +152,7 @@ export default function Series2Registration() {
                         <thead><tr><th className="s2col-rank">رتبه</th><th className="s2col-player">بازیکن</th><th className="s2col-games">بازی</th><th className="s2col-wins">برد</th><th className="s2col-rate">درصد برد</th></tr></thead>
                         <tbody>{rows.map((row,index)=><tr key={row.plato_id} className={index<3 ? `s2rank-row s2rank-row-${index+1}` : undefined}><td className="s2rank-number">{fa(index+1)}</td><td className="s2table-player" dir="ltr">{row.plato_id}</td><td>{row.games_played===null?'—':fa(row.games_played)}</td><td>{row.games_won===null?'—':fa(row.games_won)}</td><td className="s2table-rate">{row.win_rate===null?'—':percent(row.win_rate)}</td></tr>)}</tbody>
                       </table></div>
+                      </>
                     )
                   ) : activeStage === 'seeds' ? (
                     <div className="s2seed-panel" id="s2seed-panel">
