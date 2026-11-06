@@ -95,3 +95,38 @@
 .s2seed-table td:nth-child(2){font-size:13px}
 .s2seed-dialog-footer{font-size:11px}
 .s2seed-dialog-footer button{font-size:12px;padding:8px 16px}
+
+/* Series 2 progression navigation */
+.s2progress-section{margin:14px 0 2px;padding:13px 10px;border:1px solid #9b7c4380;border-radius:13px;background:linear-gradient(155deg,#1b1b1b,#111214 75%)}
+.s2progress-heading{text-align:center;margin-bottom:11px}
+.s2progress-heading h2{margin:4px 0;color:#f4e6c5;font-size:16px;font-weight:850}
+.s2progress-heading p{margin:0;color:#aaa18f;font-size:10px;line-height:1.8}
+.s2progress-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.s2progress-card{position:relative;min-height:75px;padding:10px 9px;text-align:right;border:1px solid #a9874b66;border-radius:10px;background:linear-gradient(140deg,#292319,#171719);color:#eee3ca;font:inherit;cursor:pointer}
+.s2progress-card strong{display:block;font-size:11px;color:#f0d99f}
+.s2progress-card small{display:block;margin-top:5px;font-size:9px;color:#a99e89}
+.s2progress-number{position:absolute;left:9px;top:8px;color:#a9874b;font:10px Georgia,serif}
+.s2progress-card-final{grid-column:1/-1;background:linear-gradient(110deg,#3a2d19,#211b12)}
+.s2stage-dialog{width:min(100%,650px)}
+.s2stage-nav{display:flex;gap:6px;padding:10px 12px;overflow-x:auto;border-bottom:1px solid #ffffff12}
+.s2stage-nav button{flex:1 0 auto;padding:9px 11px;border:1px solid #9b7c4355;border-radius:8px;background:#ffffff05;color:#c9bea8;font:inherit;font-size:11px;font-weight:750;white-space:nowrap;cursor:pointer}
+.s2stage-nav button.active{border-color:#d8b66d;background:linear-gradient(145deg,#44351e,#2a2114);color:#f5dfa8}
+.s2stage-content{flex:1;min-height:160px;overflow:auto;padding:12px}
+.s2stage-empty{min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;text-align:center;color:#c5a45d;padding:20px}
+.s2stage-empty strong{color:#f0d99f;font-size:14px}
+.s2stage-empty p{max-width:420px;margin:0;color:#aaa18f;font-size:11px;line-height:2}
+.s2groups-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.s2group-card{border:1px solid #a9874b55;border-radius:10px;background:#ffffff04;overflow:hidden}
+.s2group-card h3{margin:0;padding:9px;background:#302617;color:#f0d99f;font-size:13px}
+.s2group-card ol{list-style:none;margin:0;padding:5px 9px}
+.s2group-card li{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid #ffffff10;color:#e9e2d5;font-size:11px}
+.s2group-card li:last-child{border:0}
+.s2group-card li span{color:#c5a45d;font-weight:800}
+.s2group-card li b{direction:ltr;text-align:left}
+.s2bracket-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.s2match-card{padding:10px;border:1px solid #a9874b55;border-radius:10px;background:#ffffff04}
+.s2match-card>span{display:block;margin-bottom:8px;color:#c5a45d;font-size:10px}
+.s2match-card>div{display:flex;align-items:center;justify-content:space-between;gap:5px;color:#f0e6d2;font-size:10px}
+.s2match-card i{color:#b8954f;font:9px Georgia,serif}
+.s2match-card small{display:block;margin-top:8px;color:#a99e89;font-size:9px}
+@media(max-width:390px){.s2groups-grid,.s2bracket-list{grid-template-columns:1fr}.s2progress-card{min-height:70px}.s2progress-card strong{font-size:10px}}
