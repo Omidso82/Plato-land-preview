@@ -31,8 +31,8 @@ export default function Series2Registration() {
     <header className="s2reg-head"><div className="s2reg-crown">♛</div><div className="s2reg-brand">PLATO <b>LAND</b></div><div className="s2reg-tag">بازی، رقابت، قهرمانی</div></header>
     <section className="s2reg-panel">
       <div className="s2reg-kicker">PLATO LAND · BACKGAMMON</div>
-      <h1>ظرفیت ثبت‌نام تکمیل شد؛ ۳۲ نفر</h1>
-      <p className="s2reg-intro">ظرفیت ثبت‌نام سری دوم لیگ تخته‌نرد با ۳۲ بازیکن تکمیل شده است. امکان ثبت درخواست جدید وجود ندارد؛ می‌توانید همچنان ۱۸ اسلاید قوانین مسابقات را مرور کنید.</p>
+      <h1>ظرفیت ثبت‌نام لیگ سری دوم لیگ تخته‌نرد تکمیل شد (۳۲ نفر)</h1>
+      <p className="s2reg-intro">ظرفیت ثبت‌نام لیگ سری دوم لیگ تخته‌نرد تکمیل شد (۳۲ نفر). امکان ثبت درخواست جدید وجود ندارد؛ می‌توانید همچنان ۱۸ اسلاید قوانین مسابقات را مرور کنید.</p>
       <div className="s2reg-closed-notice" role="status">ثبت‌نام بسته شده است · ظرفیت نهایی: ۳۲ نفر</div>
       <div className="s2reg-progress"><span>مرور قوانین مسابقات</span><strong>{slide} از ۱۸</strong></div>
       <div className="s2reg-track"><span style={{width: ((slide/18)*100)+'%'}} /></div>
