@@ -16,7 +16,6 @@ export default function Series2Registration() {
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [seedViewerOpen, setSeedViewerOpen] = useState(false);
   const [activeSeed, setActiveSeed] = useState(0);
   const [activeStage, setActiveStage] = useState('groups');
   const [stageViewerOpen, setStageViewerOpen] = useState(false);
@@ -73,11 +72,11 @@ export default function Series2Registration() {
   }, []);
 
   useEffect(() => {
-    if (!seedViewerOpen && !stageViewerOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') { setSeedViewerOpen(false); setStageViewerOpen(false); } };
+    if (!stageViewerOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setStageViewerOpen(false); };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [seedViewerOpen, stageViewerOpen]);
+  }, [stageViewerOpen]);
 
   return (
     <main className="s2leaderboard" dir="rtl">
@@ -107,45 +106,17 @@ export default function Series2Registration() {
           </p>
 
           {!loading && !error && rows.length > 0 && (
-            <button type="button" className="s2seed-open-button" onClick={() => { setActiveSeed(0); setSeedViewerOpen(true); }} aria-haspopup="dialog" aria-expanded={seedViewerOpen}>
-              <Trophy size={15} />
-              <span>مشاهده سیدبندی</span>
-              <span className="s2seed-button-count">۳۲ بازیکن · ۴ سید</span>
-            </button>
-          )}
-
-          {loading ? (
-            <p className="s2leaderboard-state" role="status">در حال دریافت جدول رتبه‌بندی…</p>
-          ) : error ? (
-            <p className="s2leaderboard-error" role="alert">{error}</p>
-          ) : rows.length === 0 ? (
-            <p className="s2leaderboard-state">اطلاعاتی برای نمایش وجود ندارد.</p>
-          ) : (
-            <div className="s2table-wrap">
-              <table className="s2standings-table">
-                <thead>
-                  <tr>
-                    <th className="s2col-rank">رتبه</th>
-                    <th className="s2col-player">بازیکن</th>
-                    <th className="s2col-games">بازی</th>
-                    <th className="s2col-wins">برد</th>
-                    <th className="s2col-rate">درصد برد</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((row, index) => (
-                    <tr key={row.plato_id} className={index < 3 ? `s2rank-row s2rank-row-${index + 1}` : undefined}>
-                      <td className="s2rank-number">{fa(index + 1)}</td>
-                      <td className="s2table-player" dir="ltr">{row.plato_id}</td>
-                      <td>{row.games_played === null ? '—' : fa(row.games_played)}</td>
-                      <td>{row.games_won === null ? '—' : fa(row.games_won)}</td>
-                      <td className="s2table-rate">{row.win_rate === null ? '—' : percent(row.win_rate)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="s2primary-actions">
+              <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('ranking'); setStageViewerOpen(true); }} aria-haspopup="dialog">
+                <Trophy size={15} /><span>رتبه‌بندی بازیکنان بر اساس میانگین برد</span>
+              </button>
+              <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('seeds'); setActiveSeed(0); setStageViewerOpen(true); }} aria-haspopup="dialog">
+                <Trophy size={15} /><span>مشاهده سیدبندی</span><span className="s2seed-button-count">۳۲ بازیکن · ۴ سید</span>
+              </button>
             </div>
           )}
+
+
 
           <section className="s2progress-section" aria-labelledby="s2progress-title">
             <div className="s2progress-heading">
@@ -175,50 +146,51 @@ export default function Series2Registration() {
             <div className="s2seed-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setStageViewerOpen(false); }}>
               <section className="s2seed-dialog s2stage-dialog" role="dialog" aria-modal="true" aria-labelledby="s2stage-title">
                 <header className="s2seed-dialog-header">
-                  <div><span className="s2seed-eyebrow">SERIES 2 · TOURNAMENT</span><h2 id="s2stage-title">مسیر مسابقات سری دوم</h2><p>صعود دو نفر اول و دوم هر گروه؛ مجموعاً ۱۶ بازیکن</p></div>
+                  <div><span className="s2seed-eyebrow">SERIES 2 · TOURNAMENT</span><h2 id="s2stage-title">مسیر مسابقات سری دوم</h2><p>رتبه‌بندی، سیدبندی، گروه‌ها و مراحل حذفی</p></div>
                   <button type="button" className="s2seed-close" onClick={() => setStageViewerOpen(false)} aria-label="بستن پنجره">×</button>
                 </header>
                 <nav className="s2stage-nav" aria-label="مراحل مسابقات">
-                  {[['groups','گروه‌ها'],['round16','یک‌هشتم'],['quarter','یک‌چهارم'],['semi','نیمه‌نهایی'],['final','فینال و رده‌بندی']].map(([key,label]) => (
+                  {[['ranking','رتبه‌بندی'],['seeds','سیدبندی'],['groups','گروه‌ها'],['round16','یک‌هشتم'],['quarter','یک‌چهارم'],['semi','نیمه‌نهایی'],['final','فینال و رده‌بندی']].map(([key,label]) => (
                     <button key={key} type="button" className={activeStage === key ? 'active' : ''} onClick={() => setActiveStage(key)}>{label}</button>
                   ))}
                 </nav>
                 <div className="s2stage-content">
-                  {progressionLoading ? <p className="s2leaderboard-state">در حال دریافت اطلاعات مراحل مسابقات…</p> : !progression ? (
+                  {activeStage === 'ranking' ? (
+                    loading ? <p className="s2leaderboard-state">در حال دریافت جدول رتبه‌بندی…</p> : error ? <p className="s2leaderboard-error" role="alert">{error}</p> : (
+                      <div className="s2table-wrap"><table className="s2standings-table">
+                        <thead><tr><th className="s2col-rank">رتبه</th><th className="s2col-player">بازیکن</th><th className="s2col-games">بازی</th><th className="s2col-wins">برد</th><th className="s2col-rate">درصد برد</th></tr></thead>
+                        <tbody>{rows.map((row,index)=><tr key={row.plato_id} className={index<3 ? `s2rank-row s2rank-row-${index+1}` : undefined}><td className="s2rank-number">{fa(index+1)}</td><td className="s2table-player" dir="ltr">{row.plato_id}</td><td>{row.games_played===null?'—':fa(row.games_played)}</td><td>{row.games_won===null?'—':fa(row.games_won)}</td><td className="s2table-rate">{row.win_rate===null?'—':percent(row.win_rate)}</td></tr>)}</tbody>
+                      </table></div>
+                    )
+                  ) : activeStage === 'seeds' ? (
+                    <div className="s2seed-panel" id="s2seed-panel">
+                      <div className="s2seed-tabs" role="tablist" aria-label="انتخاب سید">
+                        {seeds.map((seed,index)=><button key={index} type="button" role="tab" aria-selected={activeSeed===index} className={activeSeed===index?'active':''} onClick={()=>setActiveSeed(index)}>سید {fa(index+1)}<small>{fa(seed.length)} نفر</small></button>)}
+                      </div>
+                      <div className="s2seed-panel-heading"><strong>سید {fa(activeSeed+1)}</strong><span>رتبه‌های {fa(activeSeed*8+1)} تا {fa(activeSeed*8+8)}</span></div>
+                      <div className="s2seed-table-wrap"><table className="s2seed-table"><thead><tr><th>رتبه</th><th>شناسه بازیکن</th><th>درصد برد</th></tr></thead><tbody>
+                        {seeds[activeSeed].map(player=><tr key={player.plato_id}><td>{fa(player.rank)}</td><td dir="ltr">{player.plato_id}</td><td>{player.win_rate===null?'—':percent(player.win_rate)}</td></tr>)}
+                      </tbody></table></div>
+                    </div>
+                  ) : progressionLoading ? <p className="s2leaderboard-state">در حال دریافت اطلاعات مراحل مسابقات…</p> : !progression ? (
                     <div className="s2stage-empty"><Trophy size={28}/><strong>قرعه‌کشی هنوز ثبت نشده است</strong><p>پس از انجام و تأیید قرعه‌کشی توسط مدیریت، گروه‌ها و جدول مسابقات در همین بخش نمایش داده می‌شوند.</p></div>
                   ) : activeStage === 'groups' ? (
-                    <div className="s2groups-grid">
-                      {(progression.groups || []).map((group: any) => <article className="s2group-card" key={group.name}><h3>گروه {group.name}</h3><ol>{(group.players || []).map((player: any, index: number) => <li key={player.plato_id || player}><span>{fa(index + 1)}</span><b dir="ltr">{player.plato_id || player}</b></li>)}</ol></article>)}
-                    </div>
+                    <>
+                      <div className="s2groups-grid">
+                        {(progression.groups || []).map((group: any) => <article className="s2group-card" key={group.name}><h3>گروه {group.name}</h3><ol>{(group.players || []).map((player: any) => <li key={player.plato_id}><span>سید {fa(player.seed)}</span><b dir="ltr">{player.plato_id}</b></li>)}</ol></article>)}
+                      </div>
+                      <section className="s2fixture-section">
+                        <h3>برنامه بازی‌های گروهی</h3>
+                        {[['saturday','شنبه · روز اول'],['sunday','یکشنبه · روز دوم'],['monday','دوشنبه · روز سوم']].map(([day,label])=><div className="s2fixture-day" key={day}><h4>{label}</h4><div className="s2bracket-list">{(progression.group_fixtures||[]).filter((m:any)=>m.day===day).map((m:any)=><article className="s2match-card" key={m.id}><span>گروه {m.group}</span><div><b dir="ltr">{m.player1}</b><i>VS</i><b dir="ltr">{m.player2}</b></div><small>در انتظار ثبت نتیجه</small></article>)}</div></div>)}
+                      </section>
+                    </>
                   ) : (
                     <div className="s2bracket-list">
-                      {((progression.brackets || {})[activeStage] || []).length ? ((progression.brackets || {})[activeStage]).map((match: any, index: number) => <article className="s2match-card" key={match.id || index}><span>مسابقه {fa(index + 1)}</span><div><b dir="ltr">{match.player1 || 'صعودکننده'}</b><i>VS</i><b dir="ltr">{match.player2 || 'صعودکننده'}</b></div><small>{match.winner ? 'برنده: ' + match.winner : 'در انتظار ثبت نتیجه'}</small></article>) : <div className="s2stage-empty"><Trophy size={26}/><strong>این مرحله هنوز تکمیل نشده است</strong><p>پس از مشخص‌شدن صعودکنندگان و ثبت نتایج مرحله قبل، جدول این مرحله نمایش داده می‌شود.</p></div>}
+                      {(() => { const rounds = activeStage === 'final' ? [...((progression.brackets||{}).final||[]), ...((progression.brackets||{}).third_place||[])] : ((progression.brackets||{})[activeStage]||[]); return rounds.length ? rounds.map((match:any,index:number)=><article className="s2match-card" key={match.id||index}><span>{match.id==='TP-1'?'مسابقه رده‌بندی':match.id==='F-1'?'فینال':'مسابقه '+fa(index+1)}</span><div><b dir="ltr">{match.player1||'صعودکننده'}</b><i>VS</i><b dir="ltr">{match.player2||'صعودکننده'}</b></div><small>{match.winner?'برنده: '+match.winner:'در انتظار ثبت نتیجه'}</small></article>) : <div className="s2stage-empty"><Trophy size={26}/><strong>این مرحله هنوز تکمیل نشده است</strong><p>پس از مشخص‌شدن صعودکنندگان و ثبت نتایج مرحله قبل، جدول این مرحله نمایش داده می‌شود.</p></div>; })()}
                     </div>
                   )}
                 </div>
                 <footer className="s2seed-dialog-footer"><span>اطلاعات مسابقات از دیتابیس اصلی خوانده می‌شود.</span><button type="button" onClick={() => setStageViewerOpen(false)}>بستن</button></footer>
-              </section>
-            </div>
-          )}
-          {seedViewerOpen && (
-            <div className="s2seed-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setSeedViewerOpen(false); }}>
-              <section className="s2seed-dialog" role="dialog" aria-modal="true" aria-labelledby="s2seed-title">
-                <header className="s2seed-dialog-header">
-                  <div><span className="s2seed-eyebrow">SERIES 2 · PLAYER SEEDING</span><h2 id="s2seed-title">سیدبندی بازیکنان</h2><p>۳۲ بازیکن بر اساس رتبهٔ جدول، در چهار سید ۸ نفره</p></div>
-                  <button type="button" className="s2seed-close" onClick={() => setSeedViewerOpen(false)} aria-label="بستن پنجره">×</button>
-                </header>
-                <div className="s2seed-tabs" role="tablist" aria-label="انتخاب سید">
-                  {seeds.map((seed, index) => (
-                    <button key={index} type="button" role="tab" id={'s2seed-tab-' + index} aria-selected={activeSeed === index} aria-controls="s2seed-panel" className={activeSeed === index ? 'active' : ''} onClick={() => setActiveSeed(index)}>سید {fa(index + 1)}<small>{fa(seed.length)} نفر</small></button>
-                  ))}
-                </div>
-                <div className="s2seed-panel" id="s2seed-panel" role="tabpanel" aria-labelledby={'s2seed-tab-' + activeSeed}>
-                  <div className="s2seed-panel-heading"><strong>سید {fa(activeSeed + 1)}</strong><span>رتبه‌های {fa(activeSeed * 8 + 1)} تا {fa(activeSeed * 8 + 8)}</span></div>
-                  <div className="s2seed-table-wrap"><table className="s2seed-table"><thead><tr><th>رتبه</th><th>شناسه بازیکن</th><th>درصد برد</th></tr></thead><tbody>
-                    {seeds[activeSeed].map((player) => <tr key={player.plato_id}><td>{fa(player.rank)}</td><td dir="ltr">{player.plato_id}</td><td>{player.win_rate === null ? '—' : percent(player.win_rate)}</td></tr>)}
-                  </tbody></table></div>
-                </div>
-                <footer className="s2seed-dialog-footer"><span>مبنای سیدبندی: درصد برد ثبت‌شده</span><button type="button" onClick={() => setSeedViewerOpen(false)}>بستن</button></footer>
               </section>
             </div>
           )}
