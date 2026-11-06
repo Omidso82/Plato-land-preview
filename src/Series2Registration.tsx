@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Crown, Trophy, Sparkles } from 'lucide-react';
+import { supabase } from './supabase';
 
 type LeaderboardRow = {
   plato_id: string;
@@ -21,6 +22,7 @@ export default function Series2Registration() {
   const [stageViewerOpen, setStageViewerOpen] = useState(false);
   const [progression, setProgression] = useState<any>(null);
   const [progressionLoading, setProgressionLoading] = useState(true);
+  const [fixedPosterUrl, setFixedPosterUrl] = useState('');
 
   const seeds = [0, 1, 2, 3].map((seedIndex) =>
     rows.slice(seedIndex * 8, seedIndex * 8 + 8).map((row, playerIndex) => ({
@@ -72,6 +74,29 @@ export default function Series2Registration() {
   }, []);
 
   useEffect(() => {
+    let active = true;
+    const loadPoster = async () => {
+      if (!supabase) return;
+      const { data, error } = await supabase.storage.from('series2-slides').list('poster', { limit: 10 });
+      if (error) {
+        console.warn('Series 2 fixed poster could not be loaded:', error);
+        return;
+      }
+      const poster = (data || []).find((item) => item.name === 'series2-prize-poster');
+      if (!active) return;
+      if (!poster) {
+        setFixedPosterUrl('');
+        return;
+      }
+      const publicUrl = supabase.storage.from('series2-slides').getPublicUrl('poster/series2-prize-poster').data.publicUrl;
+      const version = poster.updated_at || poster.created_at || 'current';
+      setFixedPosterUrl(publicUrl + '?v=' + encodeURIComponent(version));
+    };
+    void loadPoster();
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
     if (!stageViewerOpen) return;
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setStageViewerOpen(false); };
     window.addEventListener('keydown', onKeyDown);
@@ -88,6 +113,12 @@ export default function Series2Registration() {
           <div className="s2brand-rule"><i /><span>✦</span><i /></div>
           <div className="s2series-label"><Sparkles size={13} /> لیگ تخته‌نرد · سری دوم</div>
         </header>
+
+        {fixedPosterUrl && (
+          <section className="s2fixed-poster" aria-label="پوستر ثابت مسابقات سری دوم">
+            <img src={fixedPosterUrl} alt="پوستر جوایز قهرمانی سری دوم PLATO LAND" />
+          </section>
+        )}
 
         <section className="s2leaderboard-panel">
 
@@ -135,6 +166,11 @@ export default function Series2Registration() {
                   <div><span className="s2seed-eyebrow">SERIES 2 · TOURNAMENT</span><h2 id="s2stage-title">مسیر مسابقات سری دوم</h2><p>رتبه‌بندی، سیدبندی، گروه‌ها و مراحل حذفی</p></div>
                   <button type="button" className="s2seed-close" onClick={() => setStageViewerOpen(false)} aria-label="بستن پنجره">×</button>
                 </header>
+                {fixedPosterUrl && (
+                  <div className="s2fixed-poster s2fixed-poster-dialog" aria-label="پوستر ثابت مسابقات سری دوم">
+                    <img src={fixedPosterUrl} alt="پوستر جوایز قهرمانی سری دوم PLATO LAND" />
+                  </div>
+                )}
                 <nav className="s2stage-nav" aria-label="مراحل مسابقات">
                   {[['ranking','رتبه‌بندی'],['seeds','سیدبندی'],['groups','گروه‌ها'],['round16','یک‌هشتم'],['quarter','یک‌چهارم'],['semi','نیمه‌نهایی'],['final','فینال و رده‌بندی']].map(([key,label]) => (
                     <button key={key} type="button" className={activeStage === key ? 'active' : ''} onClick={() => setActiveStage(key)}>{label}</button>

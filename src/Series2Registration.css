@@ -189,3 +189,40 @@
  .s2match-card>div{font-size:10px}
  .s2progress-card strong{font-size:11px}
 }
+
+/* Independent fixed prize poster for Series 2 — separate from the 18 rotating rule slides */
+.s2fixed-poster{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  width:100%;
+  margin:12px auto 16px;
+  padding:8px;
+  border:1px solid #9b7c4380;
+  border-radius:13px;
+  background:linear-gradient(145deg,#1b1915,#101113);
+  box-shadow:0 8px 24px #0005;
+}
+.s2fixed-poster img{
+  display:block;
+  width:auto;
+  max-width:100%;
+  max-height:190px;
+  height:auto;
+  object-fit:contain;
+  border-radius:8px;
+}
+.s2fixed-poster-dialog{
+  flex:0 0 auto;
+  margin:0 12px 4px;
+  width:calc(100% - 24px);
+  max-height:156px;
+  padding:5px;
+}
+.s2fixed-poster-dialog img{max-height:144px}
+@media(max-width:390px){
+  .s2fixed-poster{margin:10px auto 13px;padding:6px}
+  .s2fixed-poster img{max-height:170px}
+  .s2fixed-poster-dialog{max-height:132px}
+  .s2fixed-poster-dialog img{max-height:120px}
+}

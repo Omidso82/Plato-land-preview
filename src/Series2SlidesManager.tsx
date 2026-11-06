@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 import Series2RegistrationReport from './Series2RegistrationReport';
 
 const BUCKET = 'series2-slides';
+const POSTER_PATH = 'poster/series2-prize-poster';
 type SlideFile = { name: string; url: string; updated_at?: string };
 
 export default function Series2SlidesManager() {
@@ -12,6 +13,9 @@ export default function Series2SlidesManager() {
   const [checking,setChecking] = useState(true);
   const [owner,setOwner] = useState(false);
   const [files,setFiles] = useState<SlideFile[]>([]);
+  const [poster,setPoster] = useState<SlideFile|null>(null);
+  const [posterSelected,setPosterSelected] = useState<File|null>(null);
+  const [posterBusy,setPosterBusy] = useState(false);
   const [selected,setSelected] = useState<Record<number,File>>({});
   const [busySlot,setBusySlot] = useState<number|null>(null);
   const [busy,setBusy] = useState(false);
@@ -27,7 +31,7 @@ export default function Series2SlidesManager() {
     const allowed = !error && data?.role === 'owner';
     setOwner(allowed);
     setChecking(false);
-    if (allowed) await loadSlides();
+    if (allowed) { await loadSlides(); await loadPoster(); }
     else setMessage('این بخش فقط برای حساب مالک کل فعال است.');
   }
 
@@ -37,6 +41,18 @@ export default function Series2SlidesManager() {
     if (error) { setMessage('خواندن فهرست تصاویر ناموفق بود: '+error.message); return; }
     const rows = (data||[]).filter(x => /^(\d{2})(\.(jpe?g|png|webp))?$/i.test(x.name));
     setFiles(rows.map(x => ({name:x.name,url:supabase.storage.from(BUCKET).getPublicUrl('slides/'+x.name).data.publicUrl,updated_at:x.updated_at})));
+  }
+
+  async function loadPoster() {
+    if (!supabase) return;
+    const {data,error} = await supabase.storage.from(BUCKET).list('poster',{limit:10});
+    if (error) { setMessage('خواندن پوستر ثابت ناموفق بود: '+error.message); return; }
+    const item = (data||[]).find(x => x.name === 'series2-prize-poster');
+    setPoster(item ? {
+      name:item.name,
+      url:supabase.storage.from(BUCKET).getPublicUrl(POSTER_PATH).data.publicUrl,
+      updated_at:item.updated_at
+    } : null);
   }
 
   useEffect(() => { void verifyOwner(); }, []);
@@ -79,6 +95,25 @@ export default function Series2SlidesManager() {
     finally { setBusySlot(null); }
   }
 
+  async function uploadPoster() {
+    if (!supabase || !posterSelected) { setMessage('ابتدا تصویر پوستر ثابت را انتخاب کن.'); return; }
+    if (!/^image\/(jpeg|png|webp)$/.test(posterSelected.type) || posterSelected.size>10*1024*1024) {
+      setMessage('فرمت پوستر باید JPG، PNG یا WEBP و حجم آن حداکثر ۱۰ مگابایت باشد.');
+      return;
+    }
+    setPosterBusy(true); setMessage('در حال ذخیره پوستر ثابت مسابقات…');
+    try {
+      const {error}=await supabase.storage.from(BUCKET).upload(POSTER_PATH,posterSelected,{
+        upsert:true,contentType:posterSelected.type,cacheControl:'0'
+      });
+      if(error) throw new Error('ذخیره پوستر: '+error.message);
+      setPosterSelected(null);
+      await loadPoster();
+      setMessage('پوستر ثابت مسابقات با موفقیت ذخیره شد. در صفحه عمومی نمایش داده می‌شود.');
+    } catch(e) { setMessage(e instanceof Error?e.message:'بارگذاری پوستر ناموفق بود.'); }
+    finally { setPosterBusy(false); }
+  }
+
   async function signOut() { await supabase?.auth.signOut(); setSignedIn(false); setOwner(false); setFiles([]); }
 
   if (checking) return <main dir="rtl" style={shell}><section style={panel}>در حال بررسی دسترسی مالک…</section></main>;
@@ -98,6 +133,21 @@ export default function Series2SlidesManager() {
       <div><h1 style={heading}>مدیریت خصوصی اسلایدهای سری دوم</h1><p style={muted}>هر جایگاه مستقل است؛ تصویر انتخابی فقط در همان شماره ذخیره می‌شود. ترتیب انتخاب فایل‌ها هیچ اثری ندارد.</p></div>
       <button style={secondary} onClick={signOut}>خروج از پنل</button>
     </div>
+    <section style={{marginTop:20,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
+      <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}>
+        <div><h2 style={{color:'#f6e8c5',fontSize:19,margin:'0 0 6px'}}>پوستر ثابت مسابقات</h2><p style={muted}>این تصویر مستقل از ۱۸ اسلاید است و همیشه زیر لوگوی PLATO LAND و بالای بخش‌های مسابقات نمایش داده می‌شود.</p></div>
+        <span style={{color:poster?'#e4c77e':'#a9a08e',fontSize:12}}>{poster?'پوستر ثبت‌شده':'هنوز پوستری بارگذاری نشده'}</span>
+      </div>
+      {poster?<img src={poster.url+'?v='+(poster.updated_at||'current')} alt="پیش‌نمایش پوستر ثابت مسابقات" style={{display:'block',maxWidth:'100%',maxHeight:220,objectFit:'contain',margin:'12px auto',borderRadius:9,background:'#090a0c'}}/>:<div style={{minHeight:90,display:'grid',placeItems:'center',color:'#8e8778',background:'#090a0c',borderRadius:9,marginTop:12}}>پیش‌نمایش پوستر پس از بارگذاری نمایش داده می‌شود</div>}
+      <label style={{...muted,display:'block',marginTop:12}}>انتخاب پوستر ثابت مسابقات (JPG، PNG یا WEBP)
+        <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setPosterSelected(e.target.files?.[0]||null)} style={{...field,padding:8,fontSize:12}}/>
+      </label>
+      {posterSelected&&<p style={{...muted,margin:'6px 0'}}>فایل انتخاب‌شده: {posterSelected.name}</p>}
+      <button style={{...primary,width:'100%',marginTop:8}} disabled={posterBusy||!posterSelected} onClick={()=>void uploadPoster()}>
+        {posterBusy?'در حال ذخیره…':poster?'جایگزینی پوستر ثابت':'ذخیره پوستر ثابت'}
+      </button>
+      <small style={{display:'block',color:'#a9a08e',marginTop:7}}>جایگاه ذخیره‌سازی مستقل؛ بدون تغییر در اسلایدهای ۱ تا ۱۸ · حداکثر ۱۰ مگابایت</small>
+    </section>
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12,marginTop:20}}>
       {Array.from({length:18},(_,i)=>{
         const number=i+1,key=String(number).padStart(2,'0');
