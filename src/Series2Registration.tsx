@@ -89,16 +89,7 @@ export default function Series2Registration() {
           <div className="s2series-label"><Sparkles size={13} /> لیگ تخته‌نرد · سری دوم</div>
         </header>
 
-        <section className="s2leaderboard-panel" aria-labelledby="s2leaderboard-title">
-          <div className="s2leaderboard-heading">
-            <div className="s2heading-icon"><Trophy size={20} /></div>
-            <div className="s2heading-copy">
-              <span className="s2eyebrow">PLAYER STANDINGS</span>
-              <h1 id="s2leaderboard-title">جدول رتبه‌بندی بازیکنان</h1>
-              <p className="s2heading-subtitle">مرتب‌شده بر اساس درصد برد</p>
-            </div>
-            <div className="s2player-count"><strong>{fa(rows.length || 32)}</strong><span>بازیکن</span></div>
-          </div>
+        <section className="s2leaderboard-panel">
 
           <p className="s2leaderboard-note">
             <span className="s2note-mark">i</span>
