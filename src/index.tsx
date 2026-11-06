@@ -5,6 +5,7 @@ import PredictionOwnerPanel from './PredictionOwnerPanel';
 import Series2Registration from './Series2Registration';
 import Series2SlidesManager from './Series2SlidesManager';
 import './styles.css';
+import './Series2Registration.css';
 
 const root=createRoot(document.getElementById('root')!);
 const path=window.location.pathname.replace(/\/+$/,'') || '/';
