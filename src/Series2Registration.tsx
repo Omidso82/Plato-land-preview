@@ -122,17 +122,6 @@ export default function Series2Registration() {
 
         <section className="s2leaderboard-panel">
 
-          {!loading && !error && rows.length > 0 && (
-            <div className="s2primary-actions">
-              <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('ranking'); setStageViewerOpen(true); }} aria-haspopup="dialog">
-                <Trophy size={15} /><span>رتبه‌بندی بازیکنان بر اساس میانگین برد</span>
-              </button>
-              <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('seeds'); setActiveSeed(0); setStageViewerOpen(true); }} aria-haspopup="dialog">
-                <Trophy size={15} /><span>مشاهده سیدبندی</span><span className="s2seed-button-count">۳۲ بازیکن · ۴ سید</span>
-              </button>
-            </div>
-          )}
-
 
 
           <section className="s2progress-section" aria-labelledby="s2progress-title">
@@ -141,6 +130,16 @@ export default function Series2Registration() {
               <h2 id="s2progress-title">مسیر رقابت تا قهرمانی</h2>
               <p>از مرحله گروهی تا فینال؛ نتایج ثبت‌شده برای همه قابل مشاهده خواهد بود.</p>
             </div>
+            {!loading && !error && rows.length > 0 && (
+              <div className="s2primary-actions">
+                <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('ranking'); setStageViewerOpen(true); }} aria-haspopup="dialog">
+                  <Trophy size={15} /><span>رتبه‌بندی بازیکنان بر اساس میانگین برد</span>
+                </button>
+                <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('seeds'); setActiveSeed(0); setStageViewerOpen(true); }} aria-haspopup="dialog">
+                  <Trophy size={15} /><span>مشاهده سیدبندی</span><span className="s2seed-button-count">۳۲ بازیکن · ۴ سید</span>
+                </button>
+              </div>
+            )}
             <div className="s2progress-grid">
               <button type="button" className="s2progress-card" onClick={() => { setActiveStage('groups'); setStageViewerOpen(true); }}>
                 <span className="s2progress-number">۰۱</span><strong>قرعه‌کشی / مشاهده گروه‌ها</strong><small>۸ گروه · ۴ بازیکن در هر گروه</small>
