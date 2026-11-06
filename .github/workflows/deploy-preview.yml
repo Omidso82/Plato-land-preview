@@ -49,6 +49,7 @@ jobs:
 
   deploy:
     if: github.ref == 'refs/heads/main'
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
