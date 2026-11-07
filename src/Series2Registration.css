@@ -340,3 +340,8 @@
 .s2primary-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
 .s2primary-actions .s2seed-open-button{min-width:0}
 @media(max-width:390px){.s2primary-actions{grid-template-columns:1fr}}
+
+/* Expanded columns: show both sides of the set-difference calculation */
+.s2group-standings-table{min-width:650px}
+.s2group-standings-table th{white-space:nowrap}
+.s2group-standings-table td{white-space:nowrap}

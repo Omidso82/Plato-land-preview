@@ -30,18 +30,28 @@ const buildGroupStandings = (group: any, allFixtures: any[]): GroupStandingRow[]
   }]));
   const groupFixtures = (allFixtures || []).filter((match: any) => String(match.group) === String(group?.name));
 
+  const getValidCompletedResult = (match: any) => {
+    if (!match?.winner || match.score1 === null || match.score1 === undefined || match.score2 === null || match.score2 === undefined) return null;
+    const score1 = Number(match.score1);
+    const score2 = Number(match.score2);
+    if (!Number.isInteger(score1) || !Number.isInteger(score2)) return null;
+    if (![String(match.player1), String(match.player2)].includes(String(match.winner))) return null;
+    return { score1, score2, winner: String(match.winner) };
+  };
+
   groupFixtures.forEach((match: any) => {
-    if (!match.winner || !Number.isInteger(match.score1) || !Number.isInteger(match.score2)) return;
+    const result = getValidCompletedResult(match);
+    if (!result) return;
     const first = rows.get(String(match.player1));
     const second = rows.get(String(match.player2));
     if (!first || !second || ![match.player1, match.player2].includes(match.winner)) return;
     first.games_played += 1;
     second.games_played += 1;
-    first.sets_won += match.score1;
-    first.sets_lost += match.score2;
-    second.sets_won += match.score2;
-    second.sets_lost += match.score1;
-    if (match.winner === first.plato_id) {
+    first.sets_won += result.score1;
+    first.sets_lost += result.score2;
+    second.sets_won += result.score2;
+    second.sets_lost += result.score1;
+    if (result.winner === first.plato_id) {
       first.games_won += 1;
       first.points += 3;
       second.games_lost += 1;
@@ -75,14 +85,14 @@ const buildGroupStandings = (group: any, allFixtures: any[]): GroupStandingRow[]
       const directMatch = groupFixtures.find((match: any) =>
         ((match.player1 === first.plato_id && match.player2 === second.plato_id) ||
          (match.player1 === second.plato_id && match.player2 === first.plato_id)) &&
-        match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2));
+        getValidCompletedResult(match));
       if (directMatch?.winner === second.plato_id) tied.reverse();
     }
     ordered.splice(index, tied.length, ...tied);
     const headToHeadResolved = tied.length === 2 && groupFixtures.some((match: any) =>
       ((match.player1 === tied[0].plato_id && match.player2 === tied[1].plato_id) ||
        (match.player1 === tied[1].plato_id && match.player2 === tied[0].plato_id)) &&
-      match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2));
+      getValidCompletedResult(match));
     tied.forEach((row, offset) => { row.rank = headToHeadResolved ? nextRank + offset : nextRank; });
     nextRank += tied.length;
     index = end;
@@ -124,12 +134,15 @@ export default function Series2Registration() {
       ? player.rank === 1 || (player.rank === 2 && secondPlaceCount === 1)
       : false;
   const selectedGroupFixtures = (progression?.group_fixtures || []).filter((match: any) => String(match.group) === String(selectedStandingGroup?.name));
-  const selectedGroupCompletedMatches = selectedGroupFixtures.filter((match: any) =>
-    match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2),
-  ).length;
-  const completedGroupMatches = (progression?.group_fixtures || []).filter((match: any) =>
-    match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2),
-  ).length;
+  const isCompletedGroupMatch = (match: any) => {
+    if (!match?.winner || match.score1 === null || match.score1 === undefined || match.score2 === null || match.score2 === undefined) return false;
+    const score1 = Number(match.score1);
+    const score2 = Number(match.score2);
+    return Number.isInteger(score1) && Number.isInteger(score2) &&
+      [String(match.player1), String(match.player2)].includes(String(match.winner));
+  };
+  const selectedGroupCompletedMatches = selectedGroupFixtures.filter(isCompletedGroupMatch).length;
+  const completedGroupMatches = (progression?.group_fixtures || []).filter(isCompletedGroupMatch).length;
 
   useEffect(() => {
     let active = true;
@@ -332,16 +345,17 @@ export default function Series2Registration() {
                         <p className="s2standings-rules">هر برد ۳ امتیاز دارد. ترتیب رتبه‌بندی: امتیاز، تفاضل ست‌ها، ست‌های برده و در نهایت نتیجه بازی رودررو.</p>
                         <div className="s2table-wrap s2group-standings-wrap">
                           <table className="s2standings-table s2group-standings-table">
-                            <thead><tr><th>رتبه</th><th>بازیکن</th><th>بازی</th><th>برد</th><th>امتیاز</th><th>تفاضل ست</th><th>ست برده</th></tr></thead>
-                            <tbody>{groupStandings.map((player) => (
+                            <thead><tr><th>ردیف</th><th>بازیکن</th><th>بازی انجام‌شده</th><th>برد</th><th>امتیاز</th><th>ست برده</th><th>ست باخته</th><th>تفاضل ست</th></tr></thead>
+                            <tbody>{groupStandings.map((player, index) => (
                               <tr key={player.plato_id} className={isConfirmedQualifier(player) ? 's2qualifier-row' : undefined}>
-                                <td className="s2rank-number">{fa(player.rank)}</td>
+                                <td className="s2rank-number">{fa(index + 1)}</td>
                                 <td className="s2table-player" dir="ltr">{player.plato_id}</td>
                                 <td>{fa(player.games_played)}</td>
                                 <td>{fa(player.games_won)}</td>
                                 <td className="s2table-rate">{fa(player.points)}</td>
-                                <td>{player.set_difference > 0 ? '+' : ''}{fa(player.set_difference)}</td>
                                 <td>{fa(player.sets_won)}</td>
+                                <td>{fa(player.sets_lost)}</td>
+                                <td>{player.set_difference > 0 ? '+' : ''}{fa(player.set_difference)}</td>
                               </tr>
                             ))}</tbody>
                           </table>
