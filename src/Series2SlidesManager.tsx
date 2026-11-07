@@ -127,7 +127,7 @@ export default function Series2SlidesManager() {
 
   if (checking) return <main dir="rtl" style={shell}><section style={panel}>در حال بررسی دسترسی مالک…</section></main>;
   if (!signedIn) return <main dir="rtl" style={shell}><section style={panel}>
-    <h1 style={heading}>ورود مالک · مدیریت تصاویر سری دوم</h1>
+    <h1 style={heading}>ورود مالک · پنل مدیریت موقت سری دوم</h1>
     <p style={muted}>این مسیر عمومی نیست و فقط حساب مالک اجازه بارگذاری تصاویر را دارد.</p>
     <form onSubmit={login} style={{display:'grid',gap:12}}>
       <label style={muted}>ایمیل حساب مالک<input style={field} type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
