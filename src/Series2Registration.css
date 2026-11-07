@@ -345,3 +345,11 @@
 .s2group-standings-table{min-width:650px}
 .s2group-standings-table th{white-space:nowrap}
 .s2group-standings-table td{white-space:nowrap}
+
+/* Inline match scores: keep each score visually attached to its Plato ID. */
+.s2match-card .s2match-scoreline{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
+.s2match-card .s2match-player{display:flex;flex:1;min-width:0;align-items:center;justify-content:center;gap:7px;direction:ltr}
+.s2match-card .s2match-player b{overflow-wrap:anywhere;text-align:center}
+.s2match-card .s2match-player strong{display:inline-grid;place-items:center;min-width:27px;height:27px;padding:0 5px;border:1px solid #c5a45d;border-radius:7px;background:#c5a45d18;color:#f2d48c;font-size:14px;line-height:1}
+.s2match-card .s2match-player.is-winner strong{background:linear-gradient(135deg,#a98239,#e4c77e);color:#17130b;border-color:#e4c77e}
+.s2match-card .s2match-winner{color:#e4c77e;font-weight:700}
