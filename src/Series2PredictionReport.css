@@ -1,0 +1,26 @@
+.series2-prediction-report{display:grid;gap:16px}
+.series2-prediction-report-toolbar{align-items:center;gap:14px}
+.series2-prediction-report-toolbar h2{margin:4px 0}
+.series2-prediction-report-toolbar p{margin:5px 0 0;color:var(--muted,#aaa);line-height:1.8}
+.series2-report-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.series2-report-summary article{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:6px 9px;padding:13px;border:1px solid var(--line,#3a3327);border-radius:12px;background:rgba(255,255,255,.018);min-width:0}
+.series2-report-summary article>svg{color:var(--gold,#c5a45d)}
+.series2-report-summary article>span{color:var(--muted,#aaa);font-size:.86rem}
+.series2-report-summary article>strong{grid-column:1/-1;font-size:1.2rem;overflow-wrap:anywhere}
+.series2-report-summary article.is-open>strong{color:#8ed2a0}
+.series2-report-summary article.is-closed>strong{color:#d8b66a}
+.series2-report-summary .series2-report-updated{font-size:.8rem;line-height:1.8}
+.series2-report-table-wrap{width:100%;overflow-x:auto;border:1px solid var(--line,#3a3327);border-radius:12px}
+.series2-report-table{width:100%;border-collapse:collapse;min-width:690px;text-align:right}
+.series2-report-table th,.series2-report-table td{padding:12px 13px;border-bottom:1px solid var(--line,#3a3327);vertical-align:middle}
+.series2-report-table th{background:rgba(197,157,76,.09);color:var(--gold,#d0b16b);font-weight:700;white-space:nowrap}
+.series2-report-table tbody tr:last-child td{border-bottom:0}
+.series2-report-table tbody tr:hover{background:rgba(255,255,255,.025)}
+.series2-report-id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-align:left;white-space:nowrap}
+.series2-report-table time{white-space:nowrap;font-size:.88rem}
+.series2-report-error{display:flex;align-items:flex-start;gap:9px;padding:12px 14px;border:1px solid rgba(210,105,90,.4);border-radius:10px;background:rgba(150,45,35,.1);color:#e6b0a8;line-height:1.8}
+.series2-report-error svg{flex:0 0 auto;margin-top:3px}
+.series2-report-footnote{margin:0;color:var(--muted,#aaa);font-size:.82rem;line-height:1.8}
+.series2-report-spin{animation:series2-report-rotate 1s linear infinite}
+@keyframes series2-report-rotate{to{transform:rotate(360deg)}}
+@media(max-width:700px){.series2-report-summary{grid-template-columns:1fr 1fr}.series2-report-summary article:last-child{grid-column:1/-1}.series2-prediction-report-toolbar{align-items:stretch;flex-direction:column}.series2-prediction-report-toolbar>.outline-button{width:100%}}
