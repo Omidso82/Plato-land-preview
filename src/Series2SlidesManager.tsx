@@ -4,6 +4,8 @@ import Series2PredictionReport from './Series2PredictionReport';
 
 const BUCKET = 'series2-slides';
 const POSTER_PATH = 'poster/series2-prize-poster';
+// Temporarily hide the 18-slot editor without deleting its code or stored images.
+const SHOW_SLIDE_EDITOR = false;
 type SlideFile = { name: string; url: string; updated_at?: string };
 
 export default function Series2SlidesManager() {
@@ -31,7 +33,7 @@ export default function Series2SlidesManager() {
     const allowed = !error && data?.role === 'owner';
     setOwner(allowed);
     setChecking(false);
-    if (allowed) { await loadSlides(); await loadPoster(); }
+    if (allowed) { if (SHOW_SLIDE_EDITOR) await loadSlides(); await loadPoster(); }
     else setMessage('این بخش فقط برای حساب مالک کل فعال است.');
   }
 
@@ -101,7 +103,7 @@ export default function Series2SlidesManager() {
       setMessage('فرمت پوستر باید JPG، PNG یا WEBP و حجم آن حداکثر ۱۰ مگابایت باشد.');
       return;
     }
-    setPosterBusy(true); setMessage('در حال ذخیره پوستر ثابت مسابقات…');
+    setPosterBusy(true); setMessage('در حال ذخیره تصویر صفحهٔ اول مسابقات…');
     try {
       const storage=supabase.storage.from(BUCKET);
       // Update the existing stable object directly; use upload only for the first poster.
@@ -136,7 +138,7 @@ export default function Series2SlidesManager() {
 
   return <main dir="rtl" style={shell}><section style={panel}>
     <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}>
-      <div><h1 style={heading}>مدیریت خصوصی اسلایدهای سری دوم</h1><p style={muted}>هر جایگاه مستقل است؛ تصویر انتخابی فقط در همان شماره ذخیره می‌شود. ترتیب انتخاب فایل‌ها هیچ اثری ندارد.</p></div>
+      <div><h1 style={heading}>پنل مدیریت موقت سری دوم</h1><p style={muted}>در این بخش می‌توانی تصویر صفحهٔ اول مسابقات را تغییر بدهی و گزارش پیش‌بینی قهرمان را ببینی.</p></div>
       <button style={secondary} onClick={signOut}>خروج از پنل</button>
     </div>
     <section style={{marginTop:20,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
@@ -154,6 +156,7 @@ export default function Series2SlidesManager() {
       </button>
       <small style={{display:'block',color:'#a9a08e',marginTop:7}}>جایگاه ذخیره‌سازی مستقل؛ بدون تغییر در اسلایدهای ۱ تا ۱۸ · حداکثر ۱۰ مگابایت</small>
     </section>
+    {SHOW_SLIDE_EDITOR && (
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12,marginTop:20}}>
       {Array.from({length:18},(_,i)=>{
         const number=i+1,key=String(number).padStart(2,'0');
@@ -172,6 +175,7 @@ export default function Series2SlidesManager() {
         </div>;
       })}
     </div>
+    )}
     <Series2PredictionReport />
     {message&&<p role="status" style={{...muted,marginTop:16}}>{message}</p>}
   </section></main>;
