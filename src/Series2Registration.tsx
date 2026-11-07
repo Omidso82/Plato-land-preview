@@ -40,11 +40,16 @@ const buildGroupStandings = (group: any, allFixtures: any[]): GroupStandingRow[]
   };
 
   groupFixtures.forEach((match: any) => {
-    const result = getValidCompletedResult(match);
-    if (!result) return;
     const first = rows.get(String(match.player1));
     const second = rows.get(String(match.player2));
-    if (!first || !second || ![match.player1, match.player2].includes(match.winner)) return;
+    if (!first || !second) return;
+    if (match.result_status === 'double_no_show') {
+      first.games_played += 1;
+      second.games_played += 1;
+      return;
+    }
+    const result = getValidCompletedResult(match);
+    if (!result || ![match.player1, match.player2].includes(match.winner)) return;
     first.games_played += 1;
     second.games_played += 1;
     first.sets_won += result.score1;
@@ -135,6 +140,7 @@ export default function Series2Registration() {
       : false;
   const selectedGroupFixtures = (progression?.group_fixtures || []).filter((match: any) => String(match.group) === String(selectedStandingGroup?.name));
   const isCompletedGroupMatch = (match: any) => {
+    if (match?.result_status === 'double_no_show') return true;
     if (!match?.winner || match.score1 === null || match.score1 === undefined || match.score2 === null || match.score2 === undefined) return false;
     const score1 = Number(match.score1);
     const score2 = Number(match.score2);
@@ -373,7 +379,7 @@ export default function Series2Registration() {
                       </div>
                       <section className="s2fixture-section">
                         <h3>برنامه بازی‌های گروهی</h3>
-                         {[["saturday","شنبه · روز اول"],["sunday","یکشنبه · روز دوم"],["monday","دوشنبه · روز سوم"]].map(([day,label])=><div className="s2fixture-day" key={day}><h4>{label}</h4><div className="s2bracket-list">{(progression.group_fixtures||[]).filter((m:any)=>m.day===day).map((m:any)=>{const completed=!!m.winner&&Number.isInteger(m.score1)&&Number.isInteger(m.score2);return <article className="s2match-card" key={m.id}><span>گروه {m.group}</span><div className="s2match-players"><span className="s2match-player"><b dir="ltr">{m.player1}</b>{completed&&<strong className="s2match-score">{fa(m.score1)}</strong>}</span><i>VS</i><span className="s2match-player"><b dir="ltr">{m.player2}</b>{completed&&<strong className="s2match-score">{fa(m.score2)}</strong>}</span></div>{!completed&&<small className="s2match-pending">در انتظار ثبت نتیجه</small>}</article>})}</div></div>)}
+                         {[["saturday","شنبه · روز اول"],["sunday","یکشنبه · روز دوم"],["monday","دوشنبه · روز سوم"]].map(([day,label])=><div className="s2fixture-day" key={day}><h4>{label}</h4><div className="s2bracket-list">{(progression.group_fixtures||[]).filter((m:any)=>m.day===day).map((m:any)=>{const completed=!!m.winner&&Number.isInteger(m.score1)&&Number.isInteger(m.score2);return <article className="s2match-card" key={m.id}><span>گروه {m.group}</span><div className="s2match-players"><span className="s2match-player"><b dir="ltr">{m.player1}</b>{completed&&<strong className="s2match-score">{fa(m.score1)}</strong>}</span><i>VS</i><span className="s2match-player"><b dir="ltr">{m.player2}</b>{completed&&<strong className="s2match-score">{fa(m.score2)}</strong>}</span></div>{m.result_status==='double_no_show'?<small className="s2match-pending">عدم حضور هر دو بازیکن · بدون نتیجه و امتیاز</small>:!completed&&<small className="s2match-pending">در انتظار ثبت نتیجه</small>}</article>})}</div></div>)}
                       </section>
                     </>
                   ) : (
