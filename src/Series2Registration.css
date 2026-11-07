@@ -126,7 +126,7 @@
 .s2bracket-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .s2match-card{padding:10px;border:1px solid #a9874b55;border-radius:10px;background:#ffffff04}
 .s2match-card>span{display:block;margin-bottom:8px;color:#c5a45d;font-size:10px}
-.s2match-card>div{display:flex;align-items:center;justify-content:space-between;gap:5px;color:#f0e6d2;font-size:10px}
+.s2match-card>div{display:flex;align-items:center;justify-content:space-between;gap:5px;color:#f0e6d2;font-size:10px}.s2match-players{direction:rtl}.s2match-player{display:inline-flex;align-items:center;gap:6px;min-width:0;direction:ltr}.s2match-score{display:inline-flex;align-items:center;justify-content:center;min-width:23px;height:23px;padding:0 5px;border:1px solid #c5a45d88;border-radius:6px;background:#c5a45d18;color:#f2d58d;font-size:13px;font-weight:800;line-height:1}.s2match-winner{color:#e2c477!important;font-weight:700}.s2match-pending{color:#a99e89}
 .s2match-card i{color:#b8954f;font:9px Georgia,serif}
 .s2match-card small{display:block;margin-top:8px;color:#a99e89;font-size:9px}
 @media(max-width:390px){.s2groups-grid,.s2bracket-list{grid-template-columns:1fr}.s2progress-card{min-height:70px}.s2progress-card strong{font-size:10px}}
