@@ -1,0 +1,45 @@
+.series2-prediction-cta{display:flex;align-items:center;gap:16px;margin:22px 0 28px;padding:18px 20px;border:1px solid rgba(214,179,91,.38);border-radius:16px;background:linear-gradient(115deg,rgba(39,31,17,.96),rgba(22,22,22,.98));box-shadow:0 12px 30px rgba(0,0,0,.18)}
+.series2-prediction-cta-icon{display:grid;place-items:center;flex:0 0 52px;width:52px;height:52px;border:1px solid rgba(226,194,111,.5);border-radius:14px;background:#342916;color:#e5c46c}
+.series2-prediction-cta-copy{flex:1;min-width:0}
+.series2-prediction-cta-copy>span,.series2-prediction-header>div>span{font-size:.72rem;letter-spacing:.08em;color:#c8a95c}
+.series2-prediction-cta-copy h2{margin:4px 0 3px;font-size:1.12rem;color:#f4e6bd}
+.series2-prediction-cta-copy p{margin:0;color:#aaa49a;font-size:.84rem;line-height:1.7}
+.series2-prediction-open,.series2-prediction-submit{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:1px solid #e4c46d;border-radius:10px;padding:12px 17px;background:linear-gradient(135deg,#e8cc7c,#a77c2d);color:#17130b;font-weight:800;cursor:pointer;white-space:nowrap}
+.series2-prediction-backdrop{position:fixed;z-index:10050;inset:0;display:flex;align-items:center;justify-content:center;padding:14px;background:rgba(0,0,0,.78);backdrop-filter:blur(7px)}
+.series2-prediction-modal{display:flex;flex-direction:column;width:min(620px,100%);max-height:min(92dvh,900px);overflow:hidden;border:1px solid rgba(221,185,92,.55);border-radius:18px;background:#151513;color:#eee9dc;box-shadow:0 24px 90px rgba(0,0,0,.58)}
+.series2-prediction-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:17px 19px;border-bottom:1px solid rgba(214,179,91,.2);background:linear-gradient(110deg,#2c2416,#171715)}
+.series2-prediction-header h2{margin:4px 0 0;font-size:1.3rem;color:#f3dfaa}
+.series2-prediction-header>button{display:grid;place-items:center;width:38px;height:38px;border:1px solid #51452b;border-radius:10px;background:#211e18;color:#e7d7b2;cursor:pointer}
+.series2-prediction-intro{padding:13px 19px 10px}
+.series2-prediction-intro p{margin:0 0 7px;color:#c7c0b2;font-size:.88rem;line-height:1.8}
+.series2-prediction-progress{font-size:.75rem;color:#bda76c}
+.series2-prediction-form{display:flex;flex-direction:column;gap:12px;min-height:0;overflow:auto;padding:0 19px 19px}
+.series2-prediction-roster-title{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:2px}
+.series2-prediction-roster-title strong{font-size:.94rem;color:#e9d8aa}
+.series2-prediction-roster-title small,.series2-prediction-groups summary small{font-size:.72rem;color:#a9a294}
+.series2-prediction-groups{display:grid;gap:8px}
+.series2-prediction-groups details{border:1px solid #393326;border-radius:11px;background:#1c1b18;overflow:hidden}
+.series2-prediction-groups summary{display:flex;align-items:center;gap:10px;padding:10px 12px;list-style:none;cursor:pointer;color:#e5d7b5;font-weight:700}
+.series2-prediction-groups summary::-webkit-details-marker{display:none}
+.series2-prediction-groups summary small{margin-right:auto}
+.series2-prediction-groups details[open] summary>svg{transform:rotate(180deg)}
+.series2-prediction-player-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;padding:0 9px 9px}
+.series2-prediction-player{display:flex;align-items:center;gap:8px;min-width:0;padding:9px 8px;border:1px solid #3d3a32;border-radius:8px;background:#131311;color:#d7d1c5;text-align:left;cursor:pointer}
+.series2-prediction-player.selected{border-color:#d9b65d;background:#302817;color:#f5df9d;box-shadow:inset 0 0 0 1px rgba(217,182,93,.18)}
+.series2-prediction-seed{display:grid;place-items:center;flex:0 0 22px;width:22px;height:22px;border-radius:7px;background:#312a1d;color:#d8b65e;font-size:.72rem;font-weight:800}
+.series2-prediction-player-id{overflow-wrap:anywhere;flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,monospace;font-size:.8rem;direction:ltr;text-align:left}
+.series2-prediction-id-label{display:grid;gap:7px;color:#e5d6b3;font-size:.85rem;font-weight:700}
+.series2-prediction-id-label input{width:100%;height:44px;padding:0 12px;border:1px solid #51452d;border-radius:9px;background:#0f0f0e;color:#f4ead2;font-family:ui-monospace,SFMono-Regular,monospace;font-size:1rem;direction:ltr;text-align:left}
+.series2-prediction-warning{display:flex;align-items:flex-start;gap:8px;padding:10px 11px;border:1px solid rgba(194,155,70,.24);border-radius:9px;background:#211c13;color:#cbb77e;font-size:.75rem;line-height:1.8}
+.series2-prediction-warning svg{flex:0 0 auto;margin-top:3px}
+.series2-prediction-submit{width:100%;min-height:46px}
+.series2-prediction-submit:disabled{opacity:.45;cursor:not-allowed}
+.series2-prediction-state,.series2-prediction-success{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:38px 22px;text-align:center;color:#c8b98e;line-height:1.8}
+.series2-prediction-success>svg{color:#9fd3a3}
+.series2-prediction-success strong{font-size:1.2rem;color:#f1e2b8}
+.series2-prediction-success p,.series2-prediction-success small{margin:0;color:#b9b1a1}
+.series2-prediction-error{padding:11px 12px;border:1px solid rgba(211,105,91,.45);border-radius:9px;background:#2a1917;color:#efb2a9;font-size:.82rem;line-height:1.8}
+.series2-prediction-cta button:focus-visible,.series2-prediction-modal button:focus-visible,.series2-prediction-modal input:focus-visible{outline:2px solid #f2d783;outline-offset:2px}
+.spin{animation:series2-spin 1s linear infinite}
+@keyframes series2-spin{to{transform:rotate(360deg)}}
+@media(max-width:600px){.series2-prediction-cta{align-items:flex-start;flex-wrap:wrap;padding:14px;gap:11px}.series2-prediction-cta-icon{flex-basis:44px;width:44px;height:44px}.series2-prediction-cta-copy{width:calc(100% - 60px)}.series2-prediction-cta-copy h2{font-size:.98rem}.series2-prediction-cta-copy p{font-size:.77rem}.series2-prediction-open{width:100%;min-height:42px}.series2-prediction-backdrop{padding:8px}.series2-prediction-modal{max-height:94dvh;border-radius:14px}.series2-prediction-header{padding:13px 14px}.series2-prediction-intro{padding:10px 14px 8px}.series2-prediction-form{padding:0 13px 14px}.series2-prediction-player-grid{gap:6px;padding:0 7px 7px}.series2-prediction-player{padding:8px 6px;gap:6px}.series2-prediction-player-id{font-size:.72rem}}
