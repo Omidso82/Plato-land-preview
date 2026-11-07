@@ -345,3 +345,10 @@
 .s2group-standings-table{min-width:650px}
 .s2group-standings-table th{white-space:nowrap}
 .s2group-standings-table td{white-space:nowrap}
+
+/* Series 2: show each recorded score beside its player ID */
+.s2match-card .s2match-scoreline{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:6px;color:#f0e6d2;font-size:11px}
+.s2match-card .s2match-player{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-width:0}
+.s2match-card .s2match-player b{max-width:100%;overflow-wrap:anywhere;text-align:center;font-size:inherit}
+.s2match-card .s2match-player strong{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 7px;border:1px solid #a9874b88;border-radius:7px;color:#f0e6d2;background:#ffffff08;font-size:15px;line-height:1}
+.s2match-card .s2match-player.is-winner strong{color:#17130c;background:linear-gradient(135deg,#b8954f,#e6ca80);border-color:#e6ca80}
