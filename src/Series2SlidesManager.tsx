@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
-import Series2RegistrationReport from './Series2RegistrationReport';
+import Series2PredictionReport from './Series2PredictionReport';
 
 const BUCKET = 'series2-slides';
 const POSTER_PATH = 'poster/series2-prize-poster';
@@ -172,7 +172,7 @@ export default function Series2SlidesManager() {
         </div>;
       })}
     </div>
-    <Series2RegistrationReport />
+    <Series2PredictionReport />
     {message&&<p role="status" style={{...muted,marginTop:16}}>{message}</p>}
   </section></main>;
 }
