@@ -302,3 +302,37 @@
     max-width:320px !important;
   }
 }
+
+
+/* Series 2 live group standings — mobile-first */
+.s2group-standings{min-width:0}
+.s2standings-summary{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:1px 0 10px;color:#f0d99f}
+.s2standings-summary strong{font-size:14px;font-weight:850}
+.s2standings-summary span{color:#b5a98f;font-size:10px;white-space:nowrap}
+.s2group-tabs{display:flex;gap:6px;overflow-x:auto;padding:2px 1px 10px;scrollbar-width:thin}
+.s2group-tabs button{flex:0 0 auto;min-width:62px;padding:9px 11px;border:1px solid #9b7c4355;border-radius:9px;background:#ffffff05;color:#c9bea8;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+.s2group-tabs button.active{border-color:#d8b66d;background:linear-gradient(145deg,#44351e,#2a2114);color:#f5dfa8;box-shadow:inset 0 0 0 1px #d8b66d22}
+.s2standings-rules{margin:0 0 10px;color:#c9bea8;font-size:11px;line-height:1.9}
+.s2group-standings-wrap{overflow-x:auto}
+.s2group-standings-table{min-width:510px}
+.s2group-standings-table th{font-size:10px}
+.s2group-standings-table td{font-size:12px}
+.s2group-standings-table .s2table-player{text-align:left;direction:ltr}
+.s2group-standings-table .s2table-rate{color:#f3dfa9}
+.s2group-standings-table .s2qualifier-row{background:linear-gradient(90deg,#d7b66d16,#d7b66d07)}
+.s2group-standings-table .s2qualifier-row td:first-child{color:#f4d88f;font-weight:900}
+.s2standings-legend{display:flex;flex-direction:column;gap:6px;margin:10px 2px 0;color:#e3d4ae;font-size:10px}
+.s2standings-legend span{display:flex;align-items:center;gap:7px}
+.s2standings-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;background:#d8b66d;box-shadow:0 0 8px #d8b66d66}
+.s2standings-legend small{color:#9f9685;font-size:9px;line-height:1.8}
+.s2standings-tie-note{margin:8px 2px 0;color:#8f887c;font-size:9px;line-height:1.8}
+@media(max-width:390px){
+ .s2standings-summary{align-items:flex-start;flex-direction:column;gap:3px}
+ .s2standings-summary strong{font-size:13px}
+ .s2group-tabs button{min-width:57px;padding:8px 9px;font-size:11px}
+ .s2standings-rules{font-size:10px}
+}
+@media(min-width:600px){
+ .s2group-standings-table{min-width:0}
+ .s2standings-legend{flex-direction:row;align-items:center;justify-content:space-between}
+}
