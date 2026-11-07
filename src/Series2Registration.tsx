@@ -83,7 +83,7 @@ const buildGroupStandings = (group: any, allFixtures: any[]): GroupStandingRow[]
        (match.player1 === tied[1].plato_id && match.player2 === tied[0].plato_id)) &&
       match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2));
     tied.forEach((row, offset) => { row.rank = headToHeadResolved ? nextRank + offset : nextRank; });
-    nextRank += headToHeadResolved ? tied.length : tied.length;
+    nextRank += tied.length;
     index = end;
   }
   return ordered;
@@ -115,6 +115,10 @@ export default function Series2Registration() {
   const progressionGroups = (progression?.groups || []) as any[];
   const selectedStandingGroup = progressionGroups.find((group) => String(group.name) === activeStandingGroup) || progressionGroups[0];
   const groupStandings = selectedStandingGroup ? buildGroupStandings(selectedStandingGroup, progression?.group_fixtures || []) : [];
+  const selectedGroupFixtures = (progression?.group_fixtures || []).filter((match: any) => String(match.group) === String(selectedStandingGroup?.name));
+  const selectedGroupCompletedMatches = selectedGroupFixtures.filter((match: any) =>
+    match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2),
+  ).length;
   const completedGroupMatches = (progression?.group_fixtures || []).filter((match: any) =>
     match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2),
   ).length;
@@ -236,19 +240,19 @@ export default function Series2Registration() {
               <h2 id="s2progress-title">مسیر رقابت تا قهرمانی</h2>
               <p>از مرحله گروهی تا فینال؛ نتایج ثبت‌شده برای همه قابل مشاهده خواهد بود.</p>
             </div>
-            {!loading && !error && rows.length > 0 && (
-              <div className="s2primary-actions">
-                <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('standings'); setStageViewerOpen(true); }} aria-haspopup="dialog">
-                  <Trophy size={15} /><span>جدول رده‌بندی گروه‌ها</span>
-                </button>
+            <div className="s2primary-actions">
+              <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('standings'); setStageViewerOpen(true); }} aria-haspopup="dialog">
+                <Trophy size={15} /><span>جدول رده‌بندی گروه‌ها</span>
+              </button>
+              {!loading && !error && rows.length > 0 && <>
                 <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('ranking'); setStageViewerOpen(true); }} aria-haspopup="dialog">
                   <Trophy size={15} /><span>رتبه‌بندی بازیکنان بر اساس میانگین برد</span>
                 </button>
                 <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('seeds'); setActiveSeed(0); setStageViewerOpen(true); }} aria-haspopup="dialog">
                   <Trophy size={15} /><span>مشاهده سیدبندی</span><span className="s2seed-button-count">۳۲ بازیکن · ۴ سید</span>
                 </button>
-              </div>
-            )}
+              </>}
+            </div>
             <div className="s2progress-grid">
               <button type="button" className="s2progress-card" onClick={() => { setActiveStage('groups'); setStageViewerOpen(true); }}>
                 <span className="s2progress-number">۰۱</span><strong>قرعه‌کشی / مشاهده گروه‌ها</strong><small>۸ گروه · ۴ بازیکن در هر گروه</small>
@@ -310,7 +314,7 @@ export default function Series2Registration() {
                       <section className="s2group-standings" aria-label="جدول رده‌بندی گروه‌ها">
                         <div className="s2standings-summary">
                           <strong>جدول رده‌بندی گروه {selectedStandingGroup?.name || '—'}</strong>
-                          <span>{fa(completedGroupMatches)} از {fa((progression.group_fixtures || []).length)} بازی ثبت شده</span>
+                          <span>{fa(selectedGroupCompletedMatches)} از {fa(selectedGroupFixtures.length)} بازی این گروه · مجموع {fa(completedGroupMatches)} از {fa((progression.group_fixtures || []).length)}</span>
                         </div>
                         <div className="s2group-tabs" role="tablist" aria-label="انتخاب گروه">
                           {progressionGroups.map((group: any) => (
