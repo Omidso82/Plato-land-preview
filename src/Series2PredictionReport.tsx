@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertCircle, Clock3, Lock, RefreshCw, Users } from 'lucide-react';
-import { supabase } from './supabase';
+import { supabase, SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY } from './supabase';
 import './Series2PredictionReport.css';
 
 type PredictionVote = {
@@ -60,12 +60,12 @@ export default function Series2PredictionReport() {
       if (!session?.access_token) throw new Error('نشست ورود معتبر نیست؛ دوباره وارد پنل مالک شو.');
 
       const response = await fetch(
-        `${supabase.supabaseUrl}/functions/v1/plato-land-series2-prediction?action=report`,
+        `${SUPABASE_URL}/functions/v1/plato-land-series2-prediction?action=report`,
         {
           method: 'GET',
           cache: 'no-store',
           headers: {
-            apikey: supabase.supabaseKey,
+            apikey: SUPABASE_PUBLISHABLE_KEY,
             Authorization: `Bearer ${session.access_token}`,
           },
         },
