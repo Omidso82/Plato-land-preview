@@ -78,6 +78,7 @@ const buildGroupStandings = (group: any, allFixtures: any[]): GroupStandingRow[]
         match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2));
       if (directMatch?.winner === second.plato_id) tied.reverse();
     }
+    ordered.splice(index, tied.length, ...tied);
     const headToHeadResolved = tied.length === 2 && groupFixtures.some((match: any) =>
       ((match.player1 === tied[0].plato_id && match.player2 === tied[1].plato_id) ||
        (match.player1 === tied[1].plato_id && match.player2 === tied[0].plato_id)) &&
