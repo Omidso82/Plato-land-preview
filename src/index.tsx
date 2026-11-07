@@ -26,3 +26,4 @@ if(path==='/series2-slides-manager') {
     root.render(<React.StrictMode><App/></React.StrictMode>);
   }
 }
+import './typography-overrides.css';
