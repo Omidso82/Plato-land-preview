@@ -10,6 +10,86 @@ type LeaderboardRow = {
   win_rate: number | null;
 };
 
+type GroupStandingRow = {
+  plato_id: string;
+  games_played: number;
+  games_won: number;
+  games_lost: number;
+  points: number;
+  sets_won: number;
+  sets_lost: number;
+  set_difference: number;
+  rank: number;
+};
+
+const buildGroupStandings = (group: any, allFixtures: any[]): GroupStandingRow[] => {
+  const players = (group?.players || []).map((player: any) => String(player.plato_id));
+  const rows = new Map<string, GroupStandingRow>(players.map((platoId: string) => [platoId, {
+    plato_id: platoId, games_played: 0, games_won: 0, games_lost: 0,
+    points: 0, sets_won: 0, sets_lost: 0, set_difference: 0, rank: 0,
+  }]));
+  const groupFixtures = (allFixtures || []).filter((match: any) => String(match.group) === String(group?.name));
+
+  groupFixtures.forEach((match: any) => {
+    if (!match.winner || !Number.isInteger(match.score1) || !Number.isInteger(match.score2)) return;
+    const first = rows.get(String(match.player1));
+    const second = rows.get(String(match.player2));
+    if (!first || !second || ![match.player1, match.player2].includes(match.winner)) return;
+    first.games_played += 1;
+    second.games_played += 1;
+    first.sets_won += match.score1;
+    first.sets_lost += match.score2;
+    second.sets_won += match.score2;
+    second.sets_lost += match.score1;
+    if (match.winner === first.plato_id) {
+      first.games_won += 1;
+      first.points += 3;
+      second.games_lost += 1;
+    } else {
+      second.games_won += 1;
+      second.points += 3;
+      first.games_lost += 1;
+    }
+  });
+
+  const ordered = [...rows.values()].map((row) => ({
+    ...row,
+    set_difference: row.sets_won - row.sets_lost,
+  })).sort((a, b) =>
+    b.points - a.points || b.set_difference - a.set_difference || b.sets_won - a.sets_won,
+  );
+
+  // Head-to-head is applied only when exactly two players remain tied on the first three criteria.
+  // For an unresolved multi-player tie, keep a shared rank rather than inventing another rule.
+  let index = 0;
+  let nextRank = 1;
+  while (index < ordered.length) {
+    let end = index + 1;
+    while (end < ordered.length &&
+      ordered[end].points === ordered[index].points &&
+      ordered[end].set_difference === ordered[index].set_difference &&
+      ordered[end].sets_won === ordered[index].sets_won) end += 1;
+    const tied = ordered.slice(index, end);
+    if (tied.length === 2) {
+      const [first, second] = tied;
+      const directMatch = groupFixtures.find((match: any) =>
+        ((match.player1 === first.plato_id && match.player2 === second.plato_id) ||
+         (match.player1 === second.plato_id && match.player2 === first.plato_id)) &&
+        match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2));
+      if (directMatch?.winner === second.plato_id) tied.reverse();
+    }
+    ordered.splice(index, tied.length, ...tied);
+    const headToHeadResolved = tied.length === 2 && groupFixtures.some((match: any) =>
+      ((match.player1 === tied[0].plato_id && match.player2 === tied[1].plato_id) ||
+       (match.player1 === tied[1].plato_id && match.player2 === tied[0].plato_id)) &&
+      match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2));
+    tied.forEach((row, offset) => { row.rank = headToHeadResolved ? nextRank + offset : nextRank; });
+    nextRank += tied.length;
+    index = end;
+  }
+  return ordered;
+};
+
 const fa = (value: number) => value.toLocaleString('fa-IR');
 const percent = (value: number) =>
   value.toLocaleString('fa-IR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '٪';
@@ -23,6 +103,8 @@ export default function Series2Registration() {
   const [stageViewerOpen, setStageViewerOpen] = useState(false);
   const [progression, setProgression] = useState<any>(null);
   const [progressionLoading, setProgressionLoading] = useState(true);
+  const [progressionUpdatedAt, setProgressionUpdatedAt] = useState('');
+  const [activeStandingGroup, setActiveStandingGroup] = useState('A');
   const [fixedPosterUrl, setFixedPosterUrl] = useState('');
 
   const seeds = [0, 1, 2, 3].map((seedIndex) =>
@@ -31,6 +113,16 @@ export default function Series2Registration() {
       rank: seedIndex * 8 + playerIndex + 1,
     })),
   );
+  const progressionGroups = (progression?.groups || []) as any[];
+  const selectedStandingGroup = progressionGroups.find((group) => String(group.name) === activeStandingGroup) || progressionGroups[0];
+  const groupStandings = selectedStandingGroup ? buildGroupStandings(selectedStandingGroup, progression?.group_fixtures || []) : [];
+  const selectedGroupFixtures = (progression?.group_fixtures || []).filter((match: any) => String(match.group) === String(selectedStandingGroup?.name));
+  const selectedGroupCompletedMatches = selectedGroupFixtures.filter((match: any) =>
+    match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2),
+  ).length;
+  const completedGroupMatches = (progression?.group_fixtures || []).filter((match: any) =>
+    match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2),
+  ).length;
 
   useEffect(() => {
     let active = true;
@@ -64,14 +156,30 @@ export default function Series2Registration() {
 
   useEffect(() => {
     let active = true;
-    fetch('https://dfrppbapaaydbjeflozw.supabase.co/functions/v1/plato-land-series2-progression', {
-      method: 'GET', headers: { Accept: 'application/json' }, cache: 'no-store',
-    })
-      .then((response) => { if (!response.ok) throw new Error('Progression request failed'); return response.json(); })
-      .then((data) => { if (active) setProgression(data?.progression ?? null); })
-      .catch((loadError) => console.error('Series 2 progression load failed:', loadError))
-      .finally(() => { if (active) setProgressionLoading(false); });
-    return () => { active = false; };
+    let loadingFirstSnapshot = true;
+    const loadProgression = async () => {
+      try {
+        const response = await fetch('https://dfrppbapaaydbjeflozw.supabase.co/functions/v1/plato-land-series2-progression', {
+          method: 'GET', headers: { Accept: 'application/json' }, cache: 'no-store',
+        });
+        if (!response.ok) throw new Error(`Progression request failed (${response.status})`);
+        const data = await response.json();
+        if (active) {
+          setProgression(data?.progression ?? null);
+          setProgressionUpdatedAt(data?.updated_at ?? '');
+        }
+      } catch (loadError) {
+        console.error('Series 2 progression refresh failed:', loadError);
+      } finally {
+        if (active && loadingFirstSnapshot) {
+          setProgressionLoading(false);
+          loadingFirstSnapshot = false;
+        }
+      }
+    };
+    void loadProgression();
+    const intervalId = window.setInterval(() => { void loadProgression(); }, 15000);
+    return () => { active = false; window.clearInterval(intervalId); };
   }, []);
 
   useEffect(() => {
@@ -133,16 +241,19 @@ export default function Series2Registration() {
               <h2 id="s2progress-title">مسیر رقابت تا قهرمانی</h2>
               <p>از مرحله گروهی تا فینال؛ نتایج ثبت‌شده برای همه قابل مشاهده خواهد بود.</p>
             </div>
-            {!loading && !error && rows.length > 0 && (
-              <div className="s2primary-actions">
+            <div className="s2primary-actions">
+              <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('standings'); setStageViewerOpen(true); }} aria-haspopup="dialog">
+                <Trophy size={15} /><span>جدول رده‌بندی گروه‌ها</span>
+              </button>
+              {!loading && !error && rows.length > 0 && <>
                 <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('ranking'); setStageViewerOpen(true); }} aria-haspopup="dialog">
                   <Trophy size={15} /><span>رتبه‌بندی بازیکنان بر اساس میانگین برد</span>
                 </button>
                 <button type="button" className="s2seed-open-button" onClick={() => { setActiveStage('seeds'); setActiveSeed(0); setStageViewerOpen(true); }} aria-haspopup="dialog">
                   <Trophy size={15} /><span>مشاهده سیدبندی</span><span className="s2seed-button-count">۳۲ بازیکن · ۴ سید</span>
                 </button>
-              </div>
-            )}
+              </>}
+            </div>
             <div className="s2progress-grid">
               <button type="button" className="s2progress-card" onClick={() => { setActiveStage('groups'); setStageViewerOpen(true); }}>
                 <span className="s2progress-number">۰۱</span><strong>قرعه‌کشی / مشاهده گروه‌ها</strong><small>۸ گروه · ۴ بازیکن در هر گروه</small>
@@ -169,7 +280,7 @@ export default function Series2Registration() {
                   <button type="button" className="s2seed-close" onClick={() => setStageViewerOpen(false)} aria-label="بستن پنجره">×</button>
                 </header>
                 <nav className="s2stage-nav" aria-label="مراحل مسابقات">
-                  {[['ranking','رتبه‌بندی'],['seeds','سیدبندی'],['groups','گروه‌ها'],['round16','یک‌هشتم'],['quarter','یک‌چهارم'],['semi','نیمه‌نهایی'],['final','فینال و رده‌بندی']].map(([key,label]) => (
+                  {[['standings','جدول گروهی'],['ranking','رتبه‌بندی'],['seeds','سیدبندی'],['groups','گروه‌ها'],['round16','یک‌هشتم'],['quarter','یک‌چهارم'],['semi','نیمه‌نهایی'],['final','فینال و رده‌بندی']].map(([key,label]) => (
                     <button key={key} type="button" className={activeStage === key ? 'active' : ''} onClick={() => setActiveStage(key)}>{label}</button>
                   ))}
                 </nav>
@@ -197,6 +308,41 @@ export default function Series2Registration() {
                         {seeds[activeSeed].map(player=><tr key={player.plato_id}><td>{fa(player.rank)}</td><td dir="ltr">{player.plato_id}</td><td>{player.win_rate===null?'—':percent(player.win_rate)}</td></tr>)}
                       </tbody></table></div>
                     </div>
+                  ) : activeStage === 'standings' ? (
+                    progressionLoading ? <p className="s2leaderboard-state">در حال دریافت جدول گروه‌ها…</p> : !progression ? (
+                      <div className="s2stage-empty"><Trophy size={28}/><strong>اطلاعات گروه‌ها در دسترس نیست</strong><p>پس از دریافت اطلاعات مسابقات، جدول رده‌بندی اینجا نمایش داده می‌شود.</p></div>
+                    ) : (
+                      <section className="s2group-standings" aria-label="جدول رده‌بندی گروه‌ها">
+                        <div className="s2standings-summary">
+                          <strong>جدول رده‌بندی گروه {selectedStandingGroup?.name || '—'}</strong>
+                          <span>{fa(selectedGroupCompletedMatches)} از {fa(selectedGroupFixtures.length)} بازی این گروه · مجموع {fa(completedGroupMatches)} از {fa((progression.group_fixtures || []).length)}</span>
+                        </div>
+                        <div className="s2group-tabs" role="tablist" aria-label="انتخاب گروه">
+                          {progressionGroups.map((group: any) => (
+                            <button key={group.name} type="button" role="tab" aria-selected={String(selectedStandingGroup?.name) === String(group.name)} className={String(selectedStandingGroup?.name) === String(group.name) ? 'active' : ''} onClick={() => setActiveStandingGroup(String(group.name))}>گروه {group.name}</button>
+                          ))}
+                        </div>
+                        <p className="s2standings-rules">هر برد ۳ امتیاز دارد. ترتیب رتبه‌بندی: امتیاز، تفاضل ست‌ها، ست‌های برده و در نهایت نتیجه بازی رودررو.</p>
+                        <div className="s2table-wrap s2group-standings-wrap">
+                          <table className="s2standings-table s2group-standings-table">
+                            <thead><tr><th>رتبه</th><th>بازیکن</th><th>بازی</th><th>برد</th><th>امتیاز</th><th>تفاضل ست</th><th>ست برده</th></tr></thead>
+                            <tbody>{groupStandings.map((player) => (
+                              <tr key={player.plato_id} className={player.rank <= 2 ? 's2qualifier-row' : undefined}>
+                                <td className="s2rank-number">{fa(player.rank)}</td>
+                                <td className="s2table-player" dir="ltr">{player.plato_id}</td>
+                                <td>{fa(player.games_played)}</td>
+                                <td>{fa(player.games_won)}</td>
+                                <td className="s2table-rate">{fa(player.points)}</td>
+                                <td>{player.set_difference > 0 ? '+' : ''}{fa(player.set_difference)}</td>
+                                <td>{fa(player.sets_won)}</td>
+                              </tr>
+                            ))}</tbody>
+                          </table>
+                        </div>
+                        <div className="s2standings-legend"><span><i /> دو رتبه اول به مرحله بعد صعود می‌کنند</span><small>به‌روزرسانی خودکار هر ۱۵ ثانیه{progressionUpdatedAt ? ` · آخرین تغییر: ${new Date(progressionUpdatedAt).toLocaleString('fa-IR')}` : ''}</small></div>
+                        <p className="s2standings-tie-note">در تساوی دو بازیکن، نتیجه بازی مستقیم اعمال می‌شود. اگر تساوی چندنفره با بازی رودررو قابل تفکیک نباشد، رتبه مشترک نمایش داده می‌شود.</p>
+                      </section>
+                    )
                   ) : progressionLoading ? <p className="s2leaderboard-state">در حال دریافت اطلاعات مراحل مسابقات…</p> : !progression ? (
                     <div className="s2stage-empty"><Trophy size={28}/><strong>قرعه‌کشی هنوز ثبت نشده است</strong><p>پس از انجام و تأیید قرعه‌کشی توسط مدیریت، گروه‌ها و جدول مسابقات در همین بخش نمایش داده می‌شوند.</p></div>
                   ) : activeStage === 'groups' ? (
