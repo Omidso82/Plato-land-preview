@@ -38,11 +38,10 @@ export default function Series2Prediction() {
       return () => { alive = false; };
     }
     supabase.functions.invoke('plato-land-series2-prediction', { method: 'GET' })
-      .then(({ data, error: invokeError }) => {
+      .then(({ data: responseData, error: invokeError }) => {
         if (invokeError) throw invokeError;
-        const responseData = data as PredictionResponse;
-        if (responseData.error) throw new Error(responseData.error);
-        const data = responseData;
+        if (responseData?.error) throw new Error(responseData.error);
+        const data = responseData as PredictionResponse;
         if (!Array.isArray(data.roster) || data.roster.length !== 32) throw new Error('فهرست رسمی ۳۲ بازیکن دریافت نشد.');
         const nextGroups = Array.from(new Set(data.roster.map(p => p.group)))
           .sort()
