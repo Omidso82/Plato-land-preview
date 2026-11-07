@@ -61,7 +61,7 @@ Deno.serve(async (req: Request) => {
         return json({ error: "Match ID and expected data version are required." }, 400);
       }
       if (!Number.isInteger(score1) || !Number.isInteger(score2) ||
-          !((score1 === 5 && score2 >= 0 && score2 <= 4) || (score2 === 5 && score1 >= 0 && score1 <= 4))) {
+          !((score1 >= 5 && score1 <= 7 && score2 >= 0 && score2 <= 4) || (score2 >= 5 && score2 <= 7 && score1 >= 0 && score1 <= 4))) {
         return json({ error: "Invalid five-point match score." }, 400);
       }
 
@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
       const player2 = typeof fixture.player2 === "string" ? fixture.player2 : "";
       if (!player1 || !player2) return json({ error: "Match players are missing." }, 409);
 
-      const winner = score1 === 5 ? player1 : player2;
+      const winner = score1 >= 5 ? player1 : player2;
       const previousScore1 = Number.isInteger(fixture.score1) ? fixture.score1 as number : null;
       const previousScore2 = Number.isInteger(fixture.score2) ? fixture.score2 as number : null;
       const previousWinner = typeof fixture.winner === "string" ? fixture.winner : null;
