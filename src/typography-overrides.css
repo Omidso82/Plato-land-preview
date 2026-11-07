@@ -241,3 +241,33 @@
 .app-shell .competition-section-cards button strong{font-size:calc(clamp(.78rem,2.2vw,.98rem) + 1px)}
 .app-shell .competition-section-cards button span{font-size:calc(.78rem + 1px)}
 @media(max-width:600px){.app-shell .competition-section-cards button strong{font-size:calc(.72rem + 1px)}}
+
+
+/* Main website — second, restrained readability pass for tables and their supporting notes.
+   Table text moves from the previous +1px to +2px total; wrappers and column geometry stay unchanged.
+   Scoped to .app-shell so the temporary Series 2 event pages are not affected.
+*/
+.app-shell .seed-row{font-size:calc(12px + 2px)}
+.app-shell .seed-header{font-size:calc(10px + 2px)}
+.app-shell .seed-row small{font-size:calc(10px + 2px)}
+.app-shell .pot-card h4,.app-shell .group-card h4,.app-shell .standings-card h4{font-size:calc(13px + 2px)}
+.app-shell .pot-player,.app-shell .group-player{font-size:calc(11px + 2px)}
+.app-shell .pot-player small,.app-shell .group-player small{font-size:calc(9px + 2px)}
+.app-shell .live-empty{font-size:calc(12px + 2px)}
+.app-shell .standing-row{font-size:calc(11px + 2px)}
+.app-shell .standing-head{font-size:calc(10px + 2px)}
+.app-shell .bracket-preview h4{font-size:calc(13px + 2px)}
+.app-shell .bracket-round>b{font-size:calc(11px + 2px)}
+.app-shell .bracket-match span{font-size:calc(10px + 2px)}
+.app-shell .bracket-preview>small,.app-shell .live-note{font-size:calc(10px + 2px)}
+.app-shell .standing-row input{font-size:calc(10px + 2px)}
+.app-shell .participants-total small{font-size:calc(.78rem + 2px)}
+.app-shell .participant-main span,.app-shell .participant-main small,.app-shell .participant-members span{font-size:calc(.82rem + 2px)}
+.app-shell .public-results-table th{font-size:calc(.82rem + 2px)}
+.app-shell .public-results-table td{font-size:calc(.9rem + 2px)}
+.app-shell .player-seed-list>div{font-size:calc(12px + 2px)}
+.app-shell .player-seed-list>div>small{font-size:calc(10px + 2px)}
+.app-shell .player-bracket-list>div>strong{font-size:calc(12px + 2px)}
+.app-shell .player-bracket-list p{font-size:calc(10px + 2px)}
+.app-shell .player-bracket-list p small{font-size:calc(9px + 2px)}
+@media(max-width:600px){.app-shell .seed-row input{font-size:calc(11px + 2px)}}
