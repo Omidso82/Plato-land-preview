@@ -1,6 +1,6 @@
 /* PLATO LAND Main Website — controlled typography legibility pass
-   Scope: .app-shell only. Temporary Series 2 landing and event pages remain untouched.
-   Change: +1px to existing font-size values; responsive breakpoints and layout rules are preserved.
+   Scope: .app-shell only. Temporary Series 2 registration/prediction pages remain unchanged.
+   Change: +1px to existing font-size values. Original rule order and responsive media contexts are preserved.
 */
 .app-shell .topline{font-size:calc(11px + 1px)}
 .app-shell .brand-copy strong{font-size:calc(18px + 1px)}
@@ -62,6 +62,32 @@
 .app-shell .registration-actions button{font-size:calc(10px + 1px)}
 .app-shell .status{font-size:calc(9px + 1px)}
 .app-shell .toast{font-size:calc(12px + 1px)}
+@media(max-width:900px){.app-shell .hero h1{font-size:calc(52px + 1px)}}
+@media(max-width:680px){.app-shell .topline{font-size:calc(9px + 1px)}}
+@media(max-width:680px){.app-shell .brand-copy strong{font-size:calc(16px + 1px)}}
+@media(max-width:680px){.app-shell .brand-copy small{font-size:calc(9px + 1px)}}
+@media(max-width:680px){.app-shell .mobile-nav button{font-size:calc(12px + 1px)}}
+@media(max-width:680px){.app-shell .hero h1{font-size:calc(48px + 1px)}}
+@media(max-width:680px){.app-shell .hero-description{font-size:calc(12px + 1px)}}
+@media(max-width:680px){.app-shell .crest>span{font-size:calc(14px + 1px)}}
+@media(max-width:680px){.app-shell .crest small{font-size:calc(6px + 1px)}}
+@media(max-width:680px){.app-shell .art-caption{font-size:calc(10px + 1px)}}
+@media(max-width:680px){.app-shell .hero-proof{font-size:calc(9px + 1px)}}
+@media(max-width:680px){.app-shell .stats-strip strong{font-size:calc(11px + 1px)}}
+@media(max-width:680px){.app-shell .stats-strip small{font-size:calc(8px + 1px)}}
+@media(max-width:680px){.app-shell .section-heading h2{font-size:calc(22px + 1px)}}
+@media(max-width:680px){.app-shell .section-heading p{font-size:calc(10px + 1px)}}
+@media(max-width:680px){.app-shell .section-heading>.text-link{font-size:calc(10px + 1px)}}
+@media(max-width:680px){.app-shell .tournament-content h3{font-size:calc(18px + 1px)}}
+@media(max-width:680px){.app-shell .tournament-content>p{font-size:calc(11px + 1px)}}
+@media(max-width:680px){.app-shell .tournament-facts strong{font-size:calc(12px + 1px)}}
+@media(max-width:680px){.app-shell .bottom-cta h2{font-size:calc(16px + 1px)}}
+@media(max-width:680px){.app-shell .bottom-cta p{font-size:calc(10px + 1px)}}
+@media(max-width:680px){.app-shell .footer-main>p{font-size:calc(10px + 1px)}}
+@media(max-width:680px){.app-shell .footer-bottom{font-size:calc(9px + 1px)}}
+@media(max-width:680px){.app-shell .page-heading h1{font-size:calc(28px + 1px)}}
+@media(max-width:680px){.app-shell .page-heading p{font-size:calc(11px + 1px)}}
+@media(max-width:680px){.app-shell .form-panel label{font-size:calc(11px + 1px)}}
 .app-shell .file-label small{font-size:calc(10px + 1px)}
 .app-shell .rules-inline{font-size:calc(12px + 1px)}
 .app-shell .ocr-note{font-size:calc(12px + 1px)}
@@ -71,6 +97,8 @@
 .app-shell .admin-tournament span{font-size:calc(10px + 1px)}
 .app-shell .admin-tournament small{font-size:calc(10px + 1px)}
 .app-shell .publish-button{font-size:calc(10px + 1px)}
+@media(max-width:680px){.app-shell .form-panel select{font-size:calc(12px + 1px)}}
+@media(max-width:680px){.app-shell .form-panel textarea{font-size:calc(12px + 1px)}}
 .app-shell .game-filter-button{font-size:calc(11px + 1px)}
 .app-shell .preview-banner{font-size:calc(12px + 1px)}
 .app-shell .rules-inline strong{font-size:calc(12px + 1px)}
@@ -88,12 +116,14 @@
 .app-shell .history-panel p{font-size:calc(12px + 1px)}
 .app-shell .settings-section label{font-size:calc(12px + 1px)}
 .app-shell .download-panel p{font-size:calc(11px + 1px)}
+@media(max-width:800px){.app-shell .admin-actions button{font-size:calc(11px + 1px)}}
 .app-shell .login-brand strong{font-size:calc(27px + 1px)}
 .app-shell .login-brand small{font-size:calc(13px + 1px)}
 .app-shell .login-card h1{font-size:calc(26px + 1px)}
 .app-shell .login-card .form-footnote{font-size:calc(12px + 1px)}
 .app-shell .builder-section h3{font-size:calc(14px + 1px)}
 .app-shell .builder-section>p{font-size:calc(11px + 1px)}
+@media(max-width:680px){.app-shell .builder-section h3{font-size:calc(13px + 1px)}}
 .app-shell .live-head h2{font-size:calc(21px + 1px)}
 .app-shell .live-head p{font-size:calc(12px + 1px)}
 .app-shell .live-kicker{font-size:calc(9px + 1px)}
@@ -119,6 +149,8 @@
 .app-shell .bracket-match span{font-size:calc(10px + 1px)}
 .app-shell .bracket-preview>small{font-size:calc(10px + 1px)}
 .app-shell .live-note{font-size:calc(10px + 1px)}
+@media(max-width:600px){.app-shell .live-head h2{font-size:calc(17px + 1px)}}
+@media(max-width:600px){.app-shell .seed-row input{font-size:calc(11px + 1px)}}
 .app-shell .standing-row input{font-size:calc(10px + 1px)}
 .app-shell .auth-inline-error{font-size:calc(13px + 1px)}
 .app-shell .auth-debug{font-size:calc(11px + 1px)}
@@ -126,10 +158,16 @@
 .app-shell .site-users-entry-copy small{font-size:calc(11px + 1px)}
 .app-shell .site-users-entry-count{font-size:calc(11px + 1px)}
 .app-shell .site-user-last-seen{font-size:calc(10px + 1px)}
+@media(max-width:680px){.app-shell .site-users-entry-copy strong{font-size:calc(12px + 1px)}}
+@media(max-width:680px){.app-shell .site-users-entry-copy small{font-size:calc(9px + 1px)}}
+@media(max-width:680px){.app-shell .site-users-entry-count{font-size:calc(9px + 1px)}}
 .app-shell .header-account{font-size:calc(11px + 1px)}
+@media(max-width:680px){.app-shell .header-account{font-size:calc(10px + 1px)}}
 .app-shell .site-announcement-copy h2{font-size:calc(clamp(20px,3vw,30px) + 1px)}
 .app-shell .site-announcement-copy p{font-size:calc(13px + 1px)}
 .app-shell .announcement-modal-head strong{font-size:calc(15px + 1px)}
+@media(max-width:700px){.app-shell .site-announcement-copy h2{font-size:calc(21px + 1px)}}
+@media(max-width:700px){.app-shell .site-announcement-copy p{font-size:calc(12px + 1px)}}
 .app-shell .live-disabled-content p{font-size:calc(11px + 1px)}
 .app-shell .knockout-draw-summary{font-size:calc(12px + 1px)}
 .app-shell .knockout-draw-summary small{font-size:calc(10px + 1px)}
@@ -198,56 +236,8 @@
 .app-shell .health-count{font-size:calc(1.55rem + 1px)}
 .app-shell .site-page-version small{font-size:calc(.78rem + 1px)}
 .app-shell .archive-year-filter{font-size:calc(.82rem + 1px)}
+@media(max-width:680px){.app-shell .login-brand strong{font-size:calc(24px + 1px)}}
 .app-shell .selected-game-banner h2{font-size:calc(1.35rem + 1px)}
 .app-shell .competition-section-cards button strong{font-size:calc(clamp(.78rem,2.2vw,.98rem) + 1px)}
 .app-shell .competition-section-cards button span{font-size:calc(.78rem + 1px)}
-@media(max-width:900px){
-.app-shell .hero h1{font-size:calc(52px + 1px)}
-}
-@media(max-width:680px){
-.app-shell .topline{font-size:calc(9px + 1px)}
-.app-shell .brand-copy strong{font-size:calc(16px + 1px)}
-.app-shell .brand-copy small{font-size:calc(9px + 1px)}
-.app-shell .mobile-nav button{font-size:calc(12px + 1px)}
-.app-shell .hero h1{font-size:calc(48px + 1px)}
-.app-shell .hero-description{font-size:calc(12px + 1px)}
-.app-shell .crest>span{font-size:calc(14px + 1px)}
-.app-shell .crest small{font-size:calc(6px + 1px)}
-.app-shell .art-caption{font-size:calc(10px + 1px)}
-.app-shell .hero-proof{font-size:calc(9px + 1px)}
-.app-shell .stats-strip strong{font-size:calc(11px + 1px)}
-.app-shell .stats-strip small{font-size:calc(8px + 1px)}
-.app-shell .section-heading h2{font-size:calc(22px + 1px)}
-.app-shell .section-heading p{font-size:calc(10px + 1px)}
-.app-shell .section-heading>.text-link{font-size:calc(10px + 1px)}
-.app-shell .tournament-content h3{font-size:calc(18px + 1px)}
-.app-shell .tournament-content>p{font-size:calc(11px + 1px)}
-.app-shell .tournament-facts strong{font-size:calc(12px + 1px)}
-.app-shell .bottom-cta h2{font-size:calc(16px + 1px)}
-.app-shell .bottom-cta p{font-size:calc(10px + 1px)}
-.app-shell .footer-main>p{font-size:calc(10px + 1px)}
-.app-shell .footer-bottom{font-size:calc(9px + 1px)}
-.app-shell .page-heading h1{font-size:calc(28px + 1px)}
-.app-shell .page-heading p{font-size:calc(11px + 1px)}
-.app-shell .form-panel label{font-size:calc(11px + 1px)}
-.app-shell .form-panel select{font-size:calc(12px + 1px)}
-.app-shell .form-panel textarea{font-size:calc(12px + 1px)}
-.app-shell .builder-section h3{font-size:calc(13px + 1px)}
-.app-shell .site-users-entry-copy strong{font-size:calc(12px + 1px)}
-.app-shell .site-users-entry-copy small{font-size:calc(9px + 1px)}
-.app-shell .site-users-entry-count{font-size:calc(9px + 1px)}
-.app-shell .header-account{font-size:calc(10px + 1px)}
-.app-shell .login-brand strong{font-size:calc(24px + 1px)}
-}
-@media(max-width:800px){
-.app-shell .admin-actions button{font-size:calc(11px + 1px)}
-}
-@media(max-width:600px){
-.app-shell .live-head h2{font-size:calc(17px + 1px)}
-.app-shell .seed-row input{font-size:calc(11px + 1px)}
-.app-shell .competition-section-cards button strong{font-size:calc(.72rem + 1px)}
-}
-@media(max-width:700px){
-.app-shell .site-announcement-copy h2{font-size:calc(21px + 1px)}
-.app-shell .site-announcement-copy p{font-size:calc(12px + 1px)}
-}
+@media(max-width:600px){.app-shell .competition-section-cards button strong{font-size:calc(.72rem + 1px)}}
