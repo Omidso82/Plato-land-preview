@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import Series2PredictionReport from './Series2PredictionReport';
+import Series2ResultsManager from './Series2ResultsManager';
 
 const BUCKET = 'series2-slides';
 const POSTER_PATH = 'poster/series2-prize-poster';
@@ -138,7 +139,7 @@ export default function Series2SlidesManager() {
 
   return <main dir="rtl" style={shell}><section style={panel}>
     <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}>
-      <div><h1 style={heading}>پنل مدیریت موقت سری دوم</h1><p style={muted}>در این بخش می‌توانی تصویر صفحهٔ اول مسابقات را تغییر بدهی و گزارش پیش‌بینی قهرمان را ببینی.</p></div>
+      <div><h1 style={heading}>پنل مدیریت موقت سری دوم</h1><p style={muted}>در این بخش می‌توانی پوستر مسابقات را تغییر بدهی، نتایج بازی‌ها را ثبت کنی و گزارش پیش‌بینی قهرمان را ببینی.</p></div>
       <button style={secondary} onClick={signOut}>خروج از پنل</button>
     </div>
     <section style={{marginTop:20,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
@@ -176,6 +177,7 @@ export default function Series2SlidesManager() {
       })}
     </div>
     )}
+    <Series2ResultsManager />
     <Series2PredictionReport />
     {message&&<p role="status" style={{...muted,marginTop:16}}>{message}</p>}
   </section></main>;
