@@ -2,18 +2,19 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase, SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from './supabase';
 
 type HistoryEntry = {
-  action: 'recorded' | 'corrected';
+  action: 'recorded' | 'corrected' | 'double_no_show';
   previous_score1: number | null;
   previous_score2: number | null;
   previous_winner: string | null;
-  score1: number;
-  score2: number;
-  winner: string;
+  score1: number | null;
+  score2: number | null;
+  winner: string | null;
   recorded_at: string;
 };
 type Fixture = {
   id: string; day: string; group: string; player1: string; player2: string;
   score1: number | null; score2: number | null; winner: string | null;
+  result_status?: 'double_no_show' | null;
   result_history?: HistoryEntry[];
 };
 type Progression = { groups?: Array<{ name: string }>; group_fixtures?: Fixture[]; [key: string]: unknown };
@@ -78,6 +79,40 @@ export default function Series2ResultsManager() {
   }
   function cancelEditing() {
     setEditingId(null); setScore1Input(''); setScore2Input('');
+  }
+
+  async function markDoubleNoShow(match: Fixture) {
+    if (!supabase) { setError('اتصال به دیتابیس اصلی برقرار نیست.'); return; }
+    if (match.winner !== null || match.score1 !== null || match.score2 !== null) {
+      setError('این مسابقه نتیجه دارد؛ ابتدا وضعیت آن را بررسی کن.'); return;
+    }
+    if (match.result_status === 'double_no_show') {
+      setMessage('عدم حضور هر دو بازیکن قبلاً ثبت شده است.'); return;
+    }
+    if (!updatedAt) { setError('زمان آخرین نسخه برنامه مشخص نیست. ابتدا فهرست را تازه‌سازی کن.'); return; }
+    setSavingId(match.id); setError(''); setMessage('');
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error('نشست مالک معتبر نیست. دوباره وارد پنل شو.');
+      const response = await fetch(SUPABASE_URL + '/functions/v1/plato-land-series2-progression', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, apikey: SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ action: 'mark_double_no_show', match_id: match.id, expected_updated_at: updatedAt }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (response.status === 409) {
+        await loadProgression();
+        throw new Error('اطلاعات مسابقات هم‌زمان تغییر کرده است. فهرست تازه شد؛ دوباره بررسی کن.');
+      }
+      if (!response.ok || !data?.saved) throw new Error(data?.error || 'ثبت عدم حضور ناموفق بود.');
+      setProgression(data.progression as Progression);
+      setUpdatedAt(data.updated_at || '');
+      setMessage(data.unchanged ? 'عدم حضور هر دو بازیکن از قبل ثبت شده بود.' : 'عدم حضور هر دو بازیکن ثبت شد؛ برای هر دو یک بازی لحاظ شد، بدون نتیجه و امتیاز.');
+    } catch (saveError) {
+      setError(saveError instanceof Error ? saveError.message : 'ثبت عدم حضور ناموفق بود.');
+    } finally { setSavingId(null); }
   }
 
   async function saveResult(match: Fixture) {
@@ -170,6 +205,7 @@ export default function Series2ResultsManager() {
             <div style={matchList}>
               {fixtures.map(match => {
                 const recorded = match.winner !== null && Number.isInteger(match.score1) && Number.isInteger(match.score2);
+                const doubleNoShow = match.result_status === 'double_no_show';
                 const history = Array.isArray(match.result_history) ? match.result_history : [];
                 const editing = editingId === match.id;
                 return (
@@ -177,13 +213,14 @@ export default function Series2ResultsManager() {
                     <div style={matchMeta}>
                       <span style={matchId}>{match.id}</span>
                       <span style={matchDay}>{DAY_LABELS[match.day] || match.day}</span>
-                      <span style={recorded ? savedStatus : pendingStatus}>{recorded ? 'نتیجه ثبت شده' : 'در انتظار نتیجه'}</span>
+                      <span style={recorded || doubleNoShow ? savedStatus : pendingStatus}>{recorded ? 'نتیجه ثبت شده' : doubleNoShow ? 'عدم حضور هر دو' : 'در انتظار نتیجه'}</span>
                     </div>
                     <div style={players}>
                       <div style={player}><b dir="ltr" style={playerId}>{match.player1}</b><span style={playerLabel}>بازیکن اول</span></div>
                       <span style={versus}>VS</span>
                       <div style={player}><b dir="ltr" style={playerId}>{match.player2}</b><span style={playerLabel}>بازیکن دوم</span></div>
                     </div>
+                    {doubleNoShow && <div style={savedScore}><strong>عدم حضور هر دو بازیکن</strong><span>بدون نتیجه و امتیاز · یک بازی برای هر نفر</span></div>}
                     {recorded && !editing && (
                       <div style={savedScore}>
                         <strong dir="ltr">{fa(match.score1 as number)} – {fa(match.score2 as number)}</strong>
@@ -206,9 +243,14 @@ export default function Series2ResultsManager() {
                         </div>
                       </div>
                     ) : (
-                      <button type="button" style={recorded ? secondaryButton : primaryButton} disabled={savingId !== null} onClick={() => startEditing(match)}>
-                        {recorded ? 'اصلاح نتیجه' : 'ورود نتیجه'}
-                      </button>
+                      <div style={{ display: 'grid', gap: 8 }}>
+                        <button type="button" style={recorded || doubleNoShow ? secondaryButton : primaryButton} disabled={savingId !== null || doubleNoShow} onClick={() => startEditing(match)}>
+                          {recorded ? 'اصلاح نتیجه' : 'ورود نتیجه'}
+                        </button>
+                        {!recorded && !doubleNoShow && <button type="button" style={secondaryButton} disabled={savingId !== null} onClick={() => void markDoubleNoShow(match)}>
+                          {savingId === match.id ? 'در حال ذخیره…' : 'ثبت عدم حضور هر دو بازیکن'}
+                        </button>}
+                      </div>
                     )}
                     {history.length > 0 && (
                       <details style={historyDetails}>
@@ -216,8 +258,8 @@ export default function Series2ResultsManager() {
                         <ol style={historyList}>
                           {history.map((entry, index) => (
                             <li key={entry.recorded_at + '-' + index}>
-                              <span>{entry.action === 'corrected' ? 'اصلاح نتیجه' : 'ثبت اولیه'}</span>
-                              <b dir="ltr">{fa(entry.score1)} – {fa(entry.score2)}</b>
+                              <span>{entry.action === 'corrected' ? 'اصلاح نتیجه' : entry.action === 'double_no_show' ? 'ثبت عدم حضور هر دو' : 'ثبت اولیه'}</span>
+                              {entry.action === 'double_no_show' ? <b>بدون نتیجه</b> : <b dir="ltr">{fa(entry.score1 as number)} – {fa(entry.score2 as number)}</b>}
                               <small>{dateText(entry.recorded_at)}</small>
                             </li>
                           ))}
