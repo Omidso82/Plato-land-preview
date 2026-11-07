@@ -51,6 +51,41 @@ Deno.serve(async (req: Request) => {
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "Invalid request body." }, 400);
 
+    if (body.action === "mark_double_no_show") {
+      const matchId = typeof body.match_id === "string" ? body.match_id : "";
+      const expectedUpdatedAt = body.expected_updated_at;
+      if (!matchId || typeof expectedUpdatedAt !== "string" || !expectedUpdatedAt) return json({ error: "Match ID and expected data version are required." }, 400);
+      const { data: current, error: readError } = await adminClient.from("plato_land_series2_tournament_progression")
+        .select("progression,updated_at").eq("tournament_key", "series2").maybeSingle();
+      if (readError) throw readError;
+      if (!current?.progression) return json({ error: "Series 2 progression was not found." }, 404);
+      if (current.updated_at !== expectedUpdatedAt) return json({ error: "Tournament data changed. Refresh and try again." }, 409);
+      const currentProgression = current.progression as Record<string, unknown>;
+      const fixtures = Array.isArray(currentProgression.group_fixtures) ? currentProgression.group_fixtures as Array<Record<string, unknown>> : [];
+      const fixtureIndex = fixtures.findIndex(fixture => fixture.id === matchId);
+      if (fixtureIndex < 0) return json({ error: "Group match was not found." }, 404);
+      const fixture = fixtures[fixtureIndex];
+      if (typeof fixture.player1 !== "string" || typeof fixture.player2 !== "string" || !fixture.player1 || !fixture.player2) return json({ error: "Match players are missing." }, 409);
+      if (fixture.result_status === "double_no_show") return json({ saved: true, unchanged: true, progression: current.progression, updated_at: current.updated_at });
+      if ((fixture.winner !== null && fixture.winner !== undefined) ||
+          (fixture.score1 !== null && fixture.score1 !== undefined) ||
+          (fixture.score2 !== null && fixture.score2 !== undefined)) return json({ error: "A scored result already exists for this match." }, 409);
+      const recordedAt = new Date().toISOString();
+      const history = Array.isArray(fixture.result_history) ? [...fixture.result_history as Array<Record<string, unknown>>] : [];
+      history.push({ action: "double_no_show", previous_score1: null, previous_score2: null, previous_winner: null,
+        score1: null, score2: null, winner: null, player1: fixture.player1, player2: fixture.player2, recorded_at: recordedAt });
+      const updatedFixture = { ...fixture, score1: null, score2: null, winner: null, result_status: "double_no_show", result_history: history.slice(-1000) };
+      const nextFixtures = fixtures.map((item, index) => index === fixtureIndex ? updatedFixture : item);
+      const nextProgression = { ...currentProgression, group_fixtures: nextFixtures };
+      const { data: saved, error: saveError } = await adminClient.from("plato_land_series2_tournament_progression")
+        .update({ progression: nextProgression, updated_by: authData.user.id, updated_at: recordedAt })
+        .eq("tournament_key", "series2").eq("updated_at", current.updated_at)
+        .select("progression,updated_at").maybeSingle();
+      if (saveError) throw saveError;
+      if (!saved) return json({ error: "Tournament data changed during save. Refresh and try again." }, 409);
+      return json({ saved: true, progression: saved.progression, updated_at: saved.updated_at });
+    }
+
     if (body.action === "save_group_result") {
       const matchId = typeof body.match_id === "string" ? body.match_id : "";
       const score1 = body.score1;
