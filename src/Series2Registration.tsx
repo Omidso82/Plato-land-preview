@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Crown, Trophy, Sparkles } from 'lucide-react';
 import { supabase } from './supabase';
+import Series2Prediction from './Series2Prediction';
 
 type LeaderboardRow = {
   plato_id: string;
@@ -119,6 +120,8 @@ export default function Series2Registration() {
             <img src={fixedPosterUrl} alt="پوستر جوایز قهرمانی سری دوم PLATO LAND" />
           </section>
         )}
+
+        <Series2Prediction/>
 
         <section className="s2leaderboard-panel">
 

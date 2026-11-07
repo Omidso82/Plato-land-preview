@@ -19,7 +19,6 @@ import OwnerHelpCenter from './OwnerHelpCenter';
 import OwnerBulkOperations from './OwnerBulkOperations';
 import NotificationBell from './NotificationBell';
 import PlayerTournamentHub from './PlayerTournamentHub';
-import Series2Prediction from './Series2Prediction';
 import { supabase, supabaseConfigured } from './supabase';
 import React, { useEffect, useMemo, useState } from 'react';
 import * as Lucide from 'lucide-react';
@@ -414,7 +413,6 @@ function App(){
   <MaintenanceGate owner={canManage}/>
   {shownTab==='home'&&<div className="page">
    <section className="hero"><div className="hero-copy"><h1>بازی کن.<br/><span>رقابت کن.</span><br/>قهرمان شو.</h1><p className="hero-description">به دنیای PLATO LAND خوش آمدی؛ پلتفرمی برای مسابقات بازی‌های مختلف، با قوانین و ثبت‌نام اختصاصی هر تورنمنت.</p><div className="hero-actions"><button className="gold-button" onClick={()=>go('tournaments')}>مشاهده مسابقات <ChevronLeft size={18}/></button></div></div><div className="hero-art"><div className="art-orbit orbit-one"/><div className="art-orbit orbit-two"/><div className="art-glow"/><div className="crest"><Crown size={104}/><div className="crest-rule"/><span>PLATO LAND</span><small>GAME · COMPETE · WIN</small></div><span className="floating-star star-a">✦</span><span className="floating-star star-b">✧</span><span className="floating-star star-c">✦</span><div className="art-caption"><Trophy size={17}/><span>هر بازی، یک فرصت تازه</span></div></div></section>
-   <Series2Prediction/>
    <NewsCenter featuredOnly/>
    {siteAnnouncement?.enabled&&announcementVideoUrl&&<section className="site-announcement-card" aria-label="اطلاعیه ویدیویی PLATO LAND"><div className="site-announcement-copy"><span className="section-kicker">اطلاعیه ویژه</span><h2>{siteAnnouncement.title}</h2><p>برای تماشای تیزر و اطلاع از جزئیات مسابقه، ویدیو را باز کن.</p><button type="button" className="gold-button" onClick={()=>setAnnouncementModalOpen(true)}><Lucide.PlayCircle size={18}/> تماشای ویدیو</button></div><button type="button" className="site-announcement-preview" onClick={()=>setAnnouncementModalOpen(true)} aria-label="پخش ویدیوی اطلاعیه"><video src={announcementVideoUrl} preload="metadata" muted playsInline/><span><Lucide.Play size={30}/></span></button></section>}
    {announcementModalOpen&&announcementVideoUrl&&<div className="announcement-modal-backdrop" role="presentation" onClick={()=>setAnnouncementModalOpen(false)}><section className="announcement-modal" role="dialog" aria-modal="true" aria-label={siteAnnouncement?.title||'ویدیوی اطلاع‌رسانی'} onClick={e=>e.stopPropagation()}><div className="announcement-modal-head"><strong>{siteAnnouncement?.title||'اطلاعیه PLATO LAND'}</strong><button type="button" onClick={()=>setAnnouncementModalOpen(false)} aria-label="بستن ویدیو"><X size={22}/></button></div><video src={announcementVideoUrl} controls autoPlay playsInline preload="metadata"/></section></div>}
