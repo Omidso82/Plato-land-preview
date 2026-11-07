@@ -87,9 +87,9 @@ export default function Series2ResultsManager() {
     }
     const score1 = Number(score1Input);
     const score2 = Number(score2Input);
-    const valid = (score1 === 5 && score2 >= 0 && score2 <= 4) || (score2 === 5 && score1 >= 0 && score1 <= 4);
+    const valid = (score1 >= 5 && score1 <= 7 && score2 >= 0 && score2 <= 4) || (score2 >= 5 && score2 <= 7 && score1 >= 0 && score1 <= 4);
     if (!valid) {
-      setError('بازی پنج‌امتیازی است؛ امتیاز برنده باید دقیقاً ۵ و امتیاز بازنده بین ۰ تا ۴ باشد.'); return;
+      setError('نتیجه معتبر نیست؛ امتیاز برنده باید بین ۵ تا ۷ و امتیاز بازنده بین ۰ تا ۴ باشد.'); return;
     }
     if (!updatedAt) { setError('زمان آخرین نسخه برنامه مشخص نیست. ابتدا فهرست را تازه‌سازی کن.'); return; }
 
@@ -193,10 +193,10 @@ export default function Series2ResultsManager() {
                     {editing ? (
                       <div style={editor}>
                         <label style={scoreLabel}>امتیاز {match.player1}
-                          <input style={scoreInput} type="number" inputMode="numeric" min="0" max="5" step="1" value={score1Input} onChange={event => setScore1Input(event.target.value)} />
+                          <input style={scoreInput} type="number" inputMode="numeric" min="0" max="7" step="1" value={score1Input} onChange={event => setScore1Input(event.target.value)} />
                         </label>
                         <label style={scoreLabel}>امتیاز {match.player2}
-                          <input style={scoreInput} type="number" inputMode="numeric" min="0" max="5" step="1" value={score2Input} onChange={event => setScore2Input(event.target.value)} />
+                          <input style={scoreInput} type="number" inputMode="numeric" min="0" max="7" step="1" value={score2Input} onChange={event => setScore2Input(event.target.value)} />
                         </label>
                         <div style={actions}>
                           <button type="button" style={primaryButton} disabled={savingId !== null} onClick={() => void saveResult(match)}>
