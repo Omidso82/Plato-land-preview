@@ -3,7 +3,7 @@
 
 **Date:** 2026-11-07  
 **Scope:** Public Series 2 group standings only.  
-**Status:** Implemented on feature branch; validation and deployment pending.
+**Status:** Merged to main and verified on the live public site.
 
 ### User-requested changes
 1. Display both **sets won** and **sets lost** so players can independently verify set difference.
@@ -37,12 +37,19 @@
 - `src/Series2Registration.tsx`
 - `src/Series2Registration.css`
 
-### Validation
-Pending:
-- TypeScript check and production build.
-- Live browser review of Group C and a group with no completed fixtures.
-- Confirm the unplayed players show 0 completed matches and 0 sets won/lost.
-- Confirm the table displays row numbers 1–4 and both set columns.
+### Validation — completed
+- GitHub Actions typecheck: passed.
+- Production build: passed.
+- Main merge: PR #93 merged; merge commit `0d4ff6dfb8dc306e2613880c51d18637a8ad4ca6`.
+- Main-branch deployment workflow: completed successfully.
+- Live browser verification on the public site: passed.
+- Group C verified live:
+  - V86: 1 completed match, 5 sets won, 2 sets lost, +3 difference, 3 points.
+  - P0uri4: 0 completed matches, 0 sets won/lost.
+  - M47B: 0 completed matches, 0 sets won/lost.
+  - jasijan49: 1 completed match, 2 sets won, 5 sets lost, −3 difference.
+- The public table headers and row numbers 1–4 were confirmed exactly as requested.
+- No page errors were observed during live review.
 
 ### Version history
 - v1.7 — 2026-11-07: Added sets lost, sequential row numbering and stricter completed-match validation.
