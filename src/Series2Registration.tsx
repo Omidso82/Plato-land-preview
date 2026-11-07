@@ -116,6 +116,13 @@ export default function Series2Registration() {
   const progressionGroups = (progression?.groups || []) as any[];
   const selectedStandingGroup = progressionGroups.find((group) => String(group.name) === activeStandingGroup) || progressionGroups[0];
   const groupStandings = selectedStandingGroup ? buildGroupStandings(selectedStandingGroup, progression?.group_fixtures || []) : [];
+  const firstPlaceCount = groupStandings.filter((player) => player.rank === 1).length;
+  const secondPlaceCount = groupStandings.filter((player) => player.rank === 2).length;
+  const isConfirmedQualifier = (player: GroupStandingRow) => firstPlaceCount === 2
+    ? player.rank === 1
+    : firstPlaceCount === 1
+      ? player.rank === 1 || (player.rank === 2 && secondPlaceCount === 1)
+      : false;
   const selectedGroupFixtures = (progression?.group_fixtures || []).filter((match: any) => String(match.group) === String(selectedStandingGroup?.name));
   const selectedGroupCompletedMatches = selectedGroupFixtures.filter((match: any) =>
     match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2),
@@ -327,7 +334,7 @@ export default function Series2Registration() {
                           <table className="s2standings-table s2group-standings-table">
                             <thead><tr><th>رتبه</th><th>بازیکن</th><th>بازی</th><th>برد</th><th>امتیاز</th><th>تفاضل ست</th><th>ست برده</th></tr></thead>
                             <tbody>{groupStandings.map((player) => (
-                              <tr key={player.plato_id} className={player.rank <= 2 ? 's2qualifier-row' : undefined}>
+                              <tr key={player.plato_id} className={isConfirmedQualifier(player) ? 's2qualifier-row' : undefined}>
                                 <td className="s2rank-number">{fa(player.rank)}</td>
                                 <td className="s2table-player" dir="ltr">{player.plato_id}</td>
                                 <td>{fa(player.games_played)}</td>
@@ -339,8 +346,8 @@ export default function Series2Registration() {
                             ))}</tbody>
                           </table>
                         </div>
-                        <div className="s2standings-legend"><span><i /> دو رتبه اول به مرحله بعد صعود می‌کنند</span><small>به‌روزرسانی خودکار هر ۱۵ ثانیه{progressionUpdatedAt ? ` · آخرین تغییر: ${new Date(progressionUpdatedAt).toLocaleString('fa-IR')}` : ''}</small></div>
-                        <p className="s2standings-tie-note">در تساوی دو بازیکن، نتیجه بازی مستقیم اعمال می‌شود. اگر تساوی چندنفره با بازی رودررو قابل تفکیک نباشد، رتبه مشترک نمایش داده می‌شود.</p>
+                        <div className="s2standings-legend"><span><i /> رتبه‌های قطعی صعود</span><small>به‌روزرسانی خودکار هر ۱۵ ثانیه{progressionUpdatedAt ? ` · آخرین تغییر: ${new Date(progressionUpdatedAt).toLocaleString('fa-IR')}` : ''}</small></div>
+                        <p className="s2standings-tie-note">اگر دو بازیکن پس از سه معیار اول برابر باشند، نتیجه رودررو فقط پس از انجام بازی مستقیم قابل اعمال است؛ تا آن زمان رتبه مشترک نمایش داده می‌شود. در تساوی چندنفره‌ای که بازی رودررو آن را حل نکند نیز رتبه مشترک حفظ می‌شود.</p>
                       </section>
                     )
                   ) : progressionLoading ? <p className="s2leaderboard-state">در حال دریافت اطلاعات مراحل مسابقات…</p> : !progression ? (
