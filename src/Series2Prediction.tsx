@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, ChevronDown, Crown, Loader2, Lock, Sparkles, X } from 'lucide-react';
 import './Series2Prediction.css';
+import { supabase } from './supabase';
 
 type PredictionPlayer = { group: string; plato_id: string; seed: number };
 type PredictionResponse = {
@@ -11,8 +12,6 @@ type PredictionResponse = {
   fixtures_completed?: number;
   error?: string;
 };
-
-const API = 'https://dfrppbapaaydbjeflozw.supabase.co/functions/v1/plato-land-series2-prediction';
 
 export default function Series2Prediction() {
   const [open, setOpen] = useState(false);
@@ -33,10 +32,17 @@ export default function Series2Prediction() {
     setLoading(true);
     setError('');
     setNotice('');
-    fetch(API, { headers: { Accept: 'application/json' }, cache: 'no-store' })
-      .then(async response => {
-        const data = await response.json() as PredictionResponse;
-        if (!response.ok) throw new Error(data.error || 'دریافت فهرست بازیکنان ناموفق بود.');
+    if (!supabase) {
+      setError('اتصال پایگاه داده در دسترس نیست.');
+      setLoading(false);
+      return () => { alive = false; };
+    }
+    supabase.functions.invoke('plato-land-series2-prediction', { method: 'GET' })
+      .then(({ data, error: invokeError }) => {
+        if (invokeError) throw invokeError;
+        const responseData = data as PredictionResponse;
+        if (responseData.error) throw new Error(responseData.error);
+        const data = responseData;
         if (!Array.isArray(data.roster) || data.roster.length !== 32) throw new Error('فهرست رسمی ۳۲ بازیکن دریافت نشد.');
         const nextGroups = Array.from(new Set(data.roster.map(p => p.group)))
           .sort()
@@ -69,13 +75,12 @@ export default function Series2Prediction() {
     }
     setSaving(true);
     try {
-      const response = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ plato_id: voterId.trim(), selected_plato_id: selectedPlayer.plato_id })
+      if (!supabase) throw new Error('اتصال پایگاه داده در دسترس نیست.');
+      const { data, error: invokeError } = await supabase.functions.invoke('plato-land-series2-prediction', {
+        body: { plato_id: voterId.trim(), selected_plato_id: selectedPlayer.plato_id }
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'ثبت پیش‌بینی انجام نشد.');
+      if (invokeError) throw invokeError;
+      if (data?.error) throw new Error(data.error);
       setNotice(data.message || 'پیش‌بینی با موفقیت ثبت شد.');
       setSelected('');
       setVoterId('');
