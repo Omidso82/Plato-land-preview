@@ -140,7 +140,22 @@ Deno.serve(async (req: Request) => {
         .eq("tournament_key", "series2")
         .maybeSingle();
       if (error) throw error;
-      return json({ progression: data?.progression ?? null, updated_at: data?.updated_at ?? null });
+      const storedProgression = data?.progression ?? null;
+      if (!storedProgression) return json({ progression: null, updated_at: data?.updated_at ?? null });
+
+      // Resolve qualified group places and downstream winner/loser slots for every
+      // read-only consumer (owner panel and public tournament page) without
+      // writing projected values back to the canonical tournament record.
+      const projectedProgression = syncBracketSources(syncGroupSlots(storedProgression));
+      if (hasRecordedBracketConflict(storedProgression, projectedProgression)) {
+        // Never display a projected bracket that would invalidate a recorded result.
+        return json({
+          progression: storedProgression,
+          updated_at: data?.updated_at ?? null,
+          bracket_resolution_blocked: true,
+        });
+      }
+      return json({ progression: projectedProgression, updated_at: data?.updated_at ?? null });
     }
 
     const authorization = req.headers.get("Authorization");
