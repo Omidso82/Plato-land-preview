@@ -1,5 +1,6 @@
 import {
   hasRecordedBracketConflict,
+  prepareBracketForResult,
   syncBracketSources,
   syncGroupSlots,
 } from "./series2-bracket.ts";
@@ -28,8 +29,8 @@ Deno.test("resolves only guaranteed group ranks into the existing round-of-16 dr
   if (match?.player2 !== "نفر دوم گروه Y") throw new Error("Unresolved group slot must remain a placeholder");
 });
 
-Deno.test("propagates winners from round of 16 through quarterfinal, semifinal and final", () => {
-  const progression = {
+Deno.test("prepares stored placeholder slots before a knockout result is recorded, then advances winners to the final and losers to third place", () => {
+  const stored = {
     brackets: {
       round16: [
         { id: "R16-1", player1: "A", player2: "B", winner: "A", score1: 5, score2: 2 },
@@ -38,11 +39,11 @@ Deno.test("propagates winners from round of 16 through quarterfinal, semifinal a
         { id: "R16-4", player1: "G", player2: "H", winner: "H", score1: 2, score2: 5 },
       ],
       quarter: [
-        { id: "QF-1", player1: "برنده R16-1", player2: "برنده R16-2", player1_source: "winner:R16-1", player2_source: "winner:R16-2", winner: "D", score1: 3, score2: 5 },
-        { id: "QF-2", player1: "برنده R16-3", player2: "برنده R16-4", player1_source: "winner:R16-3", player2_source: "winner:R16-4", winner: "E", score1: 5, score2: 4 },
+        { id: "QF-1", player1: "برنده R16-1", player2: "برنده R16-2", player1_source: "winner:R16-1", player2_source: "winner:R16-2", winner: null },
+        { id: "QF-2", player1: "برنده R16-3", player2: "برنده R16-4", player1_source: "winner:R16-3", player2_source: "winner:R16-4", winner: null },
       ],
       semi: [
-        { id: "SF-1", player1: "برنده QF-1", player2: "برنده QF-2", player1_source: "winner:QF-1", player2_source: "winner:QF-2", winner: "D", score1: 5, score2: 2 },
+        { id: "SF-1", player1: "برنده QF-1", player2: "برنده QF-2", player1_source: "winner:QF-1", player2_source: "winner:QF-2", winner: null },
         { id: "SF-2", player1: "برنده QF-3", player2: "برنده QF-4", player1_source: "winner:QF-3", player2_source: "winner:QF-4", winner: null },
       ],
       final: [
@@ -53,21 +54,47 @@ Deno.test("propagates winners from round of 16 through quarterfinal, semifinal a
       ],
     },
   };
-  const projected = syncBracketSources(progression);
-  const brackets = projected.brackets!;
-  if (brackets.quarter?.[0].player1 !== "A" || brackets.quarter?.[0].player2 !== "D") {
-    throw new Error("Round-of-16 winners should populate the quarterfinal");
+
+  const readyForQuarter = prepareBracketForResult(stored);
+  if (readyForQuarter.blocked) throw new Error("Valid stored bracket should be prepared");
+  let progression = readyForQuarter.progression;
+  if (progression.brackets?.quarter?.[0].player1 !== "A" || progression.brackets?.quarter?.[0].player2 !== "D") {
+    throw new Error("Round-of-16 winners must resolve stored quarterfinal placeholders before result entry");
   }
-  if (brackets.semi?.[0].player1 !== "D" || brackets.semi?.[0].player2 !== "E") {
-    throw new Error("Quarterfinal winners should populate the semifinal");
+
+  progression = {
+    ...progression,
+    brackets: {
+      ...progression.brackets,
+      quarter: progression.brackets!.quarter!.map((match) =>
+        match.id === "QF-1" ? { ...match, winner: "D", score1: 3, score2: 5 }
+          : { ...match, winner: "E", score1: 5, score2: 4 }
+      ),
+    },
+  };
+  progression = syncBracketSources(progression);
+  if (progression.brackets?.semi?.[0].player1 !== "D" || progression.brackets?.semi?.[0].player2 !== "E") {
+    throw new Error("Quarterfinal winners must populate the semifinal");
   }
-  if (brackets.final?.[0].player1 !== "D") {
-    throw new Error("Semifinal winner should populate the final");
+
+  progression = {
+    ...progression,
+    brackets: {
+      ...progression.brackets,
+      semi: progression.brackets!.semi!.map((match) =>
+        match.id === "SF-1" ? { ...match, winner: "D", score1: 5, score2: 2 } : match
+      ),
+    },
+  };
+  progression = syncBracketSources(progression);
+  if (progression.brackets?.final?.[0].player1 !== "D") {
+    throw new Error("Semifinal winner must populate the final");
   }
-  if (brackets.third_place?.[0].player1 !== "E") {
-    throw new Error("Semifinal loser should populate the third-place match");
+  if (progression.brackets?.third_place?.[0].player1 !== "E") {
+    throw new Error("Semifinal loser must populate the third-place match");
   }
-  if (brackets.final?.[0].player2 !== "برنده SF-2" || brackets.third_place?.[0].player2 !== "بازنده SF-2") {
+  if (progression.brackets?.final?.[0].player2 !== "برنده SF-2" ||
+      progression.brackets?.third_place?.[0].player2 !== "بازنده SF-2") {
     throw new Error("Unplayed semifinal must remain unresolved");
   }
 });
