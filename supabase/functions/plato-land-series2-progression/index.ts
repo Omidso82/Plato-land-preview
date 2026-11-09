@@ -51,9 +51,11 @@ function calculateGroupStandings(progression: Record<string, any>) {
 }
 const VALID_GROUP_SCORES = (() => {
   const options: Array<{score1:number;score2:number}> = [];
-  for (let losingScore=0; losingScore<=4; losingScore++) {
-    options.push({score1:5,score2:losingScore});
-    options.push({score1:losingScore,score2:5});
+  for (let winnerScore=5; winnerScore<=7; winnerScore++) {
+    for (let losingScore=0; losingScore<=4; losingScore++) {
+      options.push({score1:winnerScore,score2:losingScore});
+      options.push({score1:losingScore,score2:winnerScore});
+    }
   }
   return options;
 })();
