@@ -10,7 +10,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
 });
 
-import { getGuaranteedGroupPlaces } from "../_shared/series2-qualification.ts";
+import { getGuaranteedGroupPlaces } from "./_shared/series2-qualification.ts";
 
 function syncGroupSlots(progression: Record<string, any>) {
   const brackets = { ...(progression.brackets || {}) };

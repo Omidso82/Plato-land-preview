@@ -1,4 +1,4 @@
-import { getGuaranteedGroupPlaces } from "./series2-qualification.ts";
+import { getGuaranteedGroupPlaces } from "../plato-land-series2-progression/_shared/series2-qualification.ts";
 
 const players = ["A", "B", "C", "D"];
 function fixture(id: string, player1: string, player2: string, score1: number|null, score2: number|null, winner: string|null, result_status: string|null = null) {
