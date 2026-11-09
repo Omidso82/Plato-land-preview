@@ -18,11 +18,11 @@ type Fixture = {
   result_history?: HistoryEntry[];
 };
 type Progression = { groups?: Array<{ name: string; players?: Array<{ plato_id: string }> }>; group_fixtures?: Fixture[]; [key: string]: unknown };
-type Standing = { platoId: string; played: number; wins: number; losses: number; points: number; setsWon: number; setsLost: number; difference: number };
+type Standing = { platoId: string; played: number; wins: number; losses: number; points: number; setsWon: number; setsLost: number; difference: number; rank: number };
 function getGroupStandings(progression: Progression | null, groupName: string) {
   const group = progression?.groups?.find(item => item.name === groupName);
   if (!group) return [] as Standing[];
-  const rows = (group.players || []).map(player => ({ platoId: player.plato_id, played: 0, wins: 0, losses: 0, points: 0, setsWon: 0, setsLost: 0, difference: 0 }));
+  const rows = (group.players || []).map(player => ({ platoId: player.plato_id, played: 0, wins: 0, losses: 0, points: 0, setsWon: 0, setsLost: 0, difference: 0, rank: 0 }));
   const byId = new Map(rows.map(row => [row.platoId, row]));
   for (const match of (progression?.group_fixtures || []).filter(item => item.group === groupName)) {
     if (match.result_status === 'double_no_show') { const a=byId.get(match.player1), b=byId.get(match.player2); if(a)a.played++; if(b)b.played++; continue; }
@@ -35,11 +35,19 @@ function getGroupStandings(progression: Progression | null, groupName: string) {
   }
   rows.forEach(row=>row.difference=row.setsWon-row.setsLost);
   rows.sort((a,b)=>b.points-a.points||b.difference-a.difference||b.setsWon-a.setsWon);
-  for(let i=0;i<rows.length-1;i++){
-    const a=rows[i],b=rows[i+1];
-    if(a.points!==b.points||a.difference!==b.difference||a.setsWon!==b.setsWon)continue;
-    const h2h=(progression?.group_fixtures||[]).find(m=>m.result_status!=='double_no_show'&&m.winner&&((m.player1===a.platoId&&m.player2===b.platoId)||(m.player1===b.platoId&&m.player2===a.platoId)));
-    if(h2h?.winner===b.platoId)[rows[i],rows[i+1]]=[b,a];
+  let index=0, rank=1;
+  while(index<rows.length){
+    let end=index+1;
+    while(end<rows.length&&rows[end].points===rows[index].points&&rows[end].difference===rows[index].difference&&rows[end].setsWon===rows[index].setsWon)end++;
+    const tied=rows.slice(index,end);
+    if(tied.length===2){
+      const direct=(progression?.group_fixtures||[]).find(m=>m.result_status!=='double_no_show'&&Number.isInteger(m.score1)&&Number.isInteger(m.score2)&&m.winner&&
+        ((m.player1===tied[0].platoId&&m.player2===tied[1].platoId)||(m.player1===tied[1].platoId&&m.player2===tied[0].platoId)));
+      if(direct?.winner===tied[1].platoId)[rows[index],rows[index+1]]=[rows[index+1],rows[index]];
+      if(direct)tied.forEach((row,i)=>row.rank=rank+i);
+      else tied.forEach(row=>row.rank=rank);
+    } else tied.forEach(row=>row.rank=rank);
+    rank+=tied.length;index=end;
   }
   return rows;
 }
@@ -265,7 +273,7 @@ export default function Series2ResultsManager() {
               <table style={standingsTable}>
                 <thead><tr>{['رتبه','Plato ID','بازی','برد','باخت','امتیاز','ست برده','تفاضل'].map(label=><th style={standingsCell} key={label}>{label}</th>)}</tr></thead>
                 <tbody>{standings.map((row,index)=><tr key={row.platoId}>
-                  <td style={standingsCell}>{fa(index+1)}</td><td style={{...standingsCell,direction:'ltr',fontWeight:700}}>{row.platoId}</td>
+                  <td style={standingsCell}>{fa(row.rank)}</td><td style={{...standingsCell,direction:'ltr',fontWeight:700}}>{row.platoId}</td>
                   <td style={standingsCell}>{fa(row.played)}</td><td style={standingsCell}>{fa(row.wins)}</td><td style={standingsCell}>{fa(row.losses)}</td>
                   <td style={standingsCell}>{fa(row.points)}</td><td style={standingsCell}>{fa(row.setsWon)}</td><td style={standingsCell}>{fa(row.difference)}</td>
                 </tr>)}</tbody>
