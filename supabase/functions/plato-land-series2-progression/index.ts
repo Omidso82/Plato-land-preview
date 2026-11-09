@@ -10,6 +10,65 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
 });
 
+type StandingRow = { plato_id: string; points: number; score_for: number; score_against: number; difference: number; wins: number };
+function calculateGroupStandings(progression: Record<string, any>) {
+  const all: Record<string, StandingRow[]> = {};
+  const unresolved: Record<string, string[]> = {};
+  for (const group of Array.isArray(progression.groups) ? progression.groups : []) {
+    const rows: StandingRow[] = (group.players || []).map((p: any) => ({
+      plato_id: p.plato_id, points: 0, score_for: 0, score_against: 0, difference: 0, wins: 0,
+    }));
+    const byId = new Map(rows.map(row => [row.plato_id, row]));
+    for (const fixture of (progression.group_fixtures || []).filter((f: any) => f.group === group.name)) {
+      if (fixture.result_status === "double_no_show" || !fixture.winner ||
+          !Number.isInteger(fixture.score1) || !Number.isInteger(fixture.score2)) continue;
+      const one = byId.get(fixture.player1), two = byId.get(fixture.player2);
+      if (!one || !two) continue;
+      one.score_for += fixture.score1; one.score_against += fixture.score2;
+      two.score_for += fixture.score2; two.score_against += fixture.score1;
+      const winner = fixture.winner === one.plato_id ? one : fixture.winner === two.plato_id ? two : null;
+      if (winner) { winner.wins++; winner.points += 3; }
+    }
+    rows.forEach(row => row.difference = row.score_for - row.score_against);
+    rows.sort((a,b) => b.points-a.points || b.difference-a.difference || b.score_for-a.score_for);
+    for (let i=0;i<rows.length;) {
+      let j=i+1;
+      while(j<rows.length && rows[j].points===rows[i].points &&
+        rows[j].difference===rows[i].difference && rows[j].score_for===rows[i].score_for) j++;
+      if(j-i===2) {
+        const a=rows[i], b=rows[i+1];
+        const h2h=(progression.group_fixtures||[]).find((f:any)=>f.group===group.name &&
+          f.result_status!=="double_no_show" && f.winner &&
+          ((f.player1===a.plato_id&&f.player2===b.plato_id)||(f.player1===b.plato_id&&f.player2===a.plato_id)));
+        if(h2h?.winner===b.plato_id) [rows[i],rows[i+1]]=[b,a];
+      } else if(j-i>2) unresolved[group.name]=rows.slice(i,j).map(row=>row.plato_id);
+      i=j;
+    }
+    all[group.name]=rows;
+  }
+  return { standings: all, unresolved };
+}
+function syncGroupSlots(progression: Record<string, any>) {
+  const {standings, unresolved}=calculateGroupStandings(progression);
+  const brackets={...(progression.brackets||{})};
+  for(const round of ["round16","quarter","semi","final","third_place"]) {
+    const matches=(brackets[round]||[]).map((match:any)=>{
+      const resolve=(source:string|undefined,current:string)=>{
+        if(!source?.startsWith("group:")) return current;
+        const [,group,placeText]=source.split(":");
+        const place=Number(placeText);
+        if(unresolved[group]) return current;
+        // Preserve explicitly assigned/manual seeds; only replace unresolved placeholders.
+        if(current && !current.startsWith("نفر اول گروه") && !current.startsWith("نفر دوم گروه")) return current;
+        return standings[group]?.[place-1]?.plato_id || current;
+      };
+      return {...match,player1:resolve(match.player1_source,match.player1),player2:resolve(match.player2_source,match.player2)};
+    });
+    brackets[round]=matches;
+  }
+  return {...progression,brackets};
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "GET" && req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -76,7 +135,7 @@ Deno.serve(async (req: Request) => {
         score1: null, score2: null, winner: null, player1: fixture.player1, player2: fixture.player2, recorded_at: recordedAt });
       const updatedFixture = { ...fixture, score1: null, score2: null, winner: null, result_status: "double_no_show", result_history: history.slice(-1000) };
       const nextFixtures = fixtures.map((item, index) => index === fixtureIndex ? updatedFixture : item);
-      const nextProgression = { ...currentProgression, group_fixtures: nextFixtures };
+      const nextProgression = syncGroupSlots({ ...currentProgression, group_fixtures: nextFixtures });
       const { data: saved, error: saveError } = await adminClient.from("plato_land_series2_tournament_progression")
         .update({ progression: nextProgression, updated_by: authData.user.id, updated_at: recordedAt })
         .eq("tournament_key", "series2").eq("updated_at", current.updated_at)
