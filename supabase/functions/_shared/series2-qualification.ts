@@ -59,8 +59,13 @@ export function getGuaranteedGroupPlaces(
   }
   if (pairs.size !== 6) return {};
 
+  for (const f of fixtures) {
+    if (f.result_status === "double_no_show") continue;
+    const hasAnyResult = f.winner !== null || f.score1 !== null || f.score2 !== null;
+    if (hasAnyResult && !isRecorded(f)) return {};
+    if (isRecorded(f) && !isLegalFixture(f)) return {};
+  }
   const pending = fixtures.filter((f) => f.result_status !== "double_no_show" && !isRecorded(f));
-  if (fixtures.some((f) => f.result_status !== "double_no_show" && isRecorded(f) && !isLegalFixture(f))) return {};
   if (pending.length > 3) return {};
 
   const possibleRanks = new Map(ids.map((id) => [id, new Set<number>()]));
