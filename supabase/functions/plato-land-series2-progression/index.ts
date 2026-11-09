@@ -10,67 +10,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
 });
 
-import { getGuaranteedGroupPlaces } from "./_shared/series2-qualification.ts";
-
-function syncGroupSlots(progression: Record<string, any>) {
-  const brackets = { ...(progression.brackets || {}) };
-  const placesByGroup = new Map<string, Record<number, string>>();
-  for (const group of Array.isArray(progression.groups) ? progression.groups : []) {
-    placesByGroup.set(group.name, getGuaranteedGroupPlaces(progression, group.name));
-  }
-  for (const round of ["round16", "quarter", "semi", "final", "third_place"]) {
-    brackets[round] = (brackets[round] || []).map((match: any) => {
-      const resolve = (side: "player1" | "player2") => {
-        const source = match[side + "_source"];
-        if (typeof source !== "string" || !source.startsWith("group:")) return match[side];
-        const [, group, placeText] = source.split(":");
-        const place = Number(placeText);
-        const resolved = placesByGroup.get(group)?.[place];
-        return resolved || (place === 1 ? "نفر اول گروه " + group : "نفر دوم گروه " + group);
-      };
-      return { ...match, player1: resolve("player1"), player2: resolve("player2") };
-    });
-  }
-  return { ...progression, brackets };
-}
-function hasRecordedBracketConflict(before:Record<string,any>,after:Record<string,any>) {
-  const rounds=["round16","quarter","semi","final","third_place"];
-  for(const round of rounds) {
-    const oldMatches=before.brackets?.[round]||[];
-    const nextMatches=after.brackets?.[round]||[];
-    for(const oldMatch of oldMatches) {
-      if(!oldMatch.winner || !Number.isInteger(oldMatch.score1) || !Number.isInteger(oldMatch.score2)) continue;
-      const nextMatch=nextMatches.find((m:any)=>m.id===oldMatch.id);
-      if(nextMatch && (nextMatch.player1!==oldMatch.player1 || nextMatch.player2!==oldMatch.player2))
-        return true;
-    }
-  }
-  return false;
-}
-function syncBracketSources(progression: Record<string, any>) {
-  const brackets={...(progression.brackets||{})};
-  const rounds=["round16","quarter","semi","final","third_place"];
-  const byId=new Map<string,any>();
-  for(const round of rounds) for(const match of (brackets[round]||[])) byId.set(String(match.id),match);
-  for(const round of rounds) {
-    brackets[round]=(brackets[round]||[]).map((match:any)=>{
-      const resolve=(side:"player1"|"player2")=>{
-        const source=match[side+"_source"];
-        if(typeof source!=="string") return match[side];
-        const parts=source.split(":");
-        if(parts[0]==="winner" || parts[0]==="loser") {
-          const prior=byId.get(parts[1]);
-          if(!prior?.winner) return match[side];
-          if(parts[0]==="winner") return prior.winner;
-          return prior.winner===prior.player1?prior.player2:prior.player1;
-        }
-        return match[side];
-      };
-      return {...match,player1:resolve("player1"),player2:resolve("player2")};
-    });
-  }
-  return {...progression,brackets};
-}
+import { syncGroupSlots, syncBracketSources, hasRecordedBracketConflict, prepareBracketForResult } from "./_shared/series2-bracket.ts";
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -253,7 +193,9 @@ Deno.serve(async (req: Request) => {
       if (readError) throw readError;
       if (!current?.progression) return json({ error: "Series 2 progression was not found." }, 404);
       if (current.updated_at !== expectedUpdatedAt) return json({ error: "Tournament data changed. Refresh and try again." }, 409);
-      const p=current.progression as Record<string,any>;
+      const prepared = prepareBracketForResult(current.progression as Record<string,any>);
+      if (prepared.blocked) return json({error:"A recorded knockout result conflicts with the current group qualification or bracket participants. Resolve the dependent result first."},409);
+      const p=prepared.progression as Record<string,any>;
       const rounds={...(p.brackets||{})};
       const matches=Array.isArray(rounds[round])?[...rounds[round]]:[];
       const index=matches.findIndex((m:any)=>m.id===matchId);
