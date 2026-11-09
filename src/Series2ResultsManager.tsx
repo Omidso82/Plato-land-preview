@@ -17,7 +17,32 @@ type Fixture = {
   result_status?: 'double_no_show' | null;
   result_history?: HistoryEntry[];
 };
-type Progression = { groups?: Array<{ name: string }>; group_fixtures?: Fixture[]; [key: string]: unknown };
+type Progression = { groups?: Array<{ name: string; players?: Array<{ plato_id: string }> }>; group_fixtures?: Fixture[]; [key: string]: unknown };
+type Standing = { platoId: string; played: number; wins: number; losses: number; points: number; setsWon: number; setsLost: number; difference: number };
+function getGroupStandings(progression: Progression | null, groupName: string) {
+  const group = progression?.groups?.find(item => item.name === groupName);
+  if (!group) return [] as Standing[];
+  const rows = (group.players || []).map(player => ({ platoId: player.plato_id, played: 0, wins: 0, losses: 0, points: 0, setsWon: 0, setsLost: 0, difference: 0 }));
+  const byId = new Map(rows.map(row => [row.platoId, row]));
+  for (const match of (progression?.group_fixtures || []).filter(item => item.group === groupName)) {
+    if (match.result_status === 'double_no_show') { const a=byId.get(match.player1), b=byId.get(match.player2); if(a)a.played++; if(b)b.played++; continue; }
+    if (!match.winner || !Number.isInteger(match.score1) || !Number.isInteger(match.score2)) continue;
+    const a=byId.get(match.player1), b=byId.get(match.player2); if(!a||!b)continue;
+    a.played++; b.played++; a.setsWon+=match.score1 as number; a.setsLost+=match.score2 as number;
+    b.setsWon+=match.score2 as number; b.setsLost+=match.score1 as number;
+    const winner=match.winner===a.platoId?a:match.winner===b.platoId?b:null; if(!winner)continue;
+    const loser=winner===a?b:a; winner.wins++; winner.points+=3; loser.losses++;
+  }
+  rows.forEach(row=>row.difference=row.setsWon-row.setsLost);
+  rows.sort((a,b)=>b.points-a.points||b.difference-a.difference||b.setsWon-a.setsWon);
+  for(let i=0;i<rows.length-1;i++){
+    const a=rows[i],b=rows[i+1];
+    if(a.points!==b.points||a.difference!==b.difference||a.setsWon!==b.setsWon)continue;
+    const h2h=(progression?.group_fixtures||[]).find(m=>m.result_status!=='double_no_show'&&m.winner&&((m.player1===a.platoId&&m.player2===b.platoId)||(m.player1===b.platoId&&m.player2===a.platoId)));
+    if(h2h?.winner===b.platoId)[rows[i],rows[i+1]]=[b,a];
+  }
+  return rows;
+}
 
 const DAY_LABELS: Record<string, string> = {
   saturday: 'شنبه · روز اول', sunday: 'یکشنبه · روز دوم', monday: 'دوشنبه · روز سوم',
@@ -66,6 +91,7 @@ export default function Series2ResultsManager() {
   useEffect(() => { void loadProgression(); }, [loadProgression]);
 
   const groupNames = useMemo(() => (progression?.groups || []).map(group => group.name), [progression]);
+  const standings = useMemo(() => getGroupStandings(progression, selectedGroup), [progression, selectedGroup]);
   const fixtures = useMemo(() => (progression?.group_fixtures || [])
     .filter(match => match.group === selectedGroup)
     .filter(match => selectedDay === 'all' || match.day === selectedDay)
@@ -201,6 +227,21 @@ export default function Series2ResultsManager() {
             </label>
           </div>
           <div style={summary}><strong>گروه {selectedGroup}</strong><span>{fa(fixtures.length)} مسابقه در این فهرست</span></div>
+          <div style={standingsPanel}>
+            <strong style={standingsTitle}>جدول زنده گروه {selectedGroup}</strong>
+            <div style={{overflowX:'auto'}}>
+              <table style={standingsTable}>
+                <thead><tr>{['رتبه','Plato ID','بازی','برد','باخت','امتیاز','ست برده','تفاضل'].map(label=><th style={standingsCell} key={label}>{label}</th>)}</tr></thead>
+                <tbody>{standings.map((row,index)=><tr key={row.platoId}>
+                  <td style={standingsCell}>{fa(index+1)}</td><td style={{...standingsCell,direction:'ltr',fontWeight:700}}>{row.platoId}</td>
+                  <td style={standingsCell}>{fa(row.played)}</td><td style={standingsCell}>{fa(row.wins)}</td><td style={standingsCell}>{fa(row.losses)}</td>
+                  <td style={standingsCell}>{fa(row.points)}</td><td style={standingsCell}>{fa(row.setsWon)}</td><td style={standingsCell}>{fa(row.difference)}</td>
+                </tr>)}</tbody>
+              </table>
+            </div>
+            <small style={standingsHint}>محاسبه بر اساس نتایج ثبت‌شده؛ برد ۳ امتیاز دارد. در تساوی کامل، نتیجه رودررو اعمال می‌شود.</small>
+          </div>
+
           {fixtures.length === 0 ? <p style={stateText}>برای این فیلتر مسابقه‌ای پیدا نشد.</p> : (
             <div style={matchList}>
               {fixtures.map(match => {
@@ -280,7 +321,12 @@ export default function Series2ResultsManager() {
   );
 }
 
-const section: React.CSSProperties = { marginTop: 20, padding: 16, border: '1px solid #b18b45', borderRadius: 14, background: 'linear-gradient(145deg,#211b12,#111214)' };
+const standingsPanel: React.CSSProperties = { margin: '12px 0 16px', padding: 12, border: '1px solid #8f754466', borderRadius: 10, background: '#101113' };
+const standingsTitle: React.CSSProperties = { display: 'block', color: '#f0d99f', fontSize: 13, marginBottom: 9 };
+const standingsTable: React.CSSProperties = { width: '100%', borderCollapse: 'collapse', color: '#eee5d4', fontSize: 10, whiteSpace: 'nowrap' };
+const standingsCell: React.CSSProperties = { padding: '7px 8px', borderBottom: '1px solid #ffffff18', textAlign: 'center' };
+const standingsHint: React.CSSProperties = { display: 'block', color: '#a99e89', marginTop: 8, fontSize: 9 };
+\nconst section: React.CSSProperties = { marginTop: 20, padding: 16, border: '1px solid #b18b45', borderRadius: 14, background: 'linear-gradient(145deg,#211b12,#111214)' };
 const header: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' };
 const title: React.CSSProperties = { color: '#f6e8c5', fontSize: 19, margin: '0 0 6px' };
 const muted: React.CSSProperties = { color: '#c9c4b8', fontSize: 13, lineHeight: 1.9, margin: 0 };
