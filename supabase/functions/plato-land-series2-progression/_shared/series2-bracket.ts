@@ -93,3 +93,15 @@ export function hasRecordedBracketConflict(before: Progression, after: Progressi
   }
   return false;
 }
+
+/** Resolves the read-only bracket projection before an owner records a knockout result. */
+export function prepareBracketForResult(progression: Progression): {
+  progression: Progression;
+  blocked: boolean;
+} {
+  const projected = syncBracketSources(syncGroupSlots(progression));
+  if (hasRecordedBracketConflict(progression, projected)) {
+    return { progression, blocked: true };
+  }
+  return { progression: projected, blocked: false };
+}
