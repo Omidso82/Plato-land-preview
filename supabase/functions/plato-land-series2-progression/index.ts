@@ -38,9 +38,10 @@ function calculateGroupStandings(progression: Record<string, any>) {
       if(j-i===2) {
         const a=rows[i], b=rows[i+1];
         const h2h=(progression.group_fixtures||[]).find((f:any)=>f.group===group.name &&
-          f.result_status!=="double_no_show" && f.winner &&
+          f.result_status!=="double_no_show" && Number.isInteger(f.score1) && Number.isInteger(f.score2) && f.winner &&
           ((f.player1===a.plato_id&&f.player2===b.plato_id)||(f.player1===b.plato_id&&f.player2===a.plato_id)));
         if(h2h?.winner===b.plato_id) [rows[i],rows[i+1]]=[b,a];
+        else if(h2h?.winner!==a.plato_id) unresolved[group.name]=rows.slice(i,j).map(row=>row.plato_id);
       } else if(j-i>2) unresolved[group.name]=rows.slice(i,j).map(row=>row.plato_id);
       i=j;
     }
