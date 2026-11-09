@@ -360,3 +360,18 @@
   max-height:none;
   object-fit:contain;
 }
+
+
+/* Corrected selector: poster wrapper is nested inside the leaderboard shell. */
+.s2leaderboard-shell .s2fixed-poster{
+  width:100% !important;
+  max-width:none !important;
+}
+.s2leaderboard-shell .s2fixed-poster img{
+  display:block !important;
+  width:100% !important;
+  max-width:100% !important;
+  height:auto !important;
+  max-height:none !important;
+  object-fit:contain !important;
+}
