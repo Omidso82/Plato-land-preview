@@ -10,54 +10,14 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
 });
 
-type StandingRow = { plato_id: string; points: number; score_for: number; score_against: number; difference: number; wins: number };
-function calculateGroupStandings(progression: Record<string, any>) {
-  const all: Record<string, StandingRow[]> = {};
-  const unresolved: Record<string, string[]> = {};
-  for (const group of Array.isArray(progression.groups) ? progression.groups : []) {
-    const rows: StandingRow[] = (group.players || []).map((p: any) => ({
-      plato_id: p.plato_id, points: 0, score_for: 0, score_against: 0, difference: 0, wins: 0,
-    }));
-    const byId = new Map(rows.map(row => [row.plato_id, row]));
-    for (const fixture of (progression.group_fixtures || []).filter((f: any) => f.group === group.name)) {
-      if (fixture.result_status === "double_no_show" || !fixture.winner ||
-          !Number.isInteger(fixture.score1) || !Number.isInteger(fixture.score2)) continue;
-      const one = byId.get(fixture.player1), two = byId.get(fixture.player2);
-      if (!one || !two) continue;
-      one.score_for += fixture.score1; one.score_against += fixture.score2;
-      two.score_for += fixture.score2; two.score_against += fixture.score1;
-      const winner = fixture.winner === one.plato_id ? one : fixture.winner === two.plato_id ? two : null;
-      if (winner) { winner.wins++; winner.points += 3; }
-    }
-    rows.forEach(row => row.difference = row.score_for - row.score_against);
-    rows.sort((a,b) => b.points-a.points || b.difference-a.difference || b.score_for-a.score_for);
-    for (let i=0;i<rows.length;) {
-      let j=i+1;
-      while(j<rows.length && rows[j].points===rows[i].points &&
-        rows[j].difference===rows[i].difference && rows[j].score_for===rows[i].score_for) j++;
-      if(j-i===2) {
-        const a=rows[i], b=rows[i+1];
-        const h2h=(progression.group_fixtures||[]).find((f:any)=>f.group===group.name &&
-          f.result_status!=="double_no_show" && Number.isInteger(f.score1) && Number.isInteger(f.score2) && f.winner &&
-          ((f.player1===a.plato_id&&f.player2===b.plato_id)||(f.player1===b.plato_id&&f.player2===a.plato_id)));
-        if(h2h?.winner===b.plato_id) [rows[i],rows[i+1]]=[b,a];
-        else if(h2h?.winner!==a.plato_id) unresolved[group.name]=rows.slice(i,j).map(row=>row.plato_id);
-      } else if(j-i>2) unresolved[group.name]=rows.slice(i,j).map(row=>row.plato_id);
-      i=j;
-    }
-    all[group.name]=rows;
-  }
-  return { standings: all, unresolved };
-}
+import { getGuaranteedGroupPlaces } from "../_shared/series2-qualification.ts";
+
 function syncGroupSlots(progression: Record<string, any>) {
-  const {standings, unresolved}=calculateGroupStandings(progression);
   const brackets={...(progression.brackets||{})};
-  const manualSlots: Record<string,string> = {
-    "R16-3:player1":"_34EED",
-    "R16-5:player1":"Mitra2024__",
-    "R16-7:player1":"Meehrd4d",
-    "R16-4:player1":"H7LEN_",
-  };
+  const placesByGroup = new Map<string, Record<number,string>>();
+  for (const group of Array.isArray(progression.groups) ? progression.groups : []) {
+    placesByGroup.set(group.name, getGuaranteedGroupPlaces(progression, group.name));
+  }
   for(const round of ["round16","quarter","semi","final","third_place"]) {
     brackets[round]=(brackets[round]||[]).map((match:any)=>{
       const resolve=(side:"player1"|"player2")=>{
@@ -65,15 +25,8 @@ function syncGroupSlots(progression: Record<string, any>) {
         if(typeof source!=="string" || !source.startsWith("group:")) return match[side];
         const [,group,placeText]=source.split(":");
         const place=Number(placeText);
-        const manual=manualSlots[match.id+":"+side];
-        if(manual) return manual;
-        const groupFixtures=(progression.group_fixtures||[]).filter((fixture:any)=>fixture.group===group);
-        const groupComplete=groupFixtures.length===6 && groupFixtures.every((fixture:any)=>
-          fixture.result_status==="double_no_show" ||
-          (!!fixture.winner && Number.isInteger(fixture.score1) && Number.isInteger(fixture.score2) &&
-           [fixture.player1,fixture.player2].includes(fixture.winner)));
-        if(!groupComplete || unresolved[group]) return place===1?"نفر اول گروه "+group:"نفر دوم گروه "+group;
-        return standings[group]?.[place-1]?.plato_id || (place===1?"نفر اول گروه "+group:"نفر دوم گروه "+group);
+        const resolved=placesByGroup.get(group)?.[place];
+        return resolved || (place===1?"نفر اول گروه "+group:"نفر دوم گروه "+group);
       };
       return {...match,player1:resolve("player1"),player2:resolve("player2")};
     });
