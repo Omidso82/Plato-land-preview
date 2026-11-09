@@ -4,13 +4,16 @@ import App from './App';
 import PredictionOwnerPanel from './PredictionOwnerPanel';
 import Series2Registration from './Series2Registration';
 import Series2SlidesManager from './Series2SlidesManager';
+import Series2ResultsManager from './Series2ResultsManager';
 import './styles.css';
 import './Series2Registration.css';
 
 const root=createRoot(document.getElementById('root')!);
 const path=window.location.pathname.replace(/\/+$/,'') || '/';
 
-if(path==='/series2-slides-manager') {
+if(path==='/series2-results-manager') {
+  root.render(<React.StrictMode><Series2ResultsManager/></React.StrictMode>);
+} else if(path==='/series2-slides-manager') {
   root.render(<React.StrictMode><Series2SlidesManager/></React.StrictMode>);
 } else if(path==='/' || path==='/series2-registration') {
   root.render(<React.StrictMode><Series2Registration/></React.StrictMode>);
