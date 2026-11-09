@@ -356,7 +356,7 @@ export default function Series2ResultsManager() {
             <strong style={standingsTitle}>ثبت نتایج مراحل حذفی و انتقال خودکار برنده‌ها</strong>
             <label style={filterLabel}>مرحله
               <select style={select} value={bracketRound} onChange={event=>{setBracketRound(event.target.value);setBracketEditingId(null);}}>
-                <option value="round16">یک‌شانزدهم نهایی</option><option value="quarter">یک‌چهارم نهایی</option>
+                <option value="round16">یک‌هشتم نهایی</option><option value="quarter">یک‌چهارم نهایی</option>
                 <option value="semi">نیمه‌نهایی</option><option value="final">فینال</option><option value="third_place">رده‌بندی</option>
               </select>
             </label>
