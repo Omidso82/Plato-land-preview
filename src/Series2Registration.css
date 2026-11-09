@@ -345,3 +345,18 @@
 .s2group-standings-table{min-width:650px}
 .s2group-standings-table th{white-space:nowrap}
 .s2group-standings-table td{white-space:nowrap}
+
+
+/* Series 2 public poster: use the full available column without changing its intrinsic ratio. */
+.s2leaderboard-shell > .s2fixed-poster{
+  width:100%;
+  max-width:none;
+}
+.s2leaderboard-shell > .s2fixed-poster img{
+  display:block;
+  width:100%;
+  max-width:none;
+  height:auto;
+  max-height:none;
+  object-fit:contain;
+}
