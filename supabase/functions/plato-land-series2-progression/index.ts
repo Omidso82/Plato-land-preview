@@ -10,7 +10,7 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   status, headers: { ...corsHeaders, "Content-Type": "application/json", "Cache-Control": "no-store" },
 });
 
-import { syncGroupSlots, syncBracketSources, hasRecordedBracketConflict } from "./_shared/series2-bracket.ts";
+import { syncGroupSlots, syncBracketSources, hasRecordedBracketConflict, prepareBracketForResult } from "./_shared/series2-bracket.ts";
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -193,7 +193,9 @@ Deno.serve(async (req: Request) => {
       if (readError) throw readError;
       if (!current?.progression) return json({ error: "Series 2 progression was not found." }, 404);
       if (current.updated_at !== expectedUpdatedAt) return json({ error: "Tournament data changed. Refresh and try again." }, 409);
-      const p=current.progression as Record<string,any>;
+      const prepared = prepareBracketForResult(current.progression as Record<string,any>);
+      if (prepared.blocked) return json({error:"A recorded knockout result conflicts with the current group qualification or bracket participants. Resolve the dependent result first."},409);
+      const p=prepared.progression as Record<string,any>;
       const rounds={...(p.brackets||{})};
       const matches=Array.isArray(rounds[round])?[...rounds[round]]:[];
       const index=matches.findIndex((m:any)=>m.id===matchId);
