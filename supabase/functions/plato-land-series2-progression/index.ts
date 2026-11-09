@@ -253,6 +253,9 @@ Deno.serve(async (req: Request) => {
       const updatedFixture = { ...fixture, score1, score2, winner, result_history: history.slice(-1000) };
       const nextFixtures = fixtures.map((item, index) => index === fixtureIndex ? updatedFixture : item);
       const nextProgression = syncGroupSlots({ ...currentProgression, group_fixtures: nextFixtures });
+      if (hasRecordedBracketConflict(currentProgression as Record<string,any>, nextProgression)) {
+        return json({ error: "A recorded knockout match would have different participants after this group-result correction. Correct the dependent knockout result first." }, 409);
+      }
 
       const { data: saved, error: saveError } = await adminClient
         .from("plato_land_series2_tournament_progression")
