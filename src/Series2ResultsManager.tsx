@@ -65,6 +65,10 @@ export default function Series2ResultsManager() {
   const [score2Input, setScore2Input] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [bracketRound, setBracketRound] = useState('round16');
+  const [bracketEditingId, setBracketEditingId] = useState<string | null>(null);
+  const [bracketScore1, setBracketScore1] = useState('');
+  const [bracketScore2, setBracketScore2] = useState('');
 
   const loadProgression = useCallback(async () => {
     setLoading(true);
@@ -88,7 +92,7 @@ export default function Series2ResultsManager() {
     }
   }, []);
 
-  useEffect(() => { void loadProgression(); }, [loadProgression]);
+  useEffect(() => { void loadProgression(); const timer=window.setInterval(()=>void loadProgression(),15000); return ()=>window.clearInterval(timer); }, [loadProgression]);
 
   const groupNames = useMemo(() => (progression?.groups || []).map(group => group.name), [progression]);
   const standings = useMemo(() => getGroupStandings(progression, selectedGroup), [progression, selectedGroup]);
@@ -189,6 +193,34 @@ export default function Series2ResultsManager() {
     } finally {
       setSavingId(null);
     }
+  }
+
+  async function saveBracketResult(match:any) {
+    if(!supabase){setError('اتصال به دیتابیس اصلی برقرار نیست.');return;}
+    if(!/^\d+$/.test(bracketScore1.trim()) || !/^\d+$/.test(bracketScore2.trim())){setError('هر دو امتیاز را به‌صورت عدد صحیح وارد کن.');return;}
+    const score1=Number(bracketScore1), score2=Number(bracketScore2);
+    const valid=(score1>=5&&score1<=7&&score2>=0&&score2<=4)||(score2>=5&&score2<=7&&score1>=0&&score1<=4);
+    if(!valid){setError('نتیجه معتبر نیست؛ امتیاز برنده باید بین ۵ تا ۷ و امتیاز بازنده بین ۰ تا ۴ باشد.');return;}
+    if(!updatedAt){setError('نسخه داده مشخص نیست؛ ابتدا تازه‌سازی کن.');return;}
+    setSavingId(match.id);setError('');setMessage('');
+    try{
+      const {data:sessionData,error:sessionError}=await supabase.auth.getSession();
+      if(sessionError)throw sessionError;
+      const token=sessionData.session?.access_token;
+      if(!token)throw new Error('نشست مالک معتبر نیست. دوباره وارد پنل شو.');
+      const response=await fetch(SUPABASE_URL+'/functions/v1/plato-land-series2-progression',{
+        method:'POST',
+        headers:{Authorization:'Bearer '+token,apikey:SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',Accept:'application/json'},
+        body:JSON.stringify({action:'save_bracket_result',round:bracketRound,match_id:match.id,score1,score2,expected_updated_at:updatedAt})
+      });
+      const data=await response.json().catch(()=>({}));
+      if(response.status===409){await loadProgression();throw new Error(data?.error||'اطلاعات مسابقات تغییر کرده است؛ فهرست تازه شد.');}
+      if(!response.ok||!data?.saved)throw new Error(data?.error||'ذخیره نتیجه حذفی ناموفق بود.');
+      setProgression(data.progression as Progression);setUpdatedAt(data.updated_at||'');
+      setBracketEditingId(null);setBracketScore1('');setBracketScore2('');
+      setMessage(data.unchanged?'این نتیجه از قبل ثبت شده بود.':'نتیجه حذفی ثبت شد و برنده به مرحله بعد منتقل شد.');
+    }catch(e){setError(e instanceof Error?e.message:'ذخیره نتیجه حذفی ناموفق بود.');}
+    finally{setSavingId(null);}
   }
 
   return (
@@ -312,6 +344,34 @@ export default function Series2ResultsManager() {
               })}
             </div>
           )}
+          <section style={standingsPanel}>
+            <strong style={standingsTitle}>ثبت نتایج مراحل حذفی و انتقال خودکار برنده‌ها</strong>
+            <label style={filterLabel}>مرحله
+              <select style={select} value={bracketRound} onChange={event=>{setBracketRound(event.target.value);setBracketEditingId(null);}}>
+                <option value="round16">یک‌شانزدهم نهایی</option><option value="quarter">یک‌چهارم نهایی</option>
+                <option value="semi">نیمه‌نهایی</option><option value="final">فینال</option><option value="third_place">رده‌بندی</option>
+              </select>
+            </label>
+            <div style={matchList}>
+              {(((progression as any)?.brackets?.[bracketRound]||[]) as any[]).map((match:any)=> {
+                const recorded=!!match.winner&&Number.isInteger(match.score1)&&Number.isInteger(match.score2);
+                const editing=bracketEditingId===match.id;
+                const resolved=!!match.player1&&!!match.player2&&!/^(برنده|بازنده) /.test(match.player1)&&!/^(برنده|بازنده) /.test(match.player2);
+                return <article key={match.id} style={matchCard}>
+                  <div style={matchMeta}><span style={matchId}>{match.id}</span><span style={recorded?savedStatus:pendingStatus}>{recorded?'نتیجه ثبت شده':resolved?'آماده ثبت نتیجه':'در انتظار صعودکننده'}</span></div>
+                  <div style={players}><b dir="ltr" style={playerId}>{match.player1||'—'}</b><span style={versus}>VS</span><b dir="ltr" style={playerId}>{match.player2||'—'}</b></div>
+                  {recorded&&!editing&&<div style={savedScore}><strong dir="ltr">{fa(match.score1)} – {fa(match.score2)}</strong><span>برنده: <b dir="ltr">{match.winner}</b></span></div>}
+                  {editing?<div style={editor}>
+                    <label style={scoreLabel}>امتیاز {match.player1}<input style={scoreInput} type="number" min="0" max="7" value={bracketScore1} onChange={e=>setBracketScore1(e.target.value)}/></label>
+                    <label style={scoreLabel}>امتیاز {match.player2}<input style={scoreInput} type="number" min="0" max="7" value={bracketScore2} onChange={e=>setBracketScore2(e.target.value)}/></label>
+                    <div style={actions}><button type="button" style={primaryButton} disabled={savingId!==null} onClick={()=>void saveBracketResult(match)}>{savingId===match.id?'در حال ذخیره…':recorded?'اصلاح نتیجه':'ثبت نتیجه'}</button><button type="button" style={secondaryButton} onClick={()=>setBracketEditingId(null)}>انصراف</button></div>
+                  </div>:<button type="button" style={recorded?secondaryButton:primaryButton} disabled={!resolved||savingId!==null} onClick={()=>{setBracketEditingId(match.id);setBracketScore1(match.score1==null?'':String(match.score1));setBracketScore2(match.score2==null?'':String(match.score2));}}>{recorded?'اصلاح نتیجه':'ورود نتیجه'}</button>}
+                  {Array.isArray(match.result_history)&&match.result_history.length>0&&<details style={historyDetails}><summary>تاریخچه نتیجه ({fa(match.result_history.length)})</summary><ol style={historyList}>{match.result_history.map((h:any,i:number)=><li key={h.recorded_at+'-'+i}><span>{h.action==='corrected'?'اصلاح':'ثبت'}</span><b dir="ltr">{fa(h.score1)} – {fa(h.score2)}</b><small>{dateText(h.recorded_at)}</small></li>)}</ol></details>}
+                </article>;
+              })}
+            </div>
+            {(((progression as any)?.brackets?.[bracketRound]||[]) as any[]).length===0&&<p style={stateText}>برای این مرحله مسابقه‌ای ثبت نشده است.</p>}
+          </section>
         </>
       )}
       {error && progression && <div style={errorBox} role="alert">{error}</div>}
