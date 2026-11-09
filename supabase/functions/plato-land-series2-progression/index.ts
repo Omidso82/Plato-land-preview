@@ -67,13 +67,27 @@ function syncGroupSlots(progression: Record<string, any>) {
         const place=Number(placeText);
         const manual=manualSlots[match.id+":"+side];
         if(manual) return manual;
-        if(unresolved[group]) return match[side];
-        return standings[group]?.[place-1]?.plato_id || match[side];
+        if(unresolved[group]) return place===1?"نفر اول گروه "+group:"نفر دوم گروه "+group;
+        return standings[group]?.[place-1]?.plato_id || (place===1?"نفر اول گروه "+group:"نفر دوم گروه "+group);
       };
       return {...match,player1:resolve("player1"),player2:resolve("player2")};
     });
   }
   return {...progression,brackets};
+}
+function hasRecordedBracketConflict(before:Record<string,any>,after:Record<string,any>) {
+  const rounds=["round16","quarter","semi","final","third_place"];
+  for(const round of rounds) {
+    const oldMatches=before.brackets?.[round]||[];
+    const nextMatches=after.brackets?.[round]||[];
+    for(const oldMatch of oldMatches) {
+      if(!oldMatch.winner || !Number.isInteger(oldMatch.score1) || !Number.isInteger(oldMatch.score2)) continue;
+      const nextMatch=nextMatches.find((m:any)=>m.id===oldMatch.id);
+      if(nextMatch && (nextMatch.player1!==oldMatch.player1 || nextMatch.player2!==oldMatch.player2))
+        return true;
+    }
+  }
+  return false;
 }
 function syncBracketSources(progression: Record<string, any>) {
   const brackets={...(progression.brackets||{})};
@@ -167,6 +181,7 @@ Deno.serve(async (req: Request) => {
       const updatedFixture = { ...fixture, score1: null, score2: null, winner: null, result_status: "double_no_show", result_history: history.slice(-1000) };
       const nextFixtures = fixtures.map((item, index) => index === fixtureIndex ? updatedFixture : item);
       const nextProgression = syncGroupSlots({ ...currentProgression, group_fixtures: nextFixtures });
+      if(hasRecordedBracketConflict(currentProgression,nextProgression)) return json({error:"A recorded knockout match would have different participants after this group-result correction. Correct the dependent knockout result first."},409);
       const { data: saved, error: saveError } = await adminClient.from("plato_land_series2_tournament_progression")
         .update({ progression: nextProgression, updated_by: authData.user.id, updated_at: recordedAt })
         .eq("tournament_key", "series2").eq("updated_at", current.updated_at)
@@ -285,6 +300,7 @@ Deno.serve(async (req: Request) => {
       matches[index]={...match,score1,score2,winner,result_history:history.slice(-1000)};
       rounds[round]=matches;
       const next=syncBracketSources({...p,brackets:rounds});
+      if(hasRecordedBracketConflict(p,next)) return json({error:"A later-round match already has a recorded result and its participants would change. Correct that dependent result first."},409);
       const {data:saved,error:saveError}=await adminClient.from("plato_land_series2_tournament_progression")
         .update({progression:next,updated_by:authData.user.id,updated_at:updatedAt})
         .eq("tournament_key","series2").eq("updated_at",current.updated_at)
