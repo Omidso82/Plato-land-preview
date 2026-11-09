@@ -67,7 +67,12 @@ function syncGroupSlots(progression: Record<string, any>) {
         const place=Number(placeText);
         const manual=manualSlots[match.id+":"+side];
         if(manual) return manual;
-        if(unresolved[group]) return place===1?"نفر اول گروه "+group:"نفر دوم گروه "+group;
+        const groupFixtures=(progression.group_fixtures||[]).filter((fixture:any)=>fixture.group===group);
+        const groupComplete=groupFixtures.length===6 && groupFixtures.every((fixture:any)=>
+          fixture.result_status==="double_no_show" ||
+          (!!fixture.winner && Number.isInteger(fixture.score1) && Number.isInteger(fixture.score2) &&
+           [fixture.player1,fixture.player2].includes(fixture.winner)));
+        if(!groupComplete || unresolved[group]) return place===1?"نفر اول گروه "+group:"نفر دوم گروه "+group;
         return standings[group]?.[place-1]?.plato_id || (place===1?"نفر اول گروه "+group:"نفر دوم گروه "+group);
       };
       return {...match,player1:resolve("player1"),player2:resolve("player2")};
