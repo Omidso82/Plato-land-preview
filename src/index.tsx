@@ -10,8 +10,9 @@ import './Series2Registration.css';
 
 const root=createRoot(document.getElementById('root')!);
 const path=window.location.pathname.replace(/\/+$/,'') || '/';
+const page=new URLSearchParams(window.location.search).get('page');
 
-if(path==='/series2-results-manager') {
+if(path==='/series2-results-manager' || ((path==='/' || path==='/index.html') && page==='series2-results-manager')) {
   root.render(<React.StrictMode><Series2ResultsManager/></React.StrictMode>);
 } else if(path==='/series2-slides-manager') {
   root.render(<React.StrictMode><Series2SlidesManager/></React.StrictMode>);
