@@ -73,7 +73,6 @@ export default function Series2ResultsManager() {
   const [score2Input, setScore2Input] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
-  const [accessState, setAccessState] = useState<'checking'|'allowed'|'denied'>('checking');
   const [bracketRound, setBracketRound] = useState('round16');
   const [bracketEditingId, setBracketEditingId] = useState<string | null>(null);
   const [bracketScore1, setBracketScore1] = useState('');
@@ -102,24 +101,6 @@ export default function Series2ResultsManager() {
   }, []);
 
   useEffect(() => { void loadProgression(); const timer=window.setInterval(()=>void loadProgression(),15000); return ()=>window.clearInterval(timer); }, [loadProgression]);
-  useEffect(() => {
-    let active=true;
-    const timeout=window.setTimeout(()=>{if(active)setAccessState('denied');},10000);
-    (async()=>{
-      try {
-        if(!supabase){if(active)setAccessState('denied');return;}
-        const {data:{session},error:sessionError}=await supabase.auth.getSession();
-        if(sessionError || !session){if(active)setAccessState('denied');return;}
-        const {data:role,error:roleError}=await supabase.rpc('current_user_role');
-        if(active)setAccessState(!roleError && role==='owner'?'allowed':'denied');
-      } catch {
-        if(active)setAccessState('denied');
-      } finally {
-        window.clearTimeout(timeout);
-      }
-    })();
-    return ()=>{active=false;window.clearTimeout(timeout);};
-  },[]);
 
   const groupNames = useMemo(() => (progression?.groups || []).map(group => group.name), [progression]);
   const standings = useMemo(() => getGroupStandings(progression, selectedGroup), [progression, selectedGroup]);
@@ -249,9 +230,6 @@ export default function Series2ResultsManager() {
     }catch(e){setError(e instanceof Error?e.message:'ذخیره نتیجه حذفی ناموفق بود.');}
     finally{setSavingId(null);}
   }
-
-  if(accessState==='checking') return <section dir="rtl" style={section}><p style={stateText}>در حال بررسی دسترسی مالک…</p></section>;
-  if(accessState!=='allowed') return <section dir="rtl" style={section}><div style={errorBox}>این پنل موقت فقط برای مالک کل قابل دسترسی است. ابتدا با حساب مالک وارد سایت شو.</div></section>;
 
   return (
     <section dir="rtl" style={section}>
