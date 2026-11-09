@@ -102,6 +102,24 @@ export default function Series2ResultsManager() {
   }, []);
 
   useEffect(() => { void loadProgression(); const timer=window.setInterval(()=>void loadProgression(),15000); return ()=>window.clearInterval(timer); }, [loadProgression]);
+  useEffect(() => {
+    let active=true;
+    const timeout=window.setTimeout(()=>{if(active)setAccessState('denied');},10000);
+    (async()=>{
+      try {
+        if(!supabase){if(active)setAccessState('denied');return;}
+        const {data:{session},error:sessionError}=await supabase.auth.getSession();
+        if(sessionError || !session){if(active)setAccessState('denied');return;}
+        const {data:role,error:roleError}=await supabase.rpc('current_user_role');
+        if(active)setAccessState(!roleError && role==='owner'?'allowed':'denied');
+      } catch {
+        if(active)setAccessState('denied');
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    })();
+    return ()=>{active=false;window.clearTimeout(timeout);};
+  },[]);
 
   const groupNames = useMemo(() => (progression?.groups || []).map(group => group.name), [progression]);
   const standings = useMemo(() => getGroupStandings(progression, selectedGroup), [progression, selectedGroup]);
