@@ -86,6 +86,7 @@ export function getGuaranteedGroupPlaces(
         standings[j].scoreFor === standings[i].scoreFor) j++;
 
       const tied = standings.slice(i, j);
+      let headToHeadWinner: string | null = null;
       if (tied.length === 2) {
         const direct = scenarioFixtures.find((f) =>
           f.result_status !== "double_no_show" &&
@@ -93,12 +94,20 @@ export function getGuaranteedGroupPlaces(
           ((f.player1 === tied[0].id && f.player2 === tied[1].id) ||
             (f.player1 === tied[1].id && f.player2 === tied[0].id))
         );
-        if (direct?.winner === tied[1].id) {
-          [standings[i], standings[i + 1]] = [standings[i + 1], standings[i]];
+        if (direct && tied.some((row) => row.id === direct.winner)) {
+          headToHeadWinner = direct.winner;
+          if (direct.winner === tied[1].id) {
+            [standings[i], standings[i + 1]] = [standings[i + 1], standings[i]];
+          }
         }
       }
-      for (let rank = i + 1; rank <= j; rank++) {
-        for (const row of tied) possibleRanks.get(row.id)?.add(rank);
+      if (headToHeadWinner) {
+        possibleRanks.get(standings[i].id)?.add(i + 1);
+        possibleRanks.get(standings[i + 1].id)?.add(i + 2);
+      } else {
+        for (let rank = i + 1; rank <= j; rank++) {
+          for (const row of tied) possibleRanks.get(row.id)?.add(rank);
+        }
       }
       i = j;
     }
