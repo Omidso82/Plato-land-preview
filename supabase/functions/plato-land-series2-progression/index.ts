@@ -49,15 +49,92 @@ function calculateGroupStandings(progression: Record<string, any>) {
   }
   return { standings: all, unresolved };
 }
-function syncGroupSlots(progression: Record<string, any>) {
-  const {standings, unresolved}=calculateGroupStandings(progression);
-  const brackets={...(progression.brackets||{})};
-  const manualSlots: Record<string,string> = {
-    "R16-3:player1":"_34EED",
-    "R16-5:player1":"Mitra2024__",
-    "R16-7:player1":"Meehrd4d",
-    "R16-4:player1":"H7LEN_",
+const VALID_GROUP_SCORES = (() => {
+  const options: Array<{score1:number;score2:number}> = [];
+  for (let losingScore=0; losingScore<=4; losingScore++) {
+    options.push({score1:5,score2:losingScore});
+    options.push({score1:losingScore,score2:5});
+  }
+  return options;
+})();
+
+function getScenarioRankCandidates(progression:Record<string,any>, groupName:string, overrides:Map<string,{score1:number;score2:number}>) {
+  const group=(progression.groups||[]).find((item:any)=>item.name===groupName);
+  if(!group) return [] as string[][];
+  const rows=(group.players||[]).map((p:any)=>({plato_id:p.plato_id,points:0,score_for:0,score_against:0,difference:0}));
+  const byId=new Map(rows.map((row:any)=>[row.plato_id,row]));
+  const fixtures=(progression.group_fixtures||[]).filter((f:any)=>f.group===groupName);
+  for(const fixture of fixtures) {
+    if(fixture.result_status==="double_no_show") continue;
+    const score=overrides.get(fixture.id) || (fixture.winner && Number.isInteger(fixture.score1) && Number.isInteger(fixture.score2)
+      ? {score1:fixture.score1,score2:fixture.score2}:null);
+    if(!score) continue;
+    const one=byId.get(fixture.player1),two=byId.get(fixture.player2);
+    if(!one||!two) continue;
+    one.score_for+=score.score1; one.score_against+=score.score2;
+    two.score_for+=score.score2; two.score_against+=score.score1;
+    if(score.score1>score.score2) one.points+=3; else two.points+=3;
+  }
+  rows.forEach((row:any)=>row.difference=row.score_for-row.score_against);
+  rows.sort((a:any,b:any)=>b.points-a.points||b.difference-a.difference||b.score_for-a.score_for);
+  const candidates:string[][]=[];
+  for(let i=0;i<rows.length;) {
+    let j=i+1;
+    while(j<rows.length&&rows[j].points===rows[i].points&&rows[j].difference===rows[i].difference&&rows[j].score_for===rows[i].score_for) j++;
+    const tied=rows.slice(i,j).map((row:any)=>row.plato_id);
+    if(tied.length===2) {
+      const direct=fixtures.find((f:any)=>f.result_status!=="double_no_show" &&
+        ((f.player1===tied[0]&&f.player2===tied[1])||(f.player1===tied[1]&&f.player2===tied[0])) &&
+        (overrides.has(f.id) || (f.winner&&Number.isInteger(f.score1)&&Number.isInteger(f.score2))));
+      let ordered=tied;
+      if(direct) {
+        const directWinner=overrides.has(direct.id)
+          ? ((overrides.get(direct.id)!.score1>overrides.get(direct.id)!.score2)?direct.player1:direct.player2)
+          : direct.winner;
+        ordered=directWinner===tied[1]?[tied[1],tied[0]]:tied;
+      }
+      for(const id of ordered) candidates.push([id]);
+    } else {
+      for(let k=0;k<tied.length;k++) candidates.push(tied);
+    }
+    i=j;
+  }
+  return candidates;
+}
+
+function getGuaranteedGroupPlaces(progression:Record<string,any>,groupName:string) {
+  const fixtures=(progression.group_fixtures||[]).filter((f:any)=>f.group===groupName);
+  const pending=fixtures.filter((f:any)=>f.result_status!=="double_no_show" &&
+    !(f.winner && Number.isInteger(f.score1) && Number.isInteger(f.score2)));
+  // Refuse to guess if the scenario space is unexpectedly large.
+  if(Math.pow(VALID_GROUP_SCORES.length,pending.length)>5000) return {first:null,second:null};
+  const firstCandidates=new Set<string>(),secondCandidates=new Set<string>();
+  let scenarios=0;
+  const overrides=new Map<string,{score1:number;score2:number}>();
+  const visit=(index:number)=>{
+    if(index===pending.length) {
+      const ranks=getScenarioRankCandidates(progression,groupName,overrides);
+      if(ranks.length>=1) ranks[0].forEach(id=>firstCandidates.add(id));
+      if(ranks.length>=2) ranks[1].forEach(id=>secondCandidates.add(id));
+      scenarios++;
+      return;
+    }
+    const fixture=pending[index];
+    for(const score of VALID_GROUP_SCORES) {
+      overrides.set(fixture.id,score);
+      visit(index+1);
+    }
+    overrides.delete(fixture.id);
   };
+  visit(0);
+  return {
+    first:scenarios>0&&firstCandidates.size===1?[...firstCandidates][0]:null,
+    second:scenarios>0&&secondCandidates.size===1?[...secondCandidates][0]:null,
+  };
+}
+
+function syncGroupSlots(progression: Record<string, any>) {
+  const brackets={...(progression.brackets||{})};
   for(const round of ["round16","quarter","semi","final","third_place"]) {
     brackets[round]=(brackets[round]||[]).map((match:any)=>{
       const resolve=(side:"player1"|"player2")=>{
@@ -65,15 +142,10 @@ function syncGroupSlots(progression: Record<string, any>) {
         if(typeof source!=="string" || !source.startsWith("group:")) return match[side];
         const [,group,placeText]=source.split(":");
         const place=Number(placeText);
-        const manual=manualSlots[match.id+":"+side];
-        if(manual) return manual;
-        const groupFixtures=(progression.group_fixtures||[]).filter((fixture:any)=>fixture.group===group);
-        const groupComplete=groupFixtures.length===6 && groupFixtures.every((fixture:any)=>
-          fixture.result_status==="double_no_show" ||
-          (!!fixture.winner && Number.isInteger(fixture.score1) && Number.isInteger(fixture.score2) &&
-           [fixture.player1,fixture.player2].includes(fixture.winner)));
-        if(!groupComplete || unresolved[group]) return place===1?"نفر اول گروه "+group:"نفر دوم گروه "+group;
-        return standings[group]?.[place-1]?.plato_id || (place===1?"نفر اول گروه "+group:"نفر دوم گروه "+group);
+        if(place!==1&&place!==2) return match[side];
+        const guaranteed=getGuaranteedGroupPlaces(progression,group);
+        const resolved=place===1?guaranteed.first:guaranteed.second;
+        return resolved || (place===1?"نفر اول گروه "+group:"نفر دوم گروه "+group);
       };
       return {...match,player1:resolve("player1"),player2:resolve("player2")};
     });
