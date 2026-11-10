@@ -233,8 +233,8 @@ export default function Series2ResultsManager() {
   }
 
 
-  async function publishTelegramAnnouncement(action: 'publish_today_schedule' | 'publish_round16_bracket') {
-    const label = action === 'publish_today_schedule' ? 'برنامه امروز' : 'جدول یک‌هشتم نهایی';
+  async function publishTelegramAnnouncement(action: 'publish_today_schedule' | 'publish_round16_bracket' | 'publish_quarter_bracket') {
+    const label = action === 'publish_today_schedule' ? 'برنامه امروز' : action === 'publish_round16_bracket' ? 'جدول یک‌هشتم نهایی' : 'برنامه یک‌چهارم نهایی';
     if (!window.confirm('آیا مطمئنی پیام «' + label + '» فقط به گروه آزمایشی تلگرام ارسال شود؟')) return;
     if (!supabase) { setError('اتصال به دیتابیس اصلی برقرار نیست.'); return; }
     setAnnouncementBusy(true); setError(''); setMessage('');
@@ -276,6 +276,9 @@ export default function Series2ResultsManager() {
         </button>
         <button type="button" style={secondaryButton} disabled={announcementBusy || savingId !== null} onClick={() => void publishTelegramAnnouncement('publish_round16_bracket')}>
           ارسال جدول یک‌هشتم نهایی
+        </button>
+        <button type="button" style={secondaryButton} disabled={announcementBusy || savingId !== null} onClick={() => void publishTelegramAnnouncement('publish_quarter_bracket')}>
+          ارسال برنامه یک‌چهارم نهایی
         </button>
         <small style={standingsHint}>پیش از ارسال، تأیید می‌گیریم. اگر تاریخ دقیق برنامه امروز در دیتابیس نباشد، ارسال متوقف می‌شود.</small>
       </div>
