@@ -23,6 +23,7 @@ export default function PlatoIdScannerApp(){
   if(error){setMessage('دریافت وضعیت دسترسی ناموفق بود: '+error.message);return;}
   if(!row){const created=await supabase.from('plato_id_scanner_access').insert({user_id:u.id,email:u.email||''}).select('user_id,email,status,requested_at,reviewed_at').single();if(created.error){setMessage('ثبت درخواست دسترسی ناموفق بود: '+created.error.message);return;}row=created.data;}
   setAccess(row as AccessRow);
+  if(row.status!=='approved'){setUploads([]);return;}
   const {data:own,error:ownError}=await supabase.from('plato_id_scanner_uploads').select('*').eq('operator_id',u.id).order('created_at',{ascending:false});
   if(ownError)setMessage('دریافت سوابق آپلود ناموفق بود: '+ownError.message);else setUploads((own||[]) as ScanRow[]);
  },[]);
