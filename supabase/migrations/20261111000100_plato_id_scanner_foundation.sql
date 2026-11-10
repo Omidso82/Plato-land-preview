@@ -32,7 +32,35 @@ create policy scanner_access_insert_self_pending on public.plato_id_scanner_acce
 create policy scanner_access_owner_update on public.plato_id_scanner_access for update to authenticated using((select private.has_role(array['owner']::text[]))) with check((select private.has_role(array['owner']::text[])));
 create policy scanner_uploads_read_owner_or_approved_self on public.plato_id_scanner_uploads for select to authenticated using((select private.has_role(array['owner']::text[])) or (operator_id=(select auth.uid()) and exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved')));
 create policy scanner_uploads_insert_approved_self_or_owner on public.plato_id_scanner_uploads for insert to authenticated with check(operator_id=(select auth.uid()) and storage_path like ((select auth.uid())::text || '/%') and status='uploaded' and ocr_result='{}'::jsonb and ((select private.has_role(array['owner']::text[])) or exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved')));
-insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types) values('plato-id-scans','plato-id-scans',false,15728640,array['image/jpeg','image/png','image/webp']) on conflict(id) do nothing;
+
+-- Create the private bucket if absent. Never silently accept a pre-existing bucket
+-- whose security or upload constraints differ from the Scanner contract.
+insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
+values('plato-id-scans','plato-id-scans',false,15728640,array['image/jpeg','image/png','image/webp'])
+on conflict(id) do nothing;
+
+do $$
+declare
+  scanner_bucket record;
+begin
+  select id, name, public, file_size_limit, allowed_mime_types
+    into scanner_bucket
+    from storage.buckets
+   where id = 'plato-id-scans';
+
+  if not found then
+    raise exception 'PLATO ID Scanner bucket was not created; stop migration and inspect Storage configuration.';
+  end if;
+
+  if scanner_bucket.name is distinct from 'plato-id-scans'
+     or scanner_bucket.public is distinct from false
+     or scanner_bucket.file_size_limit is distinct from 15728640
+     or scanner_bucket.allowed_mime_types is distinct from array['image/jpeg','image/png','image/webp']::text[] then
+    raise exception 'Existing plato-id-scans bucket does not match the required private 15 MiB JPG/PNG/WEBP contract. Reconcile it through Supabase Storage before retrying; no automatic overwrite was attempted.';
+  end if;
+end
+$$;
+
 create policy scanner_storage_read_owner_or_self on storage.objects for select to authenticated using(bucket_id='plato-id-scans' and ((select private.has_role(array['owner']::text[])) or ((storage.foldername(name))[1]=(select auth.uid())::text and exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved'))));
 create policy scanner_storage_insert_approved_self_or_owner on storage.objects for insert to authenticated with check(bucket_id='plato-id-scans' and (storage.foldername(name))[1]=(select auth.uid())::text and ((select private.has_role(array['owner']::text[])) or exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved')));
 -- Operator correction/deletion intentionally excluded until audited backend RPCs are implemented.
