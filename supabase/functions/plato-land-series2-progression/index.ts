@@ -20,7 +20,7 @@ async function queueAndSendTelegramResult(adminClient: ReturnType<typeof createC
 }) {
   try {
     const { data: queued, error: queueError } = await adminClient.from("plato_land_telegram_outbox")
-      .insert({ event_key: event.event_key, announcement_type: event.announcement_type, payload: event.payload, message_text: event.message, tournament_key: "series2", delivery_status: "pending" }).select("id").maybeSingle();
+      .insert({ ...event, tournament_key: "series2", delivery_status: "pending" }).select("id").maybeSingle();
     if (queueError) { if (queueError.code !== "23505") console.error("Telegram outbox insert failed:", queueError.message); return; }
     if (!queued?.id) return;
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
@@ -50,6 +50,52 @@ async function queueAndSendTelegramResult(adminClient: ReturnType<typeof createC
     await adminClient.from("plato_land_telegram_outbox").update({ delivery_status: "sent", telegram_message_id: telegramResult.result?.message_id ?? null, sent_at: new Date().toISOString(), last_error: null }).eq("id", queued.id);
   } catch (error) { console.error("Telegram result notification failed:", error); }
 }
+
+
+async function queueAndSendTelegramAnnouncement(adminClient: ReturnType<typeof createClient>, event: {
+  event_key: string; announcement_type: "today_schedule" | "round16_bracket" | "bracket_update";
+  payload: Record<string, unknown>; message: string;
+}) {
+  const { data: queued, error } = await adminClient.from("plato_land_telegram_announcements")
+    .insert({
+      event_key: event.event_key, announcement_type: event.announcement_type,
+      payload: event.payload, message_text: event.message, tournament_key: "series2",
+      delivery_status: "pending",
+    }).select("id").maybeSingle();
+  if (error) {
+    if (error.code === "23505") return { sent: false, duplicate: true };
+    throw error;
+  }
+  if (!queued?.id) throw new Error("Announcement could not be queued.");
+  const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  const testChatId = Deno.env.get("TELEGRAM_TEST_CHAT_ID");
+  if (!botToken || !testChatId) {
+    await adminClient.from("plato_land_telegram_announcements")
+      .update({ delivery_status: "failed", last_error: "Telegram test destination is not configured." }).eq("id", queued.id);
+    throw new Error("Telegram test destination is not configured.");
+  }
+  await adminClient.from("plato_land_telegram_announcements").update({ delivery_status: "sending", attempts: 1 }).eq("id", queued.id);
+  const response = await fetch("https://api.telegram.org/bot" + botToken + "/sendMessage", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: testChatId, text: event.message, parse_mode: "HTML", disable_web_page_preview: true }),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result?.ok) {
+    const reason = String(result?.description ?? ("Telegram HTTP " + response.status)).slice(0, 1000);
+    await adminClient.from("plato_land_telegram_announcements").update({ delivery_status: "failed", last_error: reason }).eq("id", queued.id);
+    throw new Error(reason);
+  }
+  await adminClient.from("plato_land_telegram_announcements").update({
+    delivery_status: "sent", telegram_message_id: result.result?.message_id ?? null,
+    sent_at: new Date().toISOString(), last_error: null,
+  }).eq("id", queued.id);
+  return { sent: true, duplicate: false, telegram_message_id: result.result?.message_id ?? null };
+}
+
+const telegramHash = async (value: string) => {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+};
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
