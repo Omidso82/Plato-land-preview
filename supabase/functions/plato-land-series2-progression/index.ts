@@ -401,18 +401,22 @@ Deno.serve(async (req: Request) => {
       const currentRoundTitle = roundTitles[round] ?? round;
       let bracketMessage: string;
       if (nextFixtures.length) {
-        const upcoming = nextFixtures[0];
-        const opponent = upcoming.item[upcoming.side === "player1" ? "player2" : "player1"];
-        const advancingPlayer = upcoming.sourceKind === "winner" ? winner : (winner === match.player1 ? match.player2 : match.player1);
+        const upcomingBlocks = nextFixtures.map((upcoming) => {
+          const opponent = upcoming.item[upcoming.side === "player1" ? "player2" : "player1"];
+          const advancingPlayer = upcoming.sourceKind === "winner" ? winner : (winner === match.player1 ? match.player2 : match.player1);
+          const routeLabel = upcoming.sourceKind === "winner" ? "برنده مسابقه" : "بازنده مسابقه";
+          return [
+            "<b>" + escapeTelegramHtml(roundTitles[upcoming.round] ?? upcoming.round) + "</b>",
+            routeLabel + " " + telegramId(matchId) + " → " + telegramId(advancingPlayer),
+            telegramId(upcoming.item.id) + ": " + telegramId(advancingPlayer) + "  مقابل  " + telegramId(opponent),
+          ].join("\n");
+        });
         bracketMessage = [
           telegramAnnouncementHeader("به‌روزرسانی مسیر قهرمانی", currentRoundTitle),
           "",
           "✅ نتیجه مسابقه <b>" + escapeTelegramHtml(matchId) + "</b> ثبت شد.",
-          "🏆 صعودکننده: " + telegramId(advancingPlayer),
           "",
-          "<b>مرحله بعد · " + escapeTelegramHtml(roundTitles[upcoming.round] ?? upcoming.round) + "</b>",
-          telegramId(upcoming.item.id),
-          telegramId(advancingPlayer) + "  مقابل  " + telegramId(opponent),
+          ...upcomingBlocks,
           "",
           "<i>بازی، رقابت، قهرمانی</i>",
         ].join("\n\n");
