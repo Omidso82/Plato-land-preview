@@ -11,6 +11,45 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 });
 
 import { syncGroupSlots, syncBracketSources, hasRecordedBracketConflict, prepareBracketForResult } from "./_shared/series2-bracket.ts";
+const escapeTelegramHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+
+async function queueAndSendTelegramResult(adminClient: ReturnType<typeof createClient>, event: {
+  event_key: string; match_id: string; stage: string; group_name?: string | null;
+  player1: string; player2: string; score1: number; score2: number; winner: string;
+  change_type: "recorded" | "corrected"; recorded_at: string;
+}) {
+  try {
+    const { data: queued, error: queueError } = await adminClient.from("plato_land_telegram_outbox")
+      .insert({ ...event, tournament_key: "series2", delivery_status: "pending" }).select("id").maybeSingle();
+    if (queueError) { if (queueError.code !== "23505") console.error("Telegram outbox insert failed:", queueError.message); return; }
+    if (!queued?.id) return;
+    const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+    const testChatId = Deno.env.get("TELEGRAM_TEST_CHAT_ID");
+    if (!botToken || !testChatId) return;
+    await adminClient.from("plato_land_telegram_outbox").update({ delivery_status: "sending", attempts: 1, last_error: null }).eq("id", queued.id);
+    const stageNames: Record<string, string> = { group: "مرحله گروهی", round16: "یک‌هشتم نهایی", quarter: "یک‌چهارم نهایی", semi: "نیمه‌نهایی", final: "فینال", third_place: "رده‌بندی" };
+    const changeLabel = event.change_type === "corrected" ? "✏️ اصلاح نتیجه مسابقه" : "🏁 نتیجه مسابقه";
+    const groupLine = event.group_name ? "\nگروه: <b>" + escapeTelegramHtml(event.group_name) + "</b>" : "";
+    const message = [
+      "<b>PLATO LAND | سری دوم لیگ تخته‌نرد</b>", "", changeLabel,
+      "مرحله: <b>" + (stageNames[event.stage] ?? event.stage) + "</b>" + groupLine, "",
+      "⚪ " + escapeTelegramHtml(event.player1) + "  <b>" + event.score1 + "</b>",
+      "⚫ " + escapeTelegramHtml(event.player2) + "  <b>" + event.score2 + "</b>", "",
+      "🏆 برنده: <b>" + escapeTelegramHtml(event.winner) + "</b>", "", "<i>بازی، رقابت، قهرمانی</i>",
+    ].join("\n");
+    const telegramResponse = await fetch("https://api.telegram.org/bot" + botToken + "/sendMessage", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: testChatId, text: message, parse_mode: "HTML", disable_web_page_preview: true }),
+    });
+    const telegramResult = await telegramResponse.json().catch(() => null);
+    if (!telegramResponse.ok || !telegramResult?.ok) {
+      const errorText = String(telegramResult?.description ?? ("Telegram HTTP " + telegramResponse.status)).slice(0, 1000);
+      await adminClient.from("plato_land_telegram_outbox").update({ delivery_status: "failed", last_error: errorText }).eq("id", queued.id);
+      console.error("Telegram send failed:", errorText); return;
+    }
+    await adminClient.from("plato_land_telegram_outbox").update({ delivery_status: "sent", telegram_message_id: telegramResult.result?.message_id ?? null, sent_at: new Date().toISOString(), last_error: null }).eq("id", queued.id);
+  } catch (error) { console.error("Telegram result notification failed:", error); }
+}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -175,6 +214,14 @@ Deno.serve(async (req: Request) => {
       if (saveError) throw saveError;
       if (!saved) return json({ error: "Tournament data changed during save. Refresh and try again." }, 409);
 
+      await queueAndSendTelegramResult(adminClient, {
+        event_key: "series2:group:" + matchId + ":" + recordedAt,
+        match_id: matchId, stage: "group",
+        group_name: typeof fixture.group === "string" ? fixture.group : null,
+        player1, player2, score1, score2, winner,
+        change_type: history[history.length - 1]?.action === "corrected" ? "corrected" : "recorded",
+        recorded_at: recordedAt,
+      });
       return json({ saved: true, progression: saved.progression, updated_at: saved.updated_at });
     }
 
@@ -225,6 +272,13 @@ Deno.serve(async (req: Request) => {
         .select("progression,updated_at").maybeSingle();
       if(saveError) throw saveError;
       if(!saved) return json({error:"Tournament data changed during save. Refresh and try again."},409);
+      await queueAndSendTelegramResult(adminClient, {
+        event_key: "series2:" + round + ":" + matchId + ":" + updatedAt,
+        match_id: matchId, stage: round, player1: match.player1, player2: match.player2,
+        score1, score2, winner,
+        change_type: history[history.length - 1]?.action === "corrected" ? "corrected" : "recorded",
+        recorded_at: updatedAt,
+      });
       return json({saved:true,progression:saved.progression,updated_at:saved.updated_at});
     }
 
