@@ -20,6 +20,7 @@ import OwnerBulkOperations from './OwnerBulkOperations';
 import NotificationBell from './NotificationBell';
 import PlayerTournamentHub from './PlayerTournamentHub';
 import { supabase, supabaseConfigured } from './supabase';
+import PlatoIdScannerApp from './PlatoIdScannerApp';
 import React, { useEffect, useMemo, useState } from 'react';
 import * as Lucide from 'lucide-react';
 const FallbackIcon = (props: any) => <span aria-hidden="true" style={{display:'inline-block',width:props.size||18,height:props.size||18,verticalAlign:'middle'}} />;
@@ -60,7 +61,7 @@ function jalaliParts(iso:string){if(!iso)return null;const d=new Date(iso+"T12:0
 function jalaliToIso(value:string){return jalaliDateToIso(value);}
 function isSeriesOne(value:string){const normalized=value.trim().toLowerCase().replace(/[يى]/g,'ی').replace(/‌/g,' ').replace(/\s+/g,' ');return normalized==='سری اول'||normalized==='series 1'||normalized==='series one';}
 function JalaliDateInput({value,onChange,required=false}:{value:string;onChange:(value:string)=>void;required?:boolean}){const parts=jalaliParts(value);const shown=parts?String(parts.year).padStart(4,'0')+'/'+String(parts.month).padStart(2,'0')+'/'+String(parts.day).padStart(2,'0'):'';const [draft,setDraft]=useState(shown);useEffect(()=>setDraft(shown),[shown]);return <input type="text" inputMode="numeric" dir="ltr" className="jalali-date-input" aria-label="تاریخ شمسی" placeholder="۱۴۰۵/۰۸/۱۴" value={draft} required={required} onChange={e=>{const next=e.target.value.replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c)));setDraft(next);if(!next){onChange('');return;}const iso=jalaliToIso(next);if(iso)onChange(iso);}} onBlur={()=>{if(draft&&!jalaliToIso(draft))setDraft(shown);}}/>}
-function App(){
+function MainApp(){
  const [tab,setTab]=useState(()=>{const value=new URLSearchParams(window.location.search).get('page');return value&&['home','tournaments','news','guide','about','profile','login','signup','register','admin','admin-users'].includes(value)?value:'home'}),[mobileMenu,setMobileMenu]=useState(false),[search,setSearch]=useState('');
  const [selectedGame,setSelectedGame]=useState('');
  const [competitionSection,setCompetitionSection]=useState<'active'|'upcoming'|'archive'>('active');
@@ -489,4 +490,9 @@ function TournamentCard({t,register,details}:{t:Tournament;register:()=>void;det
  const [registeredCount,setRegisteredCount]=useState<number|null>(null);
  useEffect(()=>{setRegisteredCount(null);if(!supabase)return;let alive=true;const loadCount=async()=>{const {data,error}=await supabase!.from('registrations').select('slot_count').eq('tournament_id',t.id).in('status',['approved','registered']).eq('is_reserve',false);if(!alive)return;if(!error)setRegisteredCount((data||[]).reduce((sum:any,row:any)=>sum+Math.max(1,Number(row.slot_count)||1),0));};void loadCount();const channel=supabase.channel('tournament-count-'+t.id).on('postgres_changes',{event:'*',schema:'public',table:'registrations',filter:'tournament_id=eq.'+t.id},()=>void loadCount()).subscribe();return()=>{alive=false;void supabase?.removeChannel(channel);};},[t.id]);
  return <article className="tournament-card"><div className="tournament-art"><div className="tournament-art-circle"><Crown size={62}/></div><span className="live-badge">{t.status}</span><span className="tournament-edition">{t.series}</span></div><div className="tournament-content"><div className="tournament-meta"><span><Gamepad2 size={15}/>{t.game}</span><span><Calendar size={15}/>{t.date?formatIranDate(t.date):t.series||'تاریخ اعلام نشده'}</span></div><h3>{t.title}</h3><p>{t.description||'جزئیات این مسابقه توسط مدیر اعلام می‌شود.'}</p><div className="rules-inline"><strong>قوانین مسابقه</strong><p>{t.rules}</p></div><div className="tournament-facts"><div><span>ثبت‌نام‌شده / ظرفیت</span><strong>{registeredCount===null?(t.capacity||'اعلام نشده'):(t.capacity?registeredCount.toLocaleString('fa-IR')+' / '+t.capacity:registeredCount.toLocaleString('fa-IR'))}</strong></div><div><span>جایزه</span><strong>{t.prize||'اعلام نشده'}</strong></div></div><div className="tournament-actions"><button type="button" className="outline-button" onClick={details}>جزئیات مسابقه</button><button className="gold-button" disabled={t.status!=='در حال ثبت‌نام'} onClick={register}>{t.status==='در حال ثبت‌نام'?'ثبت‌نام در این مسابقه':'ثبت‌نام غیرفعال'} <ChevronLeft size={17}/></button></div></div></article>}
+function App(){
+ const page=new URLSearchParams(window.location.search).get('page');
+ if(page==='id-scanner') return <PlatoIdScannerApp/>;
+ return <MainApp/>;
+}
 export default App;
