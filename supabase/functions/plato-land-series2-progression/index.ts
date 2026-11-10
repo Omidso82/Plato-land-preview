@@ -67,7 +67,7 @@ async function queueAndSendTelegramResult(adminClient: ReturnType<typeof createC
 
 
 async function queueAndSendTelegramAnnouncement(adminClient: ReturnType<typeof createClient>, event: {
-  event_key: string; announcement_type: "today_schedule" | "round16_bracket" | "bracket_update";
+  event_key: string; announcement_type: "today_schedule" | "round16_bracket" | "quarter_bracket" | "bracket_update";
   payload: Record<string, unknown>; message: string;
 }) {
   const { data: queued, error } = await adminClient.from("plato_land_telegram_announcements")
@@ -168,7 +168,7 @@ Deno.serve(async (req: Request) => {
     if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "Invalid request body." }, 400);
 
 
-    if (body.action === "publish_today_schedule" || body.action === "publish_round16_bracket") {
+    if (body.action === "publish_today_schedule" || body.action === "publish_round16_bracket" || body.action === "publish_quarter_bracket") {
       const { data: current, error: readError } = await adminClient.from("plato_land_series2_tournament_progression")
         .select("progression,updated_at").eq("tournament_key", "series2").maybeSingle();
       if (readError) throw readError;
@@ -195,6 +195,30 @@ Deno.serve(async (req: Request) => {
       }
       const projected = syncBracketSources(syncGroupSlots(p));
       if (hasRecordedBracketConflict(p, projected)) return json({ error: "براکت با نتیجه ثبت‌شده تعارض دارد؛ ابتدا باید تعارض بررسی شود." }, 409);
+
+      if (body.action === "publish_quarter_bracket") {
+        const matches = Array.isArray(projected.brackets?.quarter) ? projected.brackets.quarter : [];
+        if (matches.length !== 4 || matches.some((match: any) => !match.player1 || !match.player2 || /^(برنده|بازنده|نفر اول گروه|نفر دوم گروه)\\s*/.test(String(match.player1)) || /^(برنده|بازنده|نفر اول گروه|نفر دوم گروه)\\s*/.test(String(match.player2)))) {
+          return json({ error: "برنامه یک‌چهارم نهایی کامل نیست؛ هیچ پیامی ارسال نشد." }, 409);
+        }
+        const orderedMatches = [...matches].sort((a: any, b: any) => String(a.id ?? "").localeCompare(String(b.id ?? ""), "en"));
+        const lines = orderedMatches.map((match: any, index: number) => telegramMatchBlock(match, index));
+        const message = [
+          telegramAnnouncementHeader("برنامه بازی‌های یک‌چهارم نهایی", "۴ مسابقه تا صعود به نیمه‌نهایی"),
+          "",
+          ...lines,
+          "",
+          "<i>بازی، رقابت، قهرمانی</i>",
+        ].join("\n\n");
+        const fingerprint = await telegramHash(JSON.stringify(orderedMatches));
+        const result = await queueAndSendTelegramAnnouncement(adminClient, {
+          event_key: "series2:quarter_bracket:" + fingerprint,
+          announcement_type: "quarter_bracket",
+          payload: { progression_updated_at: current.updated_at, match_count: matches.length },
+          message,
+        });
+        return json({ ok: true, ...result, match_count: matches.length });
+      }
       const matches = Array.isArray(projected.brackets?.round16) ? projected.brackets.round16 : [];
       if (matches.length !== 8 || matches.some((match: any) => !match.player1 || !match.player2 || /^(برنده|بازنده|نفر اول گروه|نفر دوم گروه)\s*/.test(String(match.player1)) || /^(برنده|بازنده|نفر اول گروه|نفر دوم گروه)\s*/.test(String(match.player2)))) {
         return json({ error: "جدول یک‌هشتم کامل و قابل انتشار نیست؛ هیچ پیامی ارسال نشد." }, 409);
