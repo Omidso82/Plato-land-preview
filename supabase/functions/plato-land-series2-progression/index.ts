@@ -173,7 +173,7 @@ Deno.serve(async (req: Request) => {
       const projected = syncBracketSources(syncGroupSlots(p));
       if (hasRecordedBracketConflict(p, projected)) return json({ error: "براکت با نتیجه ثبت‌شده تعارض دارد؛ ابتدا باید تعارض بررسی شود." }, 409);
       const matches = Array.isArray(projected.brackets?.round16) ? projected.brackets.round16 : [];
-      if (matches.length !== 8 || matches.some((match: any) => !match.player1 || !match.player2 || /^(برنده|بازنده) /.test(match.player1) || /^(برنده|بازنده) /.test(match.player2))) {
+      if (matches.length !== 8 || matches.some((match: any) => !match.player1 || !match.player2 || /^(برنده|بازنده|نفر اول گروه|نفر دوم گروه)\s*/.test(String(match.player1)) || /^(برنده|بازنده|نفر اول گروه|نفر دوم گروه)\s*/.test(String(match.player2)))) {
         return json({ error: "جدول یک‌هشتم کامل و قابل انتشار نیست؛ هیچ پیامی ارسال نشد." }, 409);
       }
       const lines = matches.map((match: any, index: number) => (index + 1) + ") <b>" + escapeTelegramHtml(match.player1) + "</b> مقابل <b>" + escapeTelegramHtml(match.player2) + "</b>" + (match.winner ? " · برنده: " + escapeTelegramHtml(match.winner) : ""));
