@@ -51,6 +51,52 @@ async function queueAndSendTelegramResult(adminClient: ReturnType<typeof createC
   } catch (error) { console.error("Telegram result notification failed:", error); }
 }
 
+
+async function queueAndSendTelegramAnnouncement(adminClient: ReturnType<typeof createClient>, event: {
+  event_key: string; announcement_type: "today_schedule" | "round16_bracket" | "bracket_update";
+  payload: Record<string, unknown>; message: string;
+}) {
+  const { data: queued, error } = await adminClient.from("plato_land_telegram_announcements")
+    .insert({
+      event_key: event.event_key, announcement_type: event.announcement_type,
+      payload: event.payload, message_text: event.message, tournament_key: "series2",
+      delivery_status: "pending",
+    }).select("id").maybeSingle();
+  if (error) {
+    if (error.code === "23505") return { sent: false, duplicate: true };
+    throw error;
+  }
+  if (!queued?.id) throw new Error("Announcement could not be queued.");
+  const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
+  const testChatId = Deno.env.get("TELEGRAM_TEST_CHAT_ID");
+  if (!botToken || !testChatId) {
+    await adminClient.from("plato_land_telegram_announcements")
+      .update({ delivery_status: "failed", last_error: "Telegram test destination is not configured." }).eq("id", queued.id);
+    throw new Error("Telegram test destination is not configured.");
+  }
+  await adminClient.from("plato_land_telegram_announcements").update({ delivery_status: "sending", attempts: 1 }).eq("id", queued.id);
+  const response = await fetch("https://api.telegram.org/bot" + botToken + "/sendMessage", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: testChatId, text: event.message, parse_mode: "HTML", disable_web_page_preview: true }),
+  });
+  const result = await response.json().catch(() => null);
+  if (!response.ok || !result?.ok) {
+    const reason = String(result?.description ?? ("Telegram HTTP " + response.status)).slice(0, 1000);
+    await adminClient.from("plato_land_telegram_announcements").update({ delivery_status: "failed", last_error: reason }).eq("id", queued.id);
+    throw new Error(reason);
+  }
+  await adminClient.from("plato_land_telegram_announcements").update({
+    delivery_status: "sent", telegram_message_id: result.result?.message_id ?? null,
+    sent_at: new Date().toISOString(), last_error: null,
+  }).eq("id", queued.id);
+  return { sent: true, duplicate: false, telegram_message_id: result.result?.message_id ?? null };
+}
+
+const telegramHash = async (value: string) => {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, "0")).join("");
+};
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "GET" && req.method !== "POST") return json({ error: "Method not allowed" }, 405);
@@ -106,6 +152,36 @@ Deno.serve(async (req: Request) => {
 
     const body = await req.json().catch(() => null);
     if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "Invalid request body." }, 400);
+
+
+    if (body.action === "publish_today_schedule" || body.action === "publish_round16_bracket") {
+      const { data: current, error: readError } = await adminClient.from("plato_land_series2_tournament_progression")
+        .select("progression,updated_at").eq("tournament_key", "series2").maybeSingle();
+      if (readError) throw readError;
+      if (!current?.progression) return json({ error: "Series 2 progression was not found." }, 404);
+      const p = current.progression as Record<string, any>;
+      if (body.action === "publish_today_schedule") {
+        const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Copenhagen", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+        const fixtures = Array.isArray(p.group_fixtures) ? p.group_fixtures as Array<Record<string, any>> : [];
+        const todays = fixtures.filter(item => item.scheduled_date === today || item.date === today);
+        if (todays.length === 0) return json({ error: "برای امروز تاریخ دقیق مسابقه‌ای در دیتابیس ثبت نشده است؛ برای جلوگیری از انتشار برنامه اشتباه، پیام ارسال نشد.", today }, 409);
+        const lines = todays.map((match, index) => (index + 1) + ") " + escapeTelegramHtml(String(match.player1 ?? "—")) + " مقابل " + escapeTelegramHtml(String(match.player2 ?? "—")));
+        const message = ["<b>PLATO LAND | برنامه بازی‌های امروز</b>", "", ...lines, "", "بازی‌ها معمولاً از ساعت ۲۱ برگزار می‌شوند، اما ممکن است زودتر آغاز شوند؛ لطفاً بازیکنان از قبل آماده باشند."].join("\n");
+        const result = await queueAndSendTelegramAnnouncement(adminClient, { event_key: "series2:today_schedule:" + today, announcement_type: "today_schedule", payload: { date: today, match_count: todays.length }, message });
+        return json({ ok: true, ...result, date: today, match_count: todays.length });
+      }
+      const projected = syncBracketSources(syncGroupSlots(p));
+      if (hasRecordedBracketConflict(p, projected)) return json({ error: "براکت با نتیجه ثبت‌شده تعارض دارد؛ ابتدا باید تعارض بررسی شود." }, 409);
+      const matches = Array.isArray(projected.brackets?.round16) ? projected.brackets.round16 : [];
+      if (matches.length !== 8 || matches.some((match: any) => !match.player1 || !match.player2 || /^(برنده|بازنده|نفر اول گروه|نفر دوم گروه)\s*/.test(String(match.player1)) || /^(برنده|بازنده|نفر اول گروه|نفر دوم گروه)\s*/.test(String(match.player2)))) {
+        return json({ error: "جدول یک‌هشتم کامل و قابل انتشار نیست؛ هیچ پیامی ارسال نشد." }, 409);
+      }
+      const lines = matches.map((match: any, index: number) => (index + 1) + ") <b>" + escapeTelegramHtml(match.player1) + "</b> مقابل <b>" + escapeTelegramHtml(match.player2) + "</b>" + (match.winner ? " · برنده: " + escapeTelegramHtml(match.winner) : ""));
+      const message = ["<b>PLATO LAND | جدول یک‌هشتم نهایی</b>", "", ...lines, "", "بازی‌ها معمولاً از ساعت ۲۱ برگزار می‌شوند، اما ممکن است زودتر آغاز شوند؛ لطفاً بازیکنان از قبل آماده باشند."].join("\n");
+      const fingerprint = await telegramHash(JSON.stringify(matches));
+      const result = await queueAndSendTelegramAnnouncement(adminClient, { event_key: "series2:round16_bracket:" + fingerprint, announcement_type: "round16_bracket", payload: { progression_updated_at: current.updated_at, match_count: matches.length }, message });
+      return json({ ok: true, ...result, match_count: matches.length });
+    }
 
     if (body.action === "mark_double_no_show") {
       const matchId = typeof body.match_id === "string" ? body.match_id : "";
@@ -279,6 +355,29 @@ Deno.serve(async (req: Request) => {
         change_type: history[history.length - 1]?.action === "corrected" ? "corrected" : "recorded",
         recorded_at: updatedAt,
       });
+      const bracketSnapshot = next.brackets as Record<string, any[]>;
+      const roundTitles: Record<string, string> = { round16: "یک‌هشتم نهایی", quarter: "یک‌چهارم نهایی", semi: "نیمه‌نهایی", final: "فینال", third_place: "رده‌بندی" };
+      const bracketLines = Object.entries(bracketSnapshot).flatMap(([key, rows]) =>
+        (Array.isArray(rows) ? rows : []).map((item: any) => {
+          const resultLine = item.winner && Number.isInteger(item.score1) && Number.isInteger(item.score2)
+            ? " · نتیجه " + item.score1 + "–" + item.score2 + " · برنده " + escapeTelegramHtml(item.winner) : "";
+          return "<b>" + escapeTelegramHtml(roundTitles[key] ?? key) + "</b> | " + escapeTelegramHtml(String(item.id)) + ": " +
+            escapeTelegramHtml(String(item.player1 ?? "—")) + " مقابل " + escapeTelegramHtml(String(item.player2 ?? "—")) + resultLine;
+        })
+      );
+      if (bracketLines.length) {
+        const bracketMessage = ["<b>PLATO LAND | به‌روزرسانی جدول حذفی</b>", "", ...bracketLines].join("\n");
+        try {
+          const fingerprint = await telegramHash(JSON.stringify(bracketSnapshot));
+          await queueAndSendTelegramAnnouncement(adminClient, {
+            event_key: "series2:bracket_update:" + fingerprint, announcement_type: "bracket_update",
+            payload: { round, match_id: matchId, progression_updated_at: updatedAt }, message: bracketMessage,
+          });
+        } catch (announcementError) {
+          console.error("Bracket announcement failed after result was saved:", announcementError);
+        }
+      }
+
       return json({saved:true,progression:saved.progression,updated_at:saved.updated_at});
     }
 
