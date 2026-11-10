@@ -12,6 +12,20 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
 
 import { syncGroupSlots, syncBracketSources, hasRecordedBracketConflict, prepareBracketForResult } from "./_shared/series2-bracket.ts";
 const escapeTelegramHtml = (value: string) => value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+const telegramId = (value: unknown) => "<code>" + escapeTelegramHtml(String(value ?? "—")) + "</code>";
+const telegramMatchBlock = (match: any, index: number) => [
+  "<b>مسابقه " + (index + 1) + " · " + escapeTelegramHtml(String(match.id ?? "")) + "</b>",
+  telegramId(match.player1) + "  مقابل  " + telegramId(match.player2),
+  match.winner && Number.isInteger(match.score1) && Number.isInteger(match.score2)
+    ? "🏆 برنده: " + telegramId(match.winner) + "  |  نتیجه: <b>" + match.score1 + "–" + match.score2 + "</b>"
+    : "⏳ در انتظار نتیجه",
+].join("\n");
+const telegramAnnouncementHeader = (title: string, subtitle?: string) => [
+  "<b>♛ PLATO LAND</b>",
+  "<b>" + escapeTelegramHtml(title) + "</b>",
+  subtitle ? "<i>" + escapeTelegramHtml(subtitle) + "</i>" : "",
+  "━━━━━━━━━━━━━━",
+].filter(Boolean).join("\n");
 
 async function queueAndSendTelegramResult(adminClient: ReturnType<typeof createClient>, event: {
   event_key: string; match_id: string; stage: string; group_name?: string | null;
@@ -165,8 +179,17 @@ Deno.serve(async (req: Request) => {
         const fixtures = Array.isArray(p.group_fixtures) ? p.group_fixtures as Array<Record<string, any>> : [];
         const todays = fixtures.filter(item => item.scheduled_date === today || item.date === today);
         if (todays.length === 0) return json({ error: "برای امروز تاریخ دقیق مسابقه‌ای در دیتابیس ثبت نشده است؛ برای جلوگیری از انتشار برنامه اشتباه، پیام ارسال نشد.", today }, 409);
-        const lines = todays.map((match, index) => (index + 1) + ") " + escapeTelegramHtml(String(match.player1 ?? "—")) + " مقابل " + escapeTelegramHtml(String(match.player2 ?? "—")));
-        const message = ["<b>PLATO LAND | برنامه بازی‌های امروز</b>", "", ...lines, "", "بازی‌ها معمولاً از ساعت ۲۱ برگزار می‌شوند، اما ممکن است زودتر آغاز شوند؛ لطفاً بازیکنان از قبل آماده باشند."].join("\n");
+        const sortedTodays = [...todays].sort((a, b) => String(a.id ?? "").localeCompare(String(b.id ?? ""), "en"));
+        const lines = sortedTodays.map((match, index) => telegramMatchBlock(match, index));
+        const message = [
+          telegramAnnouncementHeader("برنامه بازی‌های امروز", today),
+          "",
+          ...lines,
+          "",
+          "🕘 بازی‌ها معمولاً از ساعت ۲۱ برگزار می‌شوند، اما ممکن است زودتر آغاز شوند؛ لطفاً بازیکنان از قبل آماده باشند.",
+          "",
+          "<i>بازی، رقابت، قهرمانی</i>",
+        ].join("\n\n");
         const result = await queueAndSendTelegramAnnouncement(adminClient, { event_key: "series2:today_schedule:" + today, announcement_type: "today_schedule", payload: { date: today, match_count: todays.length }, message });
         return json({ ok: true, ...result, date: today, match_count: todays.length });
       }
@@ -176,8 +199,17 @@ Deno.serve(async (req: Request) => {
       if (matches.length !== 8 || matches.some((match: any) => !match.player1 || !match.player2 || /^(برنده|بازنده|نفر اول گروه|نفر دوم گروه)\s*/.test(String(match.player1)) || /^(برنده|بازنده|نفر اول گروه|نفر دوم گروه)\s*/.test(String(match.player2)))) {
         return json({ error: "جدول یک‌هشتم کامل و قابل انتشار نیست؛ هیچ پیامی ارسال نشد." }, 409);
       }
-      const lines = matches.map((match: any, index: number) => (index + 1) + ") <b>" + escapeTelegramHtml(match.player1) + "</b> مقابل <b>" + escapeTelegramHtml(match.player2) + "</b>" + (match.winner ? " · برنده: " + escapeTelegramHtml(match.winner) : ""));
-      const message = ["<b>PLATO LAND | جدول یک‌هشتم نهایی</b>", "", ...lines, "", "بازی‌ها معمولاً از ساعت ۲۱ برگزار می‌شوند، اما ممکن است زودتر آغاز شوند؛ لطفاً بازیکنان از قبل آماده باشند."].join("\n");
+      const orderedMatches = [...matches].sort((a: any, b: any) => String(a.id ?? "").localeCompare(String(b.id ?? ""), "en"));
+      const lines = orderedMatches.map((match: any, index: number) => telegramMatchBlock(match, index));
+      const message = [
+        telegramAnnouncementHeader("جدول یک‌هشتم نهایی", "مسیر حذفی تا قهرمانی"),
+        "",
+        ...lines,
+        "",
+        "🕘 بازی‌ها معمولاً از ساعت ۲۱ برگزار می‌شوند، اما ممکن است زودتر آغاز شوند؛ لطفاً بازیکنان از قبل آماده باشند.",
+        "",
+        "<i>بازی، رقابت، قهرمانی</i>",
+      ].join("\n\n");
       const fingerprint = await telegramHash(JSON.stringify(matches));
       const result = await queueAndSendTelegramAnnouncement(adminClient, { event_key: "series2:round16_bracket:" + fingerprint, announcement_type: "round16_bracket", payload: { progression_updated_at: current.updated_at, match_count: matches.length }, message });
       return json({ ok: true, ...result, match_count: matches.length });
@@ -357,20 +389,50 @@ Deno.serve(async (req: Request) => {
       });
       const bracketSnapshot = next.brackets as Record<string, any[]>;
       const roundTitles: Record<string, string> = { round16: "یک‌هشتم نهایی", quarter: "یک‌چهارم نهایی", semi: "نیمه‌نهایی", final: "فینال", third_place: "رده‌بندی" };
-      const bracketLines = Object.entries(bracketSnapshot).flatMap(([key, rows]) =>
-        (Array.isArray(rows) ? rows : []).map((item: any) => {
-          const resultLine = item.winner && Number.isInteger(item.score1) && Number.isInteger(item.score2)
-            ? " · نتیجه " + item.score1 + "–" + item.score2 + " · برنده " + escapeTelegramHtml(item.winner) : "";
-          return "<b>" + escapeTelegramHtml(roundTitles[key] ?? key) + "</b> | " + escapeTelegramHtml(String(item.id)) + ": " +
-            escapeTelegramHtml(String(item.player1 ?? "—")) + " مقابل " + escapeTelegramHtml(String(item.player2 ?? "—")) + resultLine;
+      const nextFixtures = Object.entries(bracketSnapshot).flatMap(([nextRound, rows]) =>
+        (Array.isArray(rows) ? rows : []).flatMap((item: any) => {
+          const side = item.player1_source === "winner:" + matchId ? "player1"
+            : item.player2_source === "winner:" + matchId ? "player2"
+            : item.player1_source === "loser:" + matchId ? "player1"
+            : item.player2_source === "loser:" + matchId ? "player2" : null;
+          return side ? [{ round: nextRound, item, side, sourceKind: item[side + "_source"].split(":")[0] }] : [];
         })
       );
-      if (bracketLines.length) {
-        const bracketMessage = ["<b>PLATO LAND | به‌روزرسانی جدول حذفی</b>", "", ...bracketLines].join("\n");
+      const currentRoundTitle = roundTitles[round] ?? round;
+      let bracketMessage: string;
+      if (nextFixtures.length) {
+        const upcoming = nextFixtures[0];
+        const opponent = upcoming.item[upcoming.side === "player1" ? "player2" : "player1"];
+        const advancingPlayer = upcoming.sourceKind === "winner" ? winner : (winner === match.player1 ? match.player2 : match.player1);
+        bracketMessage = [
+          telegramAnnouncementHeader("به‌روزرسانی مسیر قهرمانی", currentRoundTitle),
+          "",
+          "✅ نتیجه مسابقه <b>" + escapeTelegramHtml(matchId) + "</b> ثبت شد.",
+          "🏆 صعودکننده: " + telegramId(advancingPlayer),
+          "",
+          "<b>مرحله بعد · " + escapeTelegramHtml(roundTitles[upcoming.round] ?? upcoming.round) + "</b>",
+          telegramId(upcoming.item.id),
+          telegramId(advancingPlayer) + "  مقابل  " + telegramId(opponent),
+          "",
+          "<i>بازی، رقابت، قهرمانی</i>",
+        ].join("\n\n");
+      } else if (round === "final" || round === "third_place") {
+        bracketMessage = [
+          telegramAnnouncementHeader(round === "final" ? "قهرمان سری دوم مشخص شد" : "نتیجه مسابقه رده‌بندی", currentRoundTitle),
+          "",
+          "🏆 برنده: " + telegramId(winner),
+          "نتیجه: <b>" + score1 + "–" + score2 + "</b>",
+          "",
+          "<i>بازی، رقابت، قهرمانی</i>",
+        ].join("\n\n");
+      } else {
+        bracketMessage = "";
+      }
+      if (bracketMessage) {
         try {
-          const fingerprint = await telegramHash(JSON.stringify(bracketSnapshot));
+          const eventKey = await telegramHash(round + ":" + matchId + ":" + updatedAt);
           await queueAndSendTelegramAnnouncement(adminClient, {
-            event_key: "series2:bracket_update:" + fingerprint, announcement_type: "bracket_update",
+            event_key: "series2:bracket_update:" + eventKey, announcement_type: "bracket_update",
             payload: { round, match_id: matchId, progression_updated_at: updatedAt }, message: bracketMessage,
           });
         } catch (announcementError) {
