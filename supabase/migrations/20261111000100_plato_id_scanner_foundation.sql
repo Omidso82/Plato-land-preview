@@ -19,6 +19,8 @@ create table if not exists public.plato_id_scanner_uploads (
  created_at timestamptz not null default now(),
  updated_at timestamptz not null default now()
 );
+create index if not exists plato_id_scanner_access_status_requested_idx on public.plato_id_scanner_access(status,requested_at desc);
+create index if not exists plato_id_scanner_uploads_operator_created_idx on public.plato_id_scanner_uploads(operator_id,created_at desc);
 alter table public.plato_id_scanner_access enable row level security;
 alter table public.plato_id_scanner_uploads enable row level security;
 revoke all on public.plato_id_scanner_access from anon;
