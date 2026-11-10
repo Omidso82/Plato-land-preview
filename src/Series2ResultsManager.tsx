@@ -232,6 +232,31 @@ export default function Series2ResultsManager() {
     finally{setSavingId(null);}
   }
 
+
+  async function publishTelegramAnnouncement(action: 'publish_today_schedule' | 'publish_round16_bracket') {
+    const label = action === 'publish_today_schedule' ? 'برنامه امروز' : 'جدول یک‌هشتم نهایی';
+    if (!window.confirm('آیا مطمئنی پیام «' + label + '» فقط به گروه آزمایشی تلگرام ارسال شود؟')) return;
+    if (!supabase) { setError('اتصال به دیتابیس اصلی برقرار نیست.'); return; }
+    setAnnouncementBusy(true); setError(''); setMessage('');
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error('نشست مالک معتبر نیست. دوباره وارد پنل شو.');
+      const response = await fetch(SUPABASE_URL + '/functions/v1/plato-land-series2-progression', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token, apikey: SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok) throw new Error(data?.error || 'ارسال اطلاعیه ناموفق بود.');
+      setMessage(data.duplicate ? 'این اطلاعیه قبلاً ارسال شده است؛ پیام تکراری فرستاده نشد.' : 'اطلاعیه با موفقیت به گروه آزمایشی تلگرام ارسال شد.');
+    } catch (publishError) {
+      setError(publishError instanceof Error ? publishError.message : 'ارسال اطلاعیه ناموفق بود.');
+    } finally { setAnnouncementBusy(false); }
+  }
+
+
   return (
     <section dir="rtl" style={section}>
       <div style={header}>
