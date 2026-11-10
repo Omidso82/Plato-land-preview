@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import './plato-id-scanner.css';
 type AccessRow={user_id:string;email:string;status:'pending'|'approved'|'rejected'|'disabled';requested_at:string;reviewed_at:string|null};
@@ -8,30 +8,38 @@ export default function PlatoIdScannerApp(){
  const [user,setUser]=useState<any>(null),[loading,setLoading]=useState(true),[email,setEmail]=useState(''),[password,setPassword]=useState('');
  const [mode,setMode]=useState<'login'|'register'>('login'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[confirmed,setConfirmed]=useState(false),[owner,setOwner]=useState(false);
  const [access,setAccess]=useState<AccessRow|null>(null),[applications,setApplications]=useState<AccessRow[]>([]),[uploads,setUploads]=useState<ScanRow[]>([]),[file,setFile]=useState<File|null>(null);
+ const refreshGeneration=useRef(0);
  const refresh=useCallback(async(u:any)=>{
   if(!supabase||!u)return;
-  const {data:auth}=await supabase.auth.getUser();const verified=!!auth.user?.email_confirmed_at;setConfirmed(verified);
+  const generation=++refreshGeneration.current;
+  setLoading(true);setConfirmed(false);setOwner(false);setAccess(null);setApplications([]);setUploads([]);
+  try{
+  const {data:auth}=await supabase.auth.getUser();if(generation!==refreshGeneration.current)return;const verified=!!auth.user?.email_confirmed_at;setConfirmed(verified);
   if(!verified){setAccess(null);setOwner(false);return;}
-  const {data:role,error:roleError}=await supabase.rpc('current_user_role');const isOwner=!roleError&&(role==='owner'||role==='مالک کل');setOwner(isOwner);
+  const {data:role,error:roleError}=await supabase.rpc('current_user_role');if(generation!==refreshGeneration.current)return;const isOwner=!roleError&&(role==='owner'||role==='مالک کل');setOwner(isOwner);
   if(isOwner){
    const [apps,scans]=await Promise.all([supabase.from('plato_id_scanner_access').select('user_id,email,status,requested_at,reviewed_at').order('requested_at',{ascending:false}),supabase.from('plato_id_scanner_uploads').select('*').order('created_at',{ascending:false}).limit(100)]);
+   if(generation!==refreshGeneration.current)return;
    if(apps.error)setMessage('بارگذاری درخواست‌ها ناموفق بود: '+apps.error.message);else setApplications((apps.data||[]) as AccessRow[]);
    if(scans.error)setMessage('بارگذاری آپلودها ناموفق بود: '+scans.error.message);else setUploads((scans.data||[]) as ScanRow[]);
    setAccess(null);return;
   }
   let {data:row,error}=await supabase.from('plato_id_scanner_access').select('user_id,email,status,requested_at,reviewed_at').eq('user_id',u.id).maybeSingle();
+  if(generation!==refreshGeneration.current)return;
   if(error){setMessage('دریافت وضعیت دسترسی ناموفق بود: '+error.message);return;}
-  if(!row){const created=await supabase.from('plato_id_scanner_access').insert({user_id:u.id,email:u.email||''}).select('user_id,email,status,requested_at,reviewed_at').single();if(created.error){setMessage('ثبت درخواست دسترسی ناموفق بود: '+created.error.message);return;}row=created.data;}
+  if(!row){const created=await supabase.from('plato_id_scanner_access').insert({user_id:u.id,email:u.email||''}).select('user_id,email,status,requested_at,reviewed_at').single();if(generation!==refreshGeneration.current)return;if(created.error){setMessage('ثبت درخواست دسترسی ناموفق بود: '+created.error.message);return;}row=created.data;}
   setAccess(row as AccessRow);
   if(row.status!=='approved'){setUploads([]);return;}
   const {data:own,error:ownError}=await supabase.from('plato_id_scanner_uploads').select('*').eq('operator_id',u.id).order('created_at',{ascending:false});
+  if(generation!==refreshGeneration.current)return;
   if(ownError)setMessage('دریافت سوابق آپلود ناموفق بود: '+ownError.message);else setUploads((own||[]) as ScanRow[]);
+  }finally{if(generation===refreshGeneration.current)setLoading(false);}
  },[]);
  useEffect(()=>{
   if(!supabase){setLoading(false);setMessage('اتصال پایگاه داده پیکربندی نشده است.');return;}
   let alive=true;
   supabase.auth.getSession().then(async({data})=>{if(!alive)return;const u=data.session?.user||null;setUser(u);if(u)await refresh(u);if(alive)setLoading(false);});
-  const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{const u=session?.user||null;setUser(u);if(u){Promise.resolve().then(()=>refresh(u));}else{setOwner(false);setAccess(null);setUploads([]);setApplications([]);setConfirmed(false);}});
+  const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{const u=session?.user||null;setUser(u);if(u){Promise.resolve().then(()=>refresh(u));}else{refreshGeneration.current++;setLoading(false);setOwner(false);setAccess(null);setUploads([]);setApplications([]);setConfirmed(false);}});
   return()=>{alive=false;subscription.unsubscribe();};
  },[refresh]);
  async function authSubmit(e:React.FormEvent){e.preventDefault();if(!supabase||busy)return;setBusy(true);setMessage('');
