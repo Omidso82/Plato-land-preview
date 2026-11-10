@@ -20,7 +20,7 @@ async function queueAndSendTelegramResult(adminClient: ReturnType<typeof createC
 }) {
   try {
     const { data: queued, error: queueError } = await adminClient.from("plato_land_telegram_outbox")
-      .insert({ ...event, tournament_key: "series2", delivery_status: "pending" }).select("id").maybeSingle();
+      .insert({ event_key: event.event_key, announcement_type: event.announcement_type, payload: event.payload, message_text: event.message, tournament_key: "series2", delivery_status: "pending" }).select("id").maybeSingle();
     if (queueError) { if (queueError.code !== "23505") console.error("Telegram outbox insert failed:", queueError.message); return; }
     if (!queued?.id) return;
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN");
@@ -321,11 +321,15 @@ Deno.serve(async (req: Request) => {
       );
       if (bracketLines.length) {
         const bracketMessage = ["<b>PLATO LAND | به‌روزرسانی جدول حذفی</b>", "", ...bracketLines].join("\n");
-        const fingerprint = await telegramHash(JSON.stringify(bracketSnapshot));
-        await queueAndSendTelegramAnnouncement(adminClient, {
-          event_key: "series2:bracket_update:" + fingerprint, announcement_type: "bracket_update",
-          payload: { round, match_id: matchId, progression_updated_at: updatedAt }, message: bracketMessage,
-        });
+        try {
+          const fingerprint = await telegramHash(JSON.stringify(bracketSnapshot));
+          await queueAndSendTelegramAnnouncement(adminClient, {
+            event_key: "series2:bracket_update:" + fingerprint, announcement_type: "bracket_update",
+            payload: { round, match_id: matchId, progression_updated_at: updatedAt }, message: bracketMessage,
+          });
+        } catch (announcementError) {
+          console.error("Bracket announcement failed after result was saved:", announcementError);
+        }
       }
 
       return json({saved:true,progression:saved.progression,updated_at:saved.updated_at});
