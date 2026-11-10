@@ -31,7 +31,7 @@ export default function PlatoIdScannerApp(){
   if(!supabase){setLoading(false);setMessage('اتصال پایگاه داده پیکربندی نشده است.');return;}
   let alive=true;
   supabase.auth.getSession().then(async({data})=>{if(!alive)return;const u=data.session?.user||null;setUser(u);if(u)await refresh(u);if(alive)setLoading(false);});
-  const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{const u=session?.user||null;setUser(u);if(u)void refresh(u);else{setOwner(false);setAccess(null);setUploads([]);setApplications([]);setConfirmed(false);}});
+  const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{const u=session?.user||null;setUser(u);if(u){Promise.resolve().then(()=>refresh(u));}else{setOwner(false);setAccess(null);setUploads([]);setApplications([]);setConfirmed(false);}});
   return()=>{alive=false;subscription.unsubscribe();};
  },[refresh]);
  async function authSubmit(e:React.FormEvent){e.preventDefault();if(!supabase||busy)return;setBusy(true);setMessage('');
