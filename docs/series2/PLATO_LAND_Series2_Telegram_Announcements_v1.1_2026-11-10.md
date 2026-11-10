@@ -14,7 +14,7 @@ Supersedes: v1.0 (implementation behavior only; approved destination and safety 
 - Shared PLATO LAND header, concise subtitle, visual separators, whitespace between match blocks, consistent result/status labels, and code formatting for Plato IDs.
 - Daily schedule is sorted by fixture ID and displayed as separate match blocks.
 - Round of 16 publication contains only the eight validated Round of 16 matches, in fixture-ID order.
-- Automatic progression updates show the advancing player (winner or loser according to the downstream source) and the directly linked next-stage match. Final/third-place completion messages are limited to that completed match.
+- Automatic progression updates show the advancing player (winner or loser according to the downstream source) and the directly linked next-stage match(es), including both the final and third-place paths after a semifinal. Final/third-place completion messages are limited to that completed match.
 - The progression update uses an event key based on round, match ID, and saved timestamp to avoid repeat delivery for the same saved result.
 
 ## Data and safety design
