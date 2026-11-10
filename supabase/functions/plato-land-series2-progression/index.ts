@@ -279,6 +279,25 @@ Deno.serve(async (req: Request) => {
         change_type: history[history.length - 1]?.action === "corrected" ? "corrected" : "recorded",
         recorded_at: updatedAt,
       });
+      const bracketSnapshot = next.brackets as Record<string, any[]>;
+      const roundTitles: Record<string, string> = { round16: "یک‌هشتم نهایی", quarter: "یک‌چهارم نهایی", semi: "نیمه‌نهایی", final: "فینال", third_place: "رده‌بندی" };
+      const bracketLines = Object.entries(bracketSnapshot).flatMap(([key, rows]) =>
+        (Array.isArray(rows) ? rows : []).map((item: any) => {
+          const resultLine = item.winner && Number.isInteger(item.score1) && Number.isInteger(item.score2)
+            ? " · نتیجه " + item.score1 + "–" + item.score2 + " · برنده " + escapeTelegramHtml(item.winner) : "";
+          return "<b>" + escapeTelegramHtml(roundTitles[key] ?? key) + "</b> | " + escapeTelegramHtml(String(item.id)) + ": " +
+            escapeTelegramHtml(String(item.player1 ?? "—")) + " مقابل " + escapeTelegramHtml(String(item.player2 ?? "—")) + resultLine;
+        })
+      );
+      if (bracketLines.length) {
+        const bracketMessage = ["<b>PLATO LAND | به‌روزرسانی جدول حذفی</b>", "", ...bracketLines].join("\\n");
+        const fingerprint = await telegramHash(JSON.stringify(bracketSnapshot));
+        await queueAndSendTelegramAnnouncement(adminClient, {
+          event_key: "series2:bracket_update:" + fingerprint, announcement_type: "bracket_update",
+          payload: { round, match_id: matchId, progression_updated_at: updatedAt }, message: bracketMessage,
+        });
+      }
+
       return json({saved:true,progression:saved.progression,updated_at:saved.updated_at});
     }
 
