@@ -77,6 +77,7 @@ export default function Series2ResultsManager() {
   const [bracketEditingId, setBracketEditingId] = useState<string | null>(null);
   const [bracketScore1, setBracketScore1] = useState('');
   const [bracketScore2, setBracketScore2] = useState('');
+  const [announcementBusy, setAnnouncementBusy] = useState(false);
 
   const loadProgression = useCallback(async () => {
     setLoading(true);
@@ -241,6 +242,17 @@ export default function Series2ResultsManager() {
         <button type="button" style={secondaryButton} onClick={() => void loadProgression()} disabled={loading || savingId !== null}>
           {loading ? 'در حال دریافت…' : 'تازه‌سازی'}
         </button>
+      </div>
+
+      <div style={{ ...standingsPanel, display: 'grid', gap: 9, marginTop: 12 }}>
+        <strong style={standingsTitle}>اطلاع‌رسانی تلگرام · فقط گروه آزمایشی</strong>
+        <button type="button" style={primaryButton} disabled={announcementBusy || savingId !== null} onClick={() => void publishTelegramAnnouncement('publish_today_schedule')}>
+          {announcementBusy ? 'در حال ارسال…' : 'ارسال برنامه امروز'}
+        </button>
+        <button type="button" style={secondaryButton} disabled={announcementBusy || savingId !== null} onClick={() => void publishTelegramAnnouncement('publish_round16_bracket')}>
+          ارسال جدول یک‌هشتم نهایی
+        </button>
+        <small style={standingsHint}>پیش از ارسال، تأیید می‌گیریم. اگر تاریخ دقیق برنامه امروز در دیتابیس نباشد، ارسال متوقف می‌شود.</small>
       </div>
       <div style={note}>
         قانون امتیازدهی: بازی پنج‌امتیازی است؛ برنده باید دقیقاً ۵ و امتیاز بازنده بین ۰ تا ۴ باشد.
