@@ -1,5 +1,5 @@
 # PLATO ID Scanner — implementation status
-**Document version:** 0.6
+**Document version:** 0.7
 Date: 2026-11-11
 Branch: feature/plato-id-scanner-v0-1
 Base: main at abb1556b57f9c9b73cdc83ea2486ffd01ffd023a
@@ -70,3 +70,11 @@ Base: main at abb1556b57f9c9b73cdc83ea2486ffd01ffd023a
 - Auth email-confirmation/redirect behavior requires a controlled live-flow test, not performed here.
 - OCR runtime/provider, corrections workflow, reporting schedule and Telegram delivery remain specification-stage or undecided; no provider or paid service has been selected.
 - PR must remain Draft and unmerged until explicit approval.
+
+
+## Security review update — 2026-11-11
+
+- Static review identified that the upload-row INSERT policy previously checked only an operator UUID prefix in `storage_path`. The policy has now been tightened to enforce the same exact two-folder/one-filename shape as the Storage INSERT policy, including authenticated operator UUID, valid scan UUID and safe filename/extension.
+- The RLS test plan was updated to include this upload-row path requirement.
+- This is a source-only change. It has not been applied to Supabase and is not runtime-verified. A valid path shape does not prove that a referenced Storage object exists; consistency requires controlled integration tests or a trusted backend workflow.
+- The latest code and documentation commits require fresh CI and preview checks; prior green checks do not validate these new commits.
