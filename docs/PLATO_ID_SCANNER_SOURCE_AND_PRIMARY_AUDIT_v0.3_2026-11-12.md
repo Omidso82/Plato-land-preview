@@ -6,7 +6,7 @@
 **Repository:** `Omidso82/Plato-land-preview`  
 **Branch:** `feature/plato-id-scanner-v0-1`  
 **Related PR:** #123 remains Draft/unmerged. PR #124 is a separate upload-only integration.  
-**Status:** Read-only primary audit and source-only documentation/SQL-draft work. No OCR execution, package/model installation, migration apply, deployment, merge or Telegram delivery.
+**Status:** Source audit with archive UI wiring correction committed. Google Vision EU use was explicitly approved by the owner on 2026-11-12. No real OCR execution, migration apply, Edge Function deployment, merge or Telegram delivery has occurred.
 
 ## 1. Binding target
 
@@ -57,7 +57,8 @@ Verified:
 - Multi-image upload is sequential and each valid image is saved as its own upload record.
 - Upload records are created with `status='uploaded'`.
 - The upload handler explicitly states OCR is not connected to a backend.
-- `ScannerReviewCard` is defined and contains an invocation of `plato-id-scanner-dispatch`, but the current `UploadList` renders `SavedUploadItem`, not `ScannerReviewCard`; the review card/dispatch action is therefore not reachable through that list.
+- Initial finding: `ScannerReviewCard` was defined but `UploadList` rendered `SavedUploadItem`, making OCR/review unreachable from the archive.
+- Correction committed after owner approval: `UploadList` now renders `ScannerReviewCard` for every archived upload, passing the signed-in reviewer ID. This source change is on the feature branch only and has not been deployed.
 - A live, deployed dispatcher/worker-to-review path was not verified.
 
 The current interface is upload-only; do not describe it as OCR-enabled.
@@ -90,7 +91,7 @@ It defines a provider-neutral dispatcher contract:
 ## 8. Release and safety boundary
 
 - No OCR image has been processed.
-- No Google Vision request has been made.
+- No Google Vision request has been made; owner approved EU endpoint use on 2026-11-12.
 - No PaddleOCR package/model has been installed/downloaded.
 - No migration has been applied.
 - No Edge Function has been deployed.
@@ -109,10 +110,23 @@ It defines a provider-neutral dispatcher contract:
 6. Only after the local prototype passes, evaluate hosting cost and deployment.
 7. Keep production migration, runner registration, deployment, merge and Telegram delivery separately gated.
 
-## 10. Version history
+## 10. Owner approval and current blockers
+
+Owner approval (2026-11-12): Google Vision EU may be used to OCR PLATO archive images, with human review retained and no automatic Telegram delivery.
+
+Verified after approval:
+- Primary Supabase still has seven upload rows; all remain in `uploaded` state with empty OCR payloads.
+- The following tables are absent from the primary database: `plato_id_scanner_review_revisions`, `plato_id_scanner_report_versions`, `plato_id_scanner_ocr_jobs`, and `plato_id_scanner_ocr_attempts`.
+- The primary project has no deployed `plato-id-scanner-dispatch` or `plato-id-scanner-worker` Edge Function.
+- The archive-to-review UI correction is committed to the feature branch as `b64fe167b7ed0f1fed21ff633318d76559b1ecfd`.
+
+Remaining production prerequisites: review and apply the queue/review/report schema migration; confirm the API key secret is configured; deploy the dispatcher and worker with their shared dependencies; run an explicitly controlled OCR test on an existing archived image; verify extracted provisional IDs in the archive; verify human review and report persistence. Telegram remains manual and is not sent by the worker.
+
+## 11. Version history
 
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 2026-11-12 | Initial read-only audit and queue/source findings. |
 | 0.2 | 2026-11-12 | Records queue source-only role-check and expired-final-attempt corrections. |
-| 0.3 | 2026-11-12 | Corrects OCR architecture to the binding private PaddleOCR worker direction; records local runtime blocker, upload-only UI findings and provider-neutral dispatcher contract. |
+| 0.3 | 2026-11-12 | Corrects OCR architecture and records source/runtime findings. |
+| 0.4 | 2026-11-12 | Records owner approval for Google Vision EU, archive UI wiring correction, primary schema/function gaps and production prerequisites. |
