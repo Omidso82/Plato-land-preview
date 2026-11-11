@@ -1,6 +1,6 @@
 # PLATO ID Scanner — QA Report
 
-**Document version:** 0.9  
+**Document version:** 1.0  
 **Date:** 2026-11-11  
 **Project:** PLATO LAND – Temporary Projects  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -86,3 +86,4 @@ Literal `\\n` artifacts from the previous QA/RLS documents were removed in the r
 |---|---|---|
 | 0.8 | 2026-11-11 | Previous QA report and source-only policy hardening record |
 | 0.9 | 2026-11-11 | Records malformed duplicate migration tail cleanup, corrects validation chronology and aligns RLS test references |
+| 1.0 | 2026-11-11 | Records successful final-head CI and Cloudflare preview verification |
