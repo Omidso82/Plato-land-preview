@@ -47,6 +47,9 @@ Deno.test("rejects unsupported bucket, traversal paths, MIME and malformed hash"
     (v: any) => v.source.object_key = "123e4567-e89b-42d3-a456-426614174002/123e4567-e89b-42d3-a456-426614174001/nested/image.webp",
     (v: any) => v.source.content_type = "image/gif",
     (v: any) => v.requested_at = "2026-11-11T12:00:00",
+    (v: any) => v.requested_at = "2026-02-31T12:00:00Z",
+    (v: any) => v.requested_at = "2026-11-11T24:00:00Z",
+    (v: any) => v.requested_at = "2026-11-11T12:00:00+14:01",
     (v: any) => v.source.sha256 = "not-a-hash",
   ]) {
     const candidate = structuredClone(job);
