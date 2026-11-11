@@ -70,3 +70,10 @@ This review is static. It is not proof of runtime RLS or Storage isolation.
 ## 7. Next safe steps
 
 Continue source-only review and contract/test development on the isolated feature branch. Runtime RLS tests require an explicitly authorized disposable environment. Migration activation, OCR provider/hosting, account creation, Telegram destination and auto-send behavior require separate decisions/approval. Keep PR #123 Draft until the user explicitly authorizes a release decision.
+
+
+## Upload-row path policy hardening — 2026-11-11
+
+Static review found that the upload-row INSERT policy previously checked only that `storage_path` began with the authenticated operator UUID. That did not enforce the full object-key shape used by the Storage INSERT policy. The draft migration was tightened to require exactly two folder segments, the authenticated operator UUID as the first folder, a UUID as the second folder, and a safe ASCII filename with a supported extension. The RLS test plan now explicitly records this requirement.
+
+This is a source-only change on the isolated feature branch. The migration has not been applied, and no live RLS or Storage test has been run. A row-path shape check does not itself prove that the referenced Storage object exists; runtime upload/row consistency still requires backend or controlled integration testing.
