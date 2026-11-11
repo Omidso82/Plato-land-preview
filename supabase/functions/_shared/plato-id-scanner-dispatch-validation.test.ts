@@ -56,8 +56,7 @@ Deno.test("rejects size, MIME, extension and byte-signature mismatches", () => {
 
 Deno.test("computes stable SHA-256 digests", async () => {
   const digest = await scannerSha256(new TextEncoder().encode("PLATO"));
-  if (digest !== "9d6f965ac832e6a7b0c8a7e9e1a9e4a4a4f0f4c5f9e2b8e6f6f6f6f6f6f6f6f6") {
-    // Verify shape here; exact digest is covered by WebCrypto implementation.
-    if (!/^[0-9a-f]{64}$/.test(digest)) throw new Error("Invalid SHA-256 output");
+  if (digest !== "78ce5c4a503613dc2dc2f053c8bbfb1bee9b1e9af1a474efd518eab163e1822d") {
+    throw new Error("Unexpected SHA-256 digest: " + digest);
   }
 });
