@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Provider-Neutral OCR Worker Contract
 
-**Version:** 0.3  
+**Version:** 0.4  
 **Date:** 2026-11-11  
 **Status:** Engineering contract proposal; no runtime/provider selected  
 **Scope:** PLATO LAND – Temporary Projects / PLATO ID Scanner only  
@@ -56,7 +56,7 @@ The browser must not supply a worker URL, provider name, credentials, arbitrary 
 }
 ```
 
-The object key must contain exactly three path segments: operator UUID, the same `scan_id` UUID carried by the job, and a non-empty safe filename. Extra path segments, traversal-like segments and backslash separators are rejected. The worker receives only a short-lived, single-object read capability or an equivalent narrowly scoped internal access method. It must not receive a reusable service-role key.
+The object key must contain exactly three path segments: operator UUID, the same `scan_id` UUID carried by the job, and a filename matching `[A-Za-z0-9_-]{1,100}` plus a lowercase `.jpg`, `.png` or `.webp` extension. The extension must match `content_type` exactly (`image/jpeg` → `.jpg`, `image/png` → `.png`, `image/webp` → `.webp`). Extra path segments, traversal-like segments, spaces, non-ASCII filename characters, unsupported extensions and backslash separators are rejected by the worker validator. The worker receives only a short-lived, single-object read capability or an equivalent narrowly scoped internal access method. It must not receive a reusable service-role key.
 
 ### 3.3 Worker result (logical schema)
 
@@ -141,8 +141,16 @@ A stale worker lease may be reclaimed only after its lease expires; the old work
 - Add contract tests for schema validation, invalid signatures, hash mismatch, duplicate callbacks, stale leases, retries, ambiguity flags and audit immutability.
 
 ## 8. Contract validation code and tests
-The provider-neutral shape validators are implemented in `supabase/functions/_shared/plato-id-scanner-contract.ts`. They validate job, success and failure envelopes without parsing or modifying Plato ID candidate strings. Eight Deno test cases are in `supabase/functions/_shared/plato-id-scanner-contract.test.ts`; timestamp negatives include impossible calendar dates, invalid clock values and offsets beyond ±14:00; path cases explicitly reject scan-ID mismatch and nested extra path segments, and the feature-branch verification workflow runs this test file. These validators do not perform OCR, authenticate a worker callback, access Storage, claim jobs, persist results or provide runtime security by themselves.
+The provider-neutral shape validators are implemented in `supabase/functions/_shared/plato-id-scanner-contract.ts`. They validate job, success and failure envelopes without parsing or modifying Plato ID candidate strings. Eight Deno test cases are in `supabase/functions/_shared/plato-id-scanner-contract.test.ts`; timestamp negatives include impossible calendar dates, invalid clock values and offsets beyond ±14:00; path cases explicitly reject scan-ID mismatch and nested extra path segments, and the feature-branch verification workflow runs this test file. Worker object-key validation now mirrors the SQL/UI safe-filename contract and rejects MIME/extension mismatches. Tests also cover whitespace and non-ASCII filenames, unsupported extensions and content-type/extension mismatch. These validators do not perform OCR, authenticate a worker callback, access Storage, claim jobs, persist results or provide runtime security by themselves.
 
 ## 9. Explicitly not authorized / not done
 
 No runtime or OCR provider has been selected. No worker, queue, new table/column, migration, bucket, secret, operator account, external OCR request, Telegram send, production deployment or main-branch change has been created by this document.
+
+
+## 10. Version history
+
+| Version | Date | Change |
+|---|---|---|
+| 0.3 | 2026-11-11 | Previous provider-neutral contract and validators |
+| 0.4 | 2026-11-11 | Aligns worker filename and MIME-extension validation with the Scanner upload/storage contract |
