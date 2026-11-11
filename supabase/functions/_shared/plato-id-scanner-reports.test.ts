@@ -1,5 +1,6 @@
 import {
   buildDailyScannerReport, buildWeeklyScannerReport,
+  buildDailyScannerReportFromRevisions, buildWeeklyScannerReportFromRevisions,
   formatDailyTelegramMessages, formatWeeklyTelegramMessages,
   tehranJalaliDateKey,
 } from "../../../src/plato-id-scanner-reports.ts";
@@ -49,4 +50,24 @@ Deno.test("per-image Telegram output uses the same exact canonical IDs and remov
   assert(messages.length===1);
   assert(messages[0].includes("ID_A")&&messages[0].includes("ID_B"));
   assertEquals(messages[0].match(/ID_A/g)?.length,1);
+});
+
+
+Deno.test("daily and weekly reports use the latest approved revision, replacing corrected IDs", () => {
+  const scans = [
+    {id:"scan-1",created_at:"2026-11-07T10:00:00+03:30",status:"completed",ocr_result:{ids:["OCR_OLD"]}},
+    {id:"scan-2",created_at:"2026-11-08T10:00:00+03:30",status:"completed",ocr_result:{ids:["OCR_UNREVIEWED"]}},
+    {id:"scan-3",created_at:"2026-11-09T10:00:00+03:30",status:"completed",ocr_result:{ids:["OCR_REJECTED"]}},
+  ];
+  const revisions = [
+    {scan_id:"scan-1",revision:1,status:"approved",canonical_ids:["ID_OLD","ID_SHARED"]},
+    {scan_id:"scan-1",revision:2,status:"approved",canonical_ids:["ID_CORRECTED","ID_SHARED"]},
+    {scan_id:"scan-2",revision:1,status:"pending",canonical_ids:["ID_PENDING"]},
+    {scan_id:"scan-3",revision:1,status:"rejected",canonical_ids:["ID_REJECTED"]},
+  ];
+  const daily = buildDailyScannerReportFromRevisions(scans,revisions,tehranJalaliDateKey("2026-11-07T12:00:00+03:30"));
+  assertEquals(daily.ids,["ID_CORRECTED","ID_SHARED"]);
+  const weekly = buildWeeklyScannerReportFromRevisions(scans,revisions,"2026-11-11T12:00:00+03:30");
+  assertEquals(weekly.rows.map(row=>row.id),["ID_CORRECTED","ID_SHARED"]);
+  assertEquals(weekly.rows.find(row=>row.id==="ID_CORRECTED")?.activeDays,[true,false,false,false,false,false,false]);
 });
