@@ -2,11 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requestGoogleVisionOcr, GoogleVisionRequestError } from "../_shared/plato-id-scanner-google-vision-client.ts";
 import { scannerSha256, validateScannerStoredObject, SCANNER_BUCKET } from "../_shared/plato-id-scanner-dispatch-validation.ts";
 import { adaptScannerWorkerSuccessToReviewPayload } from "../_shared/plato-id-scanner-result-adapter.ts";
-import { createGoogleVisionAccessToken } from "../_shared/plato-id-scanner-google-service-account.ts";
 
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
-const TOKEN_URL = "https://oauth2.googleapis.com/token";
-const VISION_SCOPE = "https://www.googleapis.com/auth/cloud-vision";
 
 function constantTimeEqual(a: string, b: string): boolean {
   const left = new TextEncoder().encode(a), right = new TextEncoder().encode(b);
@@ -26,22 +23,14 @@ Deno.serve(async (request: Request) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const credentialsJson = Deno.env.get("GOOGLE_VISION_SERVICE_ACCOUNT_JSON");
-  if (!supabaseUrl || !serviceKey || !credentialsJson) {
+  const googleVisionApiKey = Deno.env.get("GOOGLE_VISION_API_KEY");
+  if (!supabaseUrl || !serviceKey || !googleVisionApiKey) {
     return Response.json({ error: "OCR worker is not configured; no jobs were claimed." }, { status: 503 });
   }
 
   const admin = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-
-  let accessToken: string;
-  try { accessToken = await createGoogleVisionAccessToken({ credentialsJson }); }
-  catch (error) {
-    const code = error instanceof Error ? error.message : "GOOGLE_TOKEN_FAILED";
-    console.error("Scanner Google credential step failed:", code);
-    return Response.json({ error: "OCR provider authentication is unavailable; no jobs were claimed.", code }, { status: 503 });
-  }
 
   const workerId = crypto.randomUUID();
   const { data: jobs, error: claimError } = await admin.rpc("claim_plato_id_scanner_ocr_jobs", {
@@ -75,7 +64,7 @@ Deno.serve(async (request: Request) => {
     if (digest !== job.source_sha256) throw new Error("SCANNER_SOURCE_HASH_MISMATCH");
 
     const ocr = await requestGoogleVisionOcr({
-      accessToken, imageBytes: bytes,
+      apiKey: googleVisionApiKey, imageBytes: bytes,
       context: {
         job_id: job.id, scan_id: job.scan_id, source_sha256: digest,
         started_at: startedAt, finished_at: new Date().toISOString(), api_version: "v1",
@@ -94,7 +83,7 @@ Deno.serve(async (request: Request) => {
       ? error.code
       : error instanceof Error ? error.message : "SCANNER_WORKER_FAILED";
     const retryable = error instanceof GoogleVisionRequestError ? error.retryable
-      : ["SCANNER_SOURCE_UNAVAILABLE", "GOOGLE_TOKEN_NETWORK_ERROR"].includes(rawCode);
+      : ["SCANNER_SOURCE_UNAVAILABLE"].includes(rawCode);
     const safeCode = /^[A-Z0-9_]{1,80}$/.test(rawCode) ? rawCode : "SCANNER_WORKER_FAILED";
     const { error: failError } = await admin.rpc("fail_plato_id_scanner_ocr_job", {
       p_job_id: job.id, p_attempt: job.attempt, p_worker_id: workerId,
