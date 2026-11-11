@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import './plato-id-scanner.css';
-import { appendScannerReviewRevision, loadScannerReviewRevisions, scannerReviewText } from './plato-id-scanner-review-store';
+import { appendScannerReviewRevision, loadScannerReviewRevisions, parseScannerReviewDraft, scannerReviewText } from './plato-id-scanner-review-store';
 import PlatoIdScannerReportsPanel from './PlatoIdScannerReportsPanel';
 
 type AccessRow={user_id:string;email:string;status:'pending'|'approved'|'rejected'|'disabled';requested_at:string;reviewed_at:string|null};
@@ -150,7 +150,7 @@ function ScannerReviewCard({row,client,reviewerId}:{row:ScanRow;client:any;revie
   if(busy||!loaded)return;
   setBusy(true);setError('');
   try{
-   const ids=draft.split(/\r?\n/).map(value=>value.trim()).filter(Boolean);
+   const ids=parseScannerReviewDraft(draft);
    const result=await appendScannerReviewRevision(client,{scanId:row.id,ids,reviewerId,note});
    setHistory(prev=>[...prev,result]);setDraft(scannerReviewText(result.canonical_ids));setNote('');
   }catch(e:any){setError(e?.message||'ثبت نسخه جدید ناموفق بود.');}
