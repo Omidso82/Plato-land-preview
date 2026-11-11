@@ -142,3 +142,31 @@ The approved product workflow is batch image-to-Plato-ID extraction and Telegram
 | Version | Date | Change |
 |---|---|---|
 | 1.4 | 2026-11-11 | Records per-image Telegram message formatting and exact canonical ID preservation. |
+
+
+## 12. OCR result adaptation and review/report regression fixes — v1.5
+
+**Date:** 2026-11-11  
+**Status:** Source committed on the isolated feature branch; final CI for the latest head must be verified.
+
+### Implemented
+- Added `plato-id-scanner-result-adapter.ts` to convert provider-neutral worker success payloads into provisional `ocr_result.ids` consumed by the review UI.
+- The adapter applies the user-approved `@` extraction rule v0.2 to provider `raw_text`, preserves raw OCR text and provider candidates, and marks every result as requiring human review. It does not persist, approve, normalize or send data.
+- Added Deno tests for separated/concatenated IDs, exact raw preservation, punctuation retention and no inference from tokens without `@`; registered the test in GitHub Actions.
+- Scoped report-version history reads and next-version lookup to the current `created_by`, matching the database uniqueness/sequence model and preventing cross-user version collisions in owner-visible history.
+- Added a regression test for creator-scoped report history.
+- Found and corrected over-escaped newline parsing in the manual review editor. The editor now parses LF/CRLF lines through a shared pure helper, trims line-edge whitespace only, removes exact duplicates and preserves distinct case/punctuation. Added tests for LF and CRLF.
+
+### CI evidence
+- GitHub Actions run `42989532513` (Build and typecheck, run 785) completed SUCCESS, including the new OCR result adapter test and all then-registered Deno tests.
+- Subsequent manual-review newline parser and regression-test commits were pushed after that run. Their final CI result is not yet verified in this report revision.
+
+### Boundaries still unchanged
+- No OCR engine runtime or worker endpoint is deployed; this adapter is a tested source boundary, not live image OCR.
+- No migration was executed and no Scanner object was created in the primary Supabase project.
+- No Telegram credentials/destination or sender was configured; no Telegram message was sent.
+- No merge to `main` or production deployment was performed.
+
+| Version | Date | Change |
+|---|---|---|
+| 1.5 | 2026-11-11 | Records provider-neutral OCR result adaptation, creator-scoped report history, manual review newline parser correction and associated tests. |
