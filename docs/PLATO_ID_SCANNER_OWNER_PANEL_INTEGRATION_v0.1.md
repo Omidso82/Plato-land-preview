@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Implementation Progress
 
-**Version:** 0.7  
+**Version:** 0.8  
 **Date:** 2026-11-11  
 **Scope:** PLATO LAND – Temporary Projects / PLATO ID Scanner only  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -75,6 +75,13 @@ The existing OCR assessment says a suitable Backend runtime is a prerequisite. S
 - Candidate values and ambiguity flags must be non-empty; confidence remains bounded to 0..1 or null.
 - Expanded Deno tests to cover invalid folder identity and timestamps without an explicit timezone.
 - These checks validate payload shape only; dispatch authorization, Storage existence/hash verification, callback authentication, lease fencing and persistence still require a trusted backend runtime.
+
+## Upload object-key filename hardening (v0.8)
+- Upload object keys no longer reuse a lightly sanitized original filename.
+- The key uses a restricted base name (ASCII letters/digits/underscore/hyphen) plus an extension derived from the already validated MIME type.
+- Original filename remains in upload metadata for display.
+- This aligns the UI-generated object key with the worker contract's safe three-segment path shape.
+- CI for this latest change is pending.
 
 ## Remaining work
 1. Obtain successful CI for the latest feature head.
