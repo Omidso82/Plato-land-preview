@@ -37,6 +37,8 @@ async function validateImage(file: File): Promise<void> {
 
 export default function PlatoIdImageUpload() {
   const [userId,setUserId] = useState('');
+  const [isOwner,setIsOwner] = useState(false);
+  const [deleting,setDeleting] = useState('');
   const [rows,setRows] = useState<UploadRow[]>([]);
   const [files,setFiles] = useState<File[]>([]);
   const [busy,setBusy] = useState(false);
@@ -47,7 +49,12 @@ export default function PlatoIdImageUpload() {
     const { data: auth, error: authError } = await supabase.auth.getUser();
     if (authError || !auth.user) { setMessage('نشست مالک معتبر نیست؛ دوباره وارد پنل شو.'); return; }
     const { data: role, error: roleError } = await supabase.rpc('current_user_role');
-    if (roleError || (role !== 'owner' && role !== 'مالک کل')) { setMessage('این بخش فقط برای مالک کل فعال است.'); return; }
+    const owner = !roleError && (role === 'owner' || role === 'مالک کل');
+    if (!owner) {
+      const {data:access,error:accessError}=await supabase.from('plato_id_scanner_access').select('status').eq('user_id',auth.user.id).maybeSingle();
+      if (accessError || access?.status !== 'approved') { setMessage('دسترسی اپراتور تأیید نشده یا غیرفعال است.'); return; }
+    }
+    setIsOwner(owner);
     setUserId(auth.user.id);
     const { data, error } = await supabase.from('plato_id_scanner_uploads')
       .select('id,operator_id,storage_path,file_name,content_type,file_size,created_at')
@@ -71,6 +78,21 @@ export default function PlatoIdImageUpload() {
     setFiles(valid);
     setMessage((valid.length ? valid.length+' تصویر آماده ذخیره است. ' : '') + errors.join(' | '));
     setBusy(false);
+  }
+
+  async function removeImage(row:UploadRow) {
+    if(!supabase||busy||deleting)return;
+    if(!window.confirm('تصویر «'+row.file_name+'» برای همیشه حذف شود؟'))return;
+    setDeleting(row.id);setMessage('در حال حذف تصویر…');
+    try {
+      const stored=await supabase.storage.from(BUCKET).remove([row.storage_path]);
+      if(stored.error)throw stored.error;
+      const removed=await supabase.from('plato_id_scanner_uploads').delete().eq('id',row.id);
+      if(removed.error)throw removed.error;
+      setRows(old=>old.filter(item=>item.id!==row.id));
+      setMessage('تصویر از فضای ذخیره‌سازی و فهرست دیتابیس حذف شد.');
+    } catch(e) { setMessage('حذف کامل نشد: '+(e instanceof Error?e.message:'خطای ناشناخته')); }
+    finally {setDeleting('');}
   }
 
   async function upload() {
@@ -109,6 +131,7 @@ export default function PlatoIdImageUpload() {
 
   return <section dir="rtl" style={{marginTop:20,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
     <h2 style={{color:'#f6e8c5',fontSize:19,margin:'0 0 8px'}}>تصاویر Plato IDهای فعال</h2>
+    <p style={{color:'#a9a08e',fontSize:11}}>منطقه زمانی دسته‌بندی: ایران · {isOwner?'نمایش تصاویر همه اپراتورها':'نمایش تصاویر حساب خودت'}</p>
     <p style={{color:'#c9c4b8',fontSize:13,lineHeight:1.9}}>چند تصویر را انتخاب و ذخیره کن. هر تصویر جداگانه ثبت می‌شود؛ بارگذاری‌های بعدی تصاویر قبلی را جایگزین نمی‌کنند.</p>
     <label style={{display:'block',color:'#c9c4b8',fontSize:13,marginTop:12}}>انتخاب تصاویر (JPG، PNG یا WEBP)
       <input id="plato-active-id-images" type="file" multiple accept="image/jpeg,image/png,image/webp"
@@ -121,12 +144,12 @@ export default function PlatoIdImageUpload() {
     </button>
     <p role="status" style={{color:'#d8c99f',fontSize:12,marginTop:10}}>{message}</p>
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(145px,1fr))',gap:12,marginTop:14}}>
-      {rows.map(row=><SavedImage key={row.id} row={row}/>)}
+      {rows.map(row=><SavedImage key={row.id} row={row} canDelete={isOwner||row.operator_id===userId} deleting={deleting===row.id} onDelete={()=>void removeImage(row)}/>)}
     </div>
   </section>;
 }
 
-function SavedImage({row}:{row:UploadRow}) {
+function SavedImage({row,canDelete,deleting,onDelete}:{row:UploadRow;canDelete:boolean;deleting:boolean;onDelete:()=>void}) {
   const [url,setUrl] = useState('');
   useEffect(()=>{
     let alive = true;
@@ -139,6 +162,7 @@ function SavedImage({row}:{row:UploadRow}) {
     {url ? <a href={url} target="_blank" rel="noreferrer"><img src={url} alt={row.file_name} style={{width:'100%',height:130,objectFit:'contain',background:'#08090a',borderRadius:6}}/></a>
       : <div style={{height:130,display:'grid',placeItems:'center',color:'#aaa',fontSize:12}}>در حال آماده‌سازی تصویر…</div>}
     <strong style={{display:'block',color:'#eee',fontSize:11,overflowWrap:'anywhere',marginTop:7}}>{row.file_name}</strong>
-    <small style={{color:'#aaa',fontSize:10}}>{new Date(row.created_at).toLocaleString('fa-IR')}</small>
+    <small style={{color:'#aaa',fontSize:10,display:'block'}}>{new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',dateStyle:'full',timeStyle:'short'}).format(new Date(row.created_at))}</small>
+    {canDelete&&<button type="button" disabled={deleting} onClick={onDelete} style={{width:'100%',marginTop:8,padding:'7px 9px',borderRadius:7,border:'1px solid #8a3f36',background:'#321b19',color:'#ffd8d2',fontSize:11}}>{deleting?'در حال حذف…':'حذف تصویر'}</button>}
   </article>;
 }
