@@ -1,4 +1,4 @@
-import { auditExactScannerDuplicates, auditScannerBatchDuplicates } from "./plato-id-scanner-duplicate-audit.ts";
+import { auditExactScannerDuplicates, auditScannerBatchDuplicates } from "../../../src/plato-id-scanner-duplicate-audit.ts";
 
 const assertEquals = (actual: unknown, expected: unknown) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
