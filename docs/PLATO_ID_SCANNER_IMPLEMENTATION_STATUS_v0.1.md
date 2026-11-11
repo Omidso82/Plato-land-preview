@@ -269,3 +269,39 @@ Approved workflow retained from Design Decisions v0.4:
 | Version | Date | Change |
 |---|---|---|
 | 1.7 | 2026-11-11 | Adds a Supabase report data-access layer, daily/weekly wrappers, mocked tests and CI registration; documents that Jalali time-window calculation and UI integration remain outstanding. |
+
+## 17. Tehran Jalali report windows and CI correction — v1.8
+
+**Date:** 2026-11-11  
+**Status:** Date-window utility and tests committed on the isolated feature branch; CI recheck pending.
+
+### CI failure found and corrected
+- Rechecked the workflow runs for source head `fbb04b5be96726b4f90af77ef0164192a2492c55`.
+- Both the `verify` and `build` jobs failed at `npm run typecheck`; the exact TypeScript errors were three `Cannot find name 'Deno'` errors in `src/plato-id-scanner-review-store.test.ts`.
+- The test file is included by the app TypeScript config (`include: ["src"]`) while Deno globals are not part of the browser app type environment.
+- Added a file-local declaration for the Deno test global. This is a type-only correction; it does not add a runtime dependency or alter test behavior.
+
+### Tehran/Jalali date-window utility
+- Added `src/plato-id-scanner-date-window.ts`.
+- `tehranJalaliDayWindow` converts a Jalali date key to a half-open UTC interval representing midnight-to-midnight in `Asia/Tehran`.
+- `tehranSaturdayWeekWindow` calculates the Saturday-to-following-Saturday interval for the Saturday–Friday reporting week.
+- The conversion uses the built-in Persian calendar formatter and derives the timezone offset through `Intl.DateTimeFormat`; it does not hard-code a fixed UTC offset.
+- Added tests for the daily boundary, Saturday–Friday weekly boundary, invalid Jalali dates and invalid instants.
+- Registered the new Deno test in `.github/workflows/verify.yml`.
+
+### Source commits
+- `8c4885a4160dba682757cdf62baef938efb7d944` — fix Deno global typecheck failure.
+- `e7ab718c5b4decb8d0ad2f22ba374d4ea74ce470` — add Tehran Jalali date-window utility.
+- `8ee2f4b81fd0d8da479ad978c4900b156645475c` — add date-window tests.
+- `c33284fa12da90dcaf24e14115b2e5ad7edc510c` — register tests in CI.
+
+### Verification status and limits
+- The new CI run has not yet been returned/verified at the time this document was updated.
+- The expected test cases are source-committed but must pass in GitHub Actions before this work is considered verified.
+- Report UI integration remains outstanding; the date-window functions are not yet wired to a report screen.
+- No live Supabase query, migration, database write, Telegram send, merge or production deployment was performed.
+- PR #123 remains Draft and unmerged.
+
+| Version | Date | Change |
+|---|---|---|
+| 1.8 | 2026-11-11 | Records the CI typecheck failure and type-only correction; adds Asia/Tehran Jalali daily and Saturday–Friday weekly UTC window helpers with tests. |
