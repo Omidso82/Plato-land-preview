@@ -339,3 +339,22 @@ Approved workflow retained from Design Decisions v0.4:
 | Version | Date | Change |
 |---|---|---|
 | 1.9 | 2026-11-11 | Adds daily/weekly report preview, version-history UI and Telegram text-copy preparation for owner and approved operators; records that latest UI CI and live database activation remain pending. |
+
+
+## 13. Scope correction — standalone temporary Scanner workspace (v2.0)
+
+**Date:** 2026-11-11  
+**Decision source:** explicit user clarification in the current project conversation.
+
+- The Scanner upload and review experience belongs in its own temporary PLATO ID Scanner workspace, at the same place where operators upload images and review each image's results.
+- It must not appear as a navigation item or embedded panel inside the PLATO LAND Main Website owner/admin interface.
+- The direct isolated entry route `?page=id-scanner` is retained. It renders the Scanner workspace without the normal Main Website navigation/chrome. The existing owner role is detected inside the Scanner app; operators remain on their restricted Scanner-only account flow.
+- The owner navigation entry and embedded `ownerMode` mount were removed from `src/App.tsx` on the isolated feature branch. The Scanner route import remains only for the direct route.
+- Each upload record continues to show its original image and the associated review editor in the Scanner workspace. **Actual OCR extraction is not yet available**: current records remain `uploaded`, and the IDs shown in the review editor are manually entered until an approved backend OCR runtime/provider is selected and implemented.
+- No main branch merge, production deployment, database migration/write, new service/cost, or Telegram send was performed.
+- PR #123 remains Draft and unmerged.
+
+### Version history
+| Version | Date | Change |
+|---|---|---|
+| 2.0 | 2026-11-11 | Removes Scanner from Main Website owner navigation and keeps it on the isolated temporary Scanner route; clarifies that OCR extraction itself remains blocked on backend runtime/provider approval. |
