@@ -23,3 +23,4 @@ jobs:
 
       - run: deno test supabase/functions/_shared/plato-id-scanner-reports.test.ts
       - run: deno test supabase/functions/_shared/plato-id-scanner-review.test.ts
+      - run: deno test src/plato-id-scanner-review-store.test.ts
