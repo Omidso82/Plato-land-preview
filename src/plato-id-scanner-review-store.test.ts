@@ -21,7 +21,7 @@ function mockClient(scans: unknown[], revisions: unknown[]) {
     calls,
     from(table: string) {
       const query: any = {};
-      for (const method of ["select", "gte", "lt", "in", "order"]) {
+      for (const method of ["select", "gte", "lt", "in", "eq", "order"]) {
         query[method] = (...args: unknown[]) => {
           calls.push({ table, method, args });
           if (method === "order") {
