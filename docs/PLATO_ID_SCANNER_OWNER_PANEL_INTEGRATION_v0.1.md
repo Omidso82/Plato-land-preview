@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Implementation Progress
 
-**Version:** 0.9  
+**Version:** 1.0  
 **Date:** 2026-11-11  
 **Scope:** PLATO LAND – Temporary Projects / PLATO ID Scanner only  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -95,3 +95,21 @@ The existing OCR assessment says a suitable Backend runtime is a prerequisite. S
 4. Confirm canonical Plato ID syntax from an authoritative sample/source before writing a parser.
 5. Implement server-side file validation and worker contract after runtime approval.
 6. Complete OCR correction history, daily/weekly report versioning and Telegram test-group delivery after operational policies are approved.
+
+
+## Latest follow-up — worker object-key validation (v1.0)
+
+- Source review found that the worker validator accepted any non-empty filename segment, while the SQL/UI contract restricts filenames to 1–100 ASCII letters/digits/underscore/hyphen and a lowercase MIME-derived extension.
+- Updated `safeObjectKey` to enforce the exact safe filename pattern and exact MIME-to-extension mapping: JPEG → `.jpg`, PNG → `.png`, WEBP → `.webp`.
+- Added negative contract cases for whitespace, non-ASCII filenames, unsupported `.jpeg` extension and MIME/extension mismatch.
+- The test suite still contains eight Deno test cases; the expanded negative inputs are grouped in the existing invalid-job test.
+- Source commits: `aa5493c686dd48603ff595ee71a317ed30967016`, `9ccd50a964d9846b1137fc3f0bac840115345eeb`, `75ebf22fef0cc692a3c9ad076f642fe9708951a3`.
+- GitHub Actions verify and build jobs passed for `75ebf22...`; Cloudflare preview check was still running at the time this note was prepared.
+- No database, Storage bucket, account, OCR runtime, Telegram integration or production deployment was changed.
+
+## Version history
+
+| Version | Date | Change |
+|---|---|---|
+| 0.9 | 2026-11-11 | Previous owner-panel and scanner integration progress |
+| 1.0 | 2026-11-11 | Records worker filename/MIME validation alignment and negative tests |
