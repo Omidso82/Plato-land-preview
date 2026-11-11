@@ -1,5 +1,5 @@
 # PLATO ID Scanner — Operator Access Handover
-Version: 0.1
+Version: 0.2
 Date: 2026-11-11
 Project: PLATO LAND – Temporary Projects
 Scope: Scanner-only operator access; isolated from the Main Website feature scope.
@@ -18,11 +18,12 @@ Scope: Scanner-only operator access; isolated from the Main Website feature scop
 - Existing uploaded image records are retained.
 
 ## Implemented in this change set
-- New standalone route: /plato-id-scanner.
-- Email/password operator registration and login.
-- New accounts remain pending until owner approval.
-- Owner can approve, suspend, and return an operator to pending.
-- Scanner component accepts approved operators while retaining RLS-limited access.
+- One shared route and login page: /series2-slides-manager.
+- Owner signs in with the existing owner account and retains the full temporary Series 2 manager.
+- Operators can self-register from the same login page; new accounts remain pending until owner approval.
+- Approved operators see only the scanner upload and their own images; pending or suspended users see an access-status message.
+- Owner can approve, suspend, and return an operator to pending from the same manager page.
+- The separate /plato-id-scanner route and portal have been removed from routing.
 - Images are grouped by Persian calendar day using Asia/Tehran.
 - Image deletion is limited to owner or approved uploader, with matching Storage and table policies.
 - No service-role key is included in frontend code.
@@ -39,7 +40,6 @@ It grants authenticated DELETE privilege on the scanner upload table and adds na
 - Verified: private bucket remains private; 4 upload records existed at verification time.
 - Git branch: feature/plato-id-scanner-operators.
 - Pull request: #126 — https://github.com/Omidso82/Plato-land-preview/pull/126
-- PR head: 96323a02809efb90911d086986bdde24d3dd4136
 - PR is open and has not been merged.
 - CI workflow results were not yet available at the time of this handover. The frontend is therefore not yet confirmed deployed to production.
 
@@ -58,3 +58,4 @@ It grants authenticated DELETE privilege on the scanner upload table and adds na
 
 ## Change log
 - v0.1 (2026-11-11): initial operator portal, owner approval workflow, Solar Hijri day grouping, and scoped image deletion.
+- v0.2 (2026-11-11): consolidated owner and operator access into the existing /series2-slides-manager URL; removed the separate scanner route; added role-based operator registration/status handling and owner access controls on the shared page.
