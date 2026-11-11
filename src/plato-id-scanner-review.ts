@@ -81,3 +81,9 @@ export function diffScannerReviewRevisions(
     unchanged: newIds.filter(id => oldSet.has(id)),
   };
 }
+
+
+/** Parse the operator's newline-delimited review editor without merging separate IDs. */
+export function parseScannerReviewDraft(value: string): string[] {
+  return uniqueExactScannerIds(value.split(/\r?\n/).map(line => line.trim()));
+}
