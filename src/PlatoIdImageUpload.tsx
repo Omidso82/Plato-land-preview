@@ -144,7 +144,7 @@ export default function PlatoIdImageUpload() {
     </button>
     <p role="status" style={{color:'#d8c99f',fontSize:12,marginTop:10}}>{message}</p>
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(145px,1fr))',gap:12,marginTop:14}}>
-      {rows.map(row=><SavedImage key={row.id} row={row} canDelete={isOwner||row.operator_id===userId} deleting={deleting===row.id} onDelete={()=>void removeImage(row)}/>)}
+      {groupUploadsByIranianDay(rows).map(group=><React.Fragment key={group.key}><div style={{gridColumn:'1 / -1',color:'#e4c77e',fontWeight:700,fontSize:13,padding:'8px 2px 2px',borderBottom:'1px solid #51452d'}}>{group.label} · {group.rows.length.toLocaleString('fa-IR')} تصویر</div>{group.rows.map(row=><SavedImage key={row.id} row={row} canDelete={isOwner||row.operator_id===userId} deleting={deleting===row.id} onDelete={()=>void removeImage(row)}/>)}</React.Fragment>)}
     </div>
   </section>;
 }
@@ -165,4 +165,19 @@ function SavedImage({row,canDelete,deleting,onDelete}:{row:UploadRow;canDelete:b
     <small style={{color:'#aaa',fontSize:10,display:'block'}}>{new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',dateStyle:'full',timeStyle:'short'}).format(new Date(row.created_at))}</small>
     {canDelete&&<button type="button" disabled={deleting} onClick={onDelete} style={{width:'100%',marginTop:8,padding:'7px 9px',borderRadius:7,border:'1px solid #8a3f36',background:'#321b19',color:'#ffd8d2',fontSize:11}}>{deleting?'در حال حذف…':'حذف تصویر'}</button>}
   </article>;
+}
+
+
+function groupUploadsByIranianDay(rows:UploadRow[]) {
+  const groups = new Map<string,{key:string;label:string;rows:UploadRow[]}>();
+  for (const row of rows) {
+    const date = new Date(row.created_at);
+    const parts = new Intl.DateTimeFormat('en-US-u-ca-persian',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
+    const part = (type:string) => parts.find(item=>item.type===type)?.value || '';
+    const key = part('year')+'-'+part('month')+'-'+part('day');
+    const label = new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',dateStyle:'full'}).format(date);
+    if(!groups.has(key))groups.set(key,{key,label,rows:[]});
+    groups.get(key)!.rows.push(row);
+  }
+  return Array.from(groups.values()).sort((a,b)=>b.key.localeCompare(a.key));
 }
