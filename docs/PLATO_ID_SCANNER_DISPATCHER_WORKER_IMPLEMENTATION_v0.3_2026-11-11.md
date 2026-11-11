@@ -52,7 +52,7 @@ Edge Function:
 - Claims one job with a 180-second lease.
 - Downloads the source object from the fixed private bucket, revalidates bytes and SHA-256, and rejects a mismatch.
 - Sends the image only to the fixed Google Vision EU endpoint through the previously tested client.
-- Persists the provisional OCR result using the fenced completion RPC; human review remains authoritative.
+- Converts raw OCR text through the already-tested exact @-based extractor and duplicate audit, then persists both provider evidence and the UI-ready provisional `ids`, `extraction_candidates` and `duplicate_audit` fields using the fenced completion RPC; human review remains authoritative.
 - Uses the failure RPC for retryable/non-retryable job failures.
 - Processes at most one job per invocation. The dispatcher invokes it once per scan when the shared worker secret is configured; a trusted scheduler is still needed to drain any backlog or retryable queued jobs that remain.
 
