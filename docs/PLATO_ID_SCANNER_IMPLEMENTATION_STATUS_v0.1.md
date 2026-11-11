@@ -305,3 +305,37 @@ Approved workflow retained from Design Decisions v0.4:
 | Version | Date | Change |
 |---|---|---|
 | 1.8 | 2026-11-11 | Records the CI typecheck failure and type-only correction; adds Asia/Tehran Jalali daily and Saturday–Friday weekly UTC window helpers with tests. |
+
+## 18. Daily/weekly report panel — v1.9
+
+**Date:** 2026-11-11  
+**Status:** UI and source integration committed; latest CI for the UI commits pending.
+
+### Delivered
+- Added `src/PlatoIdScannerReportsPanel.tsx` and integrated it into both the owner workspace and approved-operator workspace.
+- Added daily and weekly report modes with a Jalali date key input.
+- Daily preview uses the selected Tehran-local Jalali day window.
+- Weekly preview uses the Saturday–Friday Tehran-local week containing the selected date.
+- Report data is loaded through the existing Supabase report data-access functions and uses the latest approved review revision for each image.
+- Daily view displays the unique approved Plato IDs and image count.
+- Weekly view displays one row per active ID and seven weekday activity markers.
+- Added report version history loading and an explicit action to append a new report snapshot.
+- Added a copy action for Telegram-formatted report text. This prepares text only; it does not send a Telegram message.
+- Added responsive mobile styles for date controls, report table, history and action buttons.
+
+### Source commits
+- `55723846b4d7968490ef22402c6b6db98d701dec` — add report panel component.
+- `6e938c4851c6843d562af29f1e418e9b11af142d` — integrate into owner and operator workspaces.
+- `6e72089c2a0799e17f8272655d002b5f7030d3fd` — mobile-responsive report styles.
+
+### Verification and boundaries
+- The preceding CI run for commit `288f402d7fa44967c801c27d6e2825317732500d` passed: TypeScript typecheck, Vite build and all registered Deno tests.
+- CI for the newly added report panel commits has not yet been returned/verified.
+- No live Supabase query was run. The required Scanner tables and bucket remain dependent on the unapplied draft migrations; report persistence cannot be considered operational until an authorized migration and RLS verification are completed.
+- No Telegram message was sent; no sender/outbox or scheduled dispatch was added.
+- No migration, database write, merge or production deployment was performed.
+- PR #123 remains open, Draft and unmerged.
+
+| Version | Date | Change |
+|---|---|---|
+| 1.9 | 2026-11-11 | Adds daily/weekly report preview, version-history UI and Telegram text-copy preparation for owner and approved operators; records that latest UI CI and live database activation remain pending. |
