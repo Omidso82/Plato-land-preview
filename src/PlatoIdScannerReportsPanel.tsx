@@ -65,7 +65,7 @@ export default function PlatoIdScannerReportsPanel({ client, creatorId }: Props)
           });
       setReport(next);
       const key = reportPeriodKey(kind, next);
-      const versions = await loadScannerReportVersions(client, kind, key);
+      const versions = await loadScannerReportVersions(client, kind, key, creatorId);
       setHistory(versions);
       setNotice("گزارش از آخرین نسخه‌های تأییدشده تصاویر ساخته شد.");
     } catch (e: any) {
