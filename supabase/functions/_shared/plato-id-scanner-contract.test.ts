@@ -11,7 +11,7 @@ const job = {
   attempt: 1,
   source: {
     bucket: "plato-id-scans",
-    object_key: "123e4567-e89b-42d3-a456-426614174002/scan/image.webp",
+    object_key: "123e4567-e89b-42d3-a456-426614174002/123e4567-e89b-42d3-a456-426614174003/image.webp",
     content_type: "image/webp",
     sha256: "a".repeat(64),
   },
@@ -42,7 +42,9 @@ Deno.test("rejects unsupported bucket, traversal paths, MIME and malformed hash"
   for (const mutate of [
     (v: any) => v.source.bucket = "other",
     (v: any) => v.source.object_key = "../private/image.png",
+    (v: any) => v.source.object_key = "not-a-user/123e4567-e89b-42d3-a456-426614174003/image.webp",
     (v: any) => v.source.content_type = "image/gif",
+    (v: any) => v.requested_at = "2026-11-11T12:00:00",
     (v: any) => v.source.sha256 = "not-a-hash",
   ]) {
     const candidate = structuredClone(job);
