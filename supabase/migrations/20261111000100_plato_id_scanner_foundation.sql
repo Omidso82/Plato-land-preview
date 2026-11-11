@@ -23,8 +23,10 @@ create index if not exists plato_id_scanner_access_status_requested_idx on publi
 create index if not exists plato_id_scanner_uploads_operator_created_idx on public.plato_id_scanner_uploads(operator_id,created_at desc);
 alter table public.plato_id_scanner_access enable row level security;
 alter table public.plato_id_scanner_uploads enable row level security;
-revoke all on public.plato_id_scanner_access from anon;
-revoke all on public.plato_id_scanner_uploads from anon;
+-- Start from an explicit deny baseline; then grant only the operations
+-- required by the Scanner UI. RLS policies remain an additional row-level gate.
+revoke all on public.plato_id_scanner_access from anon, authenticated;
+revoke all on public.plato_id_scanner_uploads from anon, authenticated;
 grant select,insert,update on public.plato_id_scanner_access to authenticated;
 grant select,insert on public.plato_id_scanner_uploads to authenticated;
 create policy scanner_access_read_self_or_owner on public.plato_id_scanner_access for select to authenticated using(user_id=(select auth.uid()) or (select private.has_role(array['owner']::text[])));
