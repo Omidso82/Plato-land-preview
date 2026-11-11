@@ -1,4 +1,4 @@
-# PLATO ID Scanner — QA Report v0.7
+# PLATO ID Scanner — QA Report v0.8
 
 **Date:** 2026-11-11  
 **Branch:** `feature/plato-id-scanner-v0-1`  
