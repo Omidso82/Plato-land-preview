@@ -154,3 +154,26 @@ No runtime or OCR provider has been selected. No worker, queue, new table/column
 |---|---|---|
 | 0.3 | 2026-11-11 | Previous provider-neutral contract and validators |
 | 0.4 | 2026-11-11 | Aligns worker filename and MIME-extension validation with the Scanner upload/storage contract |
+
+## 10. Exact duplicate audit payload (implementation addition)
+
+The OCR result adapter must preserve every @-based extraction occurrence, not only the unique preview list.
+
+For each occurrence, retain:
+- exact `raw_value` (including the leading `@`, case and punctuation);
+- `scan_id` identifying the source image;
+- zero-based `candidate_index` within that image's extracted sequence;
+- `start` and `end` offsets into the verbatim OCR `raw_text`.
+
+The deterministic exact-deduplication audit returns:
+- `accepted_ids`: first-seen exact strings in source order;
+- `first_occurrences`: source reference for each accepted ID;
+- `duplicates`: every later exact occurrence, with its own source reference and the first occurrence's scan ID/index;
+- `occurrence_counts`: total count for each exact string;
+- total, unique and duplicate counts.
+
+Only byte-for-byte/equality-identical raw strings are duplicates. Case variants, punctuation variants, underscores, and visually confusable characters remain separate strings. No trim, case-folding, Unicode normalization, punctuation cleanup, or fuzzy comparison is allowed.
+
+This audit is provisional OCR evidence. It does not approve or publish IDs. Manager review remains authoritative. A future multi-image aggregator must pass occurrences in deterministic upload order and preserve each original `scan_id`; it must not overwrite or discard the per-image audit.
+
+The Telegram bot consumes only the manager-approved canonical report and does not run a second, independent deduplication algorithm.
