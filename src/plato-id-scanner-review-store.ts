@@ -1,16 +1,20 @@
 import {
   createScannerReviewRevision,
   uniqueExactScannerIds,
-  type ScannerReviewRevision,
 } from "./plato-id-scanner-review";
 
 type SupabaseLike = any;
 
-export interface StoredScannerReviewRevision extends ScannerReviewRevision {
+export interface StoredScannerReviewRevision {
   id: string;
   scan_id: string;
+  revision: number;
+  previous_revision: number | null;
+  status: "approved";
+  canonical_ids: string[];
   reviewer_id: string;
   reviewed_at: string;
+  note: string | null;
 }
 
 export interface StoredScannerReportVersion {
