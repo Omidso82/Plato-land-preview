@@ -40,6 +40,8 @@ export function validateScannerStoredObject(input: {
 }
 
 export async function scannerSha256(bytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
+  const stableBuffer = new ArrayBuffer(bytes.byteLength);
+  new Uint8Array(stableBuffer).set(bytes);
+  const digest = await crypto.subtle.digest("SHA-256", stableBuffer);
   return Array.from(new Uint8Array(digest)).map((value) => value.toString(16).padStart(2, "0")).join("");
 }
