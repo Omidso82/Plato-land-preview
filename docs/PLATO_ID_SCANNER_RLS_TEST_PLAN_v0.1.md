@@ -48,6 +48,7 @@
 - Anonymous role cannot read or write Scanner tables or private Storage objects.
 - An operator cannot change their own access status to approved, rejected, or disabled.
 - An operator cannot insert an upload row with a non-empty OCR result or a status other than uploaded.
+- Upload-row `storage_path` must have exactly two folder segments and one filename; operator folder must equal `auth.uid()`, scan folder must be a UUID, and filename must use the safe ASCII basename plus `.jpg`, `.png`, or `.webp`. A prefix-only path check is insufficient.
 - An operator cannot write a Storage object into another user's UUID folder.\n- Storage INSERT must reject paths that do not contain exactly two folder segments and one filename.\n- The second folder segment must be a UUID; filename must match the safe ASCII basename and `.jpg`, `.png`, or `.webp` extension contract.\n- Nested paths, extra segments, traversal-like names, and unsupported extensions must be denied at the Storage policy boundary.
 - A pre-existing bucket with public=true, wrong size limit, wrong MIME allowlist, or wrong name must cause the migration to stop with a clear exception. It must not be silently overwritten.
 - Re-running the SQL file manually is not an approved test: table/index statements are guarded, but CREATE POLICY statements are intentionally a one-time migration operation and are not idempotent. Use the migration ledger in the disposable environment; do not manually replay an already-applied migration.
