@@ -64,7 +64,47 @@ end
 $$;
 
 create policy scanner_storage_read_owner_or_self on storage.objects for select to authenticated using(bucket_id='plato-id-scans' and ((select private.has_role(array['owner']::text[])) or ((storage.foldername(name))[1]=(select auth.uid())::text and exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved'))));
-create policy scanner_storage_insert_approved_self_or_owner on storage.objects for insert to authenticated with check(bucket_id='plato-id-scans' and (storage.foldername(name))[1]=(select auth.uid())::text and ((select private.has_role(array['owner']::text[])) or exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved')));
+-- Enforce the same three-segment object-key contract at the Storage boundary,
+-- not only in the browser: operator UUID / scan UUID / safe MIME-derived filename.
+create policy scanner_storage_insert_approved_self_or_owner on storage.objects for insert to authenticated with check(
+ bucket_id='plato-id-scans'
+ and array_length(storage.foldername(name),1)=2
+ and (storage.foldername(name))[1]=(select auth.uid())::text
+ and (storage.foldername(name))[2] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}
+-- Operator correction/deletion intentionally excluded until audited backend RPCs are implemented.
+
+-- Allow an approved operator to clean up an orphaned object if the upload-row insert fails.
+-- Existing objects referenced by an upload row remain non-deletable by operators; owner retains full cleanup access.
+create policy scanner_storage_delete_orphan_self_or_owner on storage.objects for delete to authenticated using(
+ bucket_id='plato-id-scans' and (
+  (select private.has_role(array['owner']::text[])) or (
+   (storage.foldername(name))[1]=(select auth.uid())::text
+   and exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved')
+   and not exists(select 1 from public.plato_id_scanner_uploads u where u.storage_path=name and u.operator_id=(select auth.uid()))
+  )
+ )
+);
+
+ and storage.filename(name) ~ '^[A-Za-z0-9_-]{1,100}\\.(jpg|png|webp)
+-- Operator correction/deletion intentionally excluded until audited backend RPCs are implemented.
+
+-- Allow an approved operator to clean up an orphaned object if the upload-row insert fails.
+-- Existing objects referenced by an upload row remain non-deletable by operators; owner retains full cleanup access.
+create policy scanner_storage_delete_orphan_self_or_owner on storage.objects for delete to authenticated using(
+ bucket_id='plato-id-scans' and (
+  (select private.has_role(array['owner']::text[])) or (
+   (storage.foldername(name))[1]=(select auth.uid())::text
+   and exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved')
+   and not exists(select 1 from public.plato_id_scanner_uploads u where u.storage_path=name and u.operator_id=(select auth.uid()))
+  )
+ )
+);
+
+ and (
+  (select private.has_role(array['owner']::text[]))
+  or exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved')
+ )
+);
 -- Operator correction/deletion intentionally excluded until audited backend RPCs are implemented.
 
 -- Allow an approved operator to clean up an orphaned object if the upload-row insert fails.
