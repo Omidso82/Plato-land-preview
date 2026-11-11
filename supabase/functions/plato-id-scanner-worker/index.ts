@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requestGoogleVisionOcr, GoogleVisionRequestError } from "../_shared/plato-id-scanner-google-vision-client.ts";
 import { scannerSha256, validateScannerStoredObject, SCANNER_BUCKET } from "../_shared/plato-id-scanner-dispatch-validation.ts";
+import { adaptScannerWorkerSuccessToReviewPayload } from "../_shared/plato-id-scanner-result-adapter.ts";
 
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -136,9 +137,10 @@ Deno.serve(async (request: Request) => {
       },
     });
     ocr.finished_at = new Date().toISOString();
+    const reviewPayload = { ...ocr, ...adaptScannerWorkerSuccessToReviewPayload(ocr) };
     const { error: completeError } = await admin.rpc("complete_plato_id_scanner_ocr_job", {
       p_job_id: job.id, p_attempt: job.attempt, p_worker_id: workerId,
-      p_source_sha256: digest, p_result: ocr,
+      p_source_sha256: digest, p_result: reviewPayload,
     });
     if (completeError) throw new Error("SCANNER_RESULT_PERSIST_FAILED");
     return Response.json({ claimed: 1, processed: 1, scan_id: job.scan_id, status: "needs_review" });
