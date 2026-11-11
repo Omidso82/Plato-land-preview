@@ -42,3 +42,11 @@ Deno.test("Telegram formatters split long reports without losing rows",()=>{
   const weekly=formatWeeklyTelegramMessages({weekStartJalali:"1405/08/17",weekEndJalali:"1405/08/23",imageCount:4,rows:[{id:"ID-1",activeDays:[true,false,true,false,false,false,true]}]});
   assert(weekly[0].includes("★"));
 });
+
+Deno.test("per-image Telegram output uses the same exact canonical IDs and removes exact duplicates",async()=>{
+  const {formatScanTelegramMessages}=await import("../../../src/plato-id-scanner-reports.ts");
+  const messages=formatScanTelegramMessages("screenshot-01.png",["ID_A","ID_B","ID_A"]);
+  assert(messages.length===1);
+  assert(messages[0].includes("ID_A")&&messages[0].includes("ID_B"));
+  assertEquals(messages[0].match(/ID_A/g)?.length,1);
+});
