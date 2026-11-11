@@ -129,3 +129,15 @@ Approved workflow retained from Design Decisions v0.4:
 | Version | Date | Change |
 |---|---|---|
 | 1.1 | 2026-11-11 | Corrects product scope to batch image-to-Plato-ID extraction; records multi-image upload UI and Tehran daily/weekly aggregation utilities/tests; records OCR/runtime, correction, reporting and Telegram blockers. |
+
+
+## 11. Per-image Telegram output preparation — v1.2
+
+- Added `formatScanTelegramMessages` to `src/plato-id-scanner-reports.ts` to format one image's reviewed canonical ID list for Telegram, split into safe message chunks.
+- Exact ID strings are preserved; only exact duplicate values are collapsed. No character substitution or fuzzy matching is performed.
+- Added a Deno test verifying per-image formatting and exact duplicate handling.
+- This is formatting logic only. No Telegram bot sender, token, destination, outbox or message delivery has been configured.
+
+| Version | Date | Change |
+|---|---|---|
+| 1.2 | 2026-11-11 | Adds per-image Telegram ID-list formatting and exact-value preservation; no delivery is activated. |
