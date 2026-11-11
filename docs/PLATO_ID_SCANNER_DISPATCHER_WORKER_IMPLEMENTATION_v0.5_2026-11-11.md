@@ -16,7 +16,7 @@ Edge Function: `supabase/functions/plato-id-scanner-dispatch/index.ts`
 - Accepts only a `scan_id`; the browser cannot choose a bucket, Storage path, provider, OCR endpoint, credential or Telegram destination.
 - Reads the upload row from Supabase and enforces upload ownership for non-owner operators.
 - Downloads the original from the fixed private `plato-id-scans` bucket.
-- Validates the three-segment owner/scan path, safe filename, declared and actual size (maximum 15 MiB), supported MIME, byte signature, and extension/MIME match.
+- Validates the three-segment owner/scan path, safe filename, declared and actual size (maximum 15 MiB), supported MIME, byte signature, and extension/MIME match. Full server-side image decode and dimension/decompression-bomb validation remain outstanding.
 - Computes SHA-256 from the downloaded bytes and passes only scan ID plus digest to a service-role-only atomic enqueue RPC.
 - Returns HTTP 202 after queue insertion. If the worker secret is configured, it makes a server-to-server worker invocation; otherwise the job remains queued. Queue acceptance is never represented as OCR completion.
 
