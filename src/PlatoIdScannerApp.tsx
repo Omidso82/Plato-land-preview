@@ -188,6 +188,16 @@ function ScannerReviewCard({row,client,reviewerId}:{row:ScanRow;client:any;revie
   finally{setBusy(false);}
  }
  const latest=history[history.length-1];
+ const [dispatchBusy,setDispatchBusy]=useState(false),[dispatchMessage,setDispatchMessage]=useState('');
+ async function dispatchOcr(){
+  if(dispatchBusy)return;setDispatchBusy(true);setDispatchMessage('');
+  try{
+   const {data,error}=await client.functions.invoke('plato-id-scanner-dispatch',{body:{scan_id:row.id}});
+   if(error)throw error;
+   setDispatchMessage(data?.message||'درخواست پردازش ثبت شد.');
+  }catch(e:any){setDispatchMessage(e?.message||'ارسال درخواست پردازش ناموفق بود.');}
+  finally{setDispatchBusy(false);}
+ }
  return <article className="scanner-review-card">
   <div className="scanner-review-heading"><div><strong>{row.file_name}</strong><small>{new Date(row.created_at).toLocaleString('fa-IR')} · {(row.file_size/1024/1024).toFixed(2)} MB</small></div><span className="scanner-status">{latest?'بازبینی تأییدشده · نسخه '+latest.revision:Array.isArray(row.ocr_result?.ids)&&row.ocr_result.ids.length?'نتیجه OCR آماده بازبینی':row.status==='uploaded'?'ذخیره شده – در انتظار پردازش OCR':row.status}</span></div>
   {imageUrl&&<a className="scanner-image-link" href={imageUrl} target="_blank" rel="noreferrer"><img src={imageUrl} alt={'تصویر اصلی '+row.file_name}/></a>}
@@ -205,6 +215,10 @@ function ScannerReviewCard({row,client,reviewerId}:{row:ScanRow;client:any;revie
     : <p className="scanner-empty">در این تصویر تکراری دقیقی ثبت نشده است.</p>}
    <p className="scanner-report-disclaimer">این گزارش فقط موارد کاملاً یکسان را تکراری می‌شمارد؛ موارد مشابه جدا باقی می‌مانند.</p>
   </details>}
+  {(row.status==='uploaded'||row.status==='queued')&&<div className="scanner-review-meta">
+   <button className="scanner-primary" type="button" disabled={dispatchBusy} onClick={()=>void dispatchOcr()}>{dispatchBusy?'در حال ثبت درخواست…':'شروع پردازش OCR'}</button>
+   {dispatchMessage&&<small>{dispatchMessage}</small>}
+  </div>}
   <div className="scanner-review-meta"><strong>بازبینی دستی فهرست Plato ID</strong><small>{latest?'آخرین نسخه تأییدشده: '+latest.revision:'هنوز نسخه تأییدشده‌ای ثبت نشده است.'}</small></div>
   <textarea className="scanner-review-textarea" dir="ltr" spellCheck={false} value={draft} onChange={e=>setDraft(e.target.value)} placeholder="هر Plato ID را در یک خط وارد کنید؛ مقایسه با تصویر اصلی انجام شود." rows={Math.min(10,Math.max(4,draft.split('\n').length))}/>
   <input className="scanner-review-note" value={note} onChange={e=>setNote(e.target.value)} placeholder="یادداشت اصلاح (اختیاری)"/>
