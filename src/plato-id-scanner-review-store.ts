@@ -132,3 +132,91 @@ export async function appendScannerReportVersion(
 export function scannerReviewText(ids: readonly unknown[]): string {
   return uniqueExactScannerIds(ids).join("\n");
 }
+
+
+import {
+  buildDailyScannerReportFromRevisions,
+  buildWeeklyScannerReportFromRevisions,
+  type ScannerApprovedRevisionSource,
+  type ScannerReportSource,
+  type DailyScannerReport,
+  type WeeklyScannerReport,
+} from "./plato-id-scanner-reports";
+
+export interface ScannerReportInputWindow {
+  /** Inclusive lower bound in ISO-8601; calculate in Asia/Tehran at the caller. */
+  fromInclusive: string;
+  /** Exclusive upper bound in ISO-8601; calculate in Asia/Tehran at the caller. */
+  toExclusive: string;
+}
+
+export interface LoadedScannerReportInputs {
+  scans: ScannerReportSource[];
+  revisions: ScannerApprovedRevisionSource[];
+}
+
+/**
+ * Load only the requested time window and its immutable review history.
+ * Supabase RLS remains the authorization boundary: owners see all scans,
+ * approved operators see only their own scans/revisions.
+ */
+export async function loadScannerReportInputs(
+  client: SupabaseLike,
+  window: ScannerReportInputWindow,
+): Promise<LoadedScannerReportInputs> {
+  if (!Number.isFinite(Date.parse(window.fromInclusive)) ||
+      !Number.isFinite(Date.parse(window.toExclusive)) ||
+      Date.parse(window.fromInclusive) >= Date.parse(window.toExclusive)) {
+    throw new Error("Invalid Scanner report time window");
+  }
+
+  const { data: scansData, error: scansError } = await client
+    .from("plato_id_scanner_uploads")
+    .select("id,created_at,status,ocr_result")
+    .gte("created_at", window.fromInclusive)
+    .lt("created_at", window.toExclusive)
+    .order("created_at", { ascending: true });
+  if (scansError) throw scansError;
+
+  const scans = (scansData ?? []) as ScannerReportSource[];
+  if (!scans.length) return { scans: [], revisions: [] };
+
+  const scanIds = scans.map(scan => scan.id);
+  const { data: revisionsData, error: revisionsError } = await client
+    .from("plato_id_scanner_review_revisions")
+    .select("scan_id,revision,status,canonical_ids")
+    .in("scan_id", scanIds)
+    .order("revision", { ascending: true });
+  if (revisionsError) throw revisionsError;
+
+  return {
+    scans,
+    revisions: (revisionsData ?? []) as ScannerApprovedRevisionSource[],
+  };
+}
+
+/** Build a daily report from live Supabase rows and the latest approved revisions. */
+export async function loadDailyScannerReport(
+  client: SupabaseLike,
+  input: ScannerReportInputWindow & { jalaliDateKey: string },
+): Promise<DailyScannerReport> {
+  const loaded = await loadScannerReportInputs(client, input);
+  return buildDailyScannerReportFromRevisions(
+    loaded.scans,
+    loaded.revisions,
+    input.jalaliDateKey,
+  );
+}
+
+/** Build a Saturday–Friday report from live Supabase rows and approved revisions. */
+export async function loadWeeklyScannerReport(
+  client: SupabaseLike,
+  input: ScannerReportInputWindow & { anyDateInWeek: string },
+): Promise<WeeklyScannerReport> {
+  const loaded = await loadScannerReportInputs(client, input);
+  return buildWeeklyScannerReportFromRevisions(
+    loaded.scans,
+    loaded.revisions,
+    input.anyDateInWeek,
+  );
+}
