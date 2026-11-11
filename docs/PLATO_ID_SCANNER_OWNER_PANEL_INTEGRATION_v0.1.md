@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Implementation Progress
 
-**Version:** 0.5  
+**Version:** 0.6  
 **Date:** 2026-11-11  
 **Scope:** PLATO LAND – Temporary Projects / PLATO ID Scanner only  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -60,6 +60,14 @@ The existing OCR assessment says a suitable Backend runtime is a prerequisite. S
 - Confirmed from repository inspection that `main` contains existing event-specific Supabase Edge Functions, but no Scanner OCR worker or persistent container worker. Those existing event functions are not evidence of an OCR-capable runtime.
 - The feature branch has no `supabase/config.toml` and no Scanner function directory. No runtime/provider can be responsibly selected from repository evidence alone.
 - Contract is documentation only: no schema, migration, worker, queue, secret, bucket or production setting changed.
+
+## OCR contract validation implementation (v0.6)
+- Added provider-neutral runtime validators in `supabase/functions/_shared/plato-id-scanner-contract.ts` for worker job, success and failure envelopes.
+- Validators check contract version, UUID identities, attempt numbers, fixed private bucket, safe object-key shape, supported image MIME, SHA-256 format, timestamps, confidence bounds and candidate structure.
+- Raw OCR candidate values are preserved exactly; no Plato ID parser, normalization, fuzzy matching or auto-correction was introduced.
+- Added 8 Deno tests in `supabase/functions/_shared/plato-id-scanner-contract.test.ts` covering valid payloads, invalid paths/MIME/hash/identity, confidence bounds, raw-value preservation and failure envelopes.
+- Added the Scanner contract test to `.github/workflows/verify.yml` on this feature branch only.
+- CI on commit `513da823...` completed successfully: TypeScript typecheck, Vite build, existing two Deno test suites; Cloudflare Pages preview check succeeded and the deploy job was skipped. New contract tests were added after that run and require a fresh CI result.
 
 ## Remaining work
 1. Obtain successful CI for the latest feature head.
