@@ -3,6 +3,7 @@ declare const Deno: { test(name: string, fn: () => void | Promise<void>): void }
 import {
   loadDailyScannerReport,
   loadScannerReportInputs,
+  loadScannerReportVersions,
   loadWeeklyScannerReport,
 } from "./plato-id-scanner-review-store";
 
@@ -15,7 +16,7 @@ const assertEquals = (actual: unknown, expected: unknown) => {
   }
 };
 
-function mockClient(scans: unknown[], revisions: unknown[]) {
+function mockClient(scans: unknown[], revisions: unknown[], reportVersions: unknown[] = []) {
   const calls: Array<{ table: string; method: string; args: unknown[] }> = [];
   return {
     calls,
@@ -26,7 +27,7 @@ function mockClient(scans: unknown[], revisions: unknown[]) {
           calls.push({ table, method, args });
           if (method === "order") {
             return Promise.resolve({
-              data: table === "plato_id_scanner_uploads" ? scans : revisions,
+              data: table === "plato_id_scanner_uploads" ? scans : table === "plato_id_scanner_review_revisions" ? revisions : reportVersions,
               error: null,
             });
           }
@@ -92,4 +93,14 @@ Deno.test("report loader rejects invalid or reversed time windows before queryin
   }
   assert(rejected);
   assertEquals(client.calls.length, 0);
+});
+
+
+Deno.test("report version history is scoped to the current creator", async () => {
+  const client = mockClient([], [], [
+    { id: "v1", report_kind: "daily", period_key: "1405/08/20", version: 1, created_by: "owner-1" },
+  ]);
+  const versions = await loadScannerReportVersions(client, "daily", "1405/08/20", "owner-1");
+  assertEquals(versions.length, 1);
+  assert(client.calls.some(call => call.table === "plato_id_scanner_report_versions" && call.method === "eq" && call.args[0] === "created_by" && call.args[1] === "owner-1"));
 });
