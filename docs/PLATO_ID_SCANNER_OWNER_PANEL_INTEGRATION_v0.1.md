@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Implementation Progress
 
-**Version:** 0.6  
+**Version:** 0.7  
 **Date:** 2026-11-11  
 **Scope:** PLATO LAND – Temporary Projects / PLATO ID Scanner only  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -68,6 +68,13 @@ The existing OCR assessment says a suitable Backend runtime is a prerequisite. S
 - Added 8 Deno tests in `supabase/functions/_shared/plato-id-scanner-contract.test.ts` covering valid payloads, invalid paths/MIME/hash/identity, confidence bounds, raw-value preservation and failure envelopes.
 - Added the Scanner contract test to `.github/workflows/verify.yml` on this feature branch only.
 - CI on commit `513da823...` completed successfully: TypeScript typecheck, Vite build, existing two Deno test suites; Cloudflare Pages preview check succeeded and the deploy job was skipped. New contract tests were added after that run and require a fresh CI result.
+
+## OCR contract hardening (v0.7)
+- Tightened timestamp validation to require an RFC3339-style timestamp with an explicit UTC/offset suffix.
+- Tightened source object key validation to require a user UUID folder and scan UUID folder, in addition to rejecting traversal-like paths.
+- Candidate values and ambiguity flags must be non-empty; confidence remains bounded to 0..1 or null.
+- Expanded Deno tests to cover invalid folder identity and timestamps without an explicit timezone.
+- These checks validate payload shape only; dispatch authorization, Storage existence/hash verification, callback authentication, lease fencing and persistence still require a trusted backend runtime.
 
 ## Remaining work
 1. Obtain successful CI for the latest feature head.
