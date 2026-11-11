@@ -1,5 +1,5 @@
 # PLATO ID Scanner — implementation status
-**Document version:** 0.4
+**Document version:** 0.5
 Date: 2026-11-11
 Branch: feature/plato-id-scanner-v0-1
 Base: main at abb1556b57f9c9b73cdc83ea2486ffd01ffd023a
@@ -28,7 +28,11 @@ Base: main at abb1556b57f9c9b73cdc83ea2486ffd01ffd023a
 - `private.has_role(text[])` exists as SECURITY DEFINER in the non-exposed `private` schema with an empty search_path and checks `public.user_roles` against `auth.uid()`.
 - Supabase security advisor returned pre-existing findings on eight other tables with RLS but no policies, two exposed SECURITY DEFINER functions, and disabled leaked-password protection. These are outside Scanner scope and were not changed.
 
-## Latest additional hardening (pending CI)
+## Latest additional hardening (verified on commit e3f18dfb7b35dc6f432291d355d3c698e52ab311)
+- Upload object-key basename is restricted to ASCII letters/digits/underscore/hyphen and the extension is derived from the validated MIME type; original filename remains display metadata.
+- GitHub Actions run 42932816623 completed successfully on this commit: npm install, TypeScript typecheck, Vite build and all three Deno test suites including Scanner contract tests.
+- Cloudflare Pages preview was still building at the time of this update; preview deployment is not yet marked successful.
+
 - Validator now checks calendar validity (rejects dates such as February 31), valid hour/minute/second ranges and timezone offsets up to ±14:00 only.
 - Added negative cases for impossible dates, hour 24 and offset +14:01.
 - OCR worker contract document updated to v0.3.
