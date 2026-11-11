@@ -3,6 +3,15 @@ import {
   uniqueExactScannerIds,
 } from "./plato-id-scanner-review";
 
+import {
+  buildDailyScannerReportFromRevisions,
+  buildWeeklyScannerReportFromRevisions,
+  type ScannerApprovedRevisionSource,
+  type ScannerReportSource,
+  type DailyScannerReport,
+  type WeeklyScannerReport,
+} from "./plato-id-scanner-reports";
+
 type SupabaseLike = any;
 
 export interface StoredScannerReviewRevision {
@@ -133,15 +142,6 @@ export function scannerReviewText(ids: readonly unknown[]): string {
   return uniqueExactScannerIds(ids).join("\n");
 }
 
-
-import {
-  buildDailyScannerReportFromRevisions,
-  buildWeeklyScannerReportFromRevisions,
-  type ScannerApprovedRevisionSource,
-  type ScannerReportSource,
-  type DailyScannerReport,
-  type WeeklyScannerReport,
-} from "./plato-id-scanner-reports";
 
 export interface ScannerReportInputWindow {
   /** Inclusive lower bound in ISO-8601; calculate in Asia/Tehran at the caller. */
