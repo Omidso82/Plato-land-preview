@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import './plato-id-scanner.css';
 import { parseScannerReviewDraft } from './plato-id-scanner-review';
+import { auditScannerBatchDuplicates } from './plato-id-scanner-duplicate-audit';
 import { appendScannerReviewRevision, loadScannerReviewRevisions, scannerReviewText } from './plato-id-scanner-review-store';
 import PlatoIdScannerReportsPanel from './PlatoIdScannerReportsPanel';
 
@@ -123,7 +124,36 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
 }
 function UploadList({rows,client,reviewerId}:{rows:ScanRow[];client:any;reviewerId:string}){
  if(!rows.length)return <p className="scanner-empty">هنوز تصویری ثبت نشده است.</p>;
- return <div className="scanner-upload-list">{rows.map(row=><ScannerReviewCard key={row.id} row={row} client={client} reviewerId={reviewerId}/>)}</div>;
+ const chronological=[...rows].sort((a,b)=>a.created_at.localeCompare(b.created_at));
+ const scans=chronological.map(row=>({
+  scan_id:row.id,
+  candidates:Array.isArray(row.ocr_result?.extraction_candidates)
+   ? row.ocr_result.extraction_candidates
+   : Array.isArray(row.ocr_result?.ids)
+    ? row.ocr_result.ids.map((raw_value:string)=>({raw_value}))
+    : [],
+ })).filter(scan=>scan.candidates.length>0);
+ const batchAudit=auditScannerBatchDuplicates(scans);
+ const fileName=(scanId:string)=>rows.find(row=>row.id===scanId)?.file_name||scanId;
+ return <div className="scanner-upload-list">
+  {batchAudit.total_occurrences>0&&<details className="scanner-review-history scanner-duplicate-audit">
+   <summary>گزارش تجمیعی تصاویر: {batchAudit.unique_count} شناسه یکتا · {batchAudit.duplicate_count} تکراری دقیق</summary>
+   <div className="scanner-report-stats">
+    <div><strong>{batchAudit.total_occurrences}</strong><small>کل موارد استخراج‌شده</small></div>
+    <div><strong>{batchAudit.unique_count}</strong><small>شناسه یکتا</small></div>
+    <div><strong>{batchAudit.duplicate_count}</strong><small>تکراری دقیق</small></div>
+   </div>
+   {batchAudit.duplicates.length>0
+    ? <div className="scanner-report-id-list" dir="ltr">{batchAudit.duplicates.map((item,index)=><div key={item.scan_id+'-batch-duplicate-'+index}>
+      <strong>{item.raw_value}</strong>
+      <small>تکرار در: {fileName(item.scan_id)} · مورد اصلی در: {fileName(item.duplicate_of_scan_id)}</small>
+     </div>)}
+    </div>
+    : <p className="scanner-empty">در تصاویر پردازش‌شده تکراری دقیقی ثبت نشده است.</p>}
+   <p className="scanner-report-disclaimer">تجمیع بر اساس ترتیب زمانی آپلود انجام می‌شود؛ فقط رشته‌های کاملاً یکسان تکراری محسوب می‌شوند.</p>
+  </details>}
+  {rows.map(row=><ScannerReviewCard key={row.id} row={row} client={client} reviewerId={reviewerId}/>)}
+ </div>;
 }
 function ScannerReviewCard({row,client,reviewerId}:{row:ScanRow;client:any;reviewerId:string}){
  const [history,setHistory]=useState<any[]>([]),[draft,setDraft]=useState(''),[note,setNote]=useState(''),[imageUrl,setImageUrl]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loaded,setLoaded]=useState(false);
