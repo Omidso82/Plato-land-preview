@@ -1,10 +1,11 @@
 import type { ScannerWorkerSuccess } from "./plato-id-scanner-contract.ts";
-import { extractAtSignCandidates, uniqueExactAtSignCandidates } from "../../../src/plato-id-scanner-extraction.ts";
+import { extractAtSignCandidates } from "../../../src/plato-id-scanner-extraction.ts";
+import { auditExactScannerDuplicates } from "../../../src/plato-id-scanner-duplicate-audit.ts";
 
 /**
- * Converts a provider-neutral OCR success into the provisional payload consumed
- * by the Scanner review UI. This is an adapter only; it does not persist data,
- * approve IDs, or dispatch Telegram messages.
+ * Converts provider-neutral OCR into provisional review data.
+ * Every occurrence is retained in the duplicate audit; only the first exact
+ * occurrence enters the provisional unique-ID list. Nothing is approved here.
  */
 export interface ScannerProvisionalOcrResult {
   ids: string[];
@@ -14,19 +15,28 @@ export interface ScannerProvisionalOcrResult {
   extraction_rule: "at_sign_v0.2";
   review_required: true;
   extraction_candidates: Array<{ raw_value: string; start: number; end: number }>;
+  duplicate_audit: ReturnType<typeof auditExactScannerDuplicates>;
 }
 
 export function adaptScannerWorkerSuccessToReviewPayload(
   result: ScannerWorkerSuccess,
 ): ScannerProvisionalOcrResult {
-  const extracted = uniqueExactAtSignCandidates(extractAtSignCandidates(result.raw_text));
+  const extracted = extractAtSignCandidates(result.raw_text);
+  const duplicateAudit = auditExactScannerDuplicates(extracted.map((candidate, candidateIndex) => ({
+    raw_value: candidate.raw_value,
+    scan_id: result.scan_id,
+    candidate_index: candidateIndex,
+    start: candidate.start,
+    end: candidate.end,
+  })));
   return {
-    ids: extracted.map(candidate => candidate.raw_value),
+    ids: duplicateAudit.accepted_ids,
     raw_text: result.raw_text,
     engine: result.engine,
     provider_candidates: result.candidates,
     extraction_rule: "at_sign_v0.2",
     review_required: true,
     extraction_candidates: extracted,
+    duplicate_audit: duplicateAudit,
   };
 }
