@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Implementation Progress
 
-**Version:** 0.4  
+**Version:** 0.5  
 **Date:** 2026-11-11  
 **Scope:** PLATO LAND – Temporary Projects / PLATO ID Scanner only  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -53,6 +53,13 @@ These are static source checks, not live RLS, Storage, browser or production tes
 
 ## OCR/backend decision boundary
 The existing OCR assessment says a suitable Backend runtime is a prerequisite. Supabase Edge Functions are not selected for full OCR because the documented CPU budget is unsuitable without representative benchmarks. No worker or OCR provider is being implemented or activated until the owner confirms an existing PLATO LAND-controlled container/runtime or explicitly approves evaluation of a named managed provider and its privacy/cost terms.
+
+## OCR/backend contract progress (v0.5)
+- Added `docs/PLATO_ID_SCANNER_OCR_WORKER_CONTRACT_v0.1.md` as a provider-neutral engineering contract.
+- Defined logical worker input/result/failure schemas, immutable source-image/hash checks, idempotent job handling, attempt history, state transitions, retry/lease fencing, ambiguity flags and append-only correction audit requirements.
+- Confirmed from repository inspection that `main` contains existing event-specific Supabase Edge Functions, but no Scanner OCR worker or persistent container worker. Those existing event functions are not evidence of an OCR-capable runtime.
+- The feature branch has no `supabase/config.toml` and no Scanner function directory. No runtime/provider can be responsibly selected from repository evidence alone.
+- Contract is documentation only: no schema, migration, worker, queue, secret, bucket or production setting changed.
 
 ## Remaining work
 1. Obtain successful CI for the latest feature head.
