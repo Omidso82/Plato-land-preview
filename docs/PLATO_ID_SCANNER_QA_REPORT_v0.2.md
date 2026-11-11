@@ -1,4 +1,4 @@
-# PLATO ID Scanner — QA Report v0.2
+# PLATO ID Scanner — QA Report v0.3
 
 **Date:** 2026-11-11  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -74,6 +74,13 @@ The table and index creation statements use `IF NOT EXISTS`. The policy creation
 - PR #123 must remain Draft.
 - No merge or production deployment is authorized by this report.
 
-## 7. Next step
+## 7. Latest follow-up review
+
+- The current upload UI path generator was reviewed against the worker contract. Original filenames could contain dot sequences or path-like characters after the earlier replacement-based sanitization.
+- Updated the feature branch to construct a restricted object-key basename and derive the extension from the validated MIME type. The original filename remains in metadata.
+- This is a source-level correction only; it has not been exercised in a browser or against Storage because the Scanner bucket and policies do not exist in the primary database.
+- CI for the new head must pass before treating this change as verified.
+
+## 8. Next step
 
 Before any database-level test, identify and explicitly authorize a disposable local/test Supabase environment. Then execute the RLS test matrix there and record evidence. If no such environment is available, continue with static review only; do not substitute either existing Supabase project without explicit confirmation.
