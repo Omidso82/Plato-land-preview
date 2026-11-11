@@ -69,7 +69,8 @@ function timestamp(value: unknown): value is string {
   const year = Number(yearText), month = Number(monthText), day = Number(dayText);
   const hour = Number(hourText), minute = Number(minuteText), second = Number(secondText);
   if (month < 1 || month > 12 || day < 1 || hour > 23 || minute > 59 || second > 59) return false;
-  const calendarDate = new Date(Date.UTC(year, month - 1, day));
+  const calendarDate = new Date(0);
+  calendarDate.setUTCFullYear(year, month - 1, day);
   if (calendarDate.getUTCFullYear() !== year || calendarDate.getUTCMonth() !== month - 1 || calendarDate.getUTCDate() !== day) return false;
   if (zone !== "Z") {
     const zoneHour = Number(zoneHourText), zoneMinute = Number(zoneMinuteText);
