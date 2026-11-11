@@ -25,12 +25,12 @@ Deno.test("splits directly concatenated IDs at the next @", () => {
 });
 
 Deno.test("handles mixed spaces, line breaks, and concatenated IDs", () => {
-  const result = extractAtSignCandidates("Title @One@Two\\nplain text @Three @Four@Five");
+  const result = extractAtSignCandidates("Title @One@Two\nplain text @Three @Four@Five");
   assertEquals(result.map((item) => item.raw_value), ["@One", "@Two", "@Three", "@Four", "@Five"]);
 });
 
 Deno.test("ignores text before an @ marker", () => {
-  const result = extractAtSignCandidates("DisplayName ordinary_text\\n@Real_ID");
+  const result = extractAtSignCandidates("DisplayName ordinary_text\n@Real_ID");
   assertEquals(result.map((item) => item.raw_value), ["@Real_ID"]);
 });
 
@@ -45,7 +45,7 @@ Deno.test("exact duplicates only are removed; similar candidates remain separate
 });
 
 Deno.test("candidate positions point to the original OCR text", () => {
-  const text = "first line\\n  @Exact_ID@Next";
+  const text = "first line\n  @Exact_ID@Next";
   const item = extractAtSignCandidates(text)[0];
   assertEquals(text.slice(item.start, item.end), "@Exact_ID");
 });
