@@ -29,7 +29,7 @@ export interface ScannerProvisionalOcrResult {
 
 function extractAtSignCandidates(text: string) {
   const candidates: Array<{ raw_value: string; start: number; end: number }> = [];
-  const pattern = /@([^@\\s]+)/gu;
+  const pattern = /@([^@\s]+)/gu;
   for (const match of text.matchAll(pattern)) {
     const start = match.index ?? 0;
     const raw = match[0];
