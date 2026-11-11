@@ -71,13 +71,13 @@ create table if not exists public.plato_id_scanner_report_versions (
   created_by uuid not null references auth.users(id) on delete restrict,
   created_at timestamptz not null default now(),
   note text,
-  unique (report_kind, period_key, version),
+  unique (report_kind, period_key, created_by, version),
   check (previous_version is null or (previous_version > 0 and previous_version < version)),
   check (jsonb_typeof(payload) = 'object')
 );
 
 create index if not exists plato_id_scanner_report_period_version_idx
-  on public.plato_id_scanner_report_versions(report_kind, period_key, version desc);
+  on public.plato_id_scanner_report_versions(report_kind, period_key, created_by, version desc);
 
 alter table public.plato_id_scanner_report_versions enable row level security;
 revoke all on public.plato_id_scanner_report_versions from anon, authenticated;
@@ -175,7 +175,8 @@ begin
     into latest_version
     from public.plato_id_scanner_report_versions r
    where r.report_kind = new.report_kind
-     and r.period_key = new.period_key;
+     and r.period_key = new.period_key
+     and r.created_by = new.created_by;
 
   if new.version <> latest_version + 1 then
     raise exception 'Scanner report version must be the next sequential version';
