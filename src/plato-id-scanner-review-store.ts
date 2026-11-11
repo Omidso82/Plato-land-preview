@@ -97,12 +97,14 @@ export async function loadScannerReportVersions(
   client: SupabaseLike,
   reportKind: StoredScannerReportVersion["report_kind"],
   periodKey: string,
+  creatorId: string,
 ): Promise<StoredScannerReportVersion[]> {
   const { data, error } = await client
     .from("plato_id_scanner_report_versions")
     .select("*")
     .eq("report_kind", reportKind)
     .eq("period_key", periodKey)
+    .eq("created_by", creatorId)
     .order("version", { ascending: true });
   if (error) throw error;
   return (data ?? []) as StoredScannerReportVersion[];
@@ -118,7 +120,7 @@ export async function appendScannerReportVersion(
     note?: string | null;
   },
 ): Promise<StoredScannerReportVersion> {
-  const history = await loadScannerReportVersions(client, input.reportKind, input.periodKey);
+  const history = await loadScannerReportVersions(client, input.reportKind, input.periodKey, input.creatorId);
   const previous = history.at(-1) ?? null;
   const { data, error } = await client
     .from("plato_id_scanner_report_versions")
