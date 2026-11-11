@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Dispatcher and Worker Implementation
 
-**Version:** 0.4  
+**Version:** 0.3  
 **Date:** 2026-11-11  
 **Scope:** PLATO LAND – Temporary Projects / PLATO ID Scanner  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -106,4 +106,3 @@ Explicit owner approval is required before:
 | 0.1 | 2026-11-11 | Initial worker contract and provider-neutral design |
 | 0.2 | 2026-11-11 | Google Vision client and queue migration draft |
 | 0.3 | 2026-11-11 | Authenticated dispatcher, strict source validation, atomic enqueue RPC, secret-gated EU Vision worker and manager UI action |
-| 0.4 | 2026-11-11 | UI-ready provisional extraction persistence, bounded explicit retries, expired-lease audit closure, Deno Edge Function type-checking and CI fixes |
