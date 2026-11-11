@@ -94,3 +94,38 @@ For application/security source commit `75ebf22fef0cc692a3c9ad076f642fe9708951a3
 | 0.8 | 2026-11-11 | Records duplicated SQL tail cleanup and clarifies release/database blockers |
 | 0.9 | 2026-11-11 | Aligns worker filename and MIME-extension validation with the SQL/UI upload contract and records expanded negative tests |
 | 1.0 | 2026-11-11 | Records the latest read-only primary Storage-policy, owner-helper and Security Advisor audit; no database changes made |
+
+
+## 10. Scope correction and workflow alignment — v1.1
+
+The approved product is a **batch Plato ID image-to-list workflow**, not single-player identity/profile scanning.
+
+Approved workflow retained from Design Decisions v0.4:
+1. An approved operator or owner uploads one or more screenshots/images containing multiple Plato IDs. Each image remains a separate immutable upload.
+2. A dedicated Backend OCR service reads each image and extracts candidate Plato ID strings.
+3. Exact duplicates are deduplicated only where equality is certain. Ambiguous characters such as O/0 and I/l/1, separators and low-confidence candidates are flagged for human review; no fuzzy merge or automatic character substitution.
+4. The original image and candidate/canonical ID list are displayed together in the Scanner panel.
+5. The operator corrects and reviews the list. The same canonical result is used for panel display and Telegram output.
+6. Manual report send is initiated from the panel. A correction after sending creates a new report version; prior versions remain available.
+7. Daily and Saturday–Friday weekly reports use Asia/Tehran dates. Weekly activity contains one row per ID and at most one star per active day. Historical corrections recalculate dependent reports.
+
+### Implemented in this update
+- Operator upload UI now supports selecting multiple images in one action.
+- Every selected image is validated and uploaded sequentially as its own independent upload record. Successful uploads are retained even if another selected image fails; existing uploads are not overwritten.
+- Added a provider-independent report utility for Tehran-local Jalali date keys, daily exact-ID aggregation, Saturday–Friday weekly activity aggregation, one-star-per-day logic and Telegram message chunk formatting.
+- Added Deno tests for Tehran date boundaries, daily deduplication/review gating, weekly activity and Telegram message splitting.
+- CI workflow now includes the report utility test.
+
+### Explicitly not complete
+- The UI upload action still only stores images as `uploaded`; it does not perform OCR.
+- No authoritative Plato ID syntax/sample is recorded in the accessible design register. The parser must not guess a regex or transform ambiguous characters.
+- No approved/available dedicated Backend OCR host or runtime has been confirmed. Supabase Edge OCR was assessed as unsuitable for CPU-heavy image processing; no paid provider or new hosting was selected.
+- Correction audit tables/RPCs, report persistence/outbox, scheduled report dispatch and Telegram sender are not yet implemented or activated.
+- No Telegram bot token or fixed test destination was configured; no Telegram message was sent.
+- No Supabase project was used for tests or modified. Existing secondary project remains reserved for Main Website testing.
+- PR #123 remains Draft and unmerged; no production migration or deployment.
+
+### Version history addendum
+| Version | Date | Change |
+|---|---|---|
+| 1.1 | 2026-11-11 | Corrects product scope to batch image-to-Plato-ID extraction; records multi-image upload UI and Tehran daily/weekly aggregation utilities/tests; records OCR/runtime, correction, reporting and Telegram blockers. |
