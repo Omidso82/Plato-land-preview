@@ -177,3 +177,28 @@ Approved workflow retained from Design Decisions v0.4:
 | Version | Date | Change |
 |---|---|---|
 | 1.3 | 2026-11-11 | Adds append-only review/report schema draft, sequential version guards and exact-duplicate database validation; documents outstanding UI/runtime tests. |
+
+## 13. Panel review integration — v1.4
+
+**Date:** 2026-11-11  
+**Status:** UI and client persistence code committed; runtime depends on the unapplied database migration.
+
+- Added `src/plato-id-scanner-review-store.ts` to load append-only review revisions, append the next revision, load report histories and append report snapshots.
+- Corrected the persisted review type to match the SQL column names and JSON shape (`canonical_ids`, `previous_revision`, `reviewed_at`).
+- Connected the upload history cards in the owner and operator panels to the review store.
+- Each card requests a short-lived signed URL for the private original image, displays the original beside a manual ID review editor, and loads all previously approved revisions.
+- Saving creates a new approved revision with reviewer identity, timestamp and optional note. Prior revisions remain visible; no existing revision is overwritten.
+- The editor preserves exact strings and removes only exact duplicates. It does not perform OCR or claim that manually entered IDs were OCR-extracted.
+- Added mobile-responsive styling for the image/review panel and version history.
+- Commit containing the UI integration: `0f2da09aa33b57d9b66fdede5f32282cd0061ee6`; styling commit: `74607cb760dd309be489a8b441ad72f9216cae3b`.
+
+### Verification
+- PR #123 remains Draft, open and unmerged.
+- Cloudflare Pages check for `74607cb...` was still `in_progress` at the last live check; no GitHub Actions workflow run was returned for that SHA.
+- No browser QA or authenticated RLS test has been performed.
+- The Scanner migrations remain unapplied. Until the migration is applied in an approved environment, the review panel will show a database error and cannot persist revisions.
+- No OCR engine, backend worker, Telegram sender/outbox or scheduler has been connected.
+
+| Version | Date | Change |
+|---|---|---|
+| 1.4 | 2026-11-11 | Connects original-image preview and manual ID review UI to append-only revision storage; records runtime and CI limitations. |
