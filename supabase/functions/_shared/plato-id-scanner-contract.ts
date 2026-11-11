@@ -62,7 +62,7 @@ function nonEmpty(value: unknown): value is string {
 }
 
 function timestamp(value: unknown): value is string {
-  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$/.test(value)) return false;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(value)) return false;
   return Number.isFinite(Date.parse(value));
 }
 
@@ -75,7 +75,7 @@ function commonIdentity(value: Record<string, unknown>): boolean {
 }
 
 function safeObjectKey(value: unknown, scanId: string): value is string {
-  if (!nonEmpty(value) || value.startsWith("/") || value.includes("\\\\")) return false;
+  if (!nonEmpty(value) || value.startsWith("/") || value.includes("\\")) return false;
   const segments = value.split("/");
   return segments.length === 3
     && uuid(segments[0])
