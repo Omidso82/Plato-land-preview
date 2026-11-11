@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Dispatcher and Worker Implementation
 
-**Version:** 0.3  
+**Version:** 0.4  
 **Date:** 2026-11-11  
 **Scope:** PLATO LAND – Temporary Projects / PLATO ID Scanner  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -34,7 +34,7 @@ Added to the draft-only queue migration:
 
 - Service-role-only.
 - Locks the upload row.
-- Accepts only eligible uploaded/queued rows.
+- Accepts eligible uploaded/queued rows and explicitly re-dispatches failed jobs only while attempts remain below the configured maximum.
 - Inserts one queue job per scan (unique scan ID).
 - Rejects a digest mismatch against an existing job.
 - Moves an uploaded record to queued in the same transaction.
@@ -49,7 +49,7 @@ Edge Function:
 - Requires a private worker secret header.
 - Requires Supabase service-role configuration and a Google service-account JSON secret before it claims any jobs.
 - Obtains a short-lived Google OAuth access token using a service-account JWT.
-- Claims one job with a 180-second lease.
+- Claims one job with a 180-second lease; an expired lease closes the previous attempt audit as `lease_expired` before a replacement attempt is created.
 - Downloads the source object from the fixed private bucket, revalidates bytes and SHA-256, and rejects a mismatch.
 - Sends the image only to the fixed Google Vision EU endpoint through the previously tested client.
 - Converts raw OCR text through the already-tested exact @-based extractor and duplicate audit, then persists both provider evidence and the UI-ready provisional `ids`, `extraction_candidates` and `duplicate_audit` fields using the fenced completion RPC; human review remains authoritative.
@@ -106,3 +106,4 @@ Explicit owner approval is required before:
 | 0.1 | 2026-11-11 | Initial worker contract and provider-neutral design |
 | 0.2 | 2026-11-11 | Google Vision client and queue migration draft |
 | 0.3 | 2026-11-11 | Authenticated dispatcher, strict source validation, atomic enqueue RPC, secret-gated EU Vision worker and manager UI action |
+| 0.4 | 2026-11-11 | UI-ready provisional extraction persistence, bounded explicit retries, expired-lease audit closure, Deno Edge Function type-checking and CI fixes |
