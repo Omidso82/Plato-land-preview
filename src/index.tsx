@@ -5,6 +5,7 @@ import PredictionOwnerPanel from './PredictionOwnerPanel';
 import Series2Registration from './Series2Registration';
 import Series2SlidesManager from './Series2SlidesManager';
 import Series2ResultsManager from './Series2ResultsManager';
+import PlatoIdScannerPortal from './PlatoIdScannerPortal';
 import './styles.css';
 import './Series2Registration.css';
 
@@ -12,7 +13,9 @@ const root=createRoot(document.getElementById('root')!);
 const path=window.location.pathname.replace(/\/+$/,'') || '/';
 const page=new URLSearchParams(window.location.search).get('page');
 
-if(path==='/series2-results-manager' || ((path==='/' || path==='/index.html') && page==='series2-results-manager')) {
+if(path==='/plato-id-scanner') {
+  root.render(<React.StrictMode><PlatoIdScannerPortal/></React.StrictMode>);
+} else if(path==='/series2-results-manager' || ((path==='/' || path==='/index.html') && page==='series2-results-manager')) {
   root.render(<React.StrictMode><Series2ResultsManager/></React.StrictMode>);
 } else if(path==='/series2-slides-manager') {
   root.render(<React.StrictMode><Series2SlidesManager/></React.StrictMode>);
