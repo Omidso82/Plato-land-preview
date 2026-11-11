@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
 
 type UploadRow = {
@@ -10,8 +10,10 @@ type UploadRow = {
   file_size: number;
   created_at: string;
 };
+type DayGroup = { key: string; label: string; rows: UploadRow[] };
 
 const BUCKET = 'plato-id-scans';
+const PAGE_SIZE = 500;
 const MAX_BYTES = 15 * 1024 * 1024;
 const ACCEPTED = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
@@ -35,6 +37,31 @@ async function validateImage(file: File): Promise<void> {
   } finally { URL.revokeObjectURL(url); }
 }
 
+function iranianDayKey(date: Date): string {
+  const parts = new Intl.DateTimeFormat('en-US-u-ca-persian', {
+    timeZone:'Asia/Tehran', year:'numeric', month:'2-digit', day:'2-digit'
+  }).formatToParts(date);
+  const part = (type:string) => parts.find(item=>item.type===type)?.value || '';
+  return part('year')+'-'+part('month')+'-'+part('day');
+}
+
+function iranianDayLabel(date: Date): string {
+  return new Intl.DateTimeFormat('fa-IR-u-ca-persian', {
+    timeZone:'Asia/Tehran', dateStyle:'full'
+  }).format(date);
+}
+
+function groupUploadsByIranianDay(rows:UploadRow[]):DayGroup[] {
+  const groups = new Map<string,DayGroup>();
+  for (const row of rows) {
+    const date = new Date(row.created_at);
+    const key = iranianDayKey(date);
+    if (!groups.has(key)) groups.set(key,{key,label:iranianDayLabel(date),rows:[]});
+    groups.get(key)!.rows.push(row);
+  }
+  return Array.from(groups.values()).sort((a,b)=>b.key.localeCompare(a.key));
+}
+
 export default function PlatoIdImageUpload() {
   const [userId,setUserId] = useState('');
   const [isOwner,setIsOwner] = useState(false);
@@ -42,29 +69,61 @@ export default function PlatoIdImageUpload() {
   const [rows,setRows] = useState<UploadRow[]>([]);
   const [files,setFiles] = useState<File[]>([]);
   const [busy,setBusy] = useState(false);
+  const [loading,setLoading] = useState(true);
   const [message,setMessage] = useState('در حال بارگذاری سوابق تصاویر…');
+  const [currentDayKey,setCurrentDayKey] = useState(()=>iranianDayKey(new Date()));
+  const [selectedArchiveDay,setSelectedArchiveDay] = useState('');
 
   const refresh = useCallback(async () => {
-    if (!supabase) { setMessage('اتصال به دیتابیس برقرار نیست.'); return; }
-    const { data: auth, error: authError } = await supabase.auth.getUser();
-    if (authError || !auth.user) { setMessage('نشست مالک معتبر نیست؛ دوباره وارد پنل شو.'); return; }
-    const { data: role, error: roleError } = await supabase.rpc('current_user_role');
-    const owner = !roleError && (role === 'owner' || role === 'مالک کل');
-    if (!owner) {
-      const {data:access,error:accessError}=await supabase.from('plato_id_scanner_access').select('status').eq('user_id',auth.user.id).maybeSingle();
-      if (accessError || access?.status !== 'approved') { setMessage('دسترسی اپراتور تأیید نشده یا غیرفعال است.'); return; }
-    }
-    setIsOwner(owner);
-    setUserId(auth.user.id);
-    const { data, error } = await supabase.from('plato_id_scanner_uploads')
-      .select('id,operator_id,storage_path,file_name,content_type,file_size,created_at')
-      .order('created_at',{ascending:false}).limit(200);
-    if (error) { setMessage('خواندن فهرست تصاویر ناموفق بود: '+error.message); return; }
-    setRows((data || []) as UploadRow[]);
-    setMessage((data || []).length ? 'تصاویر قبلی از دیتابیس بارگذاری شدند.' : 'هنوز تصویری بارگذاری نشده است.');
+    if (!supabase) { setMessage('اتصال به دیتابیس برقرار نیست.'); setLoading(false); return; }
+    setLoading(true);
+    try {
+      const { data: auth, error: authError } = await supabase.auth.getUser();
+      if (authError || !auth.user) throw new Error('نشست کاربری معتبر نیست؛ دوباره وارد پنل شو.');
+      const { data: role, error: roleError } = await supabase.rpc('current_user_role');
+      const owner = !roleError && (role === 'owner' || role === 'مالک کل');
+      if (!owner) {
+        const {data:access,error:accessError}=await supabase.from('plato_id_scanner_access')
+          .select('status').eq('user_id',auth.user.id).maybeSingle();
+        if (accessError || access?.status !== 'approved') throw new Error('دسترسی اپراتور تأیید نشده یا غیرفعال است.');
+      }
+      setIsOwner(owner);
+      setUserId(auth.user.id);
+
+      // Read the complete history in stable, bounded pages; never silently stop at 200 rows.
+      const allRows: UploadRow[] = [];
+      for (let from = 0; ; from += PAGE_SIZE) {
+        const {data,error} = await supabase.from('plato_id_scanner_uploads')
+          .select('id,operator_id,storage_path,file_name,content_type,file_size,created_at')
+          .order('created_at',{ascending:false}).order('id',{ascending:false})
+          .range(from,from+PAGE_SIZE-1);
+        if (error) throw error;
+        const page = (data || []) as UploadRow[];
+        allRows.push(...page);
+        if (page.length < PAGE_SIZE) break;
+      }
+      setRows(allRows);
+      setCurrentDayKey(iranianDayKey(new Date()));
+      setMessage(allRows.length
+        ? allRows.length.toLocaleString('fa-IR')+' تصویر از آرشیو بارگذاری شد.'
+        : 'هنوز تصویری بارگذاری نشده است.');
+    } catch(e) {
+      setMessage('بارگذاری تصاویر ناموفق بود: '+(e instanceof Error ? e.message : 'خطای ناشناخته'));
+    } finally { setLoading(false); }
   },[]);
 
   useEffect(() => { void refresh(); },[refresh]);
+
+  // Keep the day boundary tied to Iran midnight even when the manager page stays open.
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentDayKey(iranianDayKey(new Date())), 30_000);
+    return () => window.clearInterval(timer);
+  },[]);
+
+  const dayGroups = useMemo(()=>groupUploadsByIranianDay(rows),[rows]);
+  const currentGroup = dayGroups.find(group=>group.key===currentDayKey);
+  const archiveGroups = dayGroups.filter(group=>group.key!==currentDayKey);
+  const selectedGroup = archiveGroups.find(group=>group.key===selectedArchiveDay);
 
   async function choose(list: FileList | null) {
     setFiles([]);
@@ -129,10 +188,17 @@ export default function PlatoIdImageUpload() {
     setBusy(false);
   }
 
+  const renderImages = (items:UploadRow[]) => (
+    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(145px,1fr))',gap:12,marginTop:14}}>
+      {items.map(row=><SavedImage key={row.id} row={row} deleting={deleting===row.id}
+        onDelete={()=>void removeImage(row)}/>)}
+    </div>
+  );
+
   return <section dir="rtl" style={{marginTop:20,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
     <h2 style={{color:'#f6e8c5',fontSize:19,margin:'0 0 8px'}}>تصاویر Plato IDهای فعال</h2>
-    <p style={{color:'#a9a08e',fontSize:11}}>منطقه زمانی دسته‌بندی: ایران · {isOwner?'نمایش تصاویر همه اپراتورها':'نمایش تصاویر حساب خودت'}</p>
-    <p style={{color:'#c9c4b8',fontSize:13,lineHeight:1.9}}>چند تصویر را انتخاب و ذخیره کن. هر تصویر جداگانه ثبت می‌شود؛ بارگذاری‌های بعدی تصاویر قبلی را جایگزین نمی‌کنند.</p>
+    <p style={{color:'#a9a08e',fontSize:11}}>منطقه زمانی دسته‌بندی: ایران · {isOwner?'نمایش و مدیریت آرشیو مشترک':'دسترسی کامل به آرشیو مشترک'}</p>
+    <p style={{color:'#c9c4b8',fontSize:13,lineHeight:1.9}}>هر تصویر جداگانه ذخیره می‌شود. تصاویر قبلی با آپلود جدید جایگزین نمی‌شوند. مالک و اپراتور تأییدشده می‌توانند همه تصاویر را ببینند و حذف کنند.</p>
     <label style={{display:'block',color:'#c9c4b8',fontSize:13,marginTop:12}}>انتخاب تصاویر (JPG، PNG یا WEBP)
       <input id="plato-active-id-images" type="file" multiple accept="image/jpeg,image/png,image/webp"
         onChange={e=>void choose(e.target.files)} style={{display:'block',width:'100%',marginTop:8,color:'#eee'}}/>
@@ -143,13 +209,39 @@ export default function PlatoIdImageUpload() {
       {busy?'لطفاً صبر کن…':'ذخیره تصاویر انتخاب‌شده'}
     </button>
     <p role="status" style={{color:'#d8c99f',fontSize:12,marginTop:10}}>{message}</p>
-    <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(145px,1fr))',gap:12,marginTop:14}}>
-      {groupUploadsByIranianDay(rows).map(group=><React.Fragment key={group.key}><div style={{gridColumn:'1 / -1',color:'#e4c77e',fontWeight:700,fontSize:13,padding:'8px 2px 2px',borderBottom:'1px solid #51452d'}}>{group.label} · {group.rows.length.toLocaleString('fa-IR')} تصویر</div>{group.rows.map(row=><SavedImage key={row.id} row={row} canDelete={isOwner||row.operator_id===userId} deleting={deleting===row.id} onDelete={()=>void removeImage(row)}/>)}</React.Fragment>)}
+
+    <div style={{marginTop:18,padding:12,border:'1px solid #66512d',borderRadius:10,background:'#17150f'}}>
+      <h3 style={{color:'#f0d28a',fontSize:16,margin:'0 0 8px'}}>تصاویر امروز</h3>
+      <p style={{color:'#aaa18f',fontSize:11,margin:'0 0 10px'}}>{iranianDayLabel(new Date())} · {(currentGroup?.rows.length||0).toLocaleString('fa-IR')} تصویر</p>
+      {currentGroup?.rows.length ? renderImages(currentGroup.rows)
+        : <p style={{color:'#aaa',fontSize:12,margin:0}}>برای امروز هنوز تصویری ثبت نشده است.</p>}
     </div>
+
+    <div style={{marginTop:16,padding:12,border:'1px solid #66512d',borderRadius:10,background:'#17150f'}}>
+      <h3 style={{color:'#f0d28a',fontSize:16,margin:'0 0 8px'}}>آرشیو تصاویر</h3>
+      <p style={{color:'#aaa18f',fontSize:11,margin:'0 0 10px'}}>روزهای گذشته به تفکیک تاریخ کامل؛ تصاویر همه اپراتورها در این آرشیو مشترک هستند.</p>
+      {loading ? <p style={{color:'#aaa',fontSize:12}}>در حال دریافت آرشیو کامل…</p>
+        : archiveGroups.length ? <div style={{display:'grid',gap:8}}>
+          {archiveGroups.map(group=><button key={group.key} type="button"
+            onClick={()=>setSelectedArchiveDay(selectedArchiveDay===group.key?'':group.key)}
+            aria-expanded={selectedArchiveDay===group.key}
+            style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,width:'100%',textAlign:'right',padding:'11px 12px',borderRadius:8,border:'1px solid #51452d',background:selectedArchiveDay===group.key?'#3a2d17':'#101113',color:'#f2dfb4',cursor:'pointer'}}>
+            <span>{group.label}</span><strong style={{whiteSpace:'nowrap',fontSize:12}}>{group.rows.length.toLocaleString('fa-IR')} تصویر {selectedArchiveDay===group.key?'−':'+'}</strong>
+          </button>)}
+        </div> : <p style={{color:'#aaa',fontSize:12,margin:0}}>هنوز روزی برای آرشیو وجود ندارد.</p>}
+      {selectedGroup && <div style={{marginTop:12,paddingTop:10,borderTop:'1px solid #51452d'}}>
+        <h4 style={{color:'#e4c77e',fontSize:13,margin:0}}>{selectedGroup.label} · {selectedGroup.rows.length.toLocaleString('fa-IR')} تصویر</h4>
+        {renderImages(selectedGroup.rows)}
+      </div>}
+    </div>
+    <button type="button" disabled={loading||busy} onClick={()=>void refresh()}
+      style={{width:'100%',marginTop:12,padding:'9px 12px',borderRadius:8,border:'1px solid #77613a',background:'#211b12',color:'#ead7aa'}}>
+      {loading?'در حال دریافت…':'به‌روزرسانی تصاویر و آرشیو'}
+    </button>
   </section>;
 }
 
-function SavedImage({row,canDelete,deleting,onDelete}:{row:UploadRow;canDelete:boolean;deleting:boolean;onDelete:()=>void}) {
+function SavedImage({row,deleting,onDelete}:{row:UploadRow;deleting:boolean;onDelete:()=>void}) {
   const [url,setUrl] = useState('');
   useEffect(()=>{
     let alive = true;
@@ -163,21 +255,9 @@ function SavedImage({row,canDelete,deleting,onDelete}:{row:UploadRow;canDelete:b
       : <div style={{height:130,display:'grid',placeItems:'center',color:'#aaa',fontSize:12}}>در حال آماده‌سازی تصویر…</div>}
     <strong style={{display:'block',color:'#eee',fontSize:11,overflowWrap:'anywhere',marginTop:7}}>{row.file_name}</strong>
     <small style={{color:'#aaa',fontSize:10,display:'block'}}>{new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',dateStyle:'full',timeStyle:'short'}).format(new Date(row.created_at))}</small>
-    {canDelete&&<button type="button" disabled={deleting} onClick={onDelete} style={{width:'100%',marginTop:8,padding:'7px 9px',borderRadius:7,border:'1px solid #8a3f36',background:'#321b19',color:'#ffd8d2',fontSize:11}}>{deleting?'در حال حذف…':'حذف تصویر'}</button>}
+    <button type="button" disabled={deleting} onClick={onDelete}
+      style={{width:'100%',marginTop:8,padding:'7px 9px',borderRadius:7,border:'1px solid #8a3f36',background:'#321b19',color:'#ffd8d2',fontSize:11}}>
+      {deleting?'در حال حذف…':'حذف تصویر'}
+    </button>
   </article>;
-}
-
-
-function groupUploadsByIranianDay(rows:UploadRow[]) {
-  const groups = new Map<string,{key:string;label:string;rows:UploadRow[]}>();
-  for (const row of rows) {
-    const date = new Date(row.created_at);
-    const parts = new Intl.DateTimeFormat('en-US-u-ca-persian',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
-    const part = (type:string) => parts.find(item=>item.type===type)?.value || '';
-    const key = part('year')+'-'+part('month')+'-'+part('day');
-    const label = new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',dateStyle:'full'}).format(date);
-    if(!groups.has(key))groups.set(key,{key,label,rows:[]});
-    groups.get(key)!.rows.push(row);
-  }
-  return Array.from(groups.values()).sort((a,b)=>b.key.localeCompare(a.key));
 }
