@@ -20,6 +20,7 @@ import OwnerBulkOperations from './OwnerBulkOperations';
 import NotificationBell from './NotificationBell';
 import PlayerTournamentHub from './PlayerTournamentHub';
 import { supabase, supabaseConfigured } from './supabase';
+import PlatoIdScannerApp from './PlatoIdScannerApp';
 import React, { useEffect, useMemo, useState } from 'react';
 import * as Lucide from 'lucide-react';
 const FallbackIcon = (props: any) => <span aria-hidden="true" style={{display:'inline-block',width:props.size||18,height:props.size||18,verticalAlign:'middle'}} />;
@@ -61,6 +62,8 @@ function jalaliToIso(value:string){return jalaliDateToIso(value);}
 function isSeriesOne(value:string){const normalized=value.trim().toLowerCase().replace(/[يى]/g,'ی').replace(/‌/g,' ').replace(/\s+/g,' ');return normalized==='سری اول'||normalized==='series 1'||normalized==='series one';}
 function JalaliDateInput({value,onChange,required=false}:{value:string;onChange:(value:string)=>void;required?:boolean}){const parts=jalaliParts(value);const shown=parts?String(parts.year).padStart(4,'0')+'/'+String(parts.month).padStart(2,'0')+'/'+String(parts.day).padStart(2,'0'):'';const [draft,setDraft]=useState(shown);useEffect(()=>setDraft(shown),[shown]);return <input type="text" inputMode="numeric" dir="ltr" className="jalali-date-input" aria-label="تاریخ شمسی" placeholder="۱۴۰۵/۰۸/۱۴" value={draft} required={required} onChange={e=>{const next=e.target.value.replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c)));setDraft(next);if(!next){onChange('');return;}const iso=jalaliToIso(next);if(iso)onChange(iso);}} onBlur={()=>{if(draft&&!jalaliToIso(draft))setDraft(shown);}}/>}
 function App(){
+ const page=new URLSearchParams(window.location.search).get('page');
+ if(page==='id-scanner') return <PlatoIdScannerApp/>;
  const [tab,setTab]=useState(()=>{const value=new URLSearchParams(window.location.search).get('page');return value&&['home','tournaments','news','guide','about','profile','login','signup','register','admin','admin-users'].includes(value)?value:'home'}),[mobileMenu,setMobileMenu]=useState(false),[search,setSearch]=useState('');
  const [selectedGame,setSelectedGame]=useState('');
  const [competitionSection,setCompetitionSection]=useState<'active'|'upcoming'|'archive'>('active');
