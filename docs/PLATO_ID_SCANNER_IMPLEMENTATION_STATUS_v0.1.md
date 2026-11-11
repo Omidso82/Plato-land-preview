@@ -236,3 +236,36 @@ Approved workflow retained from Design Decisions v0.4:
 | Version | Date | Change |
 |---|---|---|
 | 1.6 | 2026-11-11 | Makes daily/weekly aggregation consume each image's latest approved review revision, with tests proving corrected IDs replace old IDs and unapproved records are excluded. |
+
+
+## 16. Supabase report data-access layer — v1.7
+
+**Date:** 2026-11-11  
+**Status:** Source-only query helpers and mocked tests committed; no database writes or live runtime calls.
+
+### Added
+- Added `loadScannerReportInputs` to load upload records in a caller-supplied half-open time window (`created_at >= fromInclusive` and `created_at < toExclusive`).
+- The loader then retrieves append-only review rows only for the selected scan IDs.
+- Added `loadDailyScannerReport` and `loadWeeklyScannerReport` wrappers that pass those live-query-shaped rows through the latest-approved-revision report builders.
+- Empty scan windows return empty scan/revision arrays without issuing a second query.
+- Invalid, non-ISO-parseable or reversed time windows are rejected before any database query.
+- Queries rely on the existing RLS boundary; owner access is governed by owner policies and operator visibility remains limited to the operator's own approved records.
+- Added mocked Deno tests for range filtering, revision lookup, latest approved revision behavior and invalid time windows.
+- Added the new store test file to the GitHub Actions verification workflow.
+
+### Source commits
+- `ca2cf1811740b8cd354074cdfe890becfd6dd7eb` — Supabase report query and builder helpers.
+- `8e9766846bdb10628405fe7c6ad7bb5c522d5f1d` — import organization.
+- `ad2585e4f28a9b8ef565e4cb6275c14d67e7eaba` — mocked data-access tests.
+- `d5292c112bb8d8dfd1419f52b7d8bc1dd1fce824` — CI test registration.
+
+### Limits / next work
+- The caller must calculate accurate Tehran-local ISO boundaries for the requested Jalali date/week. This helper deliberately does not guess date boundaries from a Jalali label.
+- These helpers are not yet called from a report UI; no report screen or manual report-generation control has been added.
+- No Scanner migration was applied; tables and bucket remain absent in the primary database as of the last read-only audit.
+- No live Supabase query, authenticated RLS test, Telegram outbox/sender or scheduled delivery was run.
+- PR #123 remains Draft and unmerged; no production deployment or Main Website change.
+
+| Version | Date | Change |
+|---|---|---|
+| 1.7 | 2026-11-11 | Adds a Supabase report data-access layer, daily/weekly wrappers, mocked tests and CI registration; documents that Jalali time-window calculation and UI integration remain outstanding. |
