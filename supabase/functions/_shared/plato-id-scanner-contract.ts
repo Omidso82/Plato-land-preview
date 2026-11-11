@@ -62,7 +62,7 @@ function nonEmpty(value: unknown): value is string {
 }
 
 function timestamp(value: unknown): value is string {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(value)) return false;
+  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:\\d{2})$/.test(value)) return false;
   return Number.isFinite(Date.parse(value));
 }
 
@@ -74,18 +74,25 @@ function commonIdentity(value: Record<string, unknown>): boolean {
   return value.contract_version === "1" && uuid(value.job_id) && uuid(value.scan_id);
 }
 
+function safeObjectKey(value: unknown, scanId: string): value is string {
+  if (!nonEmpty(value) || value.startsWith("/") || value.includes("\\\\")) return false;
+  const segments = value.split("/");
+  return segments.length === 3
+    && uuid(segments[0])
+    && segments[1] === scanId
+    && nonEmpty(segments[2])
+    && segments[2] !== "."
+    && segments[2] !== ".."
+    && !segments[2].includes("..");
+}
+
 export function validateScannerWorkerJob(value: unknown): value is ScannerWorkerJob {
   if (!record(value) || !commonIdentity(value)) return false;
   const source = value.source;
   if (!record(source)) return false;
   return Number.isInteger(value.attempt) && (value.attempt as number) >= 1
     && source.bucket === "plato-id-scans"
-    && nonEmpty(source.object_key)
-    && !source.object_key.startsWith("/")
-    && !source.object_key.includes("..")
-    && source.object_key.split("/").length >= 3
-    && uuid(source.object_key.split("/")[0])
-    && uuid(source.object_key.split("/")[1])
+    && safeObjectKey(source.object_key, value.scan_id as string)
     && MIME_TYPES.has(source.content_type as ScannerContentType)
     && typeof source.sha256 === "string" && SHA256.test(source.sha256)
     && timestamp(value.requested_at);
