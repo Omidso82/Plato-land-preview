@@ -1,6 +1,7 @@
 import {
   createScannerReviewRevision,
   diffScannerReviewRevisions,
+  parseScannerReviewDraft,
   uniqueExactScannerIds,
 } from "../../../src/plato-id-scanner-review.ts";
 
@@ -48,4 +49,10 @@ Deno.test("review revision rejects invalid sequence and missing reviewer", () =>
 Deno.test("revision diff reports exact additions and removals only", () => {
   assertEquals(diffScannerReviewRevisions(["A", "B", "O0"], ["A", "C", "O0", "00"]),
     { added: ["C", "00"], removed: ["B"], unchanged: ["A", "O0"] });
+});
+
+
+Deno.test("manual review editor parses one ID per line for LF and CRLF", () => {
+  assertEquals(parseScannerReviewDraft("  ID_A  \nID_B\nID_A\n\nID_C "), ["ID_A", "ID_B", "ID_C"]);
+  assertEquals(parseScannerReviewDraft("ID_A\r\nID_B\r\nID_C"), ["ID_A", "ID_B", "ID_C"]);
 });
