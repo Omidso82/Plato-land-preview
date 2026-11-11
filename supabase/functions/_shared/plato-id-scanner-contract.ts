@@ -97,7 +97,7 @@ function safeObjectKey(value: unknown, scanId: string, contentType: ScannerConte
     "image/png": "png",
     "image/webp": "webp",
   };
-  return /^[A-Za-z0-9_-]{1,100}\\.(jpg|png|webp)$/.test(filename)
+  return /^[A-Za-z0-9_-]{1,100}\.(jpg|png|webp)$/.test(filename)
     && filename.endsWith("." + extensionByMime[contentType]);
 }
 
