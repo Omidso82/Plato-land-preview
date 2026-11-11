@@ -27,7 +27,7 @@ async function validateImage(file:File){
   }finally{URL.revokeObjectURL(url);}
 }
 
-export default function PlatoIdScannerApp({ownerMode=false}:{ownerMode?:boolean}){
+export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{ownerMode?:boolean;embedded?:boolean}){
  const [user,setUser]=useState<any>(null),[loading,setLoading]=useState(true),[email,setEmail]=useState(''),[password,setPassword]=useState('');
  const [mode,setMode]=useState<'login'|'register'>('login'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[confirmed,setConfirmed]=useState(false),[owner,setOwner]=useState(false);
  const [access,setAccess]=useState<AccessRow|null>(null),[applications,setApplications]=useState<AccessRow[]>([]),[uploads,setUploads]=useState<ScanRow[]>([]),[files,setFiles]=useState<File[]>([]),[fileChecking,setFileChecking]=useState(false);
@@ -106,8 +106,8 @@ export default function PlatoIdScannerApp({ownerMode=false}:{ownerMode?:boolean}
   setMessage((completed.length?'تعداد '+completed.length+' تصویر به‌صورت پرونده‌های مستقل ذخیره شد. ':'')+(failures.length?'موارد ناموفق: '+failures.join(' | '):'')+' پردازش OCR و استخراج IDها هنوز به Backend مستقل متصل نشده است؛ هیچ ID یا پیامی به تلگرام ارسال نشده است.');
   setBusy(false);
  }
- if(loading)return <main className="plato-scanner-shell" dir="rtl"><div className="plato-scanner-card">در حال بررسی حساب…</div></main>;
- return <main className="plato-scanner-shell" dir="rtl">
+ if(loading)return <main className={"plato-scanner-shell"+(embedded?" scanner-embedded":"")} dir="rtl"><div className="plato-scanner-card">در حال بررسی حساب…</div></main>;
+ return <main className={"plato-scanner-shell"+(embedded?" scanner-embedded":"")} dir="rtl">
   <header className="plato-scanner-header"><div className="plato-scanner-brand"><span>♛</span><div><strong>PLATO LAND</strong><small>PLATO ID SCANNER</small></div></div>{user&&!ownerMode&&<button className="scanner-ghost" onClick={signOut}>خروج</button>}</header>
   {!user?<section className="plato-scanner-card scanner-auth"><span className="scanner-eyebrow">پنل مستقل اپراتور</span><h1>{mode==='register'?'ساخت حساب اپراتور':'ورود به اسکنر'}</h1><p>دسترسی فقط پس از تأیید ایمیل و تأیید مالک فعال می‌شود.</p><form onSubmit={authSubmit}><label>ایمیل<input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><label>رمز عبور<input type="password" required minLength={8} autoComplete={mode==='register'?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="scanner-primary" disabled={busy}>{busy?'لطفاً صبر کنید…':mode==='register'?'ثبت‌نام و ارسال ایمیل تأیید':'ورود امن'}</button></form><button className="scanner-link" onClick={()=>{setMode(mode==='register'?'login':'register');setMessage('');}}>{mode==='register'?'قبلاً حساب ساخته‌اید؟ ورود':'حساب ندارید؟ ثبت‌نام اپراتور'}</button></section>
   :!confirmed?<section className="plato-scanner-card"><h1>تأیید ایمیل لازم است</h1><p>لینک ارسال‌شده به {user.email} را باز کنید؛ سپس دوباره وارد شوید.</p><button className="scanner-primary" onClick={signOut}>بازگشت به ورود</button></section>
