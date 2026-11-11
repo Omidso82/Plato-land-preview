@@ -3,7 +3,8 @@ import {
   formatDailyTelegramMessages, formatWeeklyTelegramMessages,
   tehranJalaliDateKey,
 } from "../../../src/plato-id-scanner-reports.ts";
-import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+const assert=(value:unknown,message="Assertion failed")=>{if(!value)throw new Error(message);};
+const assertEquals=(actual:unknown,expected:unknown)=>{if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error("Expected "+JSON.stringify(expected)+" but received "+JSON.stringify(actual));};
 
 Deno.test("Tehran date key follows Asia/Tehran rather than UTC",()=>{
   assertEquals(tehranJalaliDateKey("2026-11-10T21:00:00.000Z"),tehranJalaliDateKey("2026-11-11T00:30:00+03:30"));
