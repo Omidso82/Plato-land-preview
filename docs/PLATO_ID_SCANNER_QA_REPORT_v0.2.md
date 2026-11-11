@@ -69,7 +69,7 @@ For commit `75ebf22fef0cc692a3c9ad076f642fe9708951a3`:
 7. OCR engine/worker runtime, queue, corrections, daily/weekly reports and Telegram delivery are not implemented.
 8. OCR provider/hosting and any paid service remain unselected and require explicit approval.
 9. PostgreSQL execution/runtime validation of the corrected migration remains outstanding.
-10. The complete set of existing live Storage policies must be checked in the authorized database environment before any migration activation; do not infer completeness from the partial repository history.
+10. Repeat the read-only live Storage-policy and owner-helper check immediately before any migration activation to detect configuration drift.
 
 ## 7. Database and release safety
 
