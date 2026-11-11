@@ -1,4 +1,4 @@
-# PLATO ID Scanner — QA Report v0.3
+# PLATO ID Scanner — QA Report v0.4
 
 **Date:** 2026-11-11  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -81,6 +81,13 @@ The table and index creation statements use `IF NOT EXISTS`. The policy creation
 - This is a source-level correction only; it has not been exercised in a browser or against Storage because the Scanner bucket and policies do not exist in the primary database.
 - CI for the new head must pass before treating this change as verified.
 
-## 8. Next step
+## 8. Latest CI evidence
+
+- Commit: `e3f18dfb7b35dc6f432291d355d3c698e52ab311`.
+- GitHub Actions run `42932816623`: PASS for npm install, TypeScript typecheck, Vite build, Series 2 qualification tests, Series 2 bracket tests and Scanner contract tests.
+- Cloudflare Pages preview: still in progress when checked; do not mark it as deployed until the check concludes successfully.
+- No browser-based mobile Safari test or live Storage/RLS test was performed.
+
+## 9. Next step
 
 Before any database-level test, identify and explicitly authorize a disposable local/test Supabase environment. Then execute the RLS test matrix there and record evidence. If no such environment is available, continue with static review only; do not substitute either existing Supabase project without explicit confirmation.
