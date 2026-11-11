@@ -1,79 +1,88 @@
-# PLATO ID Scanner — QA Report v0.8
+# PLATO ID Scanner — QA Report
 
+**Document version:** 0.9  
 **Date:** 2026-11-11  
+**Project:** PLATO LAND – Temporary Projects  
 **Branch:** `feature/plato-id-scanner-v0-1`  
 **PR:** #123 — Open, Draft, unmerged  
-**Previously verified head:** `e8a5d544426b8801f8169e84e3ea63659ae9c67c`\n**Current documentation/security head:** `f1435b78f87631141519fa82579d8ca07ca72376`  
-**Scope:** Feature-branch CI/preview verification, migration source review, and isolated RLS test preparation
+**Scope:** Feature-branch CI/preview verification, migration source review and isolated RLS test preparation
 
-## 1. Work completed
+## 1. Verified baseline before the latest source correction
 
-- Hardened the Scanner Storage bucket migration: create-if-absent, then verify private visibility, 15 MiB limit, and exact JPG/PNG/WEBP allowlist; mismatches stop the migration rather than silently changing an existing bucket.
-- Added an isolated RLS test plan with 18 positive/negative access cases and explicit disposable-environment-only safety boundaries.
-- Restricted upload object-key basenames to ASCII letters, digits, underscore, and hyphen; derive extension from validated MIME type. Preserve original filename only as metadata.
-- Reviewed the dedicated Scanner route, owner-only navigation gate, and shared Supabase session integration at source level.
-- Reviewed the provider-neutral OCR worker contract and its validation tests.
+For commit `ba7bbf040f7a6e8c3afc36fc1546ce5a2a77fb08`:
 
-## 2. Latest verified CI and preview
+- GitHub Actions run `42934159521`: verify job **SUCCESS**.
+- Passed: npm install, TypeScript typecheck, Vite build, Series 2 qualification tests, Series 2 bracket tests and Scanner contract tests.
+- GitHub Actions run `42934159360`: build job **SUCCESS**; deploy job **SKIPPED** on the feature branch.
+- Cloudflare Pages check for this commit: **SUCCESS**.
+- Branch preview: https://feature-plato-id-scanner-v0.plato-land-preview.pages.dev
+- Commit preview: https://c9bb03e1.plato-land-preview.pages.dev
 
-For verified head `e8a5d544426b8801f8169e84e3ea63659ae9c67c`:
+These checks apply to `ba7bbf...` only.
 
-- GitHub Actions run `42932984323`: **SUCCESS**.
-- Steps passed: npm install, TypeScript typecheck, Vite build, Series 2 qualification tests, Series 2 bracket tests, and Scanner contract tests.
-- Cloudflare Pages check `130236575420`: **SUCCESS** for the feature-branch preview.
-- These results verify the feature branch build/preview only. They do not mean the main website was deployed or changed.
+## 2. Latest source-only correction after that baseline
 
-## 3. Source-level security review
+Static inspection of `supabase/migrations/20261111000100_plato_id_scanner_foundation.sql` found duplicated trailing SQL fragments after the complete Storage delete policy. The duplicate tail made the migration source malformed.
 
-- Scanner tables and Storage policies are still only present as a migration draft.
-- Operator access is scoped to the authenticated user's own approved access row and uploads.
-- Operator upload-row insert is constrained to own operator ID/path, initial status, and empty OCR result.
+- The duplicated tail was removed on the isolated feature branch.
+- Correction commit: `72eaa6c75d44f64f0dc6ee157fcf7c0a2b6f972e`.
+- Static post-edit checks confirmed eight unique policy declarations, two dollar-quote delimiters for the bucket validation block, and a complete final policy terminator.
+- The migration was fetched back from GitHub after the edit in order to verify the saved source.
+- This was source-only. It has NOT been executed by PostgreSQL, applied to Supabase, or runtime-tested.
+- CI and Cloudflare preview for the correction and subsequent documentation commits must be checked separately; earlier green results do not validate later commits.
+
+## 3. Documentation synchronization
+
+The following feature-branch documents were synchronized:
+
+- Implementation Status: v0.8 — records the migration cleanup and separates pre-fix green checks from pending post-fix validation.
+- RLS Isolation Test Plan: v0.3 — RLS-06/RLS-07 now require the exact operator UUID / scan UUID / safe filename path, consistent with the migration contract.
+- QA Report: v0.9 — this report.
+
+Literal `\\n` artifacts from the previous QA/RLS documents were removed in the revised documents.
+
+## 4. Source-level security scope and limitations
+
+- Scanner access/uploads tables, RLS and the private bucket exist only in the draft migration source.
+- Operator upload-row insert requires own operator ID, exact path shape, initial `uploaded` status and empty OCR result.
 - Operator upload-row update/delete privileges are not granted.
-- Storage object ownership is scoped by the first path segment; operator deletion is restricted to orphaned objects.
-- Existing bucket configuration is checked and mismatches cause an exception.
-- The SQL policy statements are one-time migration statements; do not manually replay the file after it has been applied.
-
-This review is static. It is not proof of runtime RLS or Storage isolation.
-
-## 4. Additional Storage policy hardening (source-only)\n\nThe Storage INSERT policy was tightened to enforce the object-key contract at the database policy boundary, not only in the browser: exactly two folder segments plus a filename; first folder must be the authenticated operator UUID; second folder must be a UUID; filename must use the restricted ASCII basename and a supported MIME-derived extension (`.jpg`, `.png`, `.webp`). The RLS test plan was expanded to cover nested paths, extra/missing segments, invalid scan UUIDs, unsafe basenames, and unsupported extensions. This is a source change only; it has not been executed against Supabase.\n\n
-
-## 4. Latest source hardening and CI status
-
-- Storage INSERT policy now enforces exactly two folder segments and one filename: authenticated operator UUID / valid scan UUID / safe filename.
-- The filename is restricted to an ASCII alphanumeric/underscore/hyphen basename (1–100 chars) and one of the supported lowercase extensions: `.jpg`, `.png`, `.webp`.
-- The RLS test plan includes negative cases for cross-user folders, nested/extra/missing segments, invalid scan UUIDs, unsafe names and unsupported extensions.
-- The corrected migration was fetched back from GitHub and the complete policy expression was checked for closing regex anchors and closing SQL syntax.
-- On commit `f1435b78f87631141519fa82579d8ca07ca72376`, GitHub Actions `verify` and `build` completed successfully; the `deploy` job was skipped as expected for the feature branch. Cloudflare Pages preview was still in progress at the time of this report update.
-- This is static source review plus CI. No SQL execution or runtime RLS/Storage test has been performed.
+- Storage object keys are constrained to exactly two folder segments plus a safe filename.
+- A syntactically valid upload-row path does not prove that the referenced Storage object exists.
+- Source review is not proof of runtime RLS or Storage isolation.
 
 ## 5. Not executed / outstanding
 
-1. RLS-01 through RLS-18 have **not** been executed with synthetic JWT identities.
+1. RLS-01 through RLS-18 have not been executed with synthetic JWT identities.
 2. No disposable local Supabase environment has been authorized or confirmed.
-3. No Scanner migration has been applied; no Scanner table, bucket, policy, or production object has been created.
+3. No Scanner migration has been applied; no Scanner table, bucket, policy or production object has been created.
 4. Auth email confirmation and redirect allowlist remain untested in a live Scanner flow.
-5. Browser-based mobile Safari QA remains outstanding.
+5. Browser-based iPhone/Safari QA remains outstanding.
 6. Backend image signature/decode validation is not implemented as a live service.
-7. OCR engine/worker runtime, queue, corrections, daily/weekly reports, and Telegram delivery are not implemented.
+7. OCR engine/worker runtime, queue, corrections, daily/weekly reports and Telegram delivery are not implemented.
 8. OCR provider/hosting and any paid service remain unselected and require explicit approval.
+9. PostgreSQL syntax/runtime validation of the corrected migration remains outstanding.
 
 ## 6. Database and release safety
 
-- Primary Supabase project remains unchanged.
-- The secondary Supabase project was not used as a staging substitute.
-- No database writes, migration execution, bucket creation, or Storage operations were performed.
+- Primary Supabase project `dfrppbapaaydbjeflozw` remains unchanged according to the last read-only audit.
+- The secondary Supabase project was not used as an assumed staging substitute.
+- No database writes, migration execution, bucket creation or Storage operations were performed.
 - No account or operator was created.
 - No paid service was enabled.
 - PR #123 remains Draft and unmerged.
-- No merge or main-site deployment was performed.
+- No merge or main-site production deployment was performed.
 
 ## 7. Next safe steps
 
-Continue source-only review and contract/test development on the isolated feature branch. Runtime RLS tests require an explicitly authorized disposable environment. Migration activation, OCR provider/hosting, account creation, Telegram destination and auto-send behavior require separate decisions/approval. Keep PR #123 Draft until the user explicitly authorizes a release decision.
+1. Verify GitHub Actions and Cloudflare Pages for the latest branch head after the migration cleanup and documentation updates.
+2. If checks fail, inspect logs and correct only the isolated feature branch.
+3. Continue source-only migration/security review.
+4. Run RLS/Storage tests only in an explicitly authorized disposable environment.
+5. Keep all activation, production migration, account creation, OCR provider/hosting, Telegram destination and automatic delivery decisions gated by separate approval.
 
+## 8. Version history
 
-## Upload-row path policy hardening — 2026-11-11
-
-Static review found that the upload-row INSERT policy previously checked only that `storage_path` began with the authenticated operator UUID. That did not enforce the full object-key shape used by the Storage INSERT policy. The draft migration was tightened to require exactly two folder segments, the authenticated operator UUID as the first folder, a UUID as the second folder, and a safe ASCII filename with a supported extension. The RLS test plan now explicitly records this requirement.
-
-This is a source-only change on the isolated feature branch. The migration has not been applied, and no live RLS or Storage test has been run. A row-path shape check does not itself prove that the referenced Storage object exists; runtime upload/row consistency still requires backend or controlled integration testing.
+| Version | Date | Change |
+|---|---|---|
+| 0.8 | 2026-11-11 | Previous QA report and source-only policy hardening record |
+| 0.9 | 2026-11-11 | Records malformed duplicate migration tail cleanup, corrects validation chronology and aligns RLS test references |
