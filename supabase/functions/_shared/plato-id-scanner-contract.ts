@@ -62,7 +62,7 @@ function nonEmpty(value: unknown): value is string {
 }
 
 function timestamp(value: unknown): value is string {
-  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T/.test(value)) return false;
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:\d{2})$/.test(value)) return false;
   return Number.isFinite(Date.parse(value));
 }
 
@@ -83,6 +83,9 @@ export function validateScannerWorkerJob(value: unknown): value is ScannerWorker
     && nonEmpty(source.object_key)
     && !source.object_key.startsWith("/")
     && !source.object_key.includes("..")
+    && source.object_key.split("/").length >= 3
+    && uuid(source.object_key.split("/")[0])
+    && uuid(source.object_key.split("/")[1])
     && MIME_TYPES.has(source.content_type as ScannerContentType)
     && typeof source.sha256 === "string" && SHA256.test(source.sha256)
     && timestamp(value.requested_at);
@@ -98,11 +101,11 @@ export function validateScannerWorkerSuccess(value: unknown): value is ScannerWo
   if (!timestamp(value.started_at) || !timestamp(value.finished_at)) return false;
   if (Date.parse(value.finished_at) < Date.parse(value.started_at)) return false;
   return value.candidates.every((candidate: unknown) => {
-    if (!record(candidate) || typeof candidate.raw_value !== "string") return false;
+    if (!record(candidate) || !nonEmpty(candidate.raw_value)) return false;
     const confidence = candidate.confidence;
     if (confidence !== null && (typeof confidence !== "number" || !Number.isFinite(confidence) || confidence < 0 || confidence > 1)) return false;
     if (candidate.geometry !== null && !record(candidate.geometry)) return false;
-    return Array.isArray(candidate.flags) && candidate.flags.every((flag: unknown) => typeof flag === "string");
+    return Array.isArray(candidate.flags) && candidate.flags.every((flag: unknown) => nonEmpty(flag));
   });
 }
 
