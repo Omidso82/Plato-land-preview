@@ -150,7 +150,7 @@ function ScannerReviewCard({row,client,reviewerId}:{row:ScanRow;client:any;revie
   if(busy||!loaded)return;
   setBusy(true);setError('');
   try{
-   const ids=draft.split(/\\r?\\n/).map(value=>value.trim()).filter(Boolean);
+   const ids=draft.split(/\r?\n/).map(value=>value.trim()).filter(Boolean);
    const result=await appendScannerReviewRevision(client,{scanId:row.id,ids,reviewerId,note});
    setHistory(prev=>[...prev,result]);setDraft(scannerReviewText(result.canonical_ids));setNote('');
   }catch(e:any){setError(e?.message||'ثبت نسخه جدید ناموفق بود.');}
