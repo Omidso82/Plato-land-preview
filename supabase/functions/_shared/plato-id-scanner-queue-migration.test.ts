@@ -29,3 +29,8 @@ Deno.test("enqueue RPC is service-role-only and binds the immutable source diges
   if (!/source_upload\.status not in \('uploaded','queued'\)/i.test(sql)) throw new Error("Enqueue eligibility guard missing");
   if (!/queued_job\.source_sha256 <> lower\(p_source_sha256\)/i.test(sql)) throw new Error("Enqueue digest mismatch guard missing");
 });
+
+Deno.test("dispatcher retries only failed jobs below the configured attempt limit", () => {
+  if (!/if queued_job\.status = 'failed' then[\s\S]*?queued_job\.attempt >= queued_job\.max_attempts/i.test(sql)) throw new Error("Bounded retry guard missing");
+  if (!/set status = 'queued', available_at = now\(\), last_error_code = null/i.test(sql)) throw new Error("Explicit failed-job retry transition missing");
+});
