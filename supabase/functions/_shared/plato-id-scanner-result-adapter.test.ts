@@ -38,3 +38,23 @@ Deno.test("does not autocorrect, trim punctuation or infer IDs without @", () =>
     throw new Error("Raw candidate spelling/punctuation changed");
   }
 });
+
+
+Deno.test("retains exact duplicate occurrences and their source positions for audit", () => {
+  const adapted = adaptScannerWorkerSuccessToReviewPayload({
+    ...result,
+    raw_text: "@Repeat @Other\\n@Repeat @repeat",
+  });
+  if (JSON.stringify(adapted.ids) !== JSON.stringify(["@Repeat", "@Other", "@repeat"])) {
+    throw new Error("Unique preview IDs are incorrect: " + JSON.stringify(adapted.ids));
+  }
+  if (adapted.duplicate_audit.duplicate_count !== 1 ||
+      adapted.duplicate_audit.duplicates[0]?.raw_value !== "@Repeat" ||
+      adapted.duplicate_audit.duplicates[0]?.scan_id !== result.scan_id ||
+      adapted.duplicate_audit.duplicates[0]?.start !== 14) {
+    throw new Error("Duplicate occurrence provenance was not retained");
+  }
+  if (adapted.extraction_candidates.length !== 4) {
+    throw new Error("All raw occurrences must remain available to the manager");
+  }
+});
