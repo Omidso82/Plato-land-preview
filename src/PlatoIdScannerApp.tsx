@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import './plato-id-scanner.css';
-import { appendScannerReviewRevision, loadScannerReviewRevisions, parseScannerReviewDraft, scannerReviewText } from './plato-id-scanner-review-store';
+import { parseScannerReviewDraft } from './plato-id-scanner-review';
+import { appendScannerReviewRevision, loadScannerReviewRevisions, scannerReviewText } from './plato-id-scanner-review-store';
 import PlatoIdScannerReportsPanel from './PlatoIdScannerReportsPanel';
 
 type AccessRow={user_id:string;email:string;status:'pending'|'approved'|'rejected'|'disabled';requested_at:string;reviewed_at:string|null};
