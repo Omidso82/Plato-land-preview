@@ -58,7 +58,7 @@ function isoAtTehranCalendarDay(date: Date) {
 }
 function reviewedIds(scan: ScannerReportSource): string[] {
   if(scan.status!=="completed"||!Array.isArray(scan.ocr_result?.ids)) return [];
-  return [...new Set(scan.ocr_result!.ids.filter((id):id is string=>typeof id==="string"&&id.trim().length>0).map(id=>id.trim()))];
+  return [...new Set(scan.ocr_result!.ids.filter((id):id is string=>typeof id==="string"&&id.trim().length>0).map(id=>id))];
 }
 export function buildDailyScannerReport(scans: ScannerReportSource[], dateKey: string): DailyScannerReport {
   const dayScans=scans.filter(scan=>tehranJalaliDateKey(scan.created_at)===dateKey);
@@ -111,7 +111,7 @@ function splitTelegramText(header: string, rows: string[], maxChars: number): st
 }
 
 export function formatScanTelegramMessages(scanLabel: string, ids: string[], maxChars=3500): string[] {
-  const uniqueIds=[...new Set(ids.filter(id=>typeof id==="string"&&id.trim().length>0).map(id=>id.trim()))];
+  const uniqueIds=[...new Set(ids.filter(id=>typeof id==="string"&&id.trim().length>0).map(id=>id))];
   const header=`فهرست Plato ID استخراج‌شده\nتصویر: ${scanLabel}\nتعداد ID یکتا: ${uniqueIds.length}\n\n`;
   return splitTelegramText(header,uniqueIds.map((id,i)=>`${i+1}. ${id}`),maxChars);
 }
