@@ -141,3 +141,39 @@ Approved workflow retained from Design Decisions v0.4:
 | Version | Date | Change |
 |---|---|---|
 | 1.2 | 2026-11-11 | Adds per-image Telegram ID-list formatting and exact-value preservation; no delivery is activated. |
+
+## 12. Append-only review/report persistence — v1.3
+
+**Date:** 2026-11-11  
+**Source branch:** `feature/plato-id-scanner-v0-1`  
+**Status:** Source committed; database migration remains unapplied.
+
+### Added
+- New draft migration `20261111000200_plato_id_scanner_review_and_report_history.sql`.
+- Append-only `plato_id_scanner_review_revisions` stores the approved canonical ID list, reviewer, timestamp, note, revision number and previous revision.
+- Append-only `plato_id_scanner_report_versions` stores daily, weekly and per-image report snapshots and their version chain.
+- No UPDATE or DELETE grants/policies are provided for either history table.
+- Database triggers enforce contiguous version numbering and require each new version to reference the immediately previous version.
+- Review trigger rejects exact duplicate canonical IDs; it does not normalize or fuzzy-match ID strings.
+- The new review helper and Deno tests preserve exact spelling, case and Unicode code points and verify immutable revision snapshots.
+- CI workflow includes the review helper test.
+
+### Validation and limits
+- GitHub PR #123 remains open, Draft and unmerged.
+- Cloudflare Pages bot comment confirms the feature branch preview deployed successfully for commit `e8a31b2`; latest SQL trigger commit `90aaf887a1036932bcea6c926cf7d0200834bfcb` still requires a fresh preview/CI check.
+- The GitHub connector's commit-run query returned no workflow runs for the latest commit; this is not evidence of a passing CI run.
+- SQL was inspected as source only. It has not been parsed/executed against PostgreSQL or applied to Supabase.
+- UI does not yet load/save review revisions or report versions; this migration prepares persistence only.
+- OCR worker, server-side sender/outbox, scheduler and automated Telegram delivery remain unimplemented.
+- No Supabase project was written, no Telegram message sent, and no production deployment or merge occurred.
+
+### Next
+1. Implement UI/API integration for loading and appending review revisions.
+2. Implement report snapshot generation from approved revisions, with daily/weekly dependency recalculation.
+3. Implement a server-side Telegram outbox/sender using the existing bot without exposing secrets.
+4. Resolve the no-cost backend OCR runtime and validate accuracy using authorized representative samples.
+5. Run CI and PostgreSQL/RLS tests in an explicitly approved isolated environment.
+
+| Version | Date | Change |
+|---|---|---|
+| 1.3 | 2026-11-11 | Adds append-only review/report schema draft, sequential version guards and exact-duplicate database validation; documents outstanding UI/runtime tests. |
