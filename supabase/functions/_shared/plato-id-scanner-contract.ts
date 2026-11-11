@@ -87,16 +87,18 @@ function commonIdentity(value: Record<string, unknown>): boolean {
   return value.contract_version === "1" && uuid(value.job_id) && uuid(value.scan_id);
 }
 
-function safeObjectKey(value: unknown, scanId: string): value is string {
+function safeObjectKey(value: unknown, scanId: string, contentType: ScannerContentType): value is string {
   if (!nonEmpty(value) || value.startsWith("/") || value.includes("\\")) return false;
   const segments = value.split("/");
-  return segments.length === 3
-    && uuid(segments[0])
-    && segments[1] === scanId
-    && nonEmpty(segments[2])
-    && segments[2] !== "."
-    && segments[2] !== ".."
-    && !segments[2].includes("..");
+  if (segments.length !== 3 || !uuid(segments[0]) || segments[1] !== scanId) return false;
+  const filename = segments[2];
+  const extensionByMime: Record<ScannerContentType, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+  };
+  return /^[A-Za-z0-9_-]{1,100}\\.(jpg|png|webp)$/.test(filename)
+    && filename.endsWith("." + extensionByMime[contentType]);
 }
 
 export function validateScannerWorkerJob(value: unknown): value is ScannerWorkerJob {
@@ -105,7 +107,7 @@ export function validateScannerWorkerJob(value: unknown): value is ScannerWorker
   if (!record(source)) return false;
   return Number.isInteger(value.attempt) && (value.attempt as number) >= 1
     && source.bucket === "plato-id-scans"
-    && safeObjectKey(source.object_key, value.scan_id as string)
+    && safeObjectKey(source.object_key, value.scan_id as string, source.content_type as ScannerContentType)
     && MIME_TYPES.has(source.content_type as ScannerContentType)
     && typeof source.sha256 === "string" && SHA256.test(source.sha256)
     && timestamp(value.requested_at);
