@@ -35,8 +35,8 @@
 | RLS-09 | Operator A (approved) | UPDATE/DELETE upload row | Any upload row | Denied (no grant/policy) |
 | RLS-10 | Operator A (approved) | SELECT Storage object | A's object | Allowed |
 | RLS-11 | Operator A (approved) | SELECT Storage object | B's object | Denied |
-| RLS-12 | Operator A (approved) | INSERT Storage object | Path starts A UUID | Allowed |
-| RLS-13 | Operator A (approved) | INSERT Storage object | Path starts B UUID | Denied |
+| RLS-12 | Operator A (approved) | INSERT Storage object | Exactly three segments: A UUID / valid scan UUID / safe basename with MIME-derived extension | Allowed |
+| RLS-13 | Operator A (approved) | INSERT Storage object | B UUID folder, nested path, missing segment, invalid scan UUID, unsafe basename, or unsupported extension | Denied |
 | RLS-14 | Operator B (pending) | INSERT/SELECT Storage object | Own path | Denied |
 | RLS-15 | Operator A (approved) | DELETE Storage object | Own orphan with no upload row | Allowed |
 | RLS-16 | Operator A (approved) | DELETE Storage object | Own object referenced by upload row | Denied |
@@ -48,7 +48,7 @@
 - Anonymous role cannot read or write Scanner tables or private Storage objects.
 - An operator cannot change their own access status to approved, rejected, or disabled.
 - An operator cannot insert an upload row with a non-empty OCR result or a status other than uploaded.
-- An operator cannot write a Storage object into another user's UUID folder.
+- An operator cannot write a Storage object into another user's UUID folder.\n- Storage INSERT must reject paths that do not contain exactly two folder segments and one filename.\n- The second folder segment must be a UUID; filename must match the safe ASCII basename and `.jpg`, `.png`, or `.webp` extension contract.\n- Nested paths, extra segments, traversal-like names, and unsupported extensions must be denied at the Storage policy boundary.
 - A pre-existing bucket with public=true, wrong size limit, wrong MIME allowlist, or wrong name must cause the migration to stop with a clear exception. It must not be silently overwritten.
 - Re-running the SQL file manually is not an approved test: table/index statements are guarded, but CREATE POLICY statements are intentionally a one-time migration operation and are not idempotent. Use the migration ledger in the disposable environment; do not manually replay an already-applied migration.
 
