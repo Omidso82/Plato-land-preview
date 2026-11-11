@@ -1,10 +1,12 @@
 /**
- * Strict message-text candidate extraction for PLATO ID Scanner.
+ * Extract Plato ID candidates from OCR text using @ as the start marker.
  *
- * Only whitespace-delimited tokens whose first character is "@" are candidates.
- * The raw token is preserved exactly; this helper does not validate, normalize,
- * trim punctuation, or merge lookalike IDs. OCR text is not trusted as canonical
- * until a human reviewer approves it.
+ * A candidate starts at each @ and ends at the next @, whitespace, or line break.
+ * This supports IDs on separate lines, separated by spaces, or concatenated
+ * directly together (for example: @First@Second@Third).
+ *
+ * Raw spelling is preserved. No normalization, punctuation repair, or fuzzy
+ * matching is performed; candidates remain provisional until human review.
  */
 export interface AtSignCandidate {
   raw_value: string;
@@ -14,10 +16,10 @@ export interface AtSignCandidate {
 
 export function extractAtSignCandidates(text: string): AtSignCandidate[] {
   const candidates: AtSignCandidate[] = [];
-  const pattern = /(^|\\s)(@[^\\s]+)/gu;
+  const pattern = /@([^@\\s]+)/gu;
   for (const match of text.matchAll(pattern)) {
-    const raw = match[2];
-    const start = (match.index ?? 0) + match[1].length;
+    const start = match.index ?? 0;
+    const raw = match[0];
     candidates.push({ raw_value: raw, start, end: start + raw.length });
   }
   return candidates;
