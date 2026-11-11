@@ -88,9 +88,12 @@ on public.plato_id_scanner_report_versions
 for select to authenticated
 using (
   (select private.has_role(array['owner']::text[]))
-  or exists (
-    select 1 from public.plato_id_scanner_access a
-    where a.user_id = (select auth.uid()) and a.status = 'approved'
+  or (
+    created_by = (select auth.uid())
+    and exists (
+      select 1 from public.plato_id_scanner_access a
+      where a.user_id = (select auth.uid()) and a.status = 'approved'
+    )
   )
 );
 
