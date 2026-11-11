@@ -274,7 +274,7 @@ begin
   if not found then
     raise exception 'scanner upload not found';
   end if;
-  if source_upload.status not in ('uploaded','queued') then
+  if source_upload.status not in ('uploaded','queued','failed') then
     raise exception 'scanner upload is not eligible for OCR';
   end if;
 
@@ -290,6 +290,17 @@ begin
     raise exception 'existing OCR job source digest mismatch';
   end if;
 
+  if queued_job.status = 'failed' then
+    if queued_job.attempt >= queued_job.max_attempts then
+      raise exception 'OCR retry limit has been reached';
+    end if;
+    update public.plato_id_scanner_ocr_jobs
+       set status = 'queued', available_at = now(), last_error_code = null,
+           updated_at = now()
+     where id = queued_job.id
+     returning * into queued_job;
+  end if;
+
   if queued_job.status not in ('queued','processing','succeeded') then
     raise exception 'existing OCR job is not enqueueable';
   end if;
@@ -297,7 +308,7 @@ begin
   update public.plato_id_scanner_uploads
      set status = case when queued_job.status = 'succeeded' then 'needs_review' else 'queued' end,
          updated_at = now()
-   where id = p_scan_id and status = 'uploaded';
+   where id = p_scan_id and status in ('uploaded','failed');
 
   return queued_job;
 end;
