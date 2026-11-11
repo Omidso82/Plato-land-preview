@@ -4,7 +4,6 @@ import './plato-id-scanner.css';
 import { parseScannerReviewDraft } from './plato-id-scanner-review';
 import { auditScannerBatchDuplicates } from './plato-id-scanner-duplicate-audit';
 import { appendScannerReviewRevision, loadScannerReviewRevisions, scannerReviewText } from './plato-id-scanner-review-store';
-import PlatoIdScannerReportsPanel from './PlatoIdScannerReportsPanel';
 
 type AccessRow={user_id:string;email:string;status:'pending'|'approved'|'rejected'|'disabled';requested_at:string;reviewed_at:string|null};
 type ScanRow={id:string;operator_id:string;storage_path:string;file_name:string;content_type:string;file_size:number;status:string;ocr_result:any;created_at:string};
@@ -114,49 +113,28 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
   <header className="plato-scanner-header"><div className="plato-scanner-brand"><span>♛</span><div><strong>PLATO LAND</strong><small>PLATO ID SCANNER</small></div></div>{user&&!ownerMode&&<button className="scanner-ghost" onClick={signOut}>خروج</button>}</header>
   {!user?<section className="plato-scanner-card scanner-auth"><span className="scanner-eyebrow">پنل مستقل اپراتور</span><h1>{mode==='register'?'ساخت حساب اپراتور':'ورود به اسکنر'}</h1><p>دسترسی فقط پس از تأیید ایمیل و تأیید مالک فعال می‌شود.</p><form onSubmit={authSubmit}><label>ایمیل<input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><label>رمز عبور<input type="password" required minLength={8} autoComplete={mode==='register'?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="scanner-primary" disabled={busy}>{busy?'لطفاً صبر کنید…':mode==='register'?'ثبت‌نام و ارسال ایمیل تأیید':'ورود امن'}</button></form><button className="scanner-link" onClick={()=>{setMode(mode==='register'?'login':'register');setMessage('');}}>{mode==='register'?'قبلاً حساب ساخته‌اید؟ ورود':'حساب ندارید؟ ثبت‌نام اپراتور'}</button></section>
   :!confirmed?<section className="plato-scanner-card"><h1>تأیید ایمیل لازم است</h1><p>لینک ارسال‌شده به {user.email} را باز کنید؛ سپس دوباره وارد شوید.</p><button className="scanner-primary" onClick={signOut}>بازگشت به ورود</button></section>
-  :owner?<section className="scanner-workspace"><div className="scanner-welcome"><div><span className="scanner-eyebrow">دسترسی مالک</span><h1>مدیریت PLATO ID Scanner</h1><p>درخواست اپراتورها و آپلودهای چندتصویری</p></div><span className="scanner-status approved">مالک</span></div>
+  :owner?<section className="scanner-workspace"><div className="scanner-welcome"><div><span className="scanner-eyebrow">دسترسی مالک</span><h1>مدیریت گزارش‌گیری Plato IDهای فعال</h1><p>مدیریت دسترسی اپراتورها و تصاویر ورودی گزارش IDهای فعال</p></div><span className="scanner-status approved">مالک</span></div>
    <div className="scanner-panel"><h2>درخواست‌های اپراتورها</h2>{applications.length===0?<p className="scanner-empty">درخواستی ثبت نشده است.</p>:applications.map(a=><article className="scanner-row" key={a.user_id}><div><strong>{a.email}</strong><small>{new Date(a.requested_at).toLocaleString('fa-IR')}</small><span className={'scanner-status '+a.status}>{a.status==='pending'?'در انتظار بررسی':a.status==='approved'?'تأییدشده':a.status==='rejected'?'ردشده':'غیرفعال'}</span></div><div className="scanner-actions"><button disabled={busy||a.status==='approved'} onClick={()=>void review(a.user_id,'approved')}>تأیید</button><button disabled={busy||a.status==='rejected'} onClick={()=>void review(a.user_id,'rejected')}>رد</button><button disabled={busy||a.status==='disabled'} onClick={()=>void review(a.user_id,'disabled')}>غیرفعال‌سازی</button></div></article>)}</div>
-   <form className="scanner-panel scanner-upload" onSubmit={upload}><h2>آپلود تصاویر</h2><p>هر تعداد تصویر لازم دارید انتخاب کنید. فایل‌های قبلی حفظ می‌شوند و هر تصویر جداگانه ذخیره خواهد شد.</p><label className="scanner-drop">انتخاب چند تصویر<input id="plato-scanner-files" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={e=>void selectFiles(e.target.files)}/><small>{fileChecking?'در حال بررسی تصاویر…':files.length?files.length+' تصویر آماده ذخیره است.':'JPG، PNG یا WEBP · حداکثر ۱۵ مگابایت برای هر تصویر'}</small></label>{files.length>0&&<ul className="scanner-selected-files">{files.map((f,i)=><li key={f.name+'-'+i}>{f.name} <span>{(f.size/1024/1024).toFixed(2)} MB</span></li>)}</ul>}<button className="scanner-primary" disabled={!files.length||busy||fileChecking}>{fileChecking?'در حال بررسی…':busy?'در حال ذخیره تصاویر…':'ذخیره تصاویر انتخاب‌شده'}</button></form>
-   <div className="scanner-panel"><h2>تصاویر ذخیره‌شده</h2><UploadList rows={uploads} client={supabase} reviewerId={user.id}/></div><PlatoIdScannerReportsPanel client={supabase} creatorId={user.id}/></section>
+   <form className="scanner-panel scanner-upload" onSubmit={upload}><h2>تصاویر گزارش IDهای فعال</h2><p>اپراتور تصاویر فهرست IDها را بارگذاری می‌کند. تصاویر جداگانه ذخیره می‌شوند و فایل‌های قبلی حفظ خواهند شد.</p><label className="scanner-drop">انتخاب چند تصویر<input id="plato-scanner-files" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={e=>void selectFiles(e.target.files)}/><small>{fileChecking?'در حال بررسی تصاویر…':files.length?files.length+' تصویر آماده ذخیره است.':'JPG، PNG یا WEBP · حداکثر ۱۵ مگابایت برای هر تصویر'}</small></label>{files.length>0&&<ul className="scanner-selected-files">{files.map((f,i)=><li key={f.name+'-'+i}>{f.name} <span>{(f.size/1024/1024).toFixed(2)} MB</span></li>)}</ul>}<button className="scanner-primary" disabled={!files.length||busy||fileChecking}>{fileChecking?'در حال بررسی…':busy?'در حال ذخیره تصاویر…':'ذخیره تصاویر انتخاب‌شده'}</button></form>
+   <div className="scanner-panel"><h2>تصاویر ذخیره‌شده</h2><UploadList rows={uploads} client={supabase}/></div></section>
   :access?.status!=='approved'?<section className="plato-scanner-card"><span className={'scanner-status '+(access?.status||'pending')}>{access?.status==='rejected'?'درخواست رد شده':access?.status==='disabled'?'دسترسی غیرفعال':'در انتظار تأیید مالک'}</span><h1>{access?.status==='rejected'?'درخواست دسترسی تأیید نشد':access?.status==='disabled'?'دسترسی شما غیرفعال است':'حساب شما در صف بررسی است'}</h1><p>{access?.status==='pending'?'ایمیل شما تأیید شده است. پس از بررسی مالک، امکان آپلود فعال می‌شود.':'برای پیگیری با مالک PLATO LAND تماس بگیرید.'}</p></section>
-  :<section className="scanner-workspace"><div className="scanner-welcome"><div><span className="scanner-eyebrow">پنل اپراتور</span><h1>آپلود تصاویر حاوی Plato ID</h1><p>می‌توانید چند تصویر را با هم انتخاب کنید؛ هر عکس به‌صورت پرونده مستقل ذخیره می‌شود و هیچ عکس قبلی جایگزین نخواهد شد.</p></div><span className="scanner-status approved">دسترسی فعال</span></div><form className="scanner-panel scanner-upload" onSubmit={upload}><h2>ثبت تصاویر جدید</h2><label className="scanner-drop">انتخاب یک یا چند تصویر<input id="plato-scanner-files" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={e=>void selectFiles(e.target.files)}/><small>{fileChecking?'در حال بررسی تصاویر…':files.length?files.length+' تصویر معتبر آماده آپلود است.':'JPG، PNG یا WEBP · حداکثر ۱۵ مگابایت برای هر تصویر'}</small></label>{files.length>0&&<ul className="scanner-selected-files">{files.map((f,i)=><li key={f.name+'-'+i}>{f.name} <span>{(f.size/1024/1024).toFixed(2)} MB</span></li>)}</ul>}<button className="scanner-primary" disabled={!files.length||busy||fileChecking}>{fileChecking?'در حال بررسی…':busy?'در حال ذخیره تصاویر…':'آپلود تصاویر انتخاب‌شده'}</button></form><div className="scanner-panel"><h2>تاریخچه تصاویر من</h2><UploadList rows={uploads} client={supabase} reviewerId={user.id}/></div><PlatoIdScannerReportsPanel client={supabase} creatorId={user.id}/></section>}
+  :<section className="scanner-workspace"><div className="scanner-welcome"><div><span className="scanner-eyebrow">پنل اپراتور</span><h1>گزارش‌گیری از Plato IDهای فعال</h1><p>تصاویر فهرست IDهای فعال را بارگذاری کنید. هر تصویر جداگانه ذخیره می‌شود و تصاویر قبلی حفظ خواهند شد.</p></div><span className="scanner-status approved">دسترسی فعال</span></div><form className="scanner-panel scanner-upload" onSubmit={upload}><h2>آپلود تصاویر فهرست IDهای فعال</h2><label className="scanner-drop">انتخاب یک یا چند تصویر<input id="plato-scanner-files" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={e=>void selectFiles(e.target.files)}/><small>{fileChecking?'در حال بررسی تصاویر…':files.length?files.length+' تصویر معتبر آماده آپلود است.':'JPG، PNG یا WEBP · حداکثر ۱۵ مگابایت برای هر تصویر'}</small></label>{files.length>0&&<ul className="scanner-selected-files">{files.map((f,i)=><li key={f.name+'-'+i}>{f.name} <span>{(f.size/1024/1024).toFixed(2)} MB</span></li>)}</ul>}<button className="scanner-primary" disabled={!files.length||busy||fileChecking}>{fileChecking?'در حال بررسی…':busy?'در حال ذخیره تصاویر…':'آپلود تصاویر انتخاب‌شده'}</button></form><div className="scanner-panel"><h2>تاریخچه تصاویر من</h2><UploadList rows={uploads} client={supabase} reviewerId={user.id}/></div><PlatoIdScannerReportsPanel client={supabase} creatorId={user.id}/></section>}
   {message&&<p className="scanner-message" role="status">{message}</p>}<footer className="scanner-footer">PLATO LAND · دسترسی محدود و مستقل</footer>
  </Root>;
 }
-function UploadList({rows,client,reviewerId}:{rows:ScanRow[];client:any;reviewerId:string}){
- if(!rows.length)return <p className="scanner-empty">هنوز تصویری ثبت نشده است.</p>;
- const chronological=[...rows].sort((a,b)=>a.created_at.localeCompare(b.created_at));
- const scans=chronological.map(row=>({
-  scan_id:row.id,
-  candidates:Array.isArray(row.ocr_result?.extraction_candidates)
-   ? row.ocr_result.extraction_candidates
-   : Array.isArray(row.ocr_result?.ids)
-    ? row.ocr_result.ids.map((raw_value:string)=>({raw_value}))
-    : [],
- })).filter(scan=>scan.candidates.length>0);
- const batchAudit=auditScannerBatchDuplicates(scans);
- const fileName=(scanId:string)=>rows.find(row=>row.id===scanId)?.file_name||scanId;
- return <div className="scanner-upload-list">
-  {batchAudit.total_occurrences>0&&<details className="scanner-review-history scanner-duplicate-audit">
-   <summary>گزارش تجمیعی تصاویر: {batchAudit.unique_count} شناسه یکتا · {batchAudit.duplicate_count} تکراری دقیق</summary>
-   <div className="scanner-report-stats">
-    <div><strong>{batchAudit.total_occurrences}</strong><small>کل موارد استخراج‌شده</small></div>
-    <div><strong>{batchAudit.unique_count}</strong><small>شناسه یکتا</small></div>
-    <div><strong>{batchAudit.duplicate_count}</strong><small>تکراری دقیق</small></div>
-   </div>
-   {batchAudit.duplicates.length>0
-    ? <div className="scanner-report-id-list" dir="ltr">{batchAudit.duplicates.map((item,index)=><div key={item.scan_id+'-batch-duplicate-'+index}>
-      <strong>{item.raw_value}</strong>
-      <small>تکرار در: {fileName(item.scan_id)} · مورد اصلی در: {fileName(item.duplicate_of_scan_id)}</small>
-     </div>)}
-    </div>
-    : <p className="scanner-empty">در تصاویر پردازش‌شده تکراری دقیقی ثبت نشده است.</p>}
-   <p className="scanner-report-disclaimer">تجمیع بر اساس ترتیب زمانی آپلود انجام می‌شود؛ فقط رشته‌های کاملاً یکسان تکراری محسوب می‌شوند.</p>
-  </details>}
-  {rows.map(row=><ScannerReviewCard key={row.id} row={row} client={client} reviewerId={reviewerId}/>)}
- </div>;
-}
-function ScannerReviewCard({row,client,reviewerId}:{row:ScanRow;client:any;reviewerId:string}){
+function UploadList({rows,client}:{rows:ScanRow[];client:any}){
+  if(!rows.length)return <p className="scanner-empty">هنوز تصویری ذخیره نشده است.</p>;
+  return <div className="scanner-upload-list">{rows.map(row=><SavedUploadItem key={row.id} row={row} client={client}/>)}</div>;
+ }
+ function SavedUploadItem({row,client}:{row:ScanRow;client:any}){
+  const [url,setUrl]=useState('');
+  useEffect(()=>{let active=true;client.storage.from(BUCKET).createSignedUrl(row.storage_path,300).then(({data,error}:any)=>{if(active&&!error)setUrl(data?.signedUrl||'');});return()=>{active=false;};},[client,row.storage_path]);
+  return <article className="scanner-review-card">
+   <div className="scanner-review-heading"><div><strong>{row.file_name}</strong><small>{new Date(row.created_at).toLocaleString('fa-IR')} · {(row.file_size/1024/1024).toFixed(2)} MB</small></div><span className="scanner-status">ذخیره‌شده</span></div>
+   {url&&<a className="scanner-image-link" href={url} target="_blank" rel="noreferrer"><img src={url} alt={'تصویر ذخیره‌شده '+row.file_name}/></a>}
+  </article>;
+ }
+ function ScannerReviewCard({row,client,reviewerId}:{row:ScanRow;client:any;reviewerId:string}){
  const [history,setHistory]=useState<any[]>([]),[draft,setDraft]=useState(''),[note,setNote]=useState(''),[imageUrl,setImageUrl]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loaded,setLoaded]=useState(false);
  useEffect(()=>{
   let alive=true;
