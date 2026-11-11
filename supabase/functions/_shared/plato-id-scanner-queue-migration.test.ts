@@ -34,3 +34,7 @@ Deno.test("dispatcher retries only failed jobs below the configured attempt limi
   if (!/if queued_job\.status = 'failed' then[\s\S]*?queued_job\.attempt >= queued_job\.max_attempts/i.test(sql)) throw new Error("Bounded retry guard missing");
   if (!/set status = 'queued', available_at = now\(\), last_error_code = null/i.test(sql)) throw new Error("Explicit failed-job retry transition missing");
 });
+
+Deno.test("expired leases close the prior attempt audit before a new attempt is reclaimed", () => {
+  if (!/expired_attempts as \([\s\S]*?outcome = 'lease_expired'[\s\S]*?a\.attempt = c\.prior_attempt[\s\S]*?from expired_attempts/i.test(sql)) throw new Error("Expired attempt audit transition missing");
+});
