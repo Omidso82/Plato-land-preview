@@ -1,54 +1,53 @@
 # PLATO ID Scanner — QA Report
 
-**Document version:** 1.0  
+**Document version:** 1.1  
 **Date:** 2026-11-11  
 **Project:** PLATO LAND – Temporary Projects  
 **Branch:** `feature/plato-id-scanner-v0-1`  
 **PR:** #123 — Open, Draft, unmerged  
-**Scope:** Feature-branch CI/preview verification, migration source review and isolated RLS test preparation
+**Scope:** Feature-branch CI, source-level security review and isolated RLS test preparation
 
-## 1. Verified baseline before the latest source correction
+## 1. Previous migration correction
 
-For commit `ba7bbf040f7a6e8c3afc36fc1546ce5a2a77fb08`:
-
-- GitHub Actions run `42934159521`: verify job **SUCCESS**.
-- Passed: npm install, TypeScript typecheck, Vite build, Series 2 qualification tests, Series 2 bracket tests and Scanner contract tests.
-- GitHub Actions run `42934159360`: build job **SUCCESS**; deploy job **SKIPPED** on the feature branch.
-- Cloudflare Pages check for this commit: **SUCCESS**.
-- Branch preview: https://feature-plato-id-scanner-v0.plato-land-preview.pages.dev
-- Commit preview: https://c9bb03e1.plato-land-preview.pages.dev
-
-These checks apply to `ba7bbf...` only.
-
-## 2. Latest source-only correction after that baseline
-
-Static inspection of `supabase/migrations/20261111000100_plato_id_scanner_foundation.sql` found duplicated trailing SQL fragments after the complete Storage delete policy. The duplicate tail made the migration source malformed.
+Static inspection found duplicated trailing SQL fragments after the complete Storage delete policy in `supabase/migrations/20261111000100_plato_id_scanner_foundation.sql`.
 
 - The duplicated tail was removed on the isolated feature branch.
 - Correction commit: `72eaa6c75d44f64f0dc6ee157fcf7c0a2b6f972e`.
-- Static post-edit checks confirmed eight unique policy declarations, two dollar-quote delimiters for the bucket validation block, and a complete final policy terminator.
-- The migration was fetched back from GitHub after the edit in order to verify the saved source.
+- Static checks confirmed eight unique policy declarations, two dollar-quote delimiters for the bucket validation block, and a complete final policy terminator.
+- The corrected migration was fetched back from GitHub to verify the saved source.
 - This was source-only. It has NOT been executed by PostgreSQL, applied to Supabase, or runtime-tested.
-- CI and Cloudflare preview for the correction and subsequent documentation commits must be checked separately; earlier green results do not validate later commits.
 
-## 3. Documentation synchronization
+## 2. Additional source-level security finding and correction
 
-The following feature-branch documents were synchronized:
+A comparison of the SQL/UI upload path rules with the provider-neutral OCR worker validator found a contract mismatch:
 
-- Implementation Status: v0.8 — records the migration cleanup and separates pre-fix green checks from pending post-fix validation.
-- RLS Isolation Test Plan: v0.3 — RLS-06/RLS-07 now require the exact operator UUID / scan UUID / safe filename path, consistent with the migration contract.
-- QA Report: v0.9 — this report.
+- SQL/UI required a safe ASCII filename (1–100 letters/digits/underscore/hyphen) and lowercase `.jpg`, `.png` or `.webp`.
+- The worker validator previously checked only that the filename segment was non-empty and did not contain traversal-like text. It could therefore accept filenames the upload policy would reject.
+- The worker validator now enforces the same safe filename expression and exact MIME-to-extension mapping: `image/jpeg` → `.jpg`, `image/png` → `.png`, `image/webp` → `.webp`.
+- Negative test inputs now cover whitespace, non-ASCII filename characters, unsupported `.jpeg` extension and MIME/extension mismatch.
+- The eight Deno test cases remain eight; additional negative inputs are included in the existing invalid-job test.
+- Relevant source commits: `aa5493c686dd48603ff595ee71a317ed30967016`, `9ccd50a964d9846b1137fc3f0bac840115345eeb`, `75ebf22fef0cc692a3c9ad076f642fe9708951a3`.
 
-Literal `\\n` artifacts from the previous QA/RLS documents were removed in the revised documents.
+## 3. CI verification for the hardened application/security source
 
-## 4. Source-level security scope and limitations
+For commit `75ebf22fef0cc692a3c9ad076f642fe9708951a3`:
 
-- Scanner access/uploads tables, RLS and the private bucket exist only in the draft migration source.
-- Operator upload-row insert requires own operator ID, exact path shape, initial `uploaded` status and empty OCR result.
-- Operator upload-row update/delete privileges are not granted.
-- Storage object keys are constrained to exactly two folder segments plus a safe filename.
-- A syntactically valid upload-row path does not prove that the referenced Storage object exists.
-- Source review is not proof of runtime RLS or Storage isolation.
+- GitHub Actions run `42937507255`: verify job SUCCESS.
+- npm install, TypeScript typecheck, Vite build, Series 2 qualification tests, Series 2 bracket tests and Scanner contract tests passed.
+- GitHub Actions run `42937507296`: build job SUCCESS; deploy job SKIPPED on the feature branch.
+- Cloudflare Pages check for this commit was still IN_PROGRESS at the last check. Preview success for this commit is not confirmed.
+- Earlier preview URL: https://feature-plato-id-scanner-v0.plato-land-preview.pages.dev
+
+## 4. SQL / RLS / Storage source review
+
+- The Scanner migration has explicit table privilege revocations followed by narrow grants.
+- Access table: SELECT/INSERT/UPDATE grants; RLS limits self-registration to pending status and owner-only review updates.
+- Upload table: SELECT/INSERT grants; operator insert requires own operator ID, exact three-segment path, initial `uploaded` status and empty OCR result. Operator UPDATE/DELETE is not granted.
+- Storage object keys require exactly two folders (operator UUID and scan UUID) plus a safe filename. The private bucket contract is 15 MiB and JPG/PNG/WEBP.
+- The upload UI uses `upsert: false`; therefore it does not require Storage UPDATE policy for overwrite.
+- Existing tracked Storage policies inspected in the repository are bucket-scoped for their respective buckets. This is not a complete audit of all live policies because the repository migration history is incomplete.
+- Supabase documents `storage.foldername()` as returning the array of parent folders, consistent with the two-folder check. Storage upsert would require SELECT and UPDATE in addition to INSERT, but this UI deliberately does not use upsert.
+- Source-level review does not prove runtime authorization or byte-level image validity.
 
 ## 5. Not executed / outstanding
 
@@ -57,10 +56,11 @@ Literal `\\n` artifacts from the previous QA/RLS documents were removed in the r
 3. No Scanner migration has been applied; no Scanner table, bucket, policy or production object has been created.
 4. Auth email confirmation and redirect allowlist remain untested in a live Scanner flow.
 5. Browser-based iPhone/Safari QA remains outstanding.
-6. Backend image signature/decode validation is not implemented as a live service.
+6. Backend image signature/decode/dimension validation is not implemented as a live service.
 7. OCR engine/worker runtime, queue, corrections, daily/weekly reports and Telegram delivery are not implemented.
 8. OCR provider/hosting and any paid service remain unselected and require explicit approval.
-9. PostgreSQL syntax/runtime validation of the corrected migration remains outstanding.
+9. PostgreSQL execution/runtime validation of the corrected migration remains outstanding.
+10. The complete set of existing live Storage policies must be checked in the authorized database environment before any migration activation; do not infer completeness from the partial repository history.
 
 ## 6. Database and release safety
 
@@ -74,16 +74,17 @@ Literal `\\n` artifacts from the previous QA/RLS documents were removed in the r
 
 ## 7. Next safe steps
 
-1. Verify GitHub Actions and Cloudflare Pages for the latest branch head after the migration cleanup and documentation updates.
-2. If checks fail, inspect logs and correct only the isolated feature branch.
-3. Continue source-only migration/security review.
-4. Run RLS/Storage tests only in an explicitly authorized disposable environment.
-5. Keep all activation, production migration, account creation, OCR provider/hosting, Telegram destination and automatic delivery decisions gated by separate approval.
+1. Verify Cloudflare Pages for the latest source/documentation head.
+2. Continue source-only migration/security review.
+3. Run RLS/Storage tests only in an explicitly authorized disposable environment.
+4. Before production activation, verify all live Storage policies and current owner-helper behavior read-only.
+5. Keep production migration, account creation, OCR provider/hosting, Telegram destination and automatic delivery decisions gated by separate approval.
 
 ## 8. Version history
 
 | Version | Date | Change |
 |---|---|---|
 | 0.8 | 2026-11-11 | Previous QA report and source-only policy hardening record |
-| 0.9 | 2026-11-11 | Records malformed duplicate migration tail cleanup, corrects validation chronology and aligns RLS test references |
-| 1.0 | 2026-11-11 | Records successful final-head CI and Cloudflare preview verification |
+| 0.9 | 2026-11-11 | Records malformed duplicate migration tail cleanup and aligns RLS test references |
+| 1.0 | 2026-11-11 | Records successful CI and Cloudflare preview verification for the prior documentation head |
+| 1.1 | 2026-11-11 | Records worker filename/MIME validation mismatch and fix, expanded negative tests, and remaining live-policy audit boundary |
