@@ -213,3 +213,26 @@ Approved workflow retained from Design Decisions v0.4:
 | Version | Date | Change |
 |---|---|---|
 | 1.5 | 2026-11-11 | Restricts report-history visibility to the owner or the approved operator who created each report version. |
+
+
+## 15. Reports now consume the latest approved review revision — v1.6
+
+**Date:** 2026-11-11  
+**Status:** Pure report logic and tests committed; not yet connected to a live report panel or database runtime.
+
+- Added report builders that accept immutable Scanner review revision rows alongside the original upload records.
+- For each image, the greatest approved revision number is treated as its current canonical ID list.
+- A later correction replaces the earlier list for that image; old and corrected IDs are not unioned.
+- Pending/rejected revisions and uploads with no approved revision are excluded from daily/weekly ID aggregation.
+- Daily and weekly report utilities now have a test covering a corrected ID, an unchanged shared ID, an unreviewed upload and a rejected revision.
+- Source commits: `ba8a8d2fcadda42b9e16eea5fafe89eb7644cac6` (report builders), `6c55f9cc6acd7f0addfbc9b9c58aba5605389972` (tests).
+- The original upload timestamps remain the date basis; Tehran Jalali daily grouping and Saturday–Friday weekly grouping are unchanged.
+
+### Limits
+- These are pure in-memory builders. No query has yet loaded scans and their review revisions together from Supabase.
+- No report panel, snapshot persistence flow, Telegram outbox/sender or scheduler was activated.
+- No database migration was applied and no Telegram message was sent.
+
+| Version | Date | Change |
+|---|---|---|
+| 1.6 | 2026-11-11 | Makes daily/weekly aggregation consume each image's latest approved review revision, with tests proving corrected IDs replace old IDs and unapproved records are excluded. |
