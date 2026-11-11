@@ -170,3 +170,41 @@ The approved product workflow is batch image-to-Plato-ID extraction and Telegram
 | Version | Date | Change |
 |---|---|---|
 | 1.5 | 2026-11-11 | Records provider-neutral OCR result adaptation, creator-scoped report history, manual review newline parser correction and associated tests. |
+
+
+## 13. CI correction, verification and migration source review — v1.6
+
+**Date:** 2026-11-11  
+**Verified feature head:** `e1c04160b23c9985cc8f21fd6eb5a79f2b952d6e`
+
+### CI failure diagnosis and correction
+- Inspected failed GitHub Actions runs `42989641361` and `42989700973`.
+- Both failed at TypeScript typecheck before build and Deno tests. The exact error was that `src/PlatoIdScannerApp.tsx` imported `parseScannerReviewDraft` from `plato-id-scanner-review-store.ts`, which does not export it.
+- Corrected the import to `src/plato-id-scanner-review.ts`; no parser behavior or approved ID handling rules were changed.
+- Fix commit: `e1c04160b23c9985cc8f21fd6eb5a79f2b952d6e`.
+
+### Final CI evidence for the corrected head
+- GitHub Actions run `42990225516` (Build and typecheck, run 792): **SUCCESS**.
+- Confirmed successful steps: npm install, TypeScript typecheck, Vite build, Deno setup, Series 2 qualification and bracket tests, Scanner worker contract test, OCR result adapter test, report tests, review tests, review-store tests and date-window tests.
+- GitHub Actions run `42990225541` (website build/artifact preparation, run 542): **SUCCESS**. The job built the production-site artifact and uploaded a one-day GitHub Pages artifact. It did not execute a Pages deployment action and is not evidence of a production release.
+- PR #123 was re-read after the fix: Open, Draft, unmerged, mergeable; head matches the verified commit above.
+
+### Source-only SQL review
+- Re-read both Scanner migration files at the verified feature head.
+- Foundation migration: access and upload tables have RLS enabled, explicit privilege revocations/narrow grants, self-pending registration, owner-only access review, approved-self upload constraints, and a private bucket contract with exact MIME/size restrictions. Upload and Storage paths are constrained to the authenticated user's UUID and a scan UUID.
+- Review/report migration: review revisions and report versions are append-only for API roles (SELECT/INSERT only), with owner/approved-operator row filters. Report version reads/sequencing are per creator, matching the unique key. Trigger functions enforce sequential version links and exact duplicate exclusion for canonical IDs.
+- This was static source review only. It did not execute PostgreSQL, simulate concurrent inserts, or prove RLS/Storage runtime behavior. RLS-01–RLS-18 and live iPhone/Safari authorization checks remain outstanding.
+- No migration was applied and no Supabase database or Storage write occurred.
+
+### Remaining implementation boundary
+- The OCR result adapter is tested but no live OCR engine, queue, authenticated worker endpoint, image download/hash verification, or database persistence pipeline is active.
+- Upload rows still remain in their initial uploaded state until a trusted backend lifecycle is implemented.
+- Correction revisions and report history are source-level helpers; no scheduled report generation or Telegram outbox/sender is active.
+- Telegram credentials and fixed test destination are not configured; no message was sent.
+- OCR engine/hosting selection and any cost-bearing service remain unapproved.
+- No production database mutation, merge to `main`, or production deployment occurred.
+
+### Version history addendum
+| Version | Date | Change |
+|---|---|---|
+| 1.6 | 2026-11-11 | Records TypeScript import correction, successful full CI for commit e1c0416, website artifact-only workflow result, and static source review of both Scanner migrations. |
