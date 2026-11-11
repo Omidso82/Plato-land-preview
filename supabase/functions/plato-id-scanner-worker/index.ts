@@ -1,4 +1,3 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requestGoogleVisionOcr, GoogleVisionRequestError } from "../_shared/plato-id-scanner-google-vision-client.ts";
 import { scannerSha256, validateScannerStoredObject, SCANNER_BUCKET } from "../_shared/plato-id-scanner-dispatch-validation.ts";
