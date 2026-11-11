@@ -159,7 +159,7 @@ function ScannerReviewCard({row,client,reviewerId}:{row:ScanRow;client:any;revie
  }
  const latest=history[history.length-1];
  return <article className="scanner-review-card">
-  <div className="scanner-review-heading"><div><strong>{row.file_name}</strong><small>{new Date(row.created_at).toLocaleString('fa-IR')} · {(row.file_size/1024/1024).toFixed(2)} MB</small></div><span className="scanner-status">{row.status==='uploaded'?'ذخیره شده – OCR هنوز اجرا نشده':row.status}</span></div>
+  <div className="scanner-review-heading"><div><strong>{row.file_name}</strong><small>{new Date(row.created_at).toLocaleString('fa-IR')} · {(row.file_size/1024/1024).toFixed(2)} MB</small></div><span className="scanner-status">{latest?'بازبینی تأییدشده · نسخه '+latest.revision:Array.isArray(row.ocr_result?.ids)&&row.ocr_result.ids.length?'نتیجه OCR آماده بازبینی':row.status==='uploaded'?'ذخیره شده – در انتظار پردازش OCR':row.status}</span></div>
   {imageUrl&&<a className="scanner-image-link" href={imageUrl} target="_blank" rel="noreferrer"><img src={imageUrl} alt={'تصویر اصلی '+row.file_name}/></a>}
   <div className="scanner-review-meta"><strong>بازبینی دستی فهرست Plato ID</strong><small>{latest?'آخرین نسخه تأییدشده: '+latest.revision:'هنوز نسخه تأییدشده‌ای ثبت نشده است.'}</small></div>
   <textarea className="scanner-review-textarea" dir="ltr" spellCheck={false} value={draft} onChange={e=>setDraft(e.target.value)} placeholder="هر Plato ID را در یک خط وارد کنید؛ مقایسه با تصویر اصلی انجام شود." rows={Math.min(10,Math.max(4,draft.split('\n').length))}/>
