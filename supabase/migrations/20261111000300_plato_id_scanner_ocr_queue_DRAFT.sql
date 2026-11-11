@@ -68,7 +68,7 @@ security definer
 set search_path = ''
 as $$
 begin
-  if auth.role() <> 'service_role' then
+  if (select auth.jwt()->>'role') is distinct from 'service_role' then
     raise exception 'service role required';
   end if;
   if p_worker_id is null or p_limit < 1 or p_limit > 10
@@ -80,9 +80,8 @@ begin
   with candidates as (
     select j.id, j.status as prior_status, j.attempt as prior_attempt
       from public.plato_id_scanner_ocr_jobs j
-     where j.attempt < j.max_attempts
-       and (
-         (j.status = 'queued' and j.available_at <= now())
+     where (
+         (j.status = 'queued' and j.available_at <= now() and j.attempt < j.max_attempts)
          or (j.status = 'processing' and j.lease_expires_at < now())
        )
      order by j.available_at, j.created_at
@@ -97,6 +96,27 @@ begin
        and a.attempt = c.prior_attempt
        and a.outcome = 'processing'
      returning a.job_id
+  ), terminalized as (
+    update public.plato_id_scanner_ocr_jobs j
+       set status = 'failed',
+           lease_expires_at = null,
+           worker_id = null,
+           last_error_code = 'OCR_LEASE_EXPIRED_MAX_ATTEMPTS',
+           updated_at = now()
+      from candidates c
+      cross join (select count(*) from expired_attempts) expired_barrier
+     where j.id = c.id
+       and c.prior_status = 'processing'
+       and c.prior_attempt >= j.max_attempts
+     returning j.scan_id
+  ), terminal_uploads as (
+    update public.plato_id_scanner_uploads u
+       set status = 'failed',
+           updated_at = now()
+      from terminalized t
+     where u.id = t.scan_id
+       and u.status in ('uploaded','queued','processing')
+     returning u.id
   ), reclaimed as (
     update public.plato_id_scanner_ocr_jobs j
        set status = 'processing',
@@ -105,8 +125,9 @@ begin
            lease_expires_at = now() + make_interval(secs => p_lease_seconds),
            updated_at = now()
       from candidates c
-      cross join (select count(*) from expired_attempts) expired_barrier
+      cross join (select count(*) from terminal_uploads) terminal_barrier
      where j.id = c.id
+       and c.prior_attempt < j.max_attempts
      returning j.*
   ), started_attempts as (
     insert into public.plato_id_scanner_ocr_attempts
@@ -136,7 +157,7 @@ as $$
 declare
   current_job public.plato_id_scanner_ocr_jobs%rowtype;
 begin
-  if auth.role() <> 'service_role' then
+  if (select auth.jwt()->>'role') is distinct from 'service_role' then
     raise exception 'service role required';
   end if;
   select * into current_job
@@ -200,7 +221,7 @@ declare
   current_job public.plato_id_scanner_ocr_jobs%rowtype;
   next_status text;
 begin
-  if auth.role() <> 'service_role' then
+  if (select auth.jwt()->>'role') is distinct from 'service_role' then
     raise exception 'service role required';
   end if;
   select * into current_job
@@ -270,7 +291,7 @@ declare
   source_upload public.plato_id_scanner_uploads%rowtype;
   queued_job public.plato_id_scanner_ocr_jobs%rowtype;
 begin
-  if auth.role() <> 'service_role' then
+  if (select auth.jwt()->>'role') is distinct from 'service_role' then
     raise exception 'service role required';
   end if;
   if p_scan_id is null or p_source_sha256 !~ '^[0-9a-f]{64}$' then
