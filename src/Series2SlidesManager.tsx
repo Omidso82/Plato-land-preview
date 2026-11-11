@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import Series2PredictionReport from './Series2PredictionReport';
 import Series2ResultsManager from './Series2ResultsManager';
+import PlatoIdImageUpload from './PlatoIdImageUpload';
 
 const BUCKET = 'series2-slides';
 const POSTER_PATH = 'poster/series2-prize-poster';
@@ -126,8 +127,7 @@ export default function Series2SlidesManager() {
   async function signOut() { await supabase?.auth.signOut(); setSignedIn(false); setOwner(false); setFiles([]); }
 
   if (checking) return <main dir="rtl" style={shell}><section style={panel}>در حال بررسی دسترسی مالک…</section></main>;
-  if (!signedIn) return <main dir="rtl" style={shell}><section style={panel}>
-    <h1 style={heading}>ورود مالک · پنل مدیریت موقت سری دوم</h1>
+  if (!signedIn) return <main dir="rtl" style={shell}><section style={panel}>    <h1 style={heading}>ورود مالک · پنل مدیریت موقت سری دوم</h1>
     <p style={muted}>این مسیر عمومی نیست و فقط حساب مالک اجازه بارگذاری تصاویر را دارد.</p>
     <form onSubmit={login} style={{display:'grid',gap:12}}>
       <label style={muted}>ایمیل حساب مالک<input style={field} type="email" autoComplete="username" required value={email} onChange={e=>setEmail(e.target.value)}/></label>
@@ -157,6 +157,7 @@ export default function Series2SlidesManager() {
       </button>
       <small style={{display:'block',color:'#a9a08e',marginTop:7}}>جایگاه ذخیره‌سازی مستقل؛ بدون تغییر در اسلایدهای ۱ تا ۱۸ · حداکثر ۱۰ مگابایت</small>
     </section>
+    <PlatoIdImageUpload />
     {SHOW_SLIDE_EDITOR && (
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12,marginTop:20}}>
       {Array.from({length:18},(_,i)=>{
@@ -176,8 +177,7 @@ export default function Series2SlidesManager() {
         </div>;
       })}
     </div>
-    )}
-    <Series2ResultsManager />
+    )}    <Series2ResultsManager />
     <Series2PredictionReport />
     {message&&<p role="status" style={{...muted,marginTop:16}}>{message}</p>}
   </section></main>;
