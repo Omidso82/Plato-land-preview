@@ -109,3 +109,9 @@ function splitTelegramText(header: string, rows: string[], maxChars: number): st
   if(current.length||!chunks.length)chunks.push(current);
   return chunks;
 }
+
+export function formatScanTelegramMessages(scanLabel: string, ids: string[], maxChars=3500): string[] {
+  const uniqueIds=[...new Set(ids.filter(id=>typeof id==="string"&&id.trim().length>0).map(id=>id.trim()))];
+  const header=`فهرست Plato ID استخراج‌شده\nتصویر: ${scanLabel}\nتعداد ID یکتا: ${uniqueIds.length}\n\n`;
+  return splitTelegramText(header,uniqueIds.map((id,i)=>`${i+1}. ${id}`),maxChars);
+}
