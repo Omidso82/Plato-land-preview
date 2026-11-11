@@ -1,4 +1,4 @@
-import { auditExactScannerDuplicates } from "./plato-id-scanner-duplicate-audit.ts";
+import { auditExactScannerDuplicates, auditScannerBatchDuplicates } from "./plato-id-scanner-duplicate-audit.ts";
 
 const assertEquals = (actual: unknown, expected: unknown) => {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -56,4 +56,16 @@ Deno.test("rejects occurrences without source identity", () => {
     threw = true;
   }
   if (!threw) throw new Error("Expected invalid source identity to be rejected");
+});
+
+
+Deno.test("audits exact duplicates across separate images without losing image provenance", () => {
+  const result = auditScannerBatchDuplicates([
+    { scan_id: "image-1", candidates: [{ raw_value: "@Cross" }, { raw_value: "@First" }] },
+    { scan_id: "image-2", candidates: [{ raw_value: "@Cross" }, { raw_value: "@cross" }] },
+  ]);
+  assertEquals(result.accepted_ids, ["@Cross", "@First", "@cross"]);
+  assertEquals(result.duplicate_count, 1);
+  assertEquals(result.duplicates[0]?.scan_id, "image-2");
+  assertEquals(result.duplicates[0]?.duplicate_of_scan_id, "image-1");
 });
