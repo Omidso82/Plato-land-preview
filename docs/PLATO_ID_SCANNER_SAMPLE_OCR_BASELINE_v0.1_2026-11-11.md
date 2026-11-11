@@ -1,71 +1,74 @@
 # PLATO ID Scanner — Sample OCR Baseline Test Report
 
-**Document version:** 0.1  
+**Document version:** 0.2  
 **Date:** 2026-11-11  
 **Project:** PLATO LAND – Temporary Projects  
 **Fixture:** User-supplied Telegram screenshot, IMG_1362.jpeg  
 **Test type:** Local, offline OCR feasibility check  
 **Production impact:** None
 
-## 1. Test objective
+## 1. Purpose
 
-Establish a baseline for extracting Plato IDs from the supplied Telegram screenshot before selecting or activating an OCR backend provider.
+Assess whether the locally available Tesseract OCR baseline can extract IDs from this screenshot class, without sending the image to an external service.
 
-## 2. Test environment
+## 2. Environment actually used
 
 - Tesseract OCR 5.5.0
-- OpenCV available for image cropping and preprocessing
-- Test executed locally against the supplied image
-- No external OCR endpoint or network upload used
-- No production database, Storage bucket, or Telegram integration accessed
+- Python pytesseract and OpenCV
+- Available Tesseract language data includes English and many other languages; the target identifiers are Latin alphanumeric strings.
+- Image processed locally from the conversation upload.
+- No external OCR endpoint, network upload, production database, Storage bucket, or Telegram integration was used.
 
-## 3. Input characteristics observed
+## 3. Test procedure
 
-- Tall Telegram screenshot with multiple message blocks.
-- Mixed visual content: display names, profile avatars, star ratings, icons, timestamps and message text.
-- ID text uses both high-contrast green/black styling and low-contrast light-gray styling.
-- Multiple IDs can appear in one message.
-- Some candidate strings contain leading or trailing `@` and underscores.
-- The OCR task must isolate message bodies rather than transcribe the entire screenshot as one text region.
+- Inspected the original 1320 × 2228 screenshot.
+- Selected text-only crops for individual message bodies and the green ID capsule.
+- Converted crops to grayscale, applied CLAHE contrast enhancement, inverted the image, enlarged 3× with cubic interpolation, and ran Tesseract with page segmentation mode 7 and a Latin ID character whitelist.
+- Also checked a few larger regions with grayscale/Otsu preprocessing.
 
-## 4. Baseline result
+## 4. Observed output
 
-A whole-image Tesseract pass using page segmentation modes 3, 4, 6, 11 and 12 did not reliably recover the IDs.
+The text-only crop tests returned partial/inaccurate results, for example:
+- The first gray message line was read approximately as `Pedar@leilli8`, losing the final characters/punctuation.
+- The Emad line was read approximately as `Emad_1984@ a`, not preserving the exact visible form.
+- The multi-ID message recovered a fragment around `@eli_9196` and `@Samai_79@`, but omitted other IDs and introduced uncertainty.
+- Other gray text rows were mostly unreadable or badly corrupted.
+- The green capsule yielded fragments resembling `@R53` and the adjacent ID, but not a dependable exact transcript.
 
-A second pass using manually cropped message regions, 3x upscaling, grayscale conversion and Otsu thresholding improved recognition in some regions, but remained inconsistent:
-- The first high-contrast message region returned recognizable fragments including `@R53`, but punctuation/underscores were not stable.
-- Several light-gray message regions returned empty or severely corrupted text.
-- The multi-ID message region recovered fragments including `@M63B`, but did not reliably recover every candidate.
-- Whole-image OCR included decorative/interface artifacts and missed most IDs.
+These are raw machine outputs, not accepted IDs or verified ground truth.
 
-**Conclusion:** Tesseract 5.5.0 with basic preprocessing is not an acceptable production solution for this screenshot class. No accuracy percentage is claimed because a verified ground-truth annotation set and repeatable bounding-box evaluation have not yet been established.
+## 5. Conclusion
 
-## 5. Engineering implications
+Tesseract 5.5.0 with the tested basic crop/contrast pipeline is not sufficiently reliable for production extraction from this screenshot class. It misses characters, punctuation, and whole IDs, particularly in low-contrast gray text.
+
+No accuracy percentage is claimed. A defensible precision/recall score requires a manually verified ground-truth annotation with exact token boundaries for a representative screenshot set.
+
+## 6. Engineering implications
 
 1. Segment message-body regions before OCR; whole-screen OCR is insufficient.
-2. Preserve a raw OCR string and confidence/geometry metadata for every candidate.
-3. Apply contrast enhancement and adaptive preprocessing per region, not as an irreversible change to the stored original.
-4. Consider a stronger multilingual/scene-text OCR engine or a separately hosted OCR worker; compare it against a labeled image set before choosing.
+2. Preserve raw OCR text, confidence and geometry metadata where available.
+3. Apply preprocessing to derived crops only; never alter the immutable original upload.
+4. Compare stronger OCR engines against the same manually labeled screenshot set before selecting one.
 5. Do not normalize `@`, underscores, case, or lookalike characters automatically.
 6. Route uncertain or malformed candidates to manual review.
-7. Keep provider selection behind a backend adapter so changing OCR engines does not require changing the upload/review UI.
+7. Keep the OCR provider behind a backend adapter so the upload/review UI is provider-neutral.
 
-## 6. Next implementation gate
+## 7. Next gate
 
-Before implementing a production OCR adapter, compare at least two candidate engines on a small, manually verified set of representative screenshots. The comparison must include:
-- exact-string recall and precision for IDs,
-- handling of multiple IDs in one message,
-- preservation of punctuation and underscores,
+Compare at least two viable OCR engines on representative, manually labeled screenshots. Include:
+- exact-string precision and recall,
+- multiple IDs in one message,
+- punctuation/underscore preservation,
 - latency and operating cost,
-- image retention/training terms and data processing location,
+- data processing location, retention and training terms,
 - whether images leave PLATO LAND-controlled infrastructure.
 
 No external provider, paid service, production migration, production deployment, or Telegram send is approved by this test.
 
-## 7. Status
+## 8. Status
 
 - Sample fixture documented: complete.
-- Offline baseline run: complete.
-- Baseline result recorded: complete.
+- Local Tesseract baseline run: complete.
+- Baseline findings recorded: complete.
+- Alternative-engine comparison: pending.
 - Production OCR runtime: not implemented or activated.
-- Provider comparison and verified labeled test set: pending.
