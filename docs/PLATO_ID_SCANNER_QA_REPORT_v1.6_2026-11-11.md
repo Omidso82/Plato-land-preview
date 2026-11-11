@@ -45,6 +45,7 @@ Deploy workflow run `43038690681`:
 ## 4. Source review and outstanding risks
 
 - The queue migration remains a draft; CI uses static SQL assertions and does not execute it against PostgreSQL.
+- Server-side image byte-signature/MIME/size checks exist, but full image decoding and dimension/decompression-bomb validation are not yet implemented. Do not activate real-image OCR until this is addressed.
 - Runtime RLS/Storage tests remain outstanding.
 - Auth email confirmation and redirect behavior have not been verified against live Supabase settings.
 - iPhone/Safari end-to-end QA remains outstanding.
