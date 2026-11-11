@@ -7,7 +7,7 @@ import './styles.css';
 import './Series2Registration.css';
 
 const root=createRoot(document.getElementById('root')!);
-const path=window.location.pathname.replace(/\\/+$/,'') || '/';
+const path=window.location.pathname.replace(/\/+$/,'') || '/';
 const page=new URLSearchParams(window.location.search).get('page');
 
 // Keep only the two approved temporary Series 2 pages:
