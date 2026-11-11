@@ -202,3 +202,14 @@ Approved workflow retained from Design Decisions v0.4:
 | Version | Date | Change |
 |---|---|---|
 | 1.4 | 2026-11-11 | Connects original-image preview and manual ID review UI to append-only revision storage; records runtime and CI limitations. |
+
+## 14. Report-history ownership correction — v1.5
+
+- Tightened the draft report-history SELECT policy: an approved operator may read only report versions they created; the existing owner role may read all report versions.
+- This aligns report history access with the operator's own-record boundary and prevents one approved operator from browsing another operator's report snapshots.
+- Source-only migration correction commit: `ff9f1201a965c786036d4123723c98dc2141b6c1`.
+- Migration remains unapplied; the policy has not been runtime-tested with authenticated owner/operator sessions.
+
+| Version | Date | Change |
+|---|---|---|
+| 1.5 | 2026-11-11 | Restricts report-history visibility to the owner or the approved operator who created each report version. |
