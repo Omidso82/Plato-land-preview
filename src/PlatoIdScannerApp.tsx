@@ -17,6 +17,7 @@ export default function PlatoIdScannerApp({ownerMode=false}:{ownerMode?:boolean}
   const {data:auth}=await supabase.auth.getUser();if(generation!==refreshGeneration.current)return;const verified=!!auth.user?.email_confirmed_at;setConfirmed(verified);
   if(!verified){setAccess(null);setOwner(false);return;}
   const {data:role,error:roleError}=await supabase.rpc('current_user_role');if(generation!==refreshGeneration.current)return;const isOwner=!roleError&&(role==='owner'||role==='مالک کل');setOwner(isOwner);
+  if(ownerMode&&!isOwner){setMessage('نشست مالک تأیید نشد؛ بخش اسکنر برای این حساب باز نمی‌شود.');return;}
   if(isOwner){
    const [apps,scans]=await Promise.all([supabase.from('plato_id_scanner_access').select('user_id,email,status,requested_at,reviewed_at').order('requested_at',{ascending:false}),supabase.from('plato_id_scanner_uploads').select('*').order('created_at',{ascending:false}).limit(100)]);
    if(generation!==refreshGeneration.current)return;
