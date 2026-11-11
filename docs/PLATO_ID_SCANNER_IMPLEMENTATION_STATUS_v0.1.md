@@ -1,5 +1,5 @@
 # PLATO ID Scanner — implementation status
-**Document version:** 0.2
+**Document version:** 0.3
 Date: 2026-11-11
 Branch: feature/plato-id-scanner-v0-1
 Base: main at abb1556b57f9c9b73cdc83ea2486ffd01ffd023a
@@ -14,16 +14,24 @@ Base: main at abb1556b57f9c9b73cdc83ea2486ffd01ffd023a
 - Operator upload history limited to own records in the interface.
 - Draft additive SQL for separate access/upload tables, RLS and private storage bucket.
 - Provider-neutral worker contract validators and eight Deno tests.
+- Timestamp validation hardened against impossible calendar dates, invalid clock fields and timezone offsets beyond ±14:00; negative test fixtures added.
 - Worker source path hardened to exactly operator UUID / matching scan UUID / safe filename; mismatch, nested path and backslash cases rejected.
 
-## Latest branch verification (commit 6414ec29d1be6c3cd2485f29c41e86c1a9186f9f)
+## Latest branch verification (commit 9fdd3b05ffcff3eacb407dacf517d3a1381d9859)
+- Documentation and branch CI update completed at this head.
 - GitHub Actions workflow run 42932129081 completed successfully.
 - npm install, TypeScript typecheck, Vite build, both existing Deno suites and Scanner contract Deno suite passed.
-- Cloudflare Pages branch preview completed successfully: https://feature-plato-id-scanner-v0.plato-land-preview.pages.dev (commit preview: https://714380ad.plato-land-preview.pages.dev).
+- Cloudflare Pages branch preview completed successfully: https://feature-plato-id-scanner-v0.plato-land-preview.pages.dev (commit preview: https://b087b2df.plato-land-preview.pages.dev).
 - Main deploy job was skipped; PR #123 remains open, Draft and unmerged.
 - Read-only inspection of primary Supabase project `dfrppbapaaydbjeflozw` confirmed Scanner access/upload tables and `plato-id-scans` bucket are absent; no Scanner Storage policies exist. No DB writes were made.
 - `private.has_role(text[])` exists as SECURITY DEFINER in the non-exposed `private` schema with an empty search_path and checks `public.user_roles` against `auth.uid()`.
 - Supabase security advisor returned pre-existing findings on eight other tables with RLS but no policies, two exposed SECURITY DEFINER functions, and disabled leaked-password protection. These are outside Scanner scope and were not changed.
+
+## Latest additional hardening (pending CI)
+- Validator now checks calendar validity (rejects dates such as February 31), valid hour/minute/second ranges and timezone offsets up to ±14:00 only.
+- Added negative cases for impossible dates, hour 24 and offset +14:01.
+- OCR worker contract document updated to v0.3.
+- These latest code/document changes require a new CI run; do not treat the earlier successful run as validating them.
 
 ## Not activated
 - SQL is draft only and has NOT been applied to the primary database.
