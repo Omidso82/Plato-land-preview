@@ -115,3 +115,62 @@ export function formatScanTelegramMessages(scanLabel: string, ids: string[], max
   const header=`فهرست Plato ID استخراج‌شده\nتصویر: ${scanLabel}\nتعداد ID یکتا: ${uniqueIds.length}\n\n`;
   return splitTelegramText(header,uniqueIds.map((id,i)=>`${i+1}. ${id}`),maxChars);
 }
+
+
+/** Append-only review rows; the greatest revision number is the current approved list. */
+export interface ScannerApprovedRevisionSource {
+  scan_id: string;
+  revision: number;
+  status: string;
+  canonical_ids: unknown;
+}
+
+function latestApprovedIdsByScan(
+  revisions: ScannerApprovedRevisionSource[],
+): Map<string, string[]> {
+  const latest = new Map<string, ScannerApprovedRevisionSource>();
+  for (const row of revisions) {
+    if (row.status !== "approved" || !Number.isInteger(row.revision) || row.revision < 1) continue;
+    const previous = latest.get(row.scan_id);
+    if (!previous || row.revision > previous.revision) latest.set(row.scan_id, row);
+  }
+  return new Map([...latest.entries()].map(([scanId, row]) => [
+    scanId,
+    Array.isArray(row.canonical_ids)
+      ? [...new Set(row.canonical_ids.filter((id): id is string => typeof id === "string" && id.trim().length > 0))]
+      : [],
+  ]));
+}
+
+/**
+ * Report builders based on the immutable approved review history, not the
+ * original OCR payload. A later correction replaces the earlier list for that
+ * image; it is never unioned with the old revision.
+ */
+export function buildDailyScannerReportFromRevisions(
+  scans: ScannerReportSource[],
+  revisions: ScannerApprovedRevisionSource[],
+  dateKey: string,
+): DailyScannerReport {
+  const latest = latestApprovedIdsByScan(revisions);
+  const sources = scans.map(scan => ({
+    ...scan,
+    status: latest.has(scan.id) ? "completed" : "needs_review",
+    ocr_result: { ids: latest.get(scan.id) ?? [] },
+  }));
+  return buildDailyScannerReport(sources, dateKey);
+}
+
+export function buildWeeklyScannerReportFromRevisions(
+  scans: ScannerReportSource[],
+  revisions: ScannerApprovedRevisionSource[],
+  anyDateInWeek: string,
+): WeeklyScannerReport {
+  const latest = latestApprovedIdsByScan(revisions);
+  const sources = scans.map(scan => ({
+    ...scan,
+    status: latest.has(scan.id) ? "completed" : "needs_review",
+    ocr_result: { ids: latest.get(scan.id) ?? [] },
+  }));
+  return buildWeeklyScannerReport(sources, anyDateInWeek);
+}
