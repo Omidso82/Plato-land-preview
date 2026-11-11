@@ -1,5 +1,5 @@
 # PLATO ID Scanner — Operator Access Handover
-Version: 0.3
+Version: 0.4
 Date: 2026-11-11
 Project: PLATO LAND – Temporary Projects
 Scope: Scanner-only operator access; isolated from the Main Website feature scope.
@@ -47,9 +47,10 @@ The latest migration replaces owner/self-only SELECT and DELETE policies with po
 - Confirmed table policies: shared SELECT and DELETE for owner/approved operators; existing INSERT policy still limits new uploads to the authenticated uploader's own path and approved access.
 - Confirmed Storage policies: shared SELECT and DELETE are scoped to bucket plato-id-scans; existing INSERT policy remains uploader/path constrained.
 - Confirmed Supabase migration history records plato_id_scanner_shared_archive_access.
-- GitHub Actions for head 79f24364430863b575339f8eed57456e080c592c were triggered. At handover time, npm install had passed and typecheck was still running; build and Deno tests were pending.
+- GitHub Actions Build and typecheck run 43066560209 completed SUCCESS for implementation commit 79f24364430863b575339f8eed57456e080c592c. npm install, TypeScript typecheck, Vite build, Series 2 qualification test and Series 2 bracket test all passed.
+- The associated Deploy PLATO LAND website workflow run 43066560226 was cancelled during TypeScript verification; build/Pages artifact steps were skipped. No preview artifact or production deployment is claimed.
+- The handover-only documentation commit followed the tested implementation commit; application source and migration did not change after the successful CI run.
 - No authenticated live owner/operator end-to-end test has been performed.
-- No PR merge or production website deployment has been performed.
 
 ## Current release status
 - Git branch: feature/plato-id-scanner-operators.
@@ -65,15 +66,16 @@ The latest migration replaces owner/self-only SELECT and DELETE policies with po
 - Deletion audit log.
 
 ## Remaining validation before release
-1. Confirm GitHub Actions typecheck, build and Deno tests pass for the latest head.
-2. Test owner and approved operator access with real authenticated sessions in a controlled manner.
-3. Verify an approved operator can view/sign URLs for/delete another uploader's image.
-4. Verify pending/suspended users cannot read or delete Scanner images.
-5. Verify current-day/archive separation around Iran midnight and the full archive beyond 200 rows.
-6. Complete iPhone/Safari QA.
+1. Test owner and approved operator access with authenticated sessions in a controlled manner.
+2. Verify an approved operator can view/sign URLs for/delete another uploader's image.
+3. Verify pending/suspended users cannot read or delete Scanner images.
+4. Verify current-day/archive separation around Iran midnight and the full archive beyond 200 rows.
+5. Complete iPhone/Safari QA.
+6. Run/confirm a feature-branch preview build if required.
 7. Merge PR and confirm production deployment only after explicit owner release approval.
 
 ## Change log
 - v0.1 (2026-11-11): initial operator portal, owner approval workflow, Solar Hijri day grouping, and scoped image deletion.
 - v0.2 (2026-11-11): consolidated owner and operator access into the existing /series2-slides-manager URL; removed the separate scanner route; added role-based operator registration/status handling and owner access controls on the shared page.
 - v0.3 (2026-11-11): introduced shared current-day/archive UI, full-history pagination, approved-operator-wide image viewing/deletion through narrowly bucket-scoped RLS/Storage policies, and deferred deletion audit logging.
+- v0.4 (2026-11-11): records successful implementation CI and clarifies that the separate preview/deployment workflow was cancelled before build/artifact preparation.
