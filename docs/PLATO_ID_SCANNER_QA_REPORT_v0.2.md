@@ -98,3 +98,35 @@ For commit `75ebf22fef0cc692a3c9ad076f642fe9708951a3`:
 | 1.0 | 2026-11-11 | Records successful CI and Cloudflare preview verification for the prior documentation head |
 | 1.1 | 2026-11-11 | Records worker filename/MIME validation mismatch and fix, expanded negative tests, and remaining live-policy audit boundary |
 | 1.2 | 2026-11-11 | Adds read-only primary audit of all current Storage policies, owner helper definition and unrelated Security Advisor findings |
+
+
+## 10. Scope correction and latest feature-branch work — v1.3
+
+The approved product workflow is batch image-to-Plato-ID extraction and Telegram reporting. It is not single-player identity/profile scanning.
+
+### Changes recorded on feature branch
+- `src/PlatoIdScannerApp.tsx`: operator/owner upload UI accepts multiple image files. Each file is independently preflight-validated and uploaded sequentially as its own immutable record; failures are reported per file without discarding successful uploads.
+- `src/plato-id-scanner.css`: styles the selected multi-image list.
+- `src/plato-id-scanner-reports.ts`: provider-independent helpers for Asia/Tehran Jalali date keys, daily exact-ID aggregation, Saturday–Friday weekly activity (one star per ID/day), and Telegram message chunk formatting.
+- `supabase/functions/_shared/plato-id-scanner-reports.test.ts`: tests Tehran date boundary, daily review gating/deduplication, weekly day columns and message chunking.
+- `.github/workflows/verify.yml`: runs the new report utility test.
+
+### Verification boundary
+- GitHub Actions for earlier multi-upload head `02ccb5619d3ad785a10a3364b226dd049bd8e15e` completed successfully for the then-current test set. A later report aggregation test was added after that run.
+- A new CI run for the report-test head was observed in progress; its final result must be read from GitHub before claiming it passed.
+- No local Deno runtime is available in this environment, so the new Deno test was not run locally.
+- No SQL migration was executed or applied. No Scanner tables/bucket/policies were created in either Supabase project.
+- No OCR worker/provider, correction RPC, report outbox, Telegram token/destination or scheduled sender was configured.
+- No Telegram message, production deployment or merge occurred.
+- PR #123 remains Open, Draft and unmerged.
+
+### Blocking prerequisites
+1. Confirm authoritative Plato ID syntax using a project-approved representative image/source; do not infer ID format.
+2. Confirm an existing PLATO LAND-controlled Backend/container runtime, or separately approve a named OCR provider/hosting after privacy and cost review. Do not create another Supabase project.
+3. Configure the fixed Telegram test destination and bot secret only through an approved secure path; never expose them to the browser.
+4. Runtime RLS/Storage tests require a permitted isolated environment; neither existing Supabase project is to be repurposed.
+
+### Version history addendum
+| Version | Date | Change |
+|---|---|---|
+| 1.3 | 2026-11-11 | Records product-scope correction, multi-image upload, Tehran daily/weekly report helpers/tests and outstanding OCR/Telegram/runtime prerequisites. |
