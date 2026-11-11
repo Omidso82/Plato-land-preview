@@ -1,93 +1,61 @@
-# PLATO ID Scanner — QA Report v0.4
+# PLATO ID Scanner — QA Report v0.5
 
 **Date:** 2026-11-11  
 **Branch:** `feature/plato-id-scanner-v0-1`  
-**PR:** #123 — Draft  
-**Scope:** Storage bucket migration hardening and isolated RLS test preparation
+**PR:** #123 — Open, Draft, unmerged  
+**Verified head:** `e8a5d544426b8801f8169e84e3ea63659ae9c67c`  
+**Scope:** Feature-branch CI/preview verification, migration source review, and isolated RLS test preparation
 
 ## 1. Work completed
 
-### 1.1 Storage bucket contract hardening
-Updated `supabase/migrations/20261111000100_plato_id_scanner_foundation.sql`.
+- Hardened the Scanner Storage bucket migration: create-if-absent, then verify private visibility, 15 MiB limit, and exact JPG/PNG/WEBP allowlist; mismatches stop the migration rather than silently changing an existing bucket.
+- Added an isolated RLS test plan with 18 positive/negative access cases and explicit disposable-environment-only safety boundaries.
+- Restricted upload object-key basenames to ASCII letters, digits, underscore, and hyphen; derive extension from validated MIME type. Preserve original filename only as metadata.
+- Reviewed the dedicated Scanner route, owner-only navigation gate, and shared Supabase session integration at source level.
+- Reviewed the provider-neutral OCR worker contract and its validation tests.
 
-Previous behavior:
-- The migration inserted the Scanner bucket with `ON CONFLICT(id) DO NOTHING`.
-- A pre-existing bucket with the same ID but weaker or incorrect settings could be silently accepted.
+## 2. Latest verified CI and preview
 
-New behavior:
-- The migration still creates the bucket only when it is absent.
-- It then verifies the existing row has the exact expected contract:
-  - ID/name: `plato-id-scans`
-  - `public = false`
-  - `file_size_limit = 15728640` bytes (15 MiB)
-  - allowed MIME types exactly JPG, PNG, WEBP.
-- Any mismatch raises an exception and stops the migration. The migration does not automatically overwrite an existing bucket.
+For verified head `e8a5d544426b8801f8169e84e3ea63659ae9c67c`:
 
-### 1.2 RLS isolation test preparation
-Added `docs/PLATO_ID_SCANNER_RLS_TEST_PLAN_v0.1.md`.
-- 18 test cases cover operator self-access, cross-operator isolation, pending status, insert constraints, Storage path ownership, orphan cleanup, and owner access.
-- Additional negative tests cover anonymous access and invalid operator actions.
-- The plan explicitly prohibits running against the primary database or assuming the second Supabase project is staging.
+- GitHub Actions run `42932984323`: **SUCCESS**.
+- Steps passed: npm install, TypeScript typecheck, Vite build, Series 2 qualification tests, Series 2 bracket tests, and Scanner contract tests.
+- Cloudflare Pages check `130236575420`: **SUCCESS** for the feature-branch preview.
+- These results verify the feature branch build/preview only. They do not mean the main website was deployed or changed.
 
-## 2. Verification performed
+## 3. Source-level security review
 
-| Check | Result |
-|---|---|
-| Feature branch exists | PASS |
-| Latest migration file fetched back from GitHub | PASS |
-| Bucket validation block present in fetched file | PASS |
-| RLS test plan fetched back from GitHub | PASS |
-| Branch comparison against main | PASS — 17 commits ahead, 0 behind |
-| PR #123 found open | PASS |
-| Main database changed | NO |
-| Migration applied anywhere | NO |
-| RLS tests executed | NO |
-| Production deploy performed | NO |
+- Scanner tables and Storage policies are still only present as a migration draft.
+- Operator access is scoped to the authenticated user's own approved access row and uploads.
+- Operator upload-row insert is constrained to own operator ID/path, initial status, and empty OCR result.
+- Operator upload-row update/delete privileges are not granted.
+- Storage object ownership is scoped by the first path segment; operator deletion is restricted to orphaned objects.
+- Existing bucket configuration is checked and mismatches cause an exception.
+- The SQL policy statements are one-time migration statements; do not manually replay the file after it has been applied.
 
-## 3. GitHub Actions status
+This review is static. It is not proof of runtime RLS or Storage isolation.
 
-The available commit-workflow lookup returned no PR-triggered workflow runs for the latest commit at the time of this check. The deployment workflow file was inspected:
-- It listens to pushes on `main` and pull requests targeting `main`.
-- Its deploy job is guarded by `github.ref == 'refs/heads/main'`; therefore a feature-branch/PR run does not satisfy the deploy condition.
+## 4. Not executed / outstanding
 
-A complete live Actions run list was not available through the connected GitHub action set during this check. Do not treat Actions as passed until the run is directly verified in GitHub.
+1. RLS-01 through RLS-18 have **not** been executed with synthetic JWT identities.
+2. No disposable local Supabase environment has been authorized or confirmed.
+3. No Scanner migration has been applied; no Scanner table, bucket, policy, or production object has been created.
+4. Auth email confirmation and redirect allowlist remain untested in a live Scanner flow.
+5. Browser-based mobile Safari QA remains outstanding.
+6. Backend image signature/decode validation is not implemented as a live service.
+7. OCR engine/worker runtime, queue, corrections, daily/weekly reports, and Telegram delivery are not implemented.
+8. OCR provider/hosting and any paid service remain unselected and require explicit approval.
 
-## 4. Migration idempotency note
-
-The table and index creation statements use `IF NOT EXISTS`. The policy creation statements do not use conditional guards and the SQL file must be treated as a one-time versioned migration, not manually replayed. Apply it only through the Supabase migration ledger in a disposable, explicitly authorized environment. Do not manually rerun it against the primary project.
-
-## 5. Outstanding risks / not yet verified
-
-1. No disposable local Supabase environment has been provisioned or confirmed.
-2. RLS-01 through RLS-18 remain unexecuted.
-3. Storage policy behavior and cross-user isolation have not been tested with real JWT identities.
-4. File signature, decoded image dimensions, and actual MIME validation remain backend requirements; client MIME checks are not sufficient.
-5. Auth confirmation and redirect allowlist remain untested.
-6. OCR engine, queue/worker, reporting, and Telegram delivery are not implemented.
-7. Bucket schema validation is static only; the new migration has not been executed.
-
-## 6. Safety and release status
+## 5. Database and release safety
 
 - Primary Supabase project remains unchanged.
-- No migration, bucket, policy, table, or production Storage object was created.
-- No Worker, Queue, OCR provider, paid service, or new account was created.
-- PR #123 must remain Draft.
-- No merge or production deployment is authorized by this report.
+- The secondary Supabase project was not used as a staging substitute.
+- No database writes, migration execution, bucket creation, or Storage operations were performed.
+- No account or operator was created.
+- No paid service was enabled.
+- PR #123 remains Draft and unmerged.
+- No merge or main-site deployment was performed.
 
-## 7. Latest follow-up review
+## 6. Next safe steps
 
-- The current upload UI path generator was reviewed against the worker contract. Original filenames could contain dot sequences or path-like characters after the earlier replacement-based sanitization.
-- Updated the feature branch to construct a restricted object-key basename and derive the extension from the validated MIME type. The original filename remains in metadata.
-- This is a source-level correction only; it has not been exercised in a browser or against Storage because the Scanner bucket and policies do not exist in the primary database.
-- CI for the new head must pass before treating this change as verified.
-
-## 8. Latest CI evidence
-
-- Commit: `e3f18dfb7b35dc6f432291d355d3c698e52ab311`.
-- GitHub Actions run `42932816623`: PASS for npm install, TypeScript typecheck, Vite build, Series 2 qualification tests, Series 2 bracket tests and Scanner contract tests.
-- Cloudflare Pages preview: still in progress when checked; do not mark it as deployed until the check concludes successfully.
-- No browser-based mobile Safari test or live Storage/RLS test was performed.
-
-## 9. Next step
-
-Before any database-level test, identify and explicitly authorize a disposable local/test Supabase environment. Then execute the RLS test matrix there and record evidence. If no such environment is available, continue with static review only; do not substitute either existing Supabase project without explicit confirmation.
+Continue source-only review and contract/test development on the isolated feature branch. Runtime RLS tests require an explicitly authorized disposable environment. Migration activation, OCR provider/hosting, account creation, Telegram destination and auto-send behavior require separate decisions/approval. Keep PR #123 Draft until the user explicitly authorizes a release decision.
