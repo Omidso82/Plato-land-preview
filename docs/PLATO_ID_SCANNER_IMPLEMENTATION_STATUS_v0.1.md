@@ -1,5 +1,5 @@
 # PLATO ID Scanner — implementation status
-**Document version:** 0.5
+**Document version:** 0.6
 Date: 2026-11-11
 Branch: feature/plato-id-scanner-v0-1
 Base: main at abb1556b57f9c9b73cdc83ea2486ffd01ffd023a
@@ -52,3 +52,21 @@ Base: main at abb1556b57f9c9b73cdc83ea2486ffd01ffd023a
 4. Select and approve OCR engine, privacy terms and cost.
 5. Implement audited correction RPC, versioned reports, Asia/Tehran daily/weekly jobs and idempotent Telegram test delivery.
 6. Build/typecheck, security tests and mobile Safari QA before merge/deploy.
+
+
+## Current verification addendum — 2026-11-11 (v0.6)
+
+- Latest verified source head before this documentation update: `8be150b4f01b1d7496e784e5a7b2049d324b9634`.
+- GitHub Actions `verify`: success; `build`: success; feature-branch `deploy`: skipped.
+- Cloudflare Pages preview check: success for this head. Preview URL: https://feature-plato-id-scanner-v0.plato-land-preview.pages.dev
+- PR #123 remains Open, Draft and unmerged. No production deployment was performed.
+- Storage INSERT policy source was reviewed: exactly two folder segments (operator UUID and scan UUID), followed by a safe filename; the scan folder must match the UUID format and filename extension is restricted to JPG/PNG/WEBP. RLS test plan includes negative path cases.
+- QA Report is now v0.7. These are source and CI checks only; no SQL migration was applied, no live account was created, and no runtime RLS/Storage test was performed.
+- Primary Supabase remains unchanged: Scanner tables, bucket and policies have not been created. No database write occurred.
+
+### Outstanding blockers
+- Runtime RLS/Storage tests require a separately approved disposable test environment; neither existing Supabase project is assumed to be disposable.
+- Browser QA on iPhone/Safari remains outstanding.
+- Auth email-confirmation/redirect behavior requires a controlled live-flow test, not performed here.
+- OCR runtime/provider, corrections workflow, reporting schedule and Telegram delivery remain specification-stage or undecided; no provider or paid service has been selected.
+- PR must remain Draft and unmerged until explicit approval.
