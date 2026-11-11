@@ -141,7 +141,7 @@ A stale worker lease may be reclaimed only after its lease expires; the old work
 - Add contract tests for schema validation, invalid signatures, hash mismatch, duplicate callbacks, stale leases, retries, ambiguity flags and audit immutability.
 
 ## 8. Contract validation code and tests
-The provider-neutral shape validators are implemented in `supabase/functions/_shared/plato-id-scanner-contract.ts`. They validate job, success and failure envelopes without parsing or modifying Plato ID candidate strings. Eight Deno test cases are in `supabase/functions/_shared/plato-id-scanner-contract.test.ts`; timestamp negatives include impossible calendar dates, invalid clock values and offsets beyond ±14:00.; path cases explicitly reject scan-ID mismatch and nested extra path segments, and the feature-branch verification workflow runs this test file. These validators do not perform OCR, authenticate a worker callback, access Storage, claim jobs, persist results or provide runtime security by themselves.
+The provider-neutral shape validators are implemented in `supabase/functions/_shared/plato-id-scanner-contract.ts`. They validate job, success and failure envelopes without parsing or modifying Plato ID candidate strings. Eight Deno test cases are in `supabase/functions/_shared/plato-id-scanner-contract.test.ts`; timestamp negatives include impossible calendar dates, invalid clock values and offsets beyond ±14:00; path cases explicitly reject scan-ID mismatch and nested extra path segments, and the feature-branch verification workflow runs this test file. These validators do not perform OCR, authenticate a worker callback, access Storage, claim jobs, persist results or provide runtime security by themselves.
 
 ## 9. Explicitly not authorized / not done
 
