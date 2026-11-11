@@ -140,6 +140,9 @@ A stale worker lease may be reclaimed only after its lease expires; the old work
 - Define correction approval, review completion and daily/weekly report finalization policies.
 - Add contract tests for schema validation, invalid signatures, hash mismatch, duplicate callbacks, stale leases, retries, ambiguity flags and audit immutability.
 
-## 8. Explicitly not authorized / not done
+## 8. Contract validation code and tests
+The provider-neutral shape validators are implemented in `supabase/functions/_shared/plato-id-scanner-contract.ts`. They validate job, success and failure envelopes without parsing or modifying Plato ID candidate strings. Eight Deno tests are in `supabase/functions/_shared/plato-id-scanner-contract.test.ts`, and the feature-branch verification workflow runs this test file. These validators do not perform OCR, authenticate a worker callback, access Storage, claim jobs, persist results or provide runtime security by themselves.
+
+## 9. Explicitly not authorized / not done
 
 No runtime or OCR provider has been selected. No worker, queue, new table/column, migration, bucket, secret, operator account, external OCR request, Telegram send, production deployment or main-branch change has been created by this document.
