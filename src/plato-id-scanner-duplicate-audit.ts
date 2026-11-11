@@ -71,3 +71,24 @@ export function auditExactScannerDuplicates(
     duplicate_count: duplicates.length,
   };
 }
+
+
+/** Audit a multi-image batch in the caller-supplied deterministic upload order. */
+export function auditScannerBatchDuplicates(
+  scans: readonly {
+    scan_id: string;
+    candidates: readonly { raw_value: string; start?: number; end?: number; flags?: string[]; confidence?: number | null }[];
+  }[],
+): ScannerDuplicateAudit {
+  const occurrences: ScannerCandidateOccurrence[] = [];
+  for (const scan of scans) {
+    scan.candidates.forEach((candidate, candidateIndex) => {
+      occurrences.push({
+        ...candidate,
+        scan_id: scan.scan_id,
+        candidate_index: candidateIndex,
+      });
+    });
+  }
+  return auditExactScannerDuplicates(occurrences);
+}
