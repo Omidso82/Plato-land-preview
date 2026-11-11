@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
-import Series2PredictionReport from './Series2PredictionReport';
 import Series2FinalistPredictionAdmin from './Series2FinalistPredictionAdmin';
 import Series2ResultsManager from './Series2ResultsManager';
 import PlatoIdImageUpload from './PlatoIdImageUpload';
@@ -241,7 +240,6 @@ export default function Series2SlidesManager() {
       })}
     </div>
     )}    <Series2ResultsManager />
-    <Series2PredictionReport />
     <Series2FinalistPredictionAdmin />
     {message&&<p role="status" style={{...muted,marginTop:16}}>{message}</p>}
   </section></main>;
