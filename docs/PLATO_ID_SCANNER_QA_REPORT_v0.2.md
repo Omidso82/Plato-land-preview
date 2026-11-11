@@ -130,3 +130,15 @@ The approved product workflow is batch image-to-Plato-ID extraction and Telegram
 | Version | Date | Change |
 |---|---|---|
 | 1.3 | 2026-11-11 | Records product-scope correction, multi-image upload, Tehran daily/weekly report helpers/tests and outstanding OCR/Telegram/runtime prerequisites. |
+
+
+## 11. Per-image Telegram output formatter — v1.4
+
+- Added `formatScanTelegramMessages` for a single image's canonical reviewed ID list.
+- Formatter removes only exact duplicate strings and preserves all other ID characters exactly; no fuzzy merge or O/0/I/l/1 substitution.
+- Added a Deno test for the per-image formatter.
+- This does not send messages. Telegram sender, bot secret, fixed destination, outbox persistence and idempotent delivery remain unimplemented/unconfigured.
+
+| Version | Date | Change |
+|---|---|---|
+| 1.4 | 2026-11-11 | Records per-image Telegram message formatting and exact canonical ID preservation. |
