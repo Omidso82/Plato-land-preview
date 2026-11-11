@@ -33,3 +33,9 @@
 .scanner-report-secondary{font-weight:700}
 .scanner-report-disclaimer{margin:0;color:#a99f8d;font-size:11px;line-height:1.7}
 @media(max-width:600px){.scanner-report-controls{grid-template-columns:1fr}.scanner-report-actions{grid-template-columns:1fr}.scanner-report-title{align-items:flex-start;flex-direction:column}.scanner-report-tabs button{flex:1;padding:9px 7px;font-size:12px}}
+
+/* Embedded owner-panel presentation: keep Scanner compact inside the temporary manager. */
+.plato-scanner-shell.scanner-embedded{min-height:0;background:transparent;padding:0;color:#f5f0e5}
+.scanner-embedded .plato-scanner-header{display:none}
+.scanner-embedded .scanner-workspace{max-width:none;margin:0}
+.scanner-embedded .scanner-panel{box-shadow:none}
