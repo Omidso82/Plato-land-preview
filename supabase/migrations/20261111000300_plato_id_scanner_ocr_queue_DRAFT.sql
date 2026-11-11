@@ -98,8 +98,14 @@ begin
       from candidates c
      where j.id = c.id
      returning j.*
+  ), started_attempts as (
+    insert into public.plato_id_scanner_ocr_attempts
+      (job_id, scan_id, attempt, outcome, source_sha256, started_at)
+    select r.id, r.scan_id, r.attempt, 'processing', r.source_sha256, now()
+      from reclaimed r
+    returning job_id
   )
-  select * from reclaimed;
+  select r.* from reclaimed r;
 end;
 $$;
 
@@ -220,7 +226,8 @@ begin
    where job_id = p_job_id and attempt = p_attempt and outcome = 'processing';
 
   update public.plato_id_scanner_uploads
-     set status = 'failed', updated_at = now()
+     set status = case when next_status = 'queued' then 'queued' else 'failed' end,
+         updated_at = now()
    where id = current_job.scan_id and status in ('uploaded','queued','processing');
 
   return true;
