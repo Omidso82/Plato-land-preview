@@ -78,7 +78,7 @@ begin
 
   return query
   with candidates as (
-    select j.id
+    select j.id, j.status as prior_status, j.attempt as prior_attempt
       from public.plato_id_scanner_ocr_jobs j
      where j.attempt < j.max_attempts
        and (
@@ -88,6 +88,15 @@ begin
      order by j.available_at, j.created_at
      for update skip locked
      limit p_limit
+  ), expired_attempts as (
+    update public.plato_id_scanner_ocr_attempts a
+       set outcome = 'lease_expired', finished_at = now()
+      from candidates c
+     where c.prior_status = 'processing'
+       and a.job_id = c.id
+       and a.attempt = c.prior_attempt
+       and a.outcome = 'processing'
+     returning a.job_id
   ), reclaimed as (
     update public.plato_id_scanner_ocr_jobs j
        set status = 'processing',
@@ -96,6 +105,7 @@ begin
            lease_expires_at = now() + make_interval(secs => p_lease_seconds),
            updated_at = now()
       from candidates c
+      cross join (select count(*) from expired_attempts) expired_barrier
      where j.id = c.id
      returning j.*
   ), started_attempts as (
