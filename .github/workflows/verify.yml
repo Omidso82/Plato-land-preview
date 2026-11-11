@@ -25,6 +25,7 @@ jobs:
       - run: deno test supabase/functions/_shared/plato-id-scanner-result-adapter.test.ts
       - run: deno test supabase/functions/_shared/plato-id-scanner-google-vision-adapter.test.ts
       - run: deno test supabase/functions/_shared/plato-id-scanner-google-vision-client.test.ts
+      - run: deno test supabase/functions/_shared/plato-id-scanner-queue-migration.test.ts
 
       - run: deno test supabase/functions/_shared/plato-id-scanner-reports.test.ts
       - run: deno test supabase/functions/_shared/plato-id-scanner-review.test.ts
