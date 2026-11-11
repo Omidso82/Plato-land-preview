@@ -2,65 +2,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { requestGoogleVisionOcr, GoogleVisionRequestError } from "../_shared/plato-id-scanner-google-vision-client.ts";
 import { scannerSha256, validateScannerStoredObject, SCANNER_BUCKET } from "../_shared/plato-id-scanner-dispatch-validation.ts";
 import { adaptScannerWorkerSuccessToReviewPayload } from "../_shared/plato-id-scanner-result-adapter.ts";
+import { createGoogleVisionAccessToken } from "../_shared/plato-id-scanner-google-service-account.ts";
 
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const VISION_SCOPE = "https://www.googleapis.com/auth/cloud-vision";
-
-function base64Url(bytes: Uint8Array): string {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-}
-
-function pemBytes(pem: string): ArrayBuffer {
-  const encoded = pem.replace(/-----BEGIN PRIVATE KEY-----|-----END PRIVATE KEY-----|\s/g, "");
-  const binary = atob(encoded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes.buffer;
-}
-
-async function googleAccessToken(credentialsJson: string): Promise<string> {
-  let credentials: { client_email?: string; private_key?: string; token_uri?: string };
-  try { credentials = JSON.parse(credentialsJson); } catch { throw new Error("GOOGLE_CREDENTIALS_INVALID"); }
-  if (!credentials.client_email || !credentials.private_key) throw new Error("GOOGLE_CREDENTIALS_INVALID");
-  if (credentials.token_uri && credentials.token_uri !== TOKEN_URL) throw new Error("GOOGLE_TOKEN_ENDPOINT_REJECTED");
-
-  const now = Math.floor(Date.now() / 1000);
-  const header = base64Url(new TextEncoder().encode(JSON.stringify({ alg: "RS256", typ: "JWT" })));
-  const claim = base64Url(new TextEncoder().encode(JSON.stringify({
-    iss: credentials.client_email,
-    scope: VISION_SCOPE,
-    aud: TOKEN_URL,
-    iat: now,
-    exp: now + 300,
-  })));
-  const unsigned = header + "." + claim;
-  let key: CryptoKey;
-  try {
-    key = await crypto.subtle.importKey(
-      "pkcs8", pemBytes(credentials.private_key),
-      { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" }, false, ["sign"],
-    );
-  } catch { throw new Error("GOOGLE_PRIVATE_KEY_INVALID"); }
-  const signature = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(unsigned));
-  const assertion = unsigned + "." + base64Url(new Uint8Array(signature));
-  const response = await fetch(TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion,
-    }),
-    signal: AbortSignal.timeout(15_000),
-  }).catch(() => { throw new Error("GOOGLE_TOKEN_NETWORK_ERROR"); });
-  if (!response.ok) throw new Error(response.status === 429 || response.status >= 500
-    ? "GOOGLE_TOKEN_UPSTREAM_UNAVAILABLE" : "GOOGLE_TOKEN_AUTH_FAILED");
-  const result = await response.json().catch(() => null);
-  if (typeof result?.access_token !== "string" || !result.access_token) throw new Error("GOOGLE_TOKEN_RESPONSE_INVALID");
-  return result.access_token;
-}
 
 function constantTimeEqual(a: string, b: string): boolean {
   const left = new TextEncoder().encode(a), right = new TextEncoder().encode(b);
@@ -90,7 +36,7 @@ Deno.serve(async (request: Request) => {
   });
 
   let accessToken: string;
-  try { accessToken = await googleAccessToken(credentialsJson); }
+  try { accessToken = await createGoogleVisionAccessToken({ credentialsJson }); }
   catch (error) {
     const code = error instanceof Error ? error.message : "GOOGLE_TOKEN_FAILED";
     console.error("Scanner Google credential step failed:", code);
