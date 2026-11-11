@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Source and Primary Read-Only Audit
 
-**Document version:** 0.1  
+**Document version:** 0.2  
 **Date:** 2026-11-12  
 **Project:** PLATO LAND – Temporary Projects / PLATO ID Scanner  
 **Repository:** `Omidso82/Plato-land-preview`  
@@ -87,3 +87,4 @@ The feature branch contains Google Vision client/adapter/worker source. However,
 | Version | Date | Change |
 |---|---|---|
 | 0.1 | 2026-11-12 | Records live read-only primary audit, queue draft risks, provider/privacy boundary and source-level mismatches. |
+| 0.2 | 2026-11-12 | Records source-only queue hardening: current JWT role guards and terminal handling for expired final attempts. PostgreSQL runtime validation remains outstanding. |
