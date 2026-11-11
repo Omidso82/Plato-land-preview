@@ -1,9 +1,9 @@
-# PLATO ID Scanner — QA Report v0.5
+# PLATO ID Scanner — QA Report v0.6
 
 **Date:** 2026-11-11  
 **Branch:** `feature/plato-id-scanner-v0-1`  
 **PR:** #123 — Open, Draft, unmerged  
-**Verified head:** `e8a5d544426b8801f8169e84e3ea63659ae9c67c`  
+**Previously verified head:** `e8a5d544426b8801f8169e84e3ea63659ae9c67c`\n**Current documentation/security head:** pending CI verification  
 **Scope:** Feature-branch CI/preview verification, migration source review, and isolated RLS test preparation
 
 ## 1. Work completed
@@ -35,7 +35,7 @@ For verified head `e8a5d544426b8801f8169e84e3ea63659ae9c67c`:
 
 This review is static. It is not proof of runtime RLS or Storage isolation.
 
-## 4. Not executed / outstanding
+## 4. Additional Storage policy hardening (source-only)\n\nThe Storage INSERT policy was tightened to enforce the object-key contract at the database policy boundary, not only in the browser: exactly two folder segments plus a filename; first folder must be the authenticated operator UUID; second folder must be a UUID; filename must use the restricted ASCII basename and a supported MIME-derived extension (`.jpg`, `.png`, `.webp`). The RLS test plan was expanded to cover nested paths, extra/missing segments, invalid scan UUIDs, unsafe basenames, and unsupported extensions. This is a source change only; it has not been executed against Supabase.\n\n## 5. Not executed / outstanding
 
 1. RLS-01 through RLS-18 have **not** been executed with synthetic JWT identities.
 2. No disposable local Supabase environment has been authorized or confirmed.
@@ -46,7 +46,7 @@ This review is static. It is not proof of runtime RLS or Storage isolation.
 7. OCR engine/worker runtime, queue, corrections, daily/weekly reports, and Telegram delivery are not implemented.
 8. OCR provider/hosting and any paid service remain unselected and require explicit approval.
 
-## 5. Database and release safety
+## 6. Database and release safety
 
 - Primary Supabase project remains unchanged.
 - The secondary Supabase project was not used as a staging substitute.
@@ -56,6 +56,6 @@ This review is static. It is not proof of runtime RLS or Storage isolation.
 - PR #123 remains Draft and unmerged.
 - No merge or main-site deployment was performed.
 
-## 6. Next safe steps
+## 7. Next safe steps
 
 Continue source-only review and contract/test development on the isolated feature branch. Runtime RLS tests require an explicitly authorized disposable environment. Migration activation, OCR provider/hosting, account creation, Telegram destination and auto-send behavior require separate decisions/approval. Keep PR #123 Draft until the user explicitly authorizes a release decision.
