@@ -1,5 +1,5 @@
 # PLATO ID Scanner — Operator Access Handover
-Version: 0.5
+Version: 0.6
 Date: 2026-11-11
 Project: PLATO LAND – Temporary Projects
 Scope: Scanner-only operator access; isolated from the Main Website feature scope.
@@ -52,7 +52,7 @@ The shared-archive migration replaces owner/self-only SELECT and DELETE policies
 - Post-merge Cloudflare Pages deployment check completed successfully and reported "Deployed successfully".
 - Cloudflare Pages branch deployment URL: https://main.plato-land-preview.pages.dev
 - User confirmed that the delete button is now visible in the deployed Scanner UI after the earlier display issue.
-- The visibility confirmation is a UI check only. A successful end-to-end deletion of a test image has not yet been confirmed; do not treat deletion execution as fully QA-verified.
+- User subsequently confirmed that image deletion completed successfully. This verifies the delete flow at least once in the live UI; broader multi-user/role-matrix deletion QA remains outside this single confirmation.
 - No deletion of the four existing images was performed as part of the display troubleshooting.
 - Main Website scope and unrelated database areas were not intentionally changed by this Scanner-specific work. The only production database changes in scope are the two Scanner migrations listed above.
 
@@ -62,7 +62,7 @@ The shared-archive migration replaces owner/self-only SELECT and DELETE policies
 - Merge commit: afb92bc674aaadf1a6f33a9f07c193c39df3f1a1.
 - Build, Verify, and Cloudflare Pages deployment checks: successful.
 - User-visible delete control: confirmed visible by the user.
-- End-to-end delete behavior: pending a controlled test with a disposable/test image and explicit user approval.
+- End-to-end delete behavior: user-confirmed successful image deletion.
 - Main Supabase project remains the source of truth; no preview database was introduced.
 
 ## Not implemented in this phase
@@ -82,3 +82,4 @@ The shared-archive migration replaces owner/self-only SELECT and DELETE policies
 - v0.3 (2026-11-11): introduced shared current-day/archive UI, full-history pagination, approved-operator-wide image viewing/deletion through narrowly bucket-scoped RLS/Storage policies, and deferred deletion audit logging.
 - v0.4 (2026-11-11): records successful implementation CI and clarifies that the separate preview/deployment workflow was cancelled before build/artifact preparation.
 - v0.5 (2026-11-11): records PR #126 squash merge, successful post-merge Build/Verify and Cloudflare Pages deployment checks, user confirmation that the delete control is visible, and the remaining need for a controlled end-to-end deletion test.
+- v0.6 (2026-11-11): records the user's confirmation that image deletion completed successfully; the basic live delete flow is no longer pending.
