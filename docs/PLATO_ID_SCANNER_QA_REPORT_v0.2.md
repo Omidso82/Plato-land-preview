@@ -1,9 +1,9 @@
-# PLATO ID Scanner — QA Report v0.6
+# PLATO ID Scanner — QA Report v0.7
 
 **Date:** 2026-11-11  
 **Branch:** `feature/plato-id-scanner-v0-1`  
 **PR:** #123 — Open, Draft, unmerged  
-**Previously verified head:** `e8a5d544426b8801f8169e84e3ea63659ae9c67c`\n**Current documentation/security head:** pending CI verification  
+**Previously verified head:** `e8a5d544426b8801f8169e84e3ea63659ae9c67c`\n**Current documentation/security head:** `f1435b78f87631141519fa82579d8ca07ca72376`  
 **Scope:** Feature-branch CI/preview verification, migration source review, and isolated RLS test preparation
 
 ## 1. Work completed
@@ -35,7 +35,18 @@ For verified head `e8a5d544426b8801f8169e84e3ea63659ae9c67c`:
 
 This review is static. It is not proof of runtime RLS or Storage isolation.
 
-## 4. Additional Storage policy hardening (source-only)\n\nThe Storage INSERT policy was tightened to enforce the object-key contract at the database policy boundary, not only in the browser: exactly two folder segments plus a filename; first folder must be the authenticated operator UUID; second folder must be a UUID; filename must use the restricted ASCII basename and a supported MIME-derived extension (`.jpg`, `.png`, `.webp`). The RLS test plan was expanded to cover nested paths, extra/missing segments, invalid scan UUIDs, unsafe basenames, and unsupported extensions. This is a source change only; it has not been executed against Supabase.\n\n## 5. Not executed / outstanding
+## 4. Additional Storage policy hardening (source-only)\n\nThe Storage INSERT policy was tightened to enforce the object-key contract at the database policy boundary, not only in the browser: exactly two folder segments plus a filename; first folder must be the authenticated operator UUID; second folder must be a UUID; filename must use the restricted ASCII basename and a supported MIME-derived extension (`.jpg`, `.png`, `.webp`). The RLS test plan was expanded to cover nested paths, extra/missing segments, invalid scan UUIDs, unsafe basenames, and unsupported extensions. This is a source change only; it has not been executed against Supabase.\n\n
+
+## 4. Latest source hardening and CI status
+
+- Storage INSERT policy now enforces exactly two folder segments and one filename: authenticated operator UUID / valid scan UUID / safe filename.
+- The filename is restricted to an ASCII alphanumeric/underscore/hyphen basename (1–100 chars) and one of the supported lowercase extensions: `.jpg`, `.png`, `.webp`.
+- The RLS test plan includes negative cases for cross-user folders, nested/extra/missing segments, invalid scan UUIDs, unsafe names and unsupported extensions.
+- The corrected migration was fetched back from GitHub and the complete policy expression was checked for closing regex anchors and closing SQL syntax.
+- On commit `f1435b78f87631141519fa82579d8ca07ca72376`, GitHub Actions `verify` and `build` completed successfully; the `deploy` job was skipped as expected for the feature branch. Cloudflare Pages preview was still in progress at the time of this report update.
+- This is static source review plus CI. No SQL execution or runtime RLS/Storage test has been performed.
+
+## 5. Not executed / outstanding
 
 1. RLS-01 through RLS-18 have **not** been executed with synthetic JWT identities.
 2. No disposable local Supabase environment has been authorized or confirmed.
