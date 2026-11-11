@@ -76,7 +76,7 @@ For application/security source commit `75ebf22fef0cc692a3c9ad076f642fe9708951a3
 - Confirmed `private.has_role(text[])` is a SECURITY DEFINER SQL function in the non-exposed `private` schema, uses an empty search_path and checks `auth.uid()` against `public.user_roles`.
 - Supabase Security Advisor still reports existing findings outside the Scanner scope: eight RLS-enabled tables with no policies, two exposed SECURITY DEFINER functions in `public`, and leaked-password protection disabled. No changes were made to these findings.
 
-## 7. Outstanding validation
+## 8. Outstanding validation
 
 1. Confirm Cloudflare branch preview for the latest source/documentation head.
 2. PostgreSQL execution and runtime RLS/Storage tests remain outstanding.
@@ -86,7 +86,7 @@ For application/security source commit `75ebf22fef0cc692a3c9ad076f642fe9708951a3
 6. Select OCR architecture/provider only after privacy, accuracy, runtime and cost review and explicit approval.
 7. Keep PR #123 Draft and unmerged until the user explicitly authorizes a release decision.
 
-## 8. Version history
+## 9. Version history
 
 | Version | Date | Change |
 |---|---|---|
