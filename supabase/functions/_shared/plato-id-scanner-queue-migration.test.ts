@@ -26,7 +26,7 @@ Deno.test("enqueue RPC is service-role-only and binds the immutable source diges
   if (!/create or replace function public\.enqueue_plato_id_scanner_ocr_job/i.test(sql)) throw new Error("Trusted enqueue RPC missing");
   if (!/revoke all on function public\.enqueue_plato_id_scanner_ocr_job\(uuid,text\) from public, anon, authenticated/i.test(sql)) throw new Error("Enqueue RPC is not denied to browser roles");
   if (!/grant execute on function public\.enqueue_plato_id_scanner_ocr_job\(uuid,text\) to service_role/i.test(sql)) throw new Error("Enqueue RPC is not service-role-only");
-  if (!/source_upload\.status not in \('uploaded','queued'\)/i.test(sql)) throw new Error("Enqueue eligibility guard missing");
+  if (!/source_upload\.status not in \('uploaded','queued','failed'\)/i.test(sql)) throw new Error("Enqueue eligibility guard missing");
   if (!/queued_job\.source_sha256 <> lower\(p_source_sha256\)/i.test(sql)) throw new Error("Enqueue digest mismatch guard missing");
 });
 
