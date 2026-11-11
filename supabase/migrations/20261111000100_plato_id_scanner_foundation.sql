@@ -64,8 +64,6 @@ end
 $$;
 
 create policy scanner_storage_read_owner_or_self on storage.objects for select to authenticated using(bucket_id='plato-id-scans' and ((select private.has_role(array['owner']::text[])) or ((storage.foldername(name))[1]=(select auth.uid())::text and exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved'))));
--- Enforce the same three-segment object-key contract at the Storage boundary,
--- not only in the browser: operator UUID / scan UUID / safe MIME-derived filename.
 create policy scanner_storage_insert_approved_self_or_owner on storage.objects for insert to authenticated with check(
  bucket_id='plato-id-scans'
  and array_length(storage.foldername(name),1)=2
@@ -85,7 +83,7 @@ create policy scanner_storage_delete_orphan_self_or_owner on storage.objects for
  )
 );
 
- and storage.filename(name) ~ '^[A-Za-z0-9_-]{1,100}\\.(jpg|png|webp)
+ and storage.filename(name) ~ '^[A-Za-z0-9_-]{1,100}[.](jpg|png|webp)
 -- Operator correction/deletion intentionally excluded until audited backend RPCs are implemented.
 
 -- Allow an approved operator to clean up an orphaned object if the upload-row insert fails.
@@ -100,10 +98,7 @@ create policy scanner_storage_delete_orphan_self_or_owner on storage.objects for
  )
 );
 
- and (
-  (select private.has_role(array['owner']::text[]))
-  or exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved')
- )
+ and ((select private.has_role(array['owner']::text[])) or exists(select 1 from public.plato_id_scanner_access a where a.user_id=(select auth.uid()) and a.status='approved'))
 );
 -- Operator correction/deletion intentionally excluded until audited backend RPCs are implemented.
 
