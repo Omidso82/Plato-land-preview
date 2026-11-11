@@ -43,7 +43,7 @@ Deno.test("does not autocorrect, trim punctuation or infer IDs without @", () =>
 Deno.test("retains exact duplicate occurrences and their source positions for audit", () => {
   const adapted = adaptScannerWorkerSuccessToReviewPayload({
     ...result,
-    raw_text: "@Repeat @Other\\n@Repeat @repeat",
+    raw_text: "@Repeat @Other\n@Repeat @repeat",
   });
   if (JSON.stringify(adapted.ids) !== JSON.stringify(["@Repeat", "@Other", "@repeat"])) {
     throw new Error("Unique preview IDs are incorrect: " + JSON.stringify(adapted.ids));
