@@ -1,5 +1,5 @@
 # PLATO ID Scanner — implementation status
-**Document version:** 0.3
+**Document version:** 0.4
 Date: 2026-11-11
 Branch: feature/plato-id-scanner-v0-1
 Base: main at abb1556b57f9c9b73cdc83ea2486ffd01ffd023a
@@ -16,6 +16,7 @@ Base: main at abb1556b57f9c9b73cdc83ea2486ffd01ffd023a
 - Provider-neutral worker contract validators and eight Deno tests.
 - Timestamp validation hardened against impossible calendar dates, invalid clock fields and timezone offsets beyond ±14:00; negative test fixtures added.
 - Worker source path hardened to exactly operator UUID / matching scan UUID / safe filename; mismatch, nested path and backslash cases rejected.
+- Upload object filenames are now generated from a restricted alphanumeric/underscore/hyphen base and a MIME-derived extension; original display filename remains separate metadata. This avoids `..`, path separators and extension/MIME mismatch in the Storage key.
 
 ## Latest branch verification (commit 9fdd3b05ffcff3eacb407dacf517d3a1381d9859)
 - Documentation and branch CI update completed at this head.
