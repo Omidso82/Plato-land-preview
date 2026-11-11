@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import Series2PredictionReport from './Series2PredictionReport';
 import Series2ResultsManager from './Series2ResultsManager';
+import PlatoIdScannerApp from './PlatoIdScannerApp';
 
 const BUCKET = 'series2-slides';
 const POSTER_PATH = 'poster/series2-prize-poster';
@@ -23,6 +24,7 @@ export default function Series2SlidesManager() {
   const [busySlot,setBusySlot] = useState<number|null>(null);
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
+  const [scannerOpen,setScannerOpen] = useState(false);
 
   async function verifyOwner() {
     if (!supabase) { setMessage('اتصال به سرویس اصلی برقرار نیست.'); setChecking(false); return; }
@@ -177,6 +179,13 @@ export default function Series2SlidesManager() {
       })}
     </div>
     )}
+    <section style={{marginTop:20,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+        <div><h2 style={{color:'#f6e8c5',fontSize:19,margin:'0 0 6px'}}>PLATO ID Scanner</h2><p style={muted}>مدیریت تصاویر و درخواست‌های اپراتورها در همین پنل موقت.</p></div>
+        <button type="button" style={primary} aria-expanded={scannerOpen} onClick={()=>setScannerOpen(value=>!value)}>{scannerOpen?'بستن اسکنر':'باز کردن PLATO ID Scanner'}</button>
+      </div>
+      {scannerOpen&&<div style={{marginTop:16}}><PlatoIdScannerApp ownerMode embedded /></div>}
+    </section>
     <Series2ResultsManager />
     <Series2PredictionReport />
     {message&&<p role="status" style={{...muted,marginTop:16}}>{message}</p>}

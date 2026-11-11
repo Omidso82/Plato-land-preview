@@ -19,3 +19,19 @@ jobs:
       - uses: denoland/setup-deno@v2
       - run: deno test supabase/functions/_shared/series2-qualification.test.ts
       - run: deno test supabase/functions/plato-land-series2-progression/_shared/series2-bracket.test.ts
+      - run: deno test supabase/functions/_shared/plato-id-scanner-contract.test.ts
+      - run: deno test supabase/functions/_shared/plato-id-scanner-extraction.test.ts
+      - run: deno test supabase/functions/_shared/plato-id-scanner-duplicate-audit.test.ts
+      - run: deno test supabase/functions/_shared/plato-id-scanner-result-adapter.test.ts
+      - run: deno test supabase/functions/_shared/plato-id-scanner-google-vision-adapter.test.ts
+      - run: deno test supabase/functions/_shared/plato-id-scanner-google-vision-client.test.ts
+      - run: deno test supabase/functions/_shared/plato-id-scanner-google-service-account.test.ts
+      - run: deno test --allow-read=supabase/migrations supabase/functions/_shared/plato-id-scanner-queue-migration.test.ts
+      - run: deno test supabase/functions/_shared/plato-id-scanner-dispatch-validation.test.ts
+      - run: deno check supabase/functions/plato-id-scanner-dispatch/index.ts
+      - run: deno check supabase/functions/plato-id-scanner-worker/index.ts
+
+      - run: deno test supabase/functions/_shared/plato-id-scanner-reports.test.ts
+      - run: deno test supabase/functions/_shared/plato-id-scanner-review.test.ts
+      - run: deno test src/plato-id-scanner-review-store.test.ts
+      - run: deno test src/plato-id-scanner-date-window.test.ts

@@ -1,0 +1,73 @@
+import {
+  buildDailyScannerReport, buildWeeklyScannerReport,
+  buildDailyScannerReportFromRevisions, buildWeeklyScannerReportFromRevisions,
+  formatDailyTelegramMessages, formatWeeklyTelegramMessages,
+  tehranJalaliDateKey,
+} from "../../../src/plato-id-scanner-reports.ts";
+const assert=(value:unknown,message="Assertion failed")=>{if(!value)throw new Error(message);};
+const assertEquals=(actual:unknown,expected:unknown)=>{if(JSON.stringify(actual)!==JSON.stringify(expected))throw new Error("Expected "+JSON.stringify(expected)+" but received "+JSON.stringify(actual));};
+
+Deno.test("Tehran date key follows Asia/Tehran rather than UTC",()=>{
+  assertEquals(tehranJalaliDateKey("2026-11-10T21:00:00.000Z"),tehranJalaliDateKey("2026-11-11T00:30:00+03:30"));
+});
+
+Deno.test("daily report uses only completed canonical IDs and deduplicates exact IDs",()=>{
+  const report=buildDailyScannerReport([
+    {id:"1",created_at:"2026-11-11T08:00:00+03:30",status:"completed",ocr_result:{ids:["PLATO_A","PLATO_B"]}},
+    {id:"2",created_at:"2026-11-11T13:00:00+03:30",status:"completed",ocr_result:{ids:["PLATO_A","PLATO_C"]}},
+    {id:"3",created_at:"2026-11-11T14:00:00+03:30",status:"needs_review",ocr_result:{ids:["PLATO_D"]}},
+  ],tehranJalaliDateKey("2026-11-11T12:00:00+03:30"));
+  assertEquals(report.ids,["PLATO_A","PLATO_B","PLATO_C"]);
+  assertEquals(report.imageCount,3);
+});
+
+Deno.test("weekly report has Saturday-to-Friday columns and one star per active day",()=>{
+  const report=buildWeeklyScannerReport([
+    {id:"sat",created_at:"2026-11-07T10:00:00+03:30",status:"completed",ocr_result:{ids:["ID-1","ID-1"]}},
+    {id:"sun",created_at:"2026-11-08T10:00:00+03:30",status:"completed",ocr_result:{ids:["ID-1","ID-2"]}},
+    {id:"fri",created_at:"2026-11-13T10:00:00+03:30",status:"completed",ocr_result:{ids:["ID-2"]}},
+    {id:"next",created_at:"2026-11-14T10:00:00+03:30",status:"completed",ocr_result:{ids:["ID-3"]}},
+  ],"2026-11-11T12:00:00+03:30");
+  assertEquals(report.rows.length,2);
+  const one=report.rows.find(row=>row.id==="ID-1")!;
+  const two=report.rows.find(row=>row.id==="ID-2")!;
+  assertEquals(one.activeDays,[true,true,false,false,false,false,false]);
+  assertEquals(two.activeDays,[false,true,false,false,false,false,true]);
+  assertEquals(report.imageCount,3);
+});
+
+Deno.test("Telegram formatters split long reports without losing rows",()=>{
+  const daily=formatDailyTelegramMessages({jalaliDate:"1405/08/20",imageCount:2,ids:Array.from({length:500},(_,i)=>"PLATO_"+i)},500);
+  assert(daily.length>1);
+  assert(daily.every(message=>message.length<=500));
+  const weekly=formatWeeklyTelegramMessages({weekStartJalali:"1405/08/17",weekEndJalali:"1405/08/23",imageCount:4,rows:[{id:"ID-1",activeDays:[true,false,true,false,false,false,true]}]});
+  assert(weekly[0].includes("★"));
+});
+
+Deno.test("per-image Telegram output uses the same exact canonical IDs and removes exact duplicates",async()=>{
+  const {formatScanTelegramMessages}=await import("../../../src/plato-id-scanner-reports.ts");
+  const messages=formatScanTelegramMessages("screenshot-01.png",["ID_A","ID_B","ID_A"]);
+  assert(messages.length===1);
+  assert(messages[0].includes("ID_A")&&messages[0].includes("ID_B"));
+  assertEquals(messages[0].match(/ID_A/g)?.length,1);
+});
+
+
+Deno.test("daily and weekly reports use the latest approved revision, replacing corrected IDs", () => {
+  const scans = [
+    {id:"scan-1",created_at:"2026-11-07T10:00:00+03:30",status:"completed",ocr_result:{ids:["OCR_OLD"]}},
+    {id:"scan-2",created_at:"2026-11-08T10:00:00+03:30",status:"completed",ocr_result:{ids:["OCR_UNREVIEWED"]}},
+    {id:"scan-3",created_at:"2026-11-09T10:00:00+03:30",status:"completed",ocr_result:{ids:["OCR_REJECTED"]}},
+  ];
+  const revisions = [
+    {scan_id:"scan-1",revision:1,status:"approved",canonical_ids:["ID_OLD","ID_SHARED"]},
+    {scan_id:"scan-1",revision:2,status:"approved",canonical_ids:["ID_CORRECTED","ID_SHARED"]},
+    {scan_id:"scan-2",revision:1,status:"pending",canonical_ids:["ID_PENDING"]},
+    {scan_id:"scan-3",revision:1,status:"rejected",canonical_ids:["ID_REJECTED"]},
+  ];
+  const daily = buildDailyScannerReportFromRevisions(scans,revisions,tehranJalaliDateKey("2026-11-07T12:00:00+03:30"));
+  assertEquals(daily.ids,["ID_CORRECTED","ID_SHARED"]);
+  const weekly = buildWeeklyScannerReportFromRevisions(scans,revisions,"2026-11-11T12:00:00+03:30");
+  assertEquals(weekly.rows.map(row=>row.id),["ID_CORRECTED","ID_SHARED"]);
+  assertEquals(weekly.rows.find(row=>row.id==="ID_CORRECTED")?.activeDays,[true,false,false,false,false,false,false]);
+});
