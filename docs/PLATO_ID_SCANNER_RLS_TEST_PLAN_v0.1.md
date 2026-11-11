@@ -1,18 +1,19 @@
-# PLATO ID Scanner — RLS Isolation Test Plan v0.2
+# PLATO ID Scanner — RLS Isolation Test Plan
 
+**Document version:** 0.3  
 **Date:** 2026-11-11  
-**Scope:** Scanner-only access isolation and Storage ownership checks  
+**Scope:** Scanner-only table access isolation and Storage ownership checks  
 **Status:** Test plan prepared; NOT executed against any Supabase database.
 
-## Safety boundary
+## 1. Safety boundary
 
 - Do not apply the Scanner migration to the primary Supabase project.
 - Do not use the second Supabase project as an assumed staging environment.
 - Execute these tests only in a disposable local Supabase stack or a separately authorized isolated test environment.
-- Use two synthetic operator identities (A and B) and one owner identity. Never use real player IDs, production uploads, or production credentials.
-- No OCR worker, queue, Telegram destination, production bucket, or paid service is part of this test plan.
+- Use two synthetic operator identities (A and B) and one owner identity. Never use real player IDs, production uploads or production credentials.
+- No OCR worker, queue, Telegram destination, production bucket or paid service is part of this test plan.
 
-## Preconditions
+## 2. Preconditions
 
 1. A disposable Supabase environment is explicitly selected and confirmed as non-production.
 2. The existing owner-role helper is represented in the test environment with the same behavior expected by the migration.
@@ -20,7 +21,19 @@
 4. Synthetic users A and B are created; both have Scanner access rows. A is approved; B is pending. The owner has the existing owner role.
 5. All Storage objects used by tests are disposable fixtures.
 
-## RLS test matrix
+## 3. Object-key contract
+
+Every Scanner object key must have exactly this shape:
+
+`<operator-uuid>/<scan-uuid>/<safe-basename>.<jpg|png|webp>`
+
+- First folder: authenticated operator UUID (`auth.uid()`).
+- Second folder: valid scan UUID.
+- Filename: ASCII basename of 1–100 letters, digits, underscores or hyphens, followed by lowercase `.jpg`, `.png` or `.webp`.
+- No missing/extra path segments, nested paths, backslashes, traversal-like names or unsupported extensions.
+- Upload-row `storage_path` must follow the same exact shape. Shape validation does not prove that the referenced Storage object exists.
+
+## 4. RLS test matrix
 
 | ID | Actor | Operation | Fixture / condition | Expected result |
 |---|---|---|---|---|
@@ -29,41 +42,50 @@
 | RLS-03 | Operator B (pending) | SELECT uploads | Any upload history | No upload rows visible |
 | RLS-04 | Operator A (approved) | SELECT uploads | A's own upload | Allowed |
 | RLS-05 | Operator A (approved) | SELECT uploads | B's upload | No row visible |
-| RLS-06 | Operator A (approved) | INSERT upload row | operator_id=A, path starts A UUID, status uploaded, empty OCR result | Allowed |
-| RLS-07 | Operator A (approved) | INSERT upload row | operator_id=B or path starts B UUID | Denied |
-| RLS-08 | Operator B (pending) | INSERT upload row | Otherwise valid own row | Denied |
+| RLS-06 | Operator A (approved) | INSERT upload row | operator_id=A; exact three-segment path A UUID / valid scan UUID / safe filename; status uploaded; empty OCR result | Allowed |
+| RLS-07 | Operator A (approved) | INSERT upload row | operator_id=B, or first path folder is not A UUID, or path has invalid scan UUID/segment count/filename | Denied |
+| RLS-08 | Operator B (pending) | INSERT upload row | Otherwise valid own row and exact path | Denied |
 | RLS-09 | Operator A (approved) | UPDATE/DELETE upload row | Any upload row | Denied (no grant/policy) |
 | RLS-10 | Operator A (approved) | SELECT Storage object | A's object | Allowed |
 | RLS-11 | Operator A (approved) | SELECT Storage object | B's object | Denied |
 | RLS-12 | Operator A (approved) | INSERT Storage object | Exactly three segments: A UUID / valid scan UUID / safe basename with MIME-derived extension | Allowed |
-| RLS-13 | Operator A (approved) | INSERT Storage object | B UUID folder, nested path, missing segment, invalid scan UUID, unsafe basename, or unsupported extension | Denied |
+| RLS-13 | Operator A (approved) | INSERT Storage object | B UUID folder, nested path, missing/extra segment, invalid scan UUID, unsafe basename or unsupported extension | Denied |
 | RLS-14 | Operator B (pending) | INSERT/SELECT Storage object | Own path | Denied |
 | RLS-15 | Operator A (approved) | DELETE Storage object | Own orphan with no upload row | Allowed |
 | RLS-16 | Operator A (approved) | DELETE Storage object | Own object referenced by upload row | Denied |
 | RLS-17 | Owner | SELECT access/uploads and Storage | All Scanner records | Allowed |
 | RLS-18 | Owner | UPDATE access row | Approve/reject synthetic operator | Allowed |
 
-## Additional negative tests
+## 5. Additional negative tests
 
 - Anonymous role cannot read or write Scanner tables or private Storage objects.
-- An operator cannot change their own access status to approved, rejected, or disabled.
+- An operator cannot change their own access status to approved, rejected or disabled.
 - An operator cannot insert an upload row with a non-empty OCR result or a status other than uploaded.
-- Upload-row `storage_path` must have exactly two folder segments and one filename; operator folder must equal `auth.uid()`, scan folder must be a UUID, and filename must use the safe ASCII basename plus `.jpg`, `.png`, or `.webp`. A prefix-only path check is insufficient.
-- An operator cannot write a Storage object into another user's UUID folder.\n- Storage INSERT must reject paths that do not contain exactly two folder segments and one filename.\n- The second folder segment must be a UUID; filename must match the safe ASCII basename and `.jpg`, `.png`, or `.webp` extension contract.\n- Nested paths, extra segments, traversal-like names, and unsupported extensions must be denied at the Storage policy boundary.
-- A pre-existing bucket with public=true, wrong size limit, wrong MIME allowlist, or wrong name must cause the migration to stop with a clear exception. It must not be silently overwritten.
-- Re-running the SQL file manually is not an approved test: table/index statements are guarded, but CREATE POLICY statements are intentionally a one-time migration operation and are not idempotent. Use the migration ledger in the disposable environment; do not manually replay an already-applied migration.
+- An operator cannot write a Storage object into another user's UUID folder.
+- Storage INSERT must reject paths that do not contain exactly two folder segments and one filename.
+- The second folder segment must be a UUID; filename must match the safe ASCII basename and lowercase extension contract.
+- Nested paths, extra segments, traversal-like names, backslashes and unsupported extensions must be denied at the Storage policy boundary.
+- A pre-existing bucket with public=true, wrong size limit, wrong MIME allowlist or wrong name must cause the migration to stop with a clear exception. It must not be silently overwritten.
+- Re-running the SQL file manually is not an approved test. CREATE POLICY statements are one-time migration statements and are not idempotent. Use the migration ledger in the disposable environment; do not manually replay an already-applied migration.
 
-## Evidence to capture
+## 6. Evidence to capture
 
-For each test, record actor, role, operation, object/table, observed result, expected result, and pass/fail. Do not include passwords, JWTs, service-role keys, or production identifiers in the report.
+For each test, record actor, role, operation, object/table, observed result, expected result and pass/fail. Do not include passwords, JWTs, service-role keys or production identifiers in the report.
 
-## Exit criteria
+## 7. Exit criteria
 
 - All RLS-01 through RLS-18 pass in the disposable environment.
-- All negative tests pass.
+- All additional negative tests pass.
 - No test touches the primary database.
 - Any failure is documented and fixed on the isolated feature branch before a production activation proposal is prepared.
 
-## Current result
+## 8. Current result
 
-**Not run.** This document defines the test plan only. No live RLS tests, database writes, or Storage operations were performed.
+**Not run.** This document defines the test plan only. No live RLS tests, database writes or Storage operations were performed.
+
+## 9. Version history
+
+| Version | Date | Change |
+|---|---|---|
+| 0.2 | 2026-11-11 | Previous 18-case isolation plan |
+| 0.3 | 2026-11-11 | Aligns RLS-06/RLS-07 with the exact three-segment upload-row path and removes literal newline artifacts |
