@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Implementation Status
 
-**Document version:** 0.9  
+**Document version:** 1.0  
 **Date:** 2026-11-11  
 **Project:** PLATO LAND – Temporary Projects  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -68,6 +68,14 @@ For application/security source commit `75ebf22fef0cc692a3c9ad076f642fe9708951a3
 - OCR engine/provider/hosting has not been selected or activated; no paid service was enabled.
 - OCR runtime, corrections, daily/weekly reports, Telegram delivery and finalization are not deployed.
 
+## 7. Latest read-only primary database security audit
+
+- Rechecked primary project `dfrppbapaaydbjeflozw` without making any writes.
+- Scanner tables are still absent and bucket `plato-id-scans` is still absent.
+- Enumerated live `storage.objects` RLS policies: all policies returned were scoped to their own bucket IDs; no generic unscoped Storage policy was found in the current policy listing.
+- Confirmed `private.has_role(text[])` is a SECURITY DEFINER SQL function in the non-exposed `private` schema, uses an empty search_path and checks `auth.uid()` against `public.user_roles`.
+- Supabase Security Advisor still reports existing findings outside the Scanner scope: eight RLS-enabled tables with no policies, two exposed SECURITY DEFINER functions in `public`, and leaked-password protection disabled. No changes were made to these findings.
+
 ## 7. Outstanding validation
 
 1. Confirm Cloudflare branch preview for the latest source/documentation head.
@@ -85,3 +93,4 @@ For application/security source commit `75ebf22fef0cc692a3c9ad076f642fe9708951a3
 | 0.7 | 2026-11-11 | Previous implementation and security review status |
 | 0.8 | 2026-11-11 | Records duplicated SQL tail cleanup and clarifies release/database blockers |
 | 0.9 | 2026-11-11 | Aligns worker filename and MIME-extension validation with the SQL/UI upload contract and records expanded negative tests |
+| 1.0 | 2026-11-11 | Records the latest read-only primary Storage-policy, owner-helper and Security Advisor audit; no database changes made |
