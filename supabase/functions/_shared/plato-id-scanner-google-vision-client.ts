@@ -8,7 +8,7 @@ export const GOOGLE_VISION_EU_ANNOTATE_ENDPOINT =
 export type GoogleVisionFeature = "TEXT_DETECTION" | "DOCUMENT_TEXT_DETECTION";
 
 export interface GoogleVisionClientOptions {
-  accessToken: string;
+  apiKey: string;
   imageBytes: Uint8Array;
   context: GoogleVisionAdapterContext;
   feature?: GoogleVisionFeature;
@@ -42,19 +42,20 @@ function bytesToBase64(bytes: Uint8Array): string {
  * Call only from a trusted backend after the operator-uploaded object has
  * passed ownership, approval, MIME, size and source-hash checks.
  *
- * This module never obtains credentials or chooses a Storage object itself.
+ * The API key is supplied by the server runtime only and must never be
+ * embedded in browser code or logged.
  */
 export async function requestGoogleVisionOcr(
   options: GoogleVisionClientOptions,
 ): Promise<ScannerWorkerSuccess> {
   const {
-    accessToken, imageBytes, context,
+    apiKey, imageBytes, context,
     feature = "DOCUMENT_TEXT_DETECTION",
     fetchImpl = fetch,
     timeoutMs = 20_000,
   } = options;
 
-  if (!accessToken.trim()) throw new GoogleVisionRequestError("GOOGLE_VISION_AUTH_MISSING", false);
+  if (!apiKey.trim()) throw new GoogleVisionRequestError("GOOGLE_VISION_AUTH_MISSING", false);
   if (!(imageBytes instanceof Uint8Array) || imageBytes.length === 0) {
     throw new GoogleVisionRequestError("GOOGLE_VISION_IMAGE_EMPTY", false);
   }
@@ -67,12 +68,11 @@ export async function requestGoogleVisionOcr(
   try {
     let response: Response;
     try {
-      response = await fetchImpl(GOOGLE_VISION_EU_ANNOTATE_ENDPOINT, {
+      const endpoint = new URL(GOOGLE_VISION_EU_ANNOTATE_ENDPOINT);
+      endpoint.searchParams.set("key", apiKey);
+      response = await fetchImpl(endpoint.toString(), {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           requests: [{
             image: { content: bytesToBase64(imageBytes) },
@@ -85,6 +85,7 @@ export async function requestGoogleVisionOcr(
       if (controller.signal.aborted) {
         throw new GoogleVisionRequestError("GOOGLE_VISION_TIMEOUT", true);
       }
+      if (error instanceof GoogleVisionRequestError) throw error;
       throw new GoogleVisionRequestError("GOOGLE_VISION_NETWORK_ERROR", true);
     }
 
