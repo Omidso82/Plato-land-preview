@@ -19,7 +19,7 @@ Edge Function: `supabase/functions/plato-id-scanner-dispatch/index.ts`
 - Downloads the original from the fixed private `plato-id-scans` bucket.
 - Validates owner/scan path segments, safe filename, declared and actual size (maximum 15 MiB), supported MIME, byte signature, and extension/MIME match.
 - Computes SHA-256 from the downloaded bytes and passes only scan ID plus digest to a service-role-only atomic enqueue RPC.
-- Returns HTTP 202 after queue insertion. It does not claim OCR has run.
+- Returns HTTP 202 after queue insertion. If the worker secret is configured, it makes a server-to-server invocation of the worker; otherwise the job remains queued. Queue acceptance is never represented as OCR completion.
 
 ### 1.2 Shared object validation
 Files:
@@ -54,7 +54,7 @@ Edge Function:
 - Sends the image only to the fixed Google Vision EU endpoint through the previously tested client.
 - Persists the provisional OCR result using the fenced completion RPC; human review remains authoritative.
 - Uses the failure RPC for retryable/non-retryable job failures.
-- Processes at most one job per invocation. A trusted scheduler/manual invocation is still required.
+- Processes at most one job per invocation. The dispatcher invokes it once per scan when the shared worker secret is configured; a trusted scheduler is still needed to drain any backlog or retryable queued jobs that remain.
 
 No Google credentials have been configured; no image has been sent to Google.
 
