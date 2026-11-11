@@ -243,3 +243,65 @@ grant execute on function public.fail_plato_id_scanner_ocr_job(uuid,integer,uuid
 
 -- Deliberately no automatic enqueue trigger: a trusted dispatcher must verify
 -- operator approval, upload ownership, object existence and source digest first.
+
+-- Trusted dispatcher enqueue RPC. This remains part of the DRAFT migration.
+-- It performs the queue insert and upload-state transition atomically after
+-- the dispatcher has authenticated the operator and verified the object bytes.
+create or replace function public.enqueue_plato_id_scanner_ocr_job(
+  p_scan_id uuid,
+  p_source_sha256 text
+)
+returns public.plato_id_scanner_ocr_jobs
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  source_upload public.plato_id_scanner_uploads%rowtype;
+  queued_job public.plato_id_scanner_ocr_jobs%rowtype;
+begin
+  if auth.role() <> 'service_role' then
+    raise exception 'service role required';
+  end if;
+  if p_scan_id is null or p_source_sha256 !~ '^[0-9a-f]{64}$' then
+    raise exception 'invalid enqueue parameters';
+  end if;
+
+  select * into source_upload
+    from public.plato_id_scanner_uploads
+   where id = p_scan_id
+   for update;
+  if not found then
+    raise exception 'scanner upload not found';
+  end if;
+  if source_upload.status not in ('uploaded','queued') then
+    raise exception 'scanner upload is not eligible for OCR';
+  end if;
+
+  insert into public.plato_id_scanner_ocr_jobs(scan_id, source_sha256)
+  values (p_scan_id, lower(p_source_sha256))
+  on conflict (scan_id) do nothing;
+
+  select * into queued_job
+    from public.plato_id_scanner_ocr_jobs
+   where scan_id = p_scan_id
+   for update;
+  if not found or queued_job.source_sha256 <> lower(p_source_sha256) then
+    raise exception 'existing OCR job source digest mismatch';
+  end if;
+
+  if queued_job.status not in ('queued','processing','succeeded') then
+    raise exception 'existing OCR job is not enqueueable';
+  end if;
+
+  update public.plato_id_scanner_uploads
+     set status = case when queued_job.status = 'succeeded' then 'needs_review' else 'queued' end,
+         updated_at = now()
+   where id = p_scan_id and status = 'uploaded';
+
+  return queued_job;
+end;
+$$;
+
+revoke all on function public.enqueue_plato_id_scanner_ocr_job(uuid,text) from public, anon, authenticated;
+grant execute on function public.enqueue_plato_id_scanner_ocr_job(uuid,text) to service_role;
