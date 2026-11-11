@@ -1,4 +1,4 @@
-# PLATO ID Scanner — RLS Isolation Test Plan v0.1
+# PLATO ID Scanner — RLS Isolation Test Plan v0.2
 
 **Date:** 2026-11-11  
 **Scope:** Scanner-only access isolation and Storage ownership checks  
