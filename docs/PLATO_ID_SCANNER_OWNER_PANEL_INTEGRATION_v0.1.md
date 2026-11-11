@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Implementation Progress
 
-**Version:** 0.8  
+**Version:** 0.9  
 **Date:** 2026-11-11  
 **Scope:** PLATO LAND – Temporary Projects / PLATO ID Scanner only  
 **Branch:** `feature/plato-id-scanner-v0-1`  
@@ -82,6 +82,11 @@ The existing OCR assessment says a suitable Backend runtime is a prerequisite. S
 - Original filename remains in upload metadata for display.
 - This aligns the UI-generated object key with the worker contract's safe three-segment path shape.
 - CI for this latest change is pending.
+
+## Latest verification (v0.9)
+- On commit `e3f18dfb7b35dc6f432291d355d3c698e52ab311`, GitHub Actions run `42932816623` passed install, typecheck, Vite build and the existing two Deno suites plus Scanner contract suite.
+- Cloudflare Pages preview remained in progress at documentation time; no main deployment was performed.
+- Latest upload object-key generation uses a restricted base name and MIME-derived extension; original filename is retained separately.
 
 ## Remaining work
 1. Obtain successful CI for the latest feature head.
