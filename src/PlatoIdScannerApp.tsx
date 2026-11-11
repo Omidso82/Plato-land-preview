@@ -161,6 +161,20 @@ function ScannerReviewCard({row,client,reviewerId}:{row:ScanRow;client:any;revie
  return <article className="scanner-review-card">
   <div className="scanner-review-heading"><div><strong>{row.file_name}</strong><small>{new Date(row.created_at).toLocaleString('fa-IR')} · {(row.file_size/1024/1024).toFixed(2)} MB</small></div><span className="scanner-status">{latest?'بازبینی تأییدشده · نسخه '+latest.revision:Array.isArray(row.ocr_result?.ids)&&row.ocr_result.ids.length?'نتیجه OCR آماده بازبینی':row.status==='uploaded'?'ذخیره شده – در انتظار پردازش OCR':row.status}</span></div>
   {imageUrl&&<a className="scanner-image-link" href={imageUrl} target="_blank" rel="noreferrer"><img src={imageUrl} alt={'تصویر اصلی '+row.file_name}/></a>}
+  {row.ocr_result?.duplicate_audit&&<details className="scanner-review-history scanner-duplicate-audit">
+   <summary>گزارش تکراری‌ها: {row.ocr_result.duplicate_audit.duplicate_count??0} مورد · {row.ocr_result.duplicate_audit.unique_count??0} شناسه یکتا</summary>
+   <div className="scanner-report-stats">
+    <div><strong>{row.ocr_result.duplicate_audit.total_occurrences??0}</strong><small>کل موارد استخراج‌شده</small></div>
+    <div><strong>{row.ocr_result.duplicate_audit.unique_count??0}</strong><small>شناسه یکتا</small></div>
+    <div><strong>{row.ocr_result.duplicate_audit.duplicate_count??0}</strong><small>تکراری دقیق</small></div>
+   </div>
+   {(row.ocr_result.duplicate_audit.duplicates||[]).length>0
+    ? <div className="scanner-report-id-list" dir="ltr">{row.ocr_result.duplicate_audit.duplicates.map((item:any,index:number)=><div key={row.id+'-duplicate-'+index}>
+      <strong>{item.raw_value}</strong><small>تکرار {item.duplicate_number} · مورد اصلی: {item.duplicate_of_scan_id} / #{item.duplicate_of_candidate_index}</small>
+     </div>)}</div>
+    : <p className="scanner-empty">در این تصویر تکراری دقیقی ثبت نشده است.</p>}
+   <p className="scanner-report-disclaimer">این گزارش فقط موارد کاملاً یکسان را تکراری می‌شمارد؛ موارد مشابه جدا باقی می‌مانند.</p>
+  </details>}
   <div className="scanner-review-meta"><strong>بازبینی دستی فهرست Plato ID</strong><small>{latest?'آخرین نسخه تأییدشده: '+latest.revision:'هنوز نسخه تأییدشده‌ای ثبت نشده است.'}</small></div>
   <textarea className="scanner-review-textarea" dir="ltr" spellCheck={false} value={draft} onChange={e=>setDraft(e.target.value)} placeholder="هر Plato ID را در یک خط وارد کنید؛ مقایسه با تصویر اصلی انجام شود." rows={Math.min(10,Math.max(4,draft.split('\n').length))}/>
   <input className="scanner-review-note" value={note} onChange={e=>setNote(e.target.value)} placeholder="یادداشت اصلاح (اختیاری)"/>
