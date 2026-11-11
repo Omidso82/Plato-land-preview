@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Provider-Neutral OCR Worker Contract
 
-**Version:** 0.1  
+**Version:** 0.2  
 **Date:** 2026-11-11  
 **Status:** Engineering contract proposal; no runtime/provider selected  
 **Scope:** PLATO LAND – Temporary Projects / PLATO ID Scanner only  
@@ -56,7 +56,7 @@ The browser must not supply a worker URL, provider name, credentials, arbitrary 
 }
 ```
 
-The worker receives only a short-lived, single-object read capability or an equivalent narrowly scoped internal access method. It must not receive a reusable service-role key.
+The object key must contain exactly three path segments: operator UUID, the same `scan_id` UUID carried by the job, and a non-empty safe filename. Extra path segments, traversal-like segments and backslash separators are rejected. The worker receives only a short-lived, single-object read capability or an equivalent narrowly scoped internal access method. It must not receive a reusable service-role key.
 
 ### 3.3 Worker result (logical schema)
 
@@ -141,7 +141,7 @@ A stale worker lease may be reclaimed only after its lease expires; the old work
 - Add contract tests for schema validation, invalid signatures, hash mismatch, duplicate callbacks, stale leases, retries, ambiguity flags and audit immutability.
 
 ## 8. Contract validation code and tests
-The provider-neutral shape validators are implemented in `supabase/functions/_shared/plato-id-scanner-contract.ts`. They validate job, success and failure envelopes without parsing or modifying Plato ID candidate strings. Eight Deno tests are in `supabase/functions/_shared/plato-id-scanner-contract.test.ts`, and the feature-branch verification workflow runs this test file. These validators do not perform OCR, authenticate a worker callback, access Storage, claim jobs, persist results or provide runtime security by themselves.
+The provider-neutral shape validators are implemented in `supabase/functions/_shared/plato-id-scanner-contract.ts`. They validate job, success and failure envelopes without parsing or modifying Plato ID candidate strings. Eight Deno tests are in `supabase/functions/_shared/plato-id-scanner-contract.test.ts`; path cases explicitly reject scan-ID mismatch and nested extra path segments, and the feature-branch verification workflow runs this test file. These validators do not perform OCR, authenticate a worker callback, access Storage, claim jobs, persist results or provide runtime security by themselves.
 
 ## 9. Explicitly not authorized / not done
 
