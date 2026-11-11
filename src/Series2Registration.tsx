@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Crown, Trophy, Sparkles } from 'lucide-react';
 import { supabase } from './supabase';
 import Series2Prediction from './Series2Prediction';
+import Series2FinalistPrediction from './Series2FinalistPrediction';
 
 type LeaderboardRow = {
   plato_id: string;
@@ -256,6 +257,7 @@ export default function Series2Registration() {
         )}
 
         <Series2Prediction/>
+        <Series2FinalistPrediction/>
 
         <section className="s2leaderboard-panel">
 
