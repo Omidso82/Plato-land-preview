@@ -32,6 +32,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
  const [mode,setMode]=useState<'login'|'register'>('login'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[confirmed,setConfirmed]=useState(false),[owner,setOwner]=useState(false);
  const [access,setAccess]=useState<AccessRow|null>(null),[applications,setApplications]=useState<AccessRow[]>([]),[uploads,setUploads]=useState<ScanRow[]>([]),[files,setFiles]=useState<File[]>([]),[fileChecking,setFileChecking]=useState(false);
  const refreshGeneration=useRef(0);
+ const Root:React.ElementType=embedded?'div':'main';
  const refresh=useCallback(async(u:any)=>{
   if(!supabase||!u)return;
   const generation=++refreshGeneration.current;
@@ -106,8 +107,8 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
   setMessage((completed.length?'تعداد '+completed.length+' تصویر به‌صورت پرونده‌های مستقل ذخیره شد. ':'')+(failures.length?'موارد ناموفق: '+failures.join(' | '):'')+' پردازش OCR و استخراج IDها هنوز به Backend مستقل متصل نشده است؛ هیچ ID یا پیامی به تلگرام ارسال نشده است.');
   setBusy(false);
  }
- if(loading)return <main className={"plato-scanner-shell"+(embedded?" scanner-embedded":"")} dir="rtl"><div className="plato-scanner-card">در حال بررسی حساب…</div></main>;
- return <main className={"plato-scanner-shell"+(embedded?" scanner-embedded":"")} dir="rtl">
+ if(loading)return <Root className={"plato-scanner-shell"+(embedded?" scanner-embedded":"")} dir="rtl"><div className="plato-scanner-card">در حال بررسی حساب…</div></Root>;
+ return <Root className={"plato-scanner-shell"+(embedded?" scanner-embedded":"")} dir="rtl">
   <header className="plato-scanner-header"><div className="plato-scanner-brand"><span>♛</span><div><strong>PLATO LAND</strong><small>PLATO ID SCANNER</small></div></div>{user&&!ownerMode&&<button className="scanner-ghost" onClick={signOut}>خروج</button>}</header>
   {!user?<section className="plato-scanner-card scanner-auth"><span className="scanner-eyebrow">پنل مستقل اپراتور</span><h1>{mode==='register'?'ساخت حساب اپراتور':'ورود به اسکنر'}</h1><p>دسترسی فقط پس از تأیید ایمیل و تأیید مالک فعال می‌شود.</p><form onSubmit={authSubmit}><label>ایمیل<input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><label>رمز عبور<input type="password" required minLength={8} autoComplete={mode==='register'?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="scanner-primary" disabled={busy}>{busy?'لطفاً صبر کنید…':mode==='register'?'ثبت‌نام و ارسال ایمیل تأیید':'ورود امن'}</button></form><button className="scanner-link" onClick={()=>{setMode(mode==='register'?'login':'register');setMessage('');}}>{mode==='register'?'قبلاً حساب ساخته‌اید؟ ورود':'حساب ندارید؟ ثبت‌نام اپراتور'}</button></section>
   :!confirmed?<section className="plato-scanner-card"><h1>تأیید ایمیل لازم است</h1><p>لینک ارسال‌شده به {user.email} را باز کنید؛ سپس دوباره وارد شوید.</p><button className="scanner-primary" onClick={signOut}>بازگشت به ورود</button></section>
@@ -117,7 +118,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
   :access?.status!=='approved'?<section className="plato-scanner-card"><span className={'scanner-status '+(access?.status||'pending')}>{access?.status==='rejected'?'درخواست رد شده':access?.status==='disabled'?'دسترسی غیرفعال':'در انتظار تأیید مالک'}</span><h1>{access?.status==='rejected'?'درخواست دسترسی تأیید نشد':access?.status==='disabled'?'دسترسی شما غیرفعال است':'حساب شما در صف بررسی است'}</h1><p>{access?.status==='pending'?'ایمیل شما تأیید شده است. پس از بررسی مالک، امکان آپلود فعال می‌شود.':'برای پیگیری با مالک PLATO LAND تماس بگیرید.'}</p></section>
   :<section className="scanner-workspace"><div className="scanner-welcome"><div><span className="scanner-eyebrow">پنل اپراتور</span><h1>آپلود تصاویر حاوی Plato ID</h1><p>می‌توانید چند تصویر را با هم انتخاب کنید؛ هر عکس به‌صورت پرونده مستقل ذخیره می‌شود و هیچ عکس قبلی جایگزین نخواهد شد.</p></div><span className="scanner-status approved">دسترسی فعال</span></div><form className="scanner-panel scanner-upload" onSubmit={upload}><h2>ثبت تصاویر جدید</h2><label className="scanner-drop">انتخاب یک یا چند تصویر<input id="plato-scanner-files" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={e=>void selectFiles(e.target.files)}/><small>{fileChecking?'در حال بررسی تصاویر…':files.length?files.length+' تصویر معتبر آماده آپلود است.':'JPG، PNG یا WEBP · حداکثر ۱۵ مگابایت برای هر تصویر'}</small></label>{files.length>0&&<ul className="scanner-selected-files">{files.map((f,i)=><li key={f.name+'-'+i}>{f.name} <span>{(f.size/1024/1024).toFixed(2)} MB</span></li>)}</ul>}<button className="scanner-primary" disabled={!files.length||busy||fileChecking}>{fileChecking?'در حال بررسی…':busy?'در حال ذخیره تصاویر…':'آپلود تصاویر انتخاب‌شده'}</button></form><div className="scanner-panel"><h2>تاریخچه تصاویر من</h2><UploadList rows={uploads} client={supabase} reviewerId={user.id}/></div><PlatoIdScannerReportsPanel client={supabase} creatorId={user.id}/></section>}
   {message&&<p className="scanner-message" role="status">{message}</p>}<footer className="scanner-footer">PLATO LAND · دسترسی محدود و مستقل</footer>
- </main>;
+ </Root>;
 }
 function UploadList({rows,client,reviewerId}:{rows:ScanRow[];client:any;reviewerId:string}){
  if(!rows.length)return <p className="scanner-empty">هنوز تصویری ثبت نشده است.</p>;
