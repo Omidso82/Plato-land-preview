@@ -178,7 +178,7 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
  const [revisions,setRevisions]=useState<any[]>([]),[reviewLoading,setReviewLoading]=useState(false);
  const [period,setPeriod]=useState<'today'|'yesterday'|'last7'|'custom'>('today');
  const [startDate,setStartDate]=useState(''),[endDate,setEndDate]=useState('');
- const [preview,setPreview]=useState<any>(null),[reportBusy,setReportBusy]=useState(false),[reportMessage,setReportMessage]=useState('');
+ const [preview,setPreview]=useState<any>(null),[duplicateReviewed,setDuplicateReviewed]=useState(false),[reportBusy,setReportBusy]=useState(false),[reportMessage,setReportMessage]=useState('');
  useEffect(()=>{
   let alive=true;
   (async()=>{
@@ -217,12 +217,12 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
  async function requestReport(action:'preview'|'send'){
   if(reportBusy)return;
   if(period==='custom'&&(!startDate||!endDate||startDate>endDate)){setReportMessage('برای بازه دلخواه، تاریخ شروع و پایان معتبر را انتخاب کن.');return;}
-  if(action==='send'&&!window.confirm('فهرست کامل و نهایی بازه انتخاب‌شده به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.'))return;
+  if(action==='send'&&(!preview?.preview)){setReportMessage('ابتدا پیش‌نمایش همین بازه را تهیه و بررسی کن.');return;}\n  if(action==='send'&&(preview?.duplicate_count||0)>0&&!duplicateReviewed){setReportMessage('ابتدا موارد تکراری دقیق را بررسی و تأیید کن.');return;}\n  if(action==='send'&&!window.confirm('فهرست کامل و نهایی بازه انتخاب‌شده به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.'))return;
   setReportBusy(true);setReportMessage('');
   try{
    const body:any={action,period};
    if(period==='custom'){body.start_date=startDate;body.end_date=endDate;}
-   if(action==='send')body.request_id=crypto.randomUUID();
+   if(action==='send'){body.request_id=crypto.randomUUID();body.confirm_exact_duplicates=duplicateReviewed;}
    const {data,error}=await supabase.functions.invoke('plato-id-scanner-telegram-report',{body});
    if(error)throw error;
    if(action==='preview'){setPreview(data);setReportMessage('پیش‌نمایش آماده شد؛ هنوز هیچ پیامی ارسال نشده است.');}
@@ -250,7 +250,7 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
   <div className="scanner-telegram-report">
    <h3>ارسال گزارش به گروه آزمایشی تلگرام</h3>
    <p>ارسال فقط با اقدام دستی انجام می‌شود. هر بار کل فهرست تأییدشده بازه انتخابی ارسال خواهد شد؛ کانال اصلی مقصد این مرحله نیست.</p>
-   <label>بازه گزارش<select value={period} onChange={e=>{setPeriod(e.target.value as any);setPreview(null);setReportMessage('');}}>
+   <label>بازه گزارش<select value={period} onChange={e=>{setPeriod(e.target.value as any);setPreview(null);setDuplicateReviewed(false);setReportMessage('');}}>
     <option value="today">امروز</option><option value="yesterday">دیروز</option><option value="last7">هفت روز اخیر (بازه شناور)</option><option value="custom">بازه دلخواه</option>
    </select></label>
    {period==='custom'&&<div className="scanner-report-date-range">
