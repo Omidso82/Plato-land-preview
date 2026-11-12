@@ -225,7 +225,6 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
   }catch(e:any){setReportMessage(e?.message||'دریافت تاریخچه ارسال ناموفق بود.');}
   finally{setHistoryLoading(false);}
  }
- useEffect(()=>{void loadDeliveryHistory();},[]);
  async function requestReport(action:'preview'|'send'){
   if(reportBusy)return;
   if(period==='custom'&&(!startDate||!endDate||startDate>endDate)){setReportMessage('برای بازه دلخواه، تاریخ شروع و پایان معتبر را انتخاب کن.');return;}
