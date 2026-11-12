@@ -48,6 +48,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
  const refreshGeneration=useRef(0);
  const [scannerView,setScannerView]=useState<'new'|'archive'>('new');
  const [scannerSection,setScannerSection]=useState<'home'|'upload'|'ocr'|'archive'|'ids'|'report'|'history'|'operators'>('home');
+ useEffect(()=>{window.scrollTo({top:0,left:0,behavior:'instant' as ScrollBehavior});},[scannerSection]);
  const [scannerOpen,setScannerOpen]=useState(false);
  const [archiveDate,setArchiveDate]=useState('all');
  const dateKey=(value:string)=>{
@@ -158,6 +159,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
   {!user?<section className="plato-scanner-card scanner-auth"><span className="scanner-eyebrow">پنل مستقل اپراتور</span><h1>{mode==='register'?'ساخت حساب اپراتور':'ورود به اسکنر'}</h1><p>دسترسی فقط پس از تأیید ایمیل و تأیید مالک فعال می‌شود.</p><form onSubmit={authSubmit}><label>ایمیل<input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)}/></label><label>رمز عبور<input type="password" required minLength={8} autoComplete={mode==='register'?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)}/></label><button className="scanner-primary" disabled={busy}>{busy?'لطفاً صبر کنید…':mode==='register'?'ثبت‌نام و ارسال ایمیل تأیید':'ورود امن'}</button></form><button className="scanner-link" onClick={()=>{setMode(mode==='register'?'login':'register');setMessage('');}}>{mode==='register'?'قبلاً حساب ساخته‌اید؟ ورود':'حساب ندارید؟ ثبت‌نام اپراتور'}</button></section>
   :!confirmed?<section className="plato-scanner-card"><h1>تأیید ایمیل لازم است</h1><p>لینک ارسال‌شده به {user.email} را باز کنید؛ سپس دوباره وارد شوید.</p><button className="scanner-primary" onClick={signOut}>بازگشت به ورود</button></section>
   :owner?<section className="scanner-workspace scanner-admin-dashboard">
+    {scannerSection==='home'?<>
     <div className="scanner-admin-hero">
       <div className="scanner-admin-brandline"><span className="scanner-admin-crown">♛</span><span>PLATO LAND</span><i>ADMIN</i></div>
       <div className="scanner-admin-heading"><div><span className="scanner-eyebrow">مرکز مدیریت اختصاصی</span><h1>مدیریت آیدی‌های فعال</h1><p>آپلود تصاویر، بررسی نتایج و آماده‌سازی گزارش‌های PLATO ID</p></div><span className="scanner-status approved">دسترسی مالک</span></div>
@@ -177,7 +179,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
 <button type="button" onClick={()=>setScannerSection('history')}><b>◷</b><strong>تاریخچه ارسال</strong><small>سوابق تحویل تلگرام</small></button>
 <button type="button" className="scanner-home-wide" onClick={()=>setScannerSection('operators')}><b>♙</b><strong>مدیریت دسترسی اپراتورها</strong><small>{applications.filter(a=>a.status==='pending').length} درخواست در انتظار بررسی · {applications.length} حساب ثبت‌شده</small></button>
 </div>
-{scannerSection!=='home'&&<div className="scanner-admin-workspace">
+</>:<div className="scanner-admin-workspace">
 <div className="scanner-workspace-toolbar"><button type="button" className="scanner-back-button" onClick={()=>setScannerSection('home')}>← بازگشت به داشبورد</button><strong>{{upload:'تصاویر و آپلود',ocr:'استخراج و بررسی',archive:'آرشیو تصاویر',ids:'فهرست نهایی آیدی‌ها',report:'گزارش تلگرام',history:'تاریخچه ارسال',operators:'مدیریت دسترسی اپراتورها'}[scannerSection]}</strong></div>
 {scannerSection==='operators'?<div className="scanner-panel scanner-access-panel"><h2>درخواست‌های اپراتورها</h2>{applications.length===0?<p className="scanner-empty">درخواستی ثبت نشده است.</p>:applications.map(a=><article className="scanner-row" key={a.user_id}><div><strong>{a.email}</strong><small>{new Date(a.requested_at).toLocaleString('fa-IR')}</small><span className={'scanner-status '+a.status}>{a.status==='pending'?'در انتظار بررسی':a.status==='approved'?'تأییدشده':a.status==='rejected'?'ردشده':'غیرفعال'}</span></div><div className="scanner-actions"><button disabled={busy||a.status==='approved'} onClick={()=>void review(a.user_id,'approved')}>تأیید</button><button disabled={busy||a.status==='rejected'} onClick={()=>void review(a.user_id,'rejected')}>رد</button><button disabled={busy||a.status==='disabled'} onClick={()=>void review(a.user_id,'disabled')}>غیرفعال‌سازی</button></div></article>)}</div>
 :scannerSection==='ids'||scannerSection==='report'||scannerSection==='history'?<GlobalUniqueIdsPanel uploads={uploads} mode={scannerSection}/>
