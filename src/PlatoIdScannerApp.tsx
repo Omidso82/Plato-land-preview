@@ -197,10 +197,15 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
         <button type="button" onClick={()=>{setScannerSection('upload');setScannerView('new');}}><b>↑</b><strong>تصاویر و آپلود</strong><small>افزودن تصویر جدید</small></button>
         <button type="button" onClick={()=>{setScannerSection('ocr');setScannerView('new');}}><b>⌕</b><strong>استخراج و بررسی</strong><small>پردازش و بازبینی OCR</small></button>
         <button type="button" onClick={()=>{setScannerSection('archive');setScannerView('archive');}}><b>▤</b><strong>آرشیو تصاویر</strong><small>{uploads.length} تصویر ثبت‌شده</small></button>
+        <button type="button" onClick={()=>setScannerSection('ids')}><b>✓</b><strong>فهرست نهایی آیدی‌ها</strong><small>شناسه‌های یکتا و تکراری‌ها</small></button>
+        <button type="button" onClick={()=>setScannerSection('report')}><b>↗</b><strong>گزارش تلگرام</strong><small>پیش‌نمایش و ارسال دستی به گروه آزمایشی</small></button>
+        <button type="button" onClick={()=>setScannerSection('history')}><b>◷</b><strong>تاریخچه ارسال</strong><small>سوابق گزارش‌های ثبت‌شده اپراتور</small></button>
       </div>
     </>:<div className="scanner-admin-workspace">
-      <div className="scanner-workspace-toolbar"><button type="button" className="scanner-back-button" onClick={()=>{setScannerSection('home');setScannerView('new');}}>← بازگشت به داشبورد</button><strong>{{upload:'تصاویر و آپلود',ocr:'استخراج و بررسی',archive:'آرشیو تصاویر'}[scannerSection]||'فضای کاری اسکنر'}</strong></div>
-      <ScannerWorkspaceView view={scannerView} setView={setScannerView} sectionMode={scannerSection} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} onScanUpdated={(updated:ScanRow)=>setUploads(prev=>prev.map(item=>item.id===updated.id?updated:item))} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
+      <div className="scanner-workspace-toolbar"><button type="button" className="scanner-back-button" onClick={()=>{setScannerSection('home');setScannerView('new');}}>← بازگشت به داشبورد</button><strong>{{upload:'تصاویر و آپلود',ocr:'استخراج و بررسی',archive:'آرشیو تصاویر',ids:'فهرست نهایی آیدی‌ها',report:'گزارش تلگرام',history:'تاریخچه ارسال'}[scannerSection]||'فضای کاری اسکنر'}</strong></div>
+      {scannerSection==='ids'||scannerSection==='report'||scannerSection==='history'
+        ? <GlobalUniqueIdsPanel uploads={uploads} mode={scannerSection}/>
+        : <ScannerWorkspaceView view={scannerView} setView={setScannerView} sectionMode={scannerSection} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} onScanUpdated={(updated:ScanRow)=>setUploads(prev=>prev.map(item=>item.id===updated.id?updated:item))} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
     </div>}
    </section>}
   {message&&<p className="scanner-message" role="status">{message}</p>}<footer className="scanner-footer">PLATO LAND · دسترسی محدود و مستقل</footer>
