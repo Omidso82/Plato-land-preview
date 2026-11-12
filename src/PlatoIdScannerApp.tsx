@@ -9,6 +9,19 @@ type AccessRow={user_id:string;email:string;status:'pending'|'approved'|'rejecte
 type ScanRow={id:string;operator_id:string;storage_path:string;file_name:string;content_type:string;file_size:number;status:string;ocr_result:any;created_at:string};
 const BUCKET='plato-id-scans', MAX_FILE_SIZE=15*1024*1024, ACCEPTED=['image/jpeg','image/png','image/webp'];
 
+async function loadScannerUploads(client:any):Promise<{data:ScanRow[]|null;error:any}>{
+  const rows:ScanRow[]=[];
+  const pageSize=500;
+  for(let offset=0;;offset+=pageSize){
+    const {data,error}=await client.from('plato_id_scanner_uploads').select('*')
+      .order('created_at',{ascending:false}).range(offset,offset+pageSize-1);
+    if(error)return {data:null,error};
+    const page=(data||[]) as ScanRow[];
+    rows.push(...page);
+    if(page.length<pageSize)return {data:rows,error:null};
+  }
+}
+
 async function validateImage(file:File){
   if(!ACCEPTED.includes(file.type))throw new Error('فقط تصویر JPG، PNG یا WEBP پذیرفته می‌شود.');
   if(file.size<=0||file.size>MAX_FILE_SIZE)throw new Error('حجم هر تصویر باید بیشتر از صفر و حداکثر ۱۵ مگابایت باشد.');
@@ -58,10 +71,10 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
    const {data:role,error:roleError}=await supabase.rpc('current_user_role');if(generation!==refreshGeneration.current)return;const isOwner=!roleError&&(role==='owner'||role==='مالک کل');setOwner(isOwner);
    if(ownerMode&&!isOwner){setMessage('نشست مالک تأیید نشد؛ بخش اسکنر برای این حساب باز نمی‌شود.');return;}
    if(isOwner){
-    const [apps,scans]=await Promise.all([supabase.from('plato_id_scanner_access').select('user_id,email,status,requested_at,reviewed_at').order('requested_at',{ascending:false}),supabase.from('plato_id_scanner_uploads').select('*').order('created_at',{ascending:false})]);
+    const [apps,scans]=await Promise.all([supabase.from('plato_id_scanner_access').select('user_id,email,status,requested_at,reviewed_at').order('requested_at',{ascending:false}),loadScannerUploads(supabase)]);
     if(generation!==refreshGeneration.current)return;
     if(apps.error)setMessage('بارگذاری درخواست‌ها ناموفق بود: '+apps.error.message);else setApplications((apps.data||[]) as AccessRow[]);
-    if(scans.error)setMessage('بارگذاری آپلودها ناموفق بود: '+scans.error.message);else setUploads((scans.data||[]) as ScanRow[]);
+    if(scans.error)setMessage('بارگذاری آپلودها ناموفق بود: '+scans.error.message);else setUploads(scans.data||[]);
     setAccess(null);return;
    }
    let {data:row,error}=await supabase.from('plato_id_scanner_access').select('user_id,email,status,requested_at,reviewed_at').eq('user_id',u.id).maybeSingle();
@@ -70,9 +83,9 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
    if(!row){const created=await supabase.from('plato_id_scanner_access').insert({user_id:u.id,email:u.email||''}).select('user_id,email,status,requested_at,reviewed_at').single();if(generation!==refreshGeneration.current)return;if(created.error){setMessage('ثبت درخواست دسترسی ناموفق بود: '+created.error.message);return;}row=created.data;}
    setAccess(row as AccessRow);
    if(row.status!=='approved'){setUploads([]);return;}
-   const {data:own,error:ownError}=await supabase.from('plato_id_scanner_uploads').select('*').order('created_at',{ascending:false});
+   const {data:own,error:ownError}=await loadScannerUploads(supabase);
    if(generation!==refreshGeneration.current)return;
-   if(ownError)setMessage('دریافت سوابق آپلود ناموفق بود: '+ownError.message);else setUploads((own||[]) as ScanRow[]);
+   if(ownError)setMessage('دریافت سوابق آپلود ناموفق بود: '+ownError.message);else setUploads(own||[]);
   }finally{if(generation===refreshGeneration.current)setLoading(false);}
  },[]);
  useEffect(()=>{
