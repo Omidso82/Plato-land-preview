@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { formatTehranPersianHeader } from "../_shared/plato-id-scanner-telegram-format.ts";
+import { buildDailyScannerGroups, formatDailyGroupedTelegramMessages } from "../_shared/plato-id-scanner-daily-report.ts";
+import { buildScannerExcelWorkbook } from "../_shared/plato-id-scanner-xlsx.ts";
 
 const TZ = "Asia/Tehran";
 const cors = {
@@ -68,6 +70,8 @@ Deno.serve(async (request: Request) => {
   const body=await request.json().catch(()=>null);
   if(!body||!["preview","send","history"].includes(body.action)) return reply({error:"Invalid report request."},400);
   if(body.action!=="history"&&!["today","yesterday","last7","custom"].includes(body.period)) return reply({error:"Invalid report period."},400);
+  if(body.include_excel!==undefined&&typeof body.include_excel!=="boolean") return reply({error:"include_excel must be a boolean."},400);
+  const includeExcel=body.include_excel===true;
   if(body.action==="history"){
     let deliveriesQuery=admin.from("plato_id_scanner_telegram_deliveries")
       .select("id,delivery_status,report_version_id,message_count,message_ids,created_at,sent_at,last_error,created_by")
@@ -77,14 +81,14 @@ Deno.serve(async (request: Request) => {
     if(error) return reply({error:"Delivery history is not available. The Scanner delivery migration may not be applied."},503);
     const versionIds=(deliveries||[]).map((x:any)=>x.report_version_id);
     const {data:versions,error:versionsError}=versionIds.length
-      ? await admin.from("plato_id_scanner_report_versions").select("id,period_key,version,created_at").in("id",versionIds)
+      ? await admin.from("plato_id_scanner_report_versions").select("id,period_key,version,created_at,payload").in("id",versionIds)
       : {data:[],error:null};
     if(versionsError) return reply({error:"Report version history could not be loaded."},500);
     const byId=new Map((versions||[]).map((x:any)=>[x.id,x]));
     return reply({history:(deliveries||[]).map((x:any)=>({
       id:x.id,status:x.delivery_status,message_count:x.message_count,message_ids:x.message_ids,
       created_at:x.created_at,sent_at:x.sent_at,last_error:x.last_error,
-      report:byId.get(x.report_version_id)||null,
+      report:(()=>{const version:any=byId.get(x.report_version_id);return version?{id:version.id,period_key:version.period_key,version:version.version,created_at:version.created_at,excel_attached:version.payload?.excel_attached===true,excel_filename:version.payload?.excel_filename??null}:null;})(),
     }))});
   }
   const now=new Date();
@@ -114,17 +118,28 @@ Deno.serve(async (request: Request) => {
     const revisions=scanIds.length?await allRows(admin,"plato_id_scanner_review_revisions","scan_id,revision,status,canonical_ids",(q:any)=>q.in("scan_id",scanIds).eq("status","approved").order("revision",{ascending:true})): [];
     const latest=new Map<string,any>();
     for(const r of revisions){const old=latest.get(r.scan_id);if(!old||r.revision>old.revision)latest.set(r.scan_id,r);}
-    const ordered=[...scans].sort((a,b)=>a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id));
-    const ids:string[]=[];const seen=new Map<string,string>();const duplicates:any[]=[];let reviewedImages=0;
-    for(const scan of ordered){const rev=latest.get(scan.id);if(!rev)continue;reviewedImages++;if(!Array.isArray(rev.canonical_ids))continue;
-      for(const id of rev.canonical_ids){if(typeof id!=="string"||id.length===0)continue;const first=seen.get(id);if(!first){seen.set(id,scan.id);ids.push(id);}else{duplicates.push({id,first_scan_id:first,duplicate_scan_id:scan.id});}}
-    }
-    const fingerprintSource=JSON.stringify({periodKey,reviewed:ordered.filter((scan:any)=>latest.has(scan.id)).map((scan:any)=>({scan_id:scan.id,revision:latest.get(scan.id).revision})),ids,duplicates});
+    const days=buildDailyScannerGroups(scans,revisions);
+    const ids=[...new Set(days.flatMap((day)=>day.ids))];
+    const idCount=days.reduce((sum,day)=>sum+day.ids.length,0);
+    const reviewedImages=days.reduce((sum,day)=>sum+day.reviewed_images,0);
+    const duplicates=days.flatMap((day)=>day.duplicates.map((item)=>({
+      ...item,date_key:day.date_key,date_label:day.weekday+" | "+day.jalali_date,
+    })));
+    const fingerprintSource=JSON.stringify({
+      periodKey,
+      reviewed:revisions.map((revision:any)=>({scan_id:revision.scan_id,revision:revision.revision,status:revision.status})),
+      days:days.map((day)=>({date_key:day.date_key,scan_count:day.scan_count,reviewed_images:day.reviewed_images,ids:day.ids,duplicates:day.duplicates})),
+    });
     const fingerprintBytes=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(fingerprintSource));
     const fingerprint=[...new Uint8Array(fingerprintBytes)].map(x=>x.toString(16).padStart(2,"0")).join("");
     const headerDate = formatTehranPersianHeader(now);
-    const header="<b>♛ آیدی‌های فعال PLATO LAND</b>\n"+escapeHtml(headerDate.weekday)+"\n"+escapeHtml(headerDate.date)+"\n\n";
-    const messages=chunkLines(header,ids);
+    const header="<b>♛ آیدی‌های فعال PLATO LAND</b>\\n"+escapeHtml(headerDate.weekday)+"\\n"+escapeHtml(headerDate.date)+"\\n\\n";
+    const messages=formatDailyGroupedTelegramMessages(days,header);
+    if(body.action==="preview") return reply({
+      preview:true,period_key:periodKey,reviewed_images:reviewedImages,id_count:idCount,
+      unique_id_count:ids.length,duplicate_count:duplicates.length,duplicates,ids,days,messages,
+      fingerprint,excel_available:true,
+    });
     if(body.action==="preview") return reply({preview:true,period_key:periodKey,reviewed_images:reviewedImages,id_count:ids.length,duplicate_count:duplicates.length,duplicates,ids,messages,fingerprint});
     if(body.action==="send"&&body.preview_fingerprint!==fingerprint) return reply({error:"The report changed after preview. Generate a fresh preview before sending.",stale_preview:true,period_key:periodKey,fingerprint},409);
     if(duplicates.length>0&&body.confirm_exact_duplicates!==true) return reply({error:"Exact duplicates require explicit human confirmation before sending.",duplicate_count:duplicates.length,duplicates,period_key:periodKey},409);
@@ -138,13 +153,13 @@ Deno.serve(async (request: Request) => {
     const previous=versions?.[0]?.version??null;
     const {data:report,error:reportError}=await admin.from("plato_id_scanner_report_versions").insert({
       report_kind:"telegram_ids",period_key:periodKey,version:(previous??0)+1,previous_version:previous,
-      payload:{period_key:periodKey,from,to,reviewed_images:reviewedImages,ids,duplicate_count:duplicates.length,duplicates,messages},
+      payload:{period_key:periodKey,from,to,reviewed_images:reviewedImages,id_count:idCount,unique_id_count:ids.length,ids,days,duplicate_count:duplicates.length,duplicates,messages,excel_attached:includeExcel,excel_filename:includeExcel?"PLATO-ID-Report.xlsx":null},
       created_by:auth.user.id,note:"Manual send to PLATO LAND test Telegram group",
     }).select("id,version").single();
     if(reportError) throw reportError;
     const {data:delivery,error:deliveryError}=await admin.from("plato_id_scanner_telegram_deliveries").insert({
       request_id:body.request_id,report_version_id:report.id,destination_key:"test_group",
-      delivery_status:"sending",message_count:messages.length,attempts:1,created_by:auth.user.id,
+      delivery_status:"sending",message_count:messages.length+(includeExcel?1:0),attempts:1,created_by:auth.user.id,
     }).select("id").single();
     if(deliveryError) throw deliveryError;
     const messageIds:number[]=[];
@@ -155,9 +170,24 @@ Deno.serve(async (request: Request) => {
         if(!response.ok||!result?.ok) throw new Error(String(result?.description??("Telegram HTTP "+response.status)).slice(0,500));
         if(Number.isInteger(result.result?.message_id)) messageIds.push(result.result.message_id);
       }
+      if(includeExcel){
+        const workbook=buildScannerExcelWorkbook(days);
+        const excelFilename="PLATO-ID-Report.xlsx";
+        const form=new FormData();
+        form.set("chat_id",chatId);
+        form.set("document",new File([workbook],excelFilename,{
+          type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }));
+        const response=await fetch("https://api.telegram.org/bot"+botToken+"/sendDocument",{
+          method:"POST",body:form,
+        });
+        const result=await response.json().catch(()=>null);
+        if(!response.ok||!result?.ok) throw new Error(String(result?.description??("Telegram document HTTP "+response.status)).slice(0,500));
+        if(Number.isInteger(result.result?.message_id)) messageIds.push(result.result.message_id);
+      }
       const {error:updateError}=await admin.from("plato_id_scanner_telegram_deliveries").update({delivery_status:"sent",message_ids:messageIds,sent_at:new Date().toISOString(),last_error:null}).eq("id",delivery.id);
       if(updateError) throw updateError;
-      return reply({sent:true,period_key:periodKey,report_version:report.version,report_version_id:report.id,reviewed_images:reviewedImages,id_count:ids.length,message_count:messages.length,message_ids:messageIds},200);
+      return reply({sent:true,period_key:periodKey,report_version:report.version,report_version_id:report.id,reviewed_images:reviewedImages,id_count:idCount,unique_id_count:ids.length,message_count:messages.length+(includeExcel?1:0),message_ids:messageIds,excel_attached:includeExcel,excel_filename:includeExcel?"PLATO-ID-Report.xlsx":null},200);
     } catch(error) {
       await admin.from("plato_id_scanner_telegram_deliveries").update({delivery_status:"failed",message_ids:messageIds,last_error:String(error).slice(0,1000)}).eq("id",delivery.id);
       return reply({sent:false,partial:messageIds.length>0,report_version:report.version,report_version_id:report.id,message_ids:messageIds,error:"Telegram delivery failed; a versioned attempt was recorded."},502);
