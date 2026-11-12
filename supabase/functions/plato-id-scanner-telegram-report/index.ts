@@ -122,10 +122,13 @@ Deno.serve(async (request: Request) => {
     }
     const periodKey=start+".."+nextDate(end,-1);
     const label="بازه: "+start+" تا "+nextDate(end,-1)+" (Asia/Tehran)";
+    const fingerprintSource=JSON.stringify({periodKey,reviewed:ordered.filter((scan:any)=>latest.has(scan.id)).map((scan:any)=>({scan_id:scan.id,revision:latest.get(scan.id).revision})),ids,duplicates});
+    const fingerprintBytes=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(fingerprintSource));
+    const fingerprint=[...new Uint8Array(fingerprintBytes)].map(x=>x.toString(16).padStart(2,"0")).join("");
     const header="<b>♛ PLATO LAND | فهرست نهایی Plato ID</b>\n"+escapeHtml(label)+"\nتصاویر بازبینی و تأییدشده: "+reviewedImages+"\nتعداد ID یکتا: "+ids.length+"\n\n";
     const messages=chunkLines(header,ids);
-    if(body.action==="preview") return reply({preview:true,period_key:periodKey,reviewed_images:reviewedImages,id_count:ids.length,duplicate_count:duplicates.length,duplicates,ids,messages});
-    if(duplicates.length>0&&body.confirm_exact_duplicates!==true) return reply({error:"Exact duplicates require explicit human confirmation before sending.",duplicate_count:duplicates.length,duplicates,period_key:periodKey},409);
+    if(body.action==="preview") return reply({preview:true,period_key:periodKey,reviewed_images:reviewedImages,id_count:ids.length,duplicate_count:duplicates.length,duplicates,ids,messages,fingerprint});
+    if(body.action==="send"&&body.preview_fingerprint!==fingerprint) return reply({error:"The report changed after preview. Generate a fresh preview before sending.",stale_preview:true,period_key:periodKey,fingerprint},409);\n    if(duplicates.length>0&&body.confirm_exact_duplicates!==true) return reply({error:"Exact duplicates require explicit human confirmation before sending.",duplicate_count:duplicates.length,duplicates,period_key:periodKey},409);
     if(typeof body.request_id!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.request_id)) return reply({error:"A unique request_id is required."},400);
     const botToken=Deno.env.get("TELEGRAM_BOT_TOKEN"),chatId=Deno.env.get("TELEGRAM_TEST_CHAT_ID");
     if(!botToken||!chatId) return reply({error:"The existing Telegram test-group configuration is unavailable."},503);
