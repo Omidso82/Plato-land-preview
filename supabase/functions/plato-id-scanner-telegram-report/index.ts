@@ -172,7 +172,7 @@ Deno.serve(async (request: Request) => {
         if(Number.isInteger(result.result?.message_id)) messageIds.push(result.result.message_id);
       }
       if(includeExcel){
-        const workbook=buildScannerExcelWorkbook(days);
+        const workbook=buildScannerExcelWorkbook(days, from, to);
         const excelBuffer=new ArrayBuffer(workbook.byteLength);
         new Uint8Array(excelBuffer).set(workbook);
         const excelFilename="PLATO-ID-Report.xlsx";
