@@ -70,32 +70,123 @@ function worksheet(rows: string[][]): string {
 }
 
 /** Builds a real .xlsx workbook: one summary sheet and one sheet per Tehran upload day. */
-export function buildScannerExcelWorkbook(days: ScannerDailyGroup[]): Uint8Array {
-  const sheets = [{ name: "خلاصه", rows: [
-    ["تاریخ شمسی", "روز", "تصاویر ثبت‌شده", "تصاویر تأییدشده", "تعداد ID یکتای روز"],
-    ...days.map((day) => [day.jalali_date, day.weekday, String(day.scan_count), String(day.reviewed_images), String(day.ids.length)]),
-  ] }, ...days.map((day) => ({
-    name: day.date_key,
+const tehranGregorian = new Intl.DateTimeFormat("en-CA-u-ca-gregory-nu-latn", {
+  timeZone: "Asia/Tehran", year: "numeric", month: "2-digit", day: "2-digit",
+});
+const tehranPersian = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+  timeZone: "Asia/Tehran", year: "numeric", month: "long", day: "numeric", weekday: "long",
+});
+const weekdayOrder = ["Saturday", "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+const weekdayFa: Record<string, string> = {
+  Saturday: "شنبه", Sunday: "یکشنبه", Monday: "دوشنبه", Tuesday: "سه‌شنبه",
+  Wednesday: "چهارشنبه", Thursday: "پنجشنبه", Friday: "جمعه",
+};
+function parts(formatter: Intl.DateTimeFormat, date: Date): Record<string, string> {
+  return Object.fromEntries(formatter.formatToParts(date)
+    .filter((part) => part.type !== "literal").map((part) => [part.type, part.value]));
+}
+function keyFor(date: Date): string {
+  const p = parts(tehranGregorian, date);
+  return p.year + "-" + p.month + "-" + p.day;
+}
+function dateFromKey(key: string): Date { return new Date(key + "T12:00:00Z"); }
+function addDays(key: string, amount: number): string {
+  const date = dateFromKey(key); date.setUTCDate(date.getUTCDate() + amount);
+  return date.toISOString().slice(0, 10);
+}
+function persianParts(key: string) { return parts(tehranPersian, dateFromKey(key)); }
+function dayKey(value: string): string {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) throw new Error("Invalid report date.");
+  return keyFor(date);
+}
+function monthIdentity(key: string) {
+  const p = persianParts(key);
+  return { year: p.year, month: p.month, monthKey: p.year + "-" + p.month, day: Number(p.day) };
+}
+function daysInPersianMonth(anyDay: string): string[] {
+  const identity = monthIdentity(anyDay), center = dateFromKey(anyDay), candidates: string[] = [];
+  for (let offset = -35; offset <= 35; offset++) {
+    const date = new Date(center); date.setUTCDate(date.getUTCDate() + offset);
+    const key = date.toISOString().slice(0, 10);
+    if (monthIdentity(key).monthKey === identity.monthKey) candidates.push(key);
+  }
+  return candidates.sort();
+}
+function weeklySheet(days: ScannerDailyGroup[], weekStart: string) {
+  const weekKeys = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+  const activity = new Map<string, Set<string>>();
+  for (const day of days) for (const id of day.ids) {
+    const active = activity.get(id) ?? new Set<string>(); active.add(day.date_key); activity.set(id, active);
+  }
+  const rows = [
+    ["Plato ID", ...weekKeys.map((key, index) => weekdayFa[weekdayOrder[index]] + " " + persianParts(key).day)],
+    ...[...activity.keys()].sort((a, b) => a.localeCompare(b)).map((id) => [
+      id, ...weekKeys.map((key) => activity.get(id)!.has(key) ? "★" : ""),
+    ]),
+  ];
+  return { name: ("هفته " + weekStart).slice(0, 31), rows };
+}
+function monthlySheet(days: ScannerDailyGroup[], anyDay: string) {
+  const monthDays = daysInPersianMonth(anyDay), identity = monthIdentity(anyDay), daySet = new Set(monthDays);
+  const activity = new Map<string, Set<string>>();
+  for (const day of days) if (daySet.has(day.date_key)) for (const id of day.ids) {
+    const active = activity.get(id) ?? new Set<string>(); active.add(day.date_key); activity.set(id, active);
+  }
+  const rows = [
+    ["Plato ID", ...monthDays.map((key) => String(monthIdentity(key).day))],
+    ...[...activity.keys()].sort((a, b) => a.localeCompare(b)).map((id) => [
+      id, ...monthDays.map((key) => activity.get(id)!.has(key) ? "★" : ""),
+    ]),
+  ];
+  return { name: ("ماه " + identity.year + " " + identity.month).slice(0, 31), rows };
+}
+
+/** One Saturday–Friday activity matrix per week and one complete Jalali-month matrix per month. */
+export function buildScannerExcelWorkbook(days: ScannerDailyGroup[], periodStart: string, periodEnd: string): Uint8Array {
+  const startKey = dayKey(periodStart), endKey = dayKey(periodEnd);
+  if (startKey > endKey) throw new Error("Excel report period is invalid.");
+  const reportDays = [...new Map(days.map((day) => [day.date_key, day])).values()];
+  const summary = {
+    name: "خلاصه",
     rows: [
-      ["ردیف", "Plato ID", "تاریخ شمسی", "روز"],
-      ...day.ids.map((id, index) => [String(index + 1), id, day.jalali_date, day.weekday]),
+      ["گزارش فعالیت Plato ID", "از", startKey, "تا", endKey],
+      ["روزهای دارای گزارش", String(reportDays.length), "تعداد آیدی‌های یکتا", String(new Set(reportDays.flatMap((day) => day.ids)).size)],
+      ["ساختار", "هر هفته یک جدول شنبه تا جمعه؛ هر ماه شمسی یک جدول کامل روزانه"],
     ],
-  }))];
+  };
+  const weeks: Array<{ name: string; rows: string[][] }> = [];
+  const weekdayFormatter = new Intl.DateTimeFormat("en-US", { timeZone: "Asia/Tehran", weekday: "long" });
+  const firstWeekday = weekdayFormatter.format(dateFromKey(startKey));
+  const firstOffset = weekdayOrder.indexOf(firstWeekday);
+  if (firstOffset < 0) throw new Error("Could not determine report weekday.");
+  let cursor = addDays(startKey, -firstOffset);
+  while (cursor <= endKey) { weeks.push(weeklySheet(reportDays, cursor)); cursor = addDays(cursor, 7); }
+  const monthStarts = new Map<string, string>();
+  for (let key = startKey; key <= endKey; key = addDays(key, 1)) {
+    const identity = monthIdentity(key);
+    if (!monthStarts.has(identity.monthKey)) monthStarts.set(identity.monthKey, key);
+  }
+  const months = [...monthStarts.values()].map((key) => monthlySheet(reportDays, key));
+  const sheets = [summary, ...weeks, ...months];
   const workbookSheets = sheets.map((sheet, index) =>
-    `<sheet name="${xmlEscape(sheet.name.slice(0,31))}" sheetId="${index + 1}" r:id="rId${index + 1}"/>`
+    '<sheet name="' + xmlEscape(sheet.name.slice(0, 31)) + '" sheetId="' + (index + 1) + '" r:id="rId' + (index + 1) + '"/>'
   ).join("");
-  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>${sheets.map((_, index) => `<Override PartName="/xl/worksheets/sheet${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join("")}</Types>`;
-  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
-  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${workbookSheets}</sheets></workbook>`;
-  const workbookRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${sheets.map((_, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${index + 1}.xml"/>`).join("")}<Relationship Id="rId${sheets.length + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
-  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
+  const contentTypes = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
+    sheets.map((_, index) => '<Override PartName="/xl/worksheets/sheet' + (index + 1) + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>').join("") + '</Types>';
+  const rootRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>';
+  const workbook = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' + workbookSheets + '</sheets></workbook>';
+  const workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+    sheets.map((_, index) => '<Relationship Id="rId' + (index + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (index + 1) + '.xml"/>').join("") +
+    '<Relationship Id="rId' + (sheets.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+  const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
   const entries = [
     { name: "[Content_Types].xml", data: bytes(contentTypes) },
     { name: "_rels/.rels", data: bytes(rootRels) },
     { name: "xl/workbook.xml", data: bytes(workbook) },
     { name: "xl/_rels/workbook.xml.rels", data: bytes(workbookRels) },
     { name: "xl/styles.xml", data: bytes(styles) },
-    ...sheets.map((sheet, index) => ({ name: `xl/worksheets/sheet${index + 1}.xml`, data: bytes(worksheet(sheet.rows)) })),
+    ...sheets.map((sheet, index) => ({ name: "xl/worksheets/sheet" + (index + 1) + ".xml", data: bytes(worksheet(sheet.rows)) })),
   ];
   return zipStored(entries);
 }
