@@ -67,7 +67,8 @@ Deno.serve(async (request: Request) => {
   const body=await request.json().catch(()=>null);
   if(!body||!["preview","send","history"].includes(body.action)) return reply({error:"Invalid report request."},400);
   if(body.action!=="history"&&!["today","yesterday","last7","custom"].includes(body.period)) return reply({error:"Invalid report period."},400);
-  if(body.action==="history"){\n    const {data:deliveries,error}=await admin.from("plato_id_scanner_telegram_deliveries").select("id,delivery_status,report_version_id,message_count,message_ids,created_at,sent_at,last_error").order("created_at",{ascending:false}).limit(20);
+  if(body.action==="history"){
+    const {data:deliveries,error}=await admin.from("plato_id_scanner_telegram_deliveries").select("id,delivery_status,report_version_id,message_count,message_ids,created_at,sent_at,last_error").order("created_at",{ascending:false}).limit(20);
     if(error) return reply({error:"Delivery history is not available. The Scanner delivery migration may not be applied."},503);
     const versionIds=(deliveries||[]).map((x:any)=>x.report_version_id);
     const {data:versions,error:versionsError}=versionIds.length?await admin.from("plato_id_scanner_report_versions").select("id,period_key,version,created_at").in("id",versionIds):{data:[],error:null};
