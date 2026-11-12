@@ -116,7 +116,8 @@ function daysInPersianMonth(anyDay: string): string[] {
 function weeklySheet(days: ScannerDailyGroup[], weekStart: string) {
   const weekKeys = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
   const activity = new Map<string, Set<string>>();
-  for (const day of days) for (const id of day.ids) {
+  const weekKeySet = new Set(weekKeys);
+  for (const day of days) if (weekKeySet.has(day.date_key)) for (const id of day.ids) {
     const active = activity.get(id) ?? new Set<string>(); active.add(day.date_key); activity.set(id, active);
   }
   const rows = [
