@@ -74,7 +74,8 @@ Deno.serve(async (request: Request) => {
     const {data:versions,error:versionsError}=versionIds.length?await admin.from("plato_id_scanner_report_versions").select("id,period_key,version,created_at").in("id",versionIds):{data:[],error:null};
     if(versionsError) return reply({error:"Report version history could not be loaded."},500);
     const byId=new Map((versions||[]).map((x:any)=>[x.id,x]));
-    return reply({history:(deliveries||[]).map((x:any)=>({id:x.id,status:x.delivery_status,message_count:x.message_count,message_ids:x.message_ids,created_at:x.created_at,sent_at:x.sent_at,last_error:x.last_error,report:byId.get(x.report_version_id)||null}))});\n  }
+    return reply({history:(deliveries||[]).map((x:any)=>({id:x.id,status:x.delivery_status,message_count:x.message_count,message_ids:x.message_ids,created_at:x.created_at,sent_at:x.sent_at,last_error:x.last_error,report:byId.get(x.report_version_id)||null}))});
+  }
   const now=new Date();
   const todayParts=new Intl.DateTimeFormat("en-US",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(now);
   const part=(k:string)=>todayParts.find(x=>x.type===k)?.value||"";
