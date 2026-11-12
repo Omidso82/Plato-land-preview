@@ -321,17 +321,17 @@ function ScannerWorkspaceView({view,setView,sectionMode='all',archiveDate,setArc
  {sectionMode==='all'&&<nav className="scanner-view-switch" aria-label="بخش‌های اسکنر">
    <button type="button" className={view==='new'?'active':''} onClick={()=>setView('new')}>＋ اسکن جدید</button>
    <button type="button" className={view==='archive'?'active':''} onClick={()=>setView('archive')}>▤ آرشیو تصاویر <i>{uploads.length}</i></button>
-  </nav>
-  </nav>}\n  {(sectionMode==='all'||sectionMode==='upload'||sectionMode==='ocr')&&view==='new'?<div className="scanner-new-flow">
-   <form id="scanner-upload-new" className="scanner-panel scanner-upload scanner-upload-new" onSubmit={upload}>
+  </nav>}
+  {(sectionMode==='all'||sectionMode==='upload'||sectionMode==='ocr')&&view==='new'?<div className="scanner-new-flow">
+   {(sectionMode==='all'||sectionMode==='upload')&&<form id="scanner-upload-new" className="scanner-panel scanner-upload scanner-upload-new" onSubmit={upload}>
     <div className="scanner-section-heading"><span className="scanner-step">۱</span><div><h2>افزودن تصویر جدید</h2><p>هر بار فقط یک تصویر آپلود کن؛ بعد از مشاهده نتیجه، تصویر بعدی را انتخاب کن.</p></div></div>
     <label className="scanner-drop"><span className="scanner-upload-icon">↑</span><strong>انتخاب یک تصویر برای اسکن</strong><small>{fileChecking?'در حال بررسی تصویر…':files.length?'یک تصویر معتبر آماده آپلود است.':'JPG، PNG یا WEBP · حداکثر ۱۵ مگابایت'}</small><input id="plato-scanner-files" type="file" accept="image/jpeg,image/png,image/webp" onChange={(e:any)=>void selectFiles(e.target.files)}/></label>
     {files.length>0&&<><ul className="scanner-selected-files">{files.map((f:File,i:number)=><li key={f.name+'-'+i}>{f.name}<span>{(f.size/1024/1024).toFixed(2)} MB</span></li>)}</ul><button type="button" className="scanner-ghost scanner-delete-button" disabled={busy||fileChecking} onClick={()=>{setFiles([]);const input=document.getElementById('plato-scanner-files') as HTMLInputElement|null;if(input)input.value='';setMessage('تصویر انتخاب‌شده از فرم پاک شد؛ هنوز در سرور ذخیره نشده بود.');}}>حذف تصویر انتخاب‌شده</button></>}
     <button className="scanner-primary" disabled={!files.length||busy||fileChecking}>{fileChecking?'در حال بررسی…':busy?'در حال ذخیره تصاویر…':'ذخیره تصاویر انتخاب‌شده'}</button>
-   </form>
-   <section id="scanner-queue-panel" className="scanner-panel scanner-queue-panel"><div className="scanner-section-heading"><span className="scanner-step">۲</span><div><h2>تصاویر امروز · {todayLabel}</h2><p>هر تصویر فقط یک بار برای OCR ارسال می‌شود؛ نتیجه و بازبینی آن زیر همان تصویر باقی می‌ماند.</p></div></div>
+   </form>}
+   {(sectionMode==='all'||sectionMode==='ocr')&&<section id="scanner-queue-panel" className="scanner-panel scanner-queue-panel"><div className="scanner-section-heading"><span className="scanner-step">۲</span><div><h2>تصاویر امروز · {todayLabel}</h2><p>هر تصویر فقط یک بار برای OCR ارسال می‌شود؛ نتیجه و بازبینی آن زیر همان تصویر باقی می‌ماند.</p></div></div>
     {todayRows.length?<UploadList rows={todayRows} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated}/>:<div className="scanner-empty-state"><strong>امروز هنوز تصویری آپلود نشده است</strong><small>یک تصویر انتخاب و ذخیره کن تا دکمه اسکن آن نمایش داده شود.</small></div>}
-   </section>
+   </section>}
   </div>:null}\n  {(sectionMode==='all'||sectionMode==='archive')&&view==='archive'?<section className="scanner-panel scanner-archive-panel">
    <div className="scanner-section-heading"><span className="scanner-step">▤</span><div><h2>آرشیو اسکن‌ها</h2><p>سوابق را بر اساس روز انتخاب کن و نتیجه هر تصویر را دوباره ببین.</p></div></div>
    <label className="scanner-archive-filter">انتخاب روز<select value={archiveDate} onChange={(e:any)=>setArchiveDate(e.target.value)}><option value="all">همه روزها</option>{archiveDays.map((d:string)=><option value={d} key={d}>{d.replace(/\d/g,n=>'۰۱۲۳۴۵۶۷۸۹'[Number(n)])}</option>)}</select></label>
