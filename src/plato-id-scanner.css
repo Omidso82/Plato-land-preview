@@ -105,3 +105,10 @@
  .scanner-modal .scanner-view-switch{top:46px}
  .scanner-open-button{max-width:none}
 }
+
+
+.scanner-global-unique-panel{margin:0 0 18px}
+.scanner-global-id-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.scanner-global-id-list span{display:inline-flex;align-items:center;padding:7px 10px;border:1px solid rgba(214,174,87,.35);border-radius:9px;background:rgba(214,174,87,.08);color:inherit;font-size:13px;direction:ltr}
+.scanner-global-unique-panel .scanner-report-stats{margin:14px 0}
+.scanner-global-unique-panel .scanner-review-history{margin-top:12px}
