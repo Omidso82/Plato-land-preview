@@ -132,3 +132,60 @@
 .scanner-delivery-history>.scanner-section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .scanner-delivery-history .scanner-history-item{display:grid;gap:5px;padding:12px;border-radius:10px;background:rgba(255,255,255,.035)}
 .scanner-delivery-history .scanner-history-item small{overflow-wrap:anywhere;color:var(--scanner-muted,#aaa)}
+
+
+/* PLATO ID Scanner — owner dashboard v1: visual hierarchy and mobile-first navigation */
+.scanner-admin-dashboard{gap:18px!important}
+.scanner-admin-hero{padding:22px 24px;border:1px solid rgba(213,173,85,.42);border-radius:20px;background:radial-gradient(ellipse at 100% 0,rgba(213,173,85,.16),transparent 55%),linear-gradient(135deg,#1d1b17,#101112 72%);box-shadow:0 18px 48px rgba(0,0,0,.28)}
+.scanner-admin-brandline{display:flex;align-items:center;gap:9px;color:#e5c36a;font-weight:900;letter-spacing:1.5px;font-size:14px}
+.scanner-admin-crown{font-size:25px;color:#e5c36a}
+.scanner-admin-brandline i{font-style:normal;font-size:10px;letter-spacing:1px;padding:4px 9px;border-radius:20px;background:rgba(213,173,85,.13);border:1px solid rgba(213,173,85,.35)}
+.scanner-admin-heading{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;margin-top:18px}
+.scanner-admin-heading h1{font-size:clamp(24px,4vw,34px);line-height:1.3;margin:7px 0}
+.scanner-admin-heading p{margin:0;color:#bcb4a5;line-height:1.8;font-size:13px}
+.scanner-admin-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}
+.scanner-admin-stat{min-width:0;padding:15px 16px;border:1px solid #403a2e;border-radius:15px;background:linear-gradient(145deg,#1b1b1a,#121314);display:grid;gap:6px}
+.scanner-admin-stat span{color:#c6bda9;font-size:12px;line-height:1.5}
+.scanner-admin-stat strong{font-size:29px;line-height:1.1;color:#e5c36a;font-variant-numeric:tabular-nums}
+.scanner-admin-stat small{font-size:10px;color:#8f897e;line-height:1.5}
+.scanner-admin-nav{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:9px}
+.scanner-admin-nav a{display:flex;align-items:center;gap:9px;min-width:0;padding:13px 11px;text-decoration:none;color:#f3ecdc;border:1px solid #49402e;border-radius:13px;background:#171716;transition:border-color .18s,background .18s}
+.scanner-admin-nav a:hover,.scanner-admin-nav a:focus-visible{border-color:#d5ad55;background:#211c12;outline:none}
+.scanner-admin-nav a>b{display:grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;background:rgba(213,173,85,.14);color:#e5c36a;font-size:12px}
+.scanner-admin-nav a span{display:grid;gap:4px;min-width:0}
+.scanner-admin-nav a strong{font-size:11px;line-height:1.5}
+.scanner-admin-nav a small{font-size:10px;line-height:1.5;color:#9d9689}
+.scanner-admin-access{border:1px solid #403a2e;border-radius:14px;background:#151515;overflow:hidden}
+.scanner-admin-access>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 17px;cursor:pointer;list-style:none}
+.scanner-admin-access>summary::-webkit-details-marker{display:none}
+.scanner-admin-access>summary:after{content:'＋';color:#e5c36a;font-size:20px}
+.scanner-admin-access[open]>summary:after{content:'−'}
+.scanner-admin-access>summary span{display:grid;gap:4px}
+.scanner-admin-access>summary strong{font-size:13px;color:#f1e7d0}
+.scanner-admin-access>summary small,.scanner-admin-access>summary i{font-size:11px;color:#a79d8a;font-style:normal}
+.scanner-admin-access .scanner-panel{border:0;border-top:1px solid #393126;border-radius:0;background:transparent;padding:16px;box-shadow:none}
+.scanner-admin-dashboard .scanner-flow{gap:16px}
+.scanner-admin-dashboard .scanner-global-unique-panel,.scanner-admin-dashboard .scanner-upload-new,.scanner-admin-dashboard .scanner-queue-panel,.scanner-admin-dashboard .scanner-archive-panel{scroll-margin-top:18px}
+.scanner-admin-dashboard .scanner-section-heading{align-items:flex-start}
+.scanner-admin-dashboard .scanner-section-heading h2{font-size:16px}
+.scanner-admin-dashboard .scanner-view-switch{position:static}
+.scanner-admin-dashboard .scanner-review-card{padding:16px;border:1px solid #3e382d;border-radius:14px;background:#141414;margin-top:10px}
+.scanner-admin-dashboard .scanner-review-card+.scanner-review-card{margin-top:12px}
+.scanner-admin-dashboard .scanner-telegram-report,.scanner-admin-dashboard .scanner-delivery-history{scroll-margin-top:18px}
+.scanner-admin-dashboard .scanner-message{max-width:none}
+@media(max-width:760px){
+ .scanner-admin-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .scanner-admin-stat{padding:12px}
+ .scanner-admin-stat strong{font-size:25px}
+ .scanner-admin-nav{grid-template-columns:1fr 1fr;gap:8px}
+ .scanner-admin-nav a{padding:12px 10px}
+ .scanner-admin-nav a:last-child{grid-column:1/-1}
+ .scanner-admin-hero{padding:18px}
+ .scanner-admin-heading{align-items:flex-start;flex-direction:column}
+}
+@media(max-width:420px){
+ .scanner-admin-nav{grid-template-columns:1fr}
+ .scanner-admin-nav a:last-child{grid-column:auto}
+ .scanner-admin-nav a strong{font-size:12px}
+ .scanner-admin-stat span{font-size:11px}
+}
