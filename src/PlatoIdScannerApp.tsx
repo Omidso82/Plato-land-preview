@@ -235,7 +235,7 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
   try{
    const body:any={action,period};
    if(period==='custom'){body.start_date=startDate;body.end_date=endDate;}
-   if(action==='send'){body.request_id=crypto.randomUUID();body.confirm_exact_duplicates=duplicateReviewed;}
+   if(action==='send'){body.request_id=crypto.randomUUID();body.confirm_exact_duplicates=duplicateReviewed;body.preview_fingerprint=preview.fingerprint;}
    const {data,error}=await supabase.functions.invoke('plato-id-scanner-telegram-report',{body});
    if(error)throw error;
    if(action==='preview'){setPreview(data);setDuplicateReviewed(false);setReportMessage('پیش‌نمایش آماده شد؛ هنوز هیچ پیامی ارسال نشده است.');}
