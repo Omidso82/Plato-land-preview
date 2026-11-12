@@ -190,8 +190,14 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
   :<section className="scanner-workspace scanner-admin-dashboard">
     {scannerSection==='home'?<>
       <div className="scanner-admin-hero">
-        <div className="scanner-admin-brandline"><span className="scanner-admin-crown">♛</span><span>PLATO LAND</span><i>SCANNER</i></div>
-        <div className="scanner-admin-heading"><div><span className="scanner-eyebrow">فضای کاری اپراتور</span><h1>مدیریت آیدی‌های فعال</h1><p>از همین پنل، فقط بخش‌های فعال اسکنر را باز کن و کارهایت را انجام بده.</p></div><span className="scanner-status approved">دسترسی تأییدشده</span></div>
+        <div className="scanner-admin-brandline"><span className="scanner-admin-crown">♛</span><span>PLATO LAND</span><i>ADMIN</i></div>
+        <div className="scanner-admin-heading"><div><span className="scanner-eyebrow">مرکز مدیریت اختصاصی</span><h1>مدیریت آیدی‌های فعال</h1><p>آپلود تصاویر، بررسی نتایج و آماده‌سازی گزارش‌های PLATO ID</p></div><span className="scanner-status approved">دسترسی اپراتور</span></div>
+      </div>
+      <div className="scanner-admin-stats" aria-label="خلاصه وضعیت اسکنر">
+        <div className="scanner-admin-stat"><span>کل تصاویر ثبت‌شده شما</span><strong>{uploads.length}</strong><small>تمام سوابق مجاز شما</small></div>
+        <div className="scanner-admin-stat"><span>تصاویر امروز</span><strong>{todayRows.length}</strong><small>بر اساس تاریخ تهران</small></div>
+        <div className="scanner-admin-stat"><span>در انتظار پردازش OCR</span><strong>{uploads.filter(x=>x.status==='uploaded').length}</strong><small>نیازمند شروع پردازش</small></div>
+        <div className="scanner-admin-stat"><span>در انتظار بازبینی</span><strong>{uploads.filter(x=>x.status==='needs_review').length}</strong><small>تأیید انسانی لازم است</small></div>
       </div>
       <div className="scanner-home-grid" aria-label="بخش‌های مجاز اسکنر">
         <button type="button" onClick={()=>{setScannerSection('upload');setScannerView('new');}}><b>↑</b><strong>تصاویر و آپلود</strong><small>افزودن تصویر جدید</small></button>
