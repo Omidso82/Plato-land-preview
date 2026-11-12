@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { supabase } from './supabase';
 import './plato-id-scanner.css';
 import { parseScannerReviewDraft } from './plato-id-scanner-review';
@@ -158,7 +158,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
   :!confirmed?<section className="plato-scanner-card"><h1>تأیید ایمیل لازم است</h1><p>لینک ارسال‌شده به {user.email} را باز کنید؛ سپس دوباره وارد شوید.</p><button className="scanner-primary" onClick={signOut}>بازگشت به ورود</button></section>
   :owner?<section className="scanner-workspace"><div className="scanner-welcome"><div><span className="scanner-eyebrow">دسترسی مالک</span><h1>مدیریت گزارش‌گیری Plato IDهای فعال</h1><p>مدیریت دسترسی اپراتورها و پردازش تصاویر ورودی</p></div><span className="scanner-status approved">مالک</span></div>
     <div className="scanner-panel scanner-access-panel"><h2>درخواست‌های اپراتورها</h2>{applications.length===0?<p className="scanner-empty">درخواستی ثبت نشده است.</p>:applications.map(a=><article className="scanner-row" key={a.user_id}><div><strong>{a.email}</strong><small>{new Date(a.requested_at).toLocaleString('fa-IR')}</small><span className={'scanner-status '+a.status}>{a.status==='pending'?'در انتظار بررسی':a.status==='approved'?'تأییدشده':a.status==='rejected'?'ردشده':'غیرفعال'}</span></div><div className="scanner-actions"><button disabled={busy||a.status==='approved'} onClick={()=>void review(a.user_id,'approved')}>تأیید</button><button disabled={busy||a.status==='rejected'} onClick={()=>void review(a.user_id,'rejected')}>رد</button><button disabled={busy||a.status==='disabled'} onClick={()=>void review(a.user_id,'disabled')}>غیرفعال‌سازی</button></div></article>)}</div>
-    <ScannerWorkspaceView view={scannerView} setView={setScannerView} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
+    <ScannerWorkspaceView view={scannerView} setView={setScannerView} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} onScanUpdated={(updated:ScanRow)=>setUploads(prev=>prev.map(item=>item.id===updated.id?updated:item))} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
    </section>
    :access?.status!=='approved'?<section className="plato-scanner-card"><span className={'scanner-status '+(access?.status||'pending')}>{access?.status==='rejected'?'درخواست رد شده':access?.status==='disabled'?'دسترسی غیرفعال':'در انتظار تأیید مالک'}</span><h1>{access?.status==='rejected'?'درخواست دسترسی تأیید نشد':access?.status==='disabled'?'دسترسی شما غیرفعال است':'حساب شما در صف بررسی است'}</h1><p>{access?.status==='pending'?'ایمیل شما تأیید شده است. پس از بررسی مالک، امکان آپلود فعال می‌شود.':'برای پیگیری با مالک PLATO LAND تماس بگیرید.'}</p></section>
   :<section className="scanner-workspace"><div className="scanner-welcome"><div><span className="scanner-eyebrow">پنل اپراتور</span><h1>گزارش‌گیری از Plato IDهای فعال</h1><p>تصاویر کارت‌ها و Guideها را بارگذاری کن، پردازش کن و نتیجه را بازبینی کن.</p></div><span className="scanner-status approved">دسترسی فعال</span></div>
@@ -166,7 +166,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
     {scannerOpen&&<div className="scanner-modal-backdrop" role="presentation" onClick={()=>setScannerOpen(false)}>
       <section className="scanner-modal" role="dialog" aria-modal="true" aria-labelledby="scanner-modal-title" onClick={(e)=>e.stopPropagation()}>
        <header className="scanner-modal-header"><h2 id="scanner-modal-title">اسکن تصاویر Plato ID</h2><button type="button" className="scanner-ghost" onClick={()=>setScannerOpen(false)}>بستن ×</button></header>
-       <ScannerWorkspaceView view={scannerView} setView={setScannerView} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
+       <ScannerWorkspaceView view={scannerView} setView={setScannerView} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} onScanUpdated={(updated:ScanRow)=>setUploads(prev=>prev.map(item=>item.id===updated.id?updated:item))} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
       </section>
     </div>}
    </section>}
@@ -174,9 +174,127 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
  </Root>;
 }
 
-function ScannerWorkspaceView({view,setView,archiveDate,setArchiveDate,archiveDays,archiveRows,todayRows,todayLabel,uploads,onDelete,setFiles,setMessage,files,fileChecking,busy,selectFiles,upload,client,reviewerId}:any){
+function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
+ const [revisions,setRevisions]=useState<any[]>([]),[reviewLoading,setReviewLoading]=useState(false);
+ const [period,setPeriod]=useState<'today'|'yesterday'|'last7'|'custom'>('today');
+ const [startDate,setStartDate]=useState(''),[endDate,setEndDate]=useState('');
+ const [preview,setPreview]=useState<any>(null),[duplicateReviewed,setDuplicateReviewed]=useState(false),[reportBusy,setReportBusy]=useState(false),[reportMessage,setReportMessage]=useState(''),[deliveryHistory,setDeliveryHistory]=useState<any[]>([]),[historyLoading,setHistoryLoading]=useState(false);
+ useEffect(()=>{
+  let alive=true;
+  (async()=>{
+   if(!supabase||!uploads.length){setRevisions([]);setPreview(null);setDuplicateReviewed(false);return;}
+   setPreview(null);setDuplicateReviewed(false);
+   setReviewLoading(true);
+   try{
+    const ids=uploads.map(x=>x.id);
+    const rows:any[]=[];
+    for(let offset=0;;offset+=500){
+     const {data,error}=await supabase.from('plato_id_scanner_review_revisions')
+      .select('scan_id,revision,status,canonical_ids').in('scan_id',ids)
+      .eq('status','approved').order('revision',{ascending:true}).range(offset,offset+499);
+     if(error)throw error;
+     rows.push(...(data||[]));if(!data||data.length<500)break;
+    }
+    if(alive)setRevisions(rows);
+   }catch(e:any){if(alive)setReportMessage('بارگذاری بازبینی‌های تأییدشده ناموفق بود: '+(e?.message||'خطا'));}
+   finally{if(alive)setReviewLoading(false);}
+  })();
+  return()=>{alive=false;};
+ },[uploads]);
+ const latestByScan=useMemo(()=>{
+  const map=new Map<string,any>();
+  for(const row of revisions){const old=map.get(row.scan_id);if(!old||row.revision>old.revision)map.set(row.scan_id,row);}
+  return map;
+ },[revisions]);
+ const audit=useMemo(()=>{
+  const scans=[...uploads].filter(row=>latestByScan.has(row.id))
+   .sort((a,b)=>a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id))
+   .map(row=>({scan_id:row.id,candidates:(latestByScan.get(row.id)?.canonical_ids||[])
+    .filter((id:unknown):id is string=>typeof id==='string'&&id.length>0)
+    .map((raw_value:string)=>({raw_value}))}));
+  return auditScannerBatchDuplicates(scans);
+ },[uploads,latestByScan]);
+ const names=new Map(uploads.map(row=>[row.id,row.file_name]));
+ async function loadDeliveryHistory(){
+  if(!supabase||historyLoading)return;
+  setHistoryLoading(true);
+  try{
+   const {data,error}=await supabase.functions.invoke('plato-id-scanner-telegram-report',{body:{action:'history'}});
+   if(error)throw error;
+   setDeliveryHistory(data?.history||[]);
+  }catch(e:any){setReportMessage(e?.message||'دریافت تاریخچه ارسال ناموفق بود.');}
+  finally{setHistoryLoading(false);}
+ }
+ async function requestReport(action:'preview'|'send'){
+  if(reportBusy)return;
+  if(period==='custom'&&(!startDate||!endDate||startDate>endDate)){setReportMessage('برای بازه دلخواه، تاریخ شروع و پایان معتبر را انتخاب کن.');return;}
+  if(action==='send'&&(!preview?.preview)){setReportMessage('ابتدا پیش‌نمایش همین بازه را تهیه و بررسی کن.');return;}
+  if(action==='send'&&(preview?.duplicate_count||0)>0&&!duplicateReviewed){setReportMessage('ابتدا موارد تکراری دقیق را بررسی و تأیید کن.');return;}
+  if(action==='send'&&!window.confirm('فهرست کامل و نهایی بازه انتخاب‌شده به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.'))return;
+  setReportBusy(true);setReportMessage('');
+  try{
+   const body:any={action,period};
+   if(period==='custom'){body.start_date=startDate;body.end_date=endDate;}
+   if(action==='send'){body.request_id=crypto.randomUUID();body.confirm_exact_duplicates=duplicateReviewed;body.preview_fingerprint=preview.fingerprint;}
+   const {data,error}=await supabase.functions.invoke('plato-id-scanner-telegram-report',{body});
+   if(error)throw error;
+   if(action==='preview'){setPreview(data);setDuplicateReviewed(false);setReportMessage('پیش‌نمایش آماده شد؛ هنوز هیچ پیامی ارسال نشده است.');}
+   else{setPreview(data);void loadDeliveryHistory();setReportMessage(data?.sent?'ارسال به گروه آزمایشی انجام شد · نسخه '+data.report_version+' · '+data.id_count+' شناسه یکتا · '+data.message_count+' پیام':data?.partial?'ارسال ناقص بود؛ بخشی از پیام‌ها ممکن است در گروه ثبت شده باشند. نسخه و وضعیت خطا ذخیره شد.':'ارسال تأیید نشد؛ وضعیت و جزئیات در پاسخ سرویس ثبت شده است.');}
+  }catch(e:any){setReportMessage(e?.message||'تهیه یا ارسال گزارش ناموفق بود.');}
+  finally{setReportBusy(false);}
+ }
+ return <section className="scanner-panel scanner-global-unique-panel">
+  <div className="scanner-section-heading"><span className="scanner-step">✓</span><div><h2>فهرست نهایی و یکتای Plato IDها</h2><p>فقط آخرین نسخه بازبینی و تأییدشده هر تصویر در فهرست اصلی محاسبه می‌شود؛ موارد OCR تأییدنشده وارد فهرست و تلگرام نمی‌شوند.</p></div></div>
+  <div className="scanner-report-stats">
+   <div><strong>{audit.total_occurrences}</strong><small>کل IDهای تأییدشده</small></div>
+   <div><strong>{audit.unique_count}</strong><small>ID یکتای تجمیعی</small></div>
+   <div><strong>{audit.duplicate_count}</strong><small>تکراری دقیق</small></div>
+   <div><strong>{uploads.filter(x=>x.ocr_result?.outcome==='succeeded'&&!latestByScan.has(x.id)).length}</strong><small>تصویر منتظر بازبینی</small></div>
+  </div>
+  {reviewLoading?<div className="scanner-empty-state">در حال بارگذاری آخرین نسخه‌های بازبینی…</div>:audit.accepted_ids.length
+   ? <div className="scanner-global-id-list" dir="ltr">{audit.accepted_ids.map((id,index)=><span key={id+'-'+index}>{id}</span>)}</div>
+   : <div className="scanner-empty-state"><strong>هنوز فهرست تأییدشده‌ای وجود ندارد</strong><small>پس از OCR، شناسه‌ها را با تصویر تطبیق بده و نسخه بازبینی را ثبت کن.</small></div>}
+  {audit.duplicates.length>0&&<details className="scanner-review-history">
+   <summary>مشاهده {audit.duplicates.length} مورد تکراری و منبع آن‌ها</summary>
+   <div className="scanner-report-id-list" dir="ltr">{audit.duplicates.map((item,index)=><div key={item.scan_id+'-'+item.candidate_index+'-'+index}>
+    <strong>{item.raw_value}</strong><small>تصویر تکراری: {names.get(item.scan_id)||item.scan_id} · اولین مورد: {names.get(item.duplicate_of_scan_id)||item.duplicate_of_scan_id}</small>
+   </div>)}</div>
+  </details>}
+  <div className="scanner-telegram-report">
+   <h3>ارسال گزارش به گروه آزمایشی تلگرام</h3>
+   <p>ارسال فقط با اقدام دستی انجام می‌شود. هر بار کل فهرست تأییدشده بازه انتخابی ارسال خواهد شد؛ کانال اصلی مقصد این مرحله نیست.</p>
+   <label>بازه گزارش<select value={period} onChange={e=>{setPeriod(e.target.value as any);setPreview(null);setDuplicateReviewed(false);setReportMessage('');}}>
+    <option value="today">امروز</option><option value="yesterday">دیروز</option><option value="last7">هفت روز اخیر (بازه شناور)</option><option value="custom">بازه دلخواه</option>
+   </select></label>
+   {period==='custom'&&<div className="scanner-report-date-range">
+    <label>از تاریخ<input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/></label>
+    <label>تا تاریخ<input type="date" value={endDate} onChange={e=>{setEndDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/></label>
+   </div>}
+   <div className="scanner-actions">
+    <button type="button" className="scanner-ghost" disabled={reportBusy||reviewLoading} onClick={()=>void requestReport('preview')}>{reportBusy?'در حال آماده‌سازی…':'پیش‌نمایش گزارش'}</button>
+    <button type="button" className="scanner-primary" disabled={reportBusy||reviewLoading||audit.unique_count===0} onClick={()=>void requestReport('send')}>{reportBusy?'در حال ارسال…':'ارسال فهرست کامل به گروه آزمایشی'}</button>
+   </div>
+   {reportMessage&&<p className="scanner-message" role="status">{reportMessage}</p>}
+   {preview?.preview&&<div className="scanner-report-preview"><strong>پیش‌نمایش · {preview.period_key}</strong><small>{preview.reviewed_images} تصویر تأییدشده · {preview.id_count} ID یکتا · {preview.duplicate_count||0} تکراری دقیق · {preview.messages?.length||0} پیام</small>{(preview.duplicates||[]).length>0&&<><div className="scanner-report-id-list" dir="ltr">{preview.duplicates.map((item:any,index:number)=><div key={item.id+'-'+index}><strong>{item.id}</strong><small>اولین تصویر: {names.get(item.first_scan_id)||item.first_scan_id} · تصویر تکراری: {names.get(item.duplicate_scan_id)||item.duplicate_scan_id}</small></div>)}</div><label className="scanner-duplicate-confirm"><input type="checkbox" checked={duplicateReviewed} onChange={e=>setDuplicateReviewed(e.target.checked)}/> موارد تکراری دقیق را بررسی کردم و حذف تکرارها را تأیید می‌کنم.</label></>}<div dir="ltr">{(preview.ids||[]).join('\\n')}</div></div>}
+  </div>
+  <div className="scanner-delivery-history">
+   <div className="scanner-section-heading"><div><h3>تاریخچه ارسال‌های تلگرام</h3><p>نسخه گزارش، وضعیت تحویل و شناسه پیام‌های ارسالی</p></div><button type="button" className="scanner-ghost" disabled={historyLoading} onClick={()=>void loadDeliveryHistory()}>{historyLoading?'در حال بارگذاری…':'به‌روزرسانی تاریخچه'}</button></div>
+   {deliveryHistory.length?deliveryHistory.map((item:any)=><article className="scanner-history-item" key={item.id}>
+    <strong>نسخه {item.report?.version??'—'} · {item.report?.period_key??'بازه نامشخص'}</strong>
+    <small>{item.status==='sent'?'ارسال‌شده':item.status==='failed'?'ناموفق':item.status==='sending'?'در حال ارسال':'در انتظار'} · {item.message_count} پیام · {new Date(item.created_at).toLocaleString('fa-IR')}</small>
+    {item.sent_at&&<small>زمان ارسال: {new Date(item.sent_at).toLocaleString('fa-IR')}</small>}
+    {item.message_ids?.length>0&&<small>شناسه پیام‌ها: {item.message_ids.join('، ')}</small>}
+    {item.last_error&&<small>{item.last_error}</small>}
+   </article>):<p className="scanner-empty">هنوز سابقه ارسالی ثبت نشده است.</p>}
+  </div>
+  <p className="scanner-report-disclaimer">تطابق فقط بر اساس متن دقیق انجام می‌شود؛ بزرگی و کوچکی حروف و نشانه‌ها تغییر نمی‌کند. سوابق OCR و بازبینی قبلی حذف یا بازنویسی نمی‌شوند.</p>
+ </section>;
+}
+
+function ScannerWorkspaceView({view,setView,archiveDate,setArchiveDate,archiveDays,archiveRows,todayRows,todayLabel,uploads,onDelete,onScanUpdated,setFiles,setMessage,files,fileChecking,busy,selectFiles,upload,client,reviewerId}:any){
  return <div className="scanner-flow">
-  <nav className="scanner-view-switch" aria-label="بخش‌های اسکنر">
+  <GlobalUniqueIdsPanel uploads={uploads}/>
+ <nav className="scanner-view-switch" aria-label="بخش‌های اسکنر">
    <button type="button" className={view==='new'?'active':''} onClick={()=>setView('new')}>＋ اسکن جدید</button>
    <button type="button" className={view==='archive'?'active':''} onClick={()=>setView('archive')}>▤ آرشیو تصاویر <i>{uploads.length}</i></button>
   </nav>
@@ -188,19 +306,19 @@ function ScannerWorkspaceView({view,setView,archiveDate,setArchiveDate,archiveDa
     <button className="scanner-primary" disabled={!files.length||busy||fileChecking}>{fileChecking?'در حال بررسی…':busy?'در حال ذخیره تصاویر…':'ذخیره تصاویر انتخاب‌شده'}</button>
    </form>
    <section className="scanner-panel scanner-queue-panel"><div className="scanner-section-heading"><span className="scanner-step">۲</span><div><h2>تصاویر امروز · {todayLabel}</h2><p>هر تصویر فقط یک بار برای OCR ارسال می‌شود؛ نتیجه و بازبینی آن زیر همان تصویر باقی می‌ماند.</p></div></div>
-    {todayRows.length?<UploadList rows={todayRows} client={client} reviewerId={reviewerId} onDelete={onDelete}/>:<div className="scanner-empty-state"><strong>امروز هنوز تصویری آپلود نشده است</strong><small>یک تصویر انتخاب و ذخیره کن تا دکمه اسکن آن نمایش داده شود.</small></div>}
+    {todayRows.length?<UploadList rows={todayRows} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated}/>:<div className="scanner-empty-state"><strong>امروز هنوز تصویری آپلود نشده است</strong><small>یک تصویر انتخاب و ذخیره کن تا دکمه اسکن آن نمایش داده شود.</small></div>}
    </section>
   </div>:<section className="scanner-panel scanner-archive-panel">
    <div className="scanner-section-heading"><span className="scanner-step">▤</span><div><h2>آرشیو اسکن‌ها</h2><p>سوابق را بر اساس روز انتخاب کن و نتیجه هر تصویر را دوباره ببین.</p></div></div>
    <label className="scanner-archive-filter">انتخاب روز<select value={archiveDate} onChange={(e:any)=>setArchiveDate(e.target.value)}><option value="all">همه روزها</option>{archiveDays.map((d:string)=><option value={d} key={d}>{d.replace(/\d/g,n=>'۰۱۲۳۴۵۶۷۸۹'[Number(n)])}</option>)}</select></label>
    <div className="scanner-archive-summary"><strong>{archiveRows.length}</strong><span>تصویر در این فهرست</span></div>
-   <UploadList rows={archiveRows} client={client} reviewerId={reviewerId} onDelete={onDelete}/>
+   <UploadList rows={archiveRows} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated}/>
   </section>}
  </div>;
 }
-function UploadList({rows,client,reviewerId,onDelete}:{rows:ScanRow[];client:any;reviewerId:string;onDelete:(row:ScanRow)=>void}){
+function UploadList({rows,client,reviewerId,onDelete,onScanUpdated}:{rows:ScanRow[];client:any;reviewerId:string;onDelete:(row:ScanRow)=>void;onScanUpdated:(row:ScanRow)=>void}){
   if(!rows.length)return <p className="scanner-empty">هنوز تصویری ذخیره نشده است.</p>;
-  return <div className="scanner-upload-list">{rows.map(row=><ScannerReviewCard key={row.id} row={row} client={client} reviewerId={reviewerId} onDelete={onDelete}/>)}</div>;
+  return <div className="scanner-upload-list">{rows.map(row=><ScannerReviewCard key={row.id} row={row} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated}/>)}</div>;
  }
  function SavedUploadItem({row,client}:{row:ScanRow;client:any}){
   const [url,setUrl]=useState('');
@@ -210,7 +328,7 @@ function UploadList({rows,client,reviewerId,onDelete}:{rows:ScanRow[];client:any
    {url&&<a className="scanner-image-link" href={url} target="_blank" rel="noreferrer"><img src={url} alt={'تصویر ذخیره‌شده '+row.file_name}/></a>}
   </article>;
  }
- function ScannerReviewCard({row,client,reviewerId,onDelete}:{row:ScanRow;client:any;reviewerId:string;onDelete:(row:ScanRow)=>void}){
+ function ScannerReviewCard({row,client,reviewerId,onDelete,onScanUpdated}:{row:ScanRow;client:any;reviewerId:string;onDelete:(row:ScanRow)=>void;onScanUpdated:(row:ScanRow)=>void}){
  const [scan,setScan]=useState<ScanRow>(row);
  useEffect(()=>{setScan(row);},[row]);
  const [history,setHistory]=useState<any[]>([]),[draft,setDraft]=useState(''),[note,setNote]=useState(''),[imageUrl,setImageUrl]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loaded,setLoaded]=useState(false);
@@ -240,7 +358,7 @@ function UploadList({rows,client,reviewerId,onDelete}:{rows:ScanRow[];client:any
   try{
    const ids=parseScannerReviewDraft(draft);
    const result=await appendScannerReviewRevision(client,{scanId:scan.id,ids,reviewerId,note});
-   setHistory(prev=>[...prev,result]);setDraft(scannerReviewText(result.canonical_ids));setNote('');
+   setHistory(prev=>[...prev,result]);setDraft(scannerReviewText(result.canonical_ids));setNote('');onScanUpdated(scan);
   }catch(e:any){setError(e?.message||'ثبت نسخه جدید ناموفق بود.');}
   finally{setBusy(false);}
  }
@@ -248,7 +366,7 @@ function UploadList({rows,client,reviewerId,onDelete}:{rows:ScanRow[];client:any
  const [dispatchBusy,setDispatchBusy]=useState(false),[dispatchMessage,setDispatchMessage]=useState('');
  async function refreshScan(){
   const {data,error}=await client.from('plato_id_scanner_uploads').select('*').eq('id',scan.id).single();
-  if(!error&&data)setScan(data as ScanRow);
+  if(!error&&data){setScan(data as ScanRow);onScanUpdated(data as ScanRow);}
   return error?null:data as ScanRow;
  }
  async function dispatchOcr(){
