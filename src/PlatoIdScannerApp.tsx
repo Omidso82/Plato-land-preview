@@ -257,8 +257,8 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
     <option value="today">امروز</option><option value="yesterday">دیروز</option><option value="last7">هفت روز اخیر (بازه شناور)</option><option value="custom">بازه دلخواه</option>
    </select></label>
    {period==='custom'&&<div className="scanner-report-date-range">
-    <label>از تاریخ<input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}/></label>
-    <label>تا تاریخ<input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)}/></label>
+    <label>از تاریخ<input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/></label>
+    <label>تا تاریخ<input type="date" value={endDate} onChange={e=>{setEndDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/></label>
    </div>}
    <div className="scanner-actions">
     <button type="button" className="scanner-ghost" disabled={reportBusy||reviewLoading} onClick={()=>void requestReport('preview')}>{reportBusy?'در حال آماده‌سازی…':'پیش‌نمایش گزارش'}</button>
@@ -338,7 +338,7 @@ function UploadList({rows,client,reviewerId,onDelete,onScanUpdated}:{rows:ScanRo
   try{
    const ids=parseScannerReviewDraft(draft);
    const result=await appendScannerReviewRevision(client,{scanId:scan.id,ids,reviewerId,note});
-   setHistory(prev=>[...prev,result]);setDraft(scannerReviewText(result.canonical_ids));setNote('');
+   setHistory(prev=>[...prev,result]);setDraft(scannerReviewText(result.canonical_ids));setNote('');onScanUpdated(scan);
   }catch(e:any){setError(e?.message||'ثبت نسخه جدید ناموفق بود.');}
   finally{setBusy(false);}
  }
