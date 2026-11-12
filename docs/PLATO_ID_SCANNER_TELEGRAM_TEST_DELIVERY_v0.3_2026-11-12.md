@@ -1,5 +1,5 @@
 # PLATO ID Scanner — Telegram test-group delivery
-Version 0.3 · 2026-11-12 · Draft / source-only
+Version 0.4 · 2026-11-12 · Persian header specification
 
 ## Confirmed existing infrastructure
 - The live Supabase project contains the active Series 2 progression sender and the active Telegram test function.
@@ -19,7 +19,7 @@ Version 0.3 · 2026-11-12 · Draft / source-only
 - Preview is read-only and never sends. Sending is manual only, after an explicit confirmation dialog.
 - Each send creates an immutable telegram_ids report version and a dedicated delivery-ledger row. A request UUID prevents accidental duplicate sends. A deliberate resend uses a new request UUID and creates a new version.
 - Delivery history exposes report version, period, status, timestamps, Telegram message IDs and error status. Operators see their own history; owner can see all.
-- Messages contain only approved Plato IDs and period metadata, never source images or raw OCR text.
+- Telegram message header is exactly three lines: `♛ آیدی‌های فعال PLATO LAND`, the report-generation weekday in Persian, and the report-generation date in the Persian calendar, all interpreted in `Asia/Tehran`. No range label, timezone text, image count, ID count, or other metadata appears in the message header. Approved Plato IDs follow the header; no source images or raw OCR text are sent.
 - Multi-message reports store each Telegram message ID. Partial failures retain already-sent IDs and are recorded as failed.
 
 ## Implementation status
@@ -45,3 +45,4 @@ Version 0.3 · 2026-11-12 · Draft / source-only
 - v0.1 — initial draft of manual Scanner Telegram report sender and test-group-only delivery.
 - v0.2 — approved-review gating, duplicate confirmation, period selection, delivery history and CI checks.
 - v0.3 — adds preview snapshot fingerprint protection and restricts operator history to their own deliveries while owner retains full history access.
+- v0.4 — records the user-approved Telegram header: title, Persian weekday, Persian date; removes period/count/image metadata from the Telegram message header.
