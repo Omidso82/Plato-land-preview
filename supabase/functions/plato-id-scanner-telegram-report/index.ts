@@ -120,8 +120,6 @@ Deno.serve(async (request: Request) => {
     for(const scan of ordered){const rev=latest.get(scan.id);if(!rev)continue;reviewedImages++;if(!Array.isArray(rev.canonical_ids))continue;
       for(const id of rev.canonical_ids){if(typeof id!=="string"||id.length===0)continue;const first=seen.get(id);if(!first){seen.set(id,scan.id);ids.push(id);}else{duplicates.push({id,first_scan_id:first,duplicate_scan_id:scan.id});}}
     }
-    const periodKey=start+".."+nextDate(end,-1);
-    const label="بازه: "+start+" تا "+nextDate(end,-1)+" (Asia/Tehran)";
     const fingerprintSource=JSON.stringify({periodKey,reviewed:ordered.filter((scan:any)=>latest.has(scan.id)).map((scan:any)=>({scan_id:scan.id,revision:latest.get(scan.id).revision})),ids,duplicates});
     const fingerprintBytes=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(fingerprintSource));
     const fingerprint=[...new Uint8Array(fingerprintBytes)].map(x=>x.toString(16).padStart(2,"0")).join("");
