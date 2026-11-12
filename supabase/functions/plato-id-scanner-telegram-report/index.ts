@@ -67,7 +67,9 @@ Deno.serve(async (request: Request) => {
   const body=await request.json().catch(()=>null);
   if(!body||!["preview","send"].includes(body.action)||!["today","yesterday","last7","custom"].includes(body.period)) return reply({error:"Invalid report request."},400);
   const now=new Date();
-  const todayParts=new Intl.DateTimeFormat("en-US",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(now);\n  const part=(k:string)=>todayParts.find(x=>x.type===k)?.value||"";\n  const today=part("year")+"-"+part("month")+"-"+part("day");
+  const todayParts=new Intl.DateTimeFormat("en-US",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(now);
+  const part=(k:string)=>todayParts.find(x=>x.type===k)?.value||"";
+  const today=part("year")+"-"+part("month")+"-"+part("day");
   let start:string|undefined,end:string|undefined,from:string,to:string,periodKey:string,label:string;
   if(body.period==="last7"){
     from=new Date(now.getTime()-7*24*60*60*1000).toISOString();
