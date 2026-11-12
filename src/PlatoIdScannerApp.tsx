@@ -135,19 +135,21 @@ function UploadList({rows,client,reviewerId}:{rows:ScanRow[];client:any;reviewer
   </article>;
  }
  function ScannerReviewCard({row,client,reviewerId}:{row:ScanRow;client:any;reviewerId:string}){
+ const [scan,setScan]=useState<ScanRow>(row);
+ useEffect(()=>{setScan(row);},[row]);
  const [history,setHistory]=useState<any[]>([]),[draft,setDraft]=useState(''),[note,setNote]=useState(''),[imageUrl,setImageUrl]=useState(''),[busy,setBusy]=useState(false),[error,setError]=useState(''),[loaded,setLoaded]=useState(false);
  useEffect(()=>{
   let alive=true;
   (async()=>{
    try{
     const [revisions,signed]=await Promise.all([
-     loadScannerReviewRevisions(client,row.id),
-     client.storage.from(BUCKET).createSignedUrl(row.storage_path,300),
+     loadScannerReviewRevisions(client,scan.id),
+     client.storage.from(BUCKET).createSignedUrl(scan.storage_path,300),
     ]);
     if(!alive)return;
     setHistory(revisions);
     const latest=revisions[revisions.length-1];
-    const initial=latest?.canonical_ids??(Array.isArray(row.ocr_result?.ids)?row.ocr_result.ids:[]);
+    const initial=latest?.canonical_ids??(Array.isArray(scan.ocr_result?.ids)?scan.ocr_result.ids:[]);
     setDraft(scannerReviewText(initial));
     if(signed.error)throw signed.error;
     setImageUrl(signed.data?.signedUrl||'');
@@ -155,51 +157,66 @@ function UploadList({rows,client,reviewerId}:{rows:ScanRow[];client:any;reviewer
    finally{if(alive)setLoaded(true);}
   })();
   return()=>{alive=false;};
- },[client,row.id,row.storage_path,row.ocr_result]);
+ },[client,scan.id,scan.storage_path,scan.ocr_result]);
  async function save(){
   if(busy||!loaded)return;
   setBusy(true);setError('');
   try{
    const ids=parseScannerReviewDraft(draft);
-   const result=await appendScannerReviewRevision(client,{scanId:row.id,ids,reviewerId,note});
+   const result=await appendScannerReviewRevision(client,{scanId:scan.id,ids,reviewerId,note});
    setHistory(prev=>[...prev,result]);setDraft(scannerReviewText(result.canonical_ids));setNote('');
   }catch(e:any){setError(e?.message||'ثبت نسخه جدید ناموفق بود.');}
   finally{setBusy(false);}
  }
  const latest=history[history.length-1];
  const [dispatchBusy,setDispatchBusy]=useState(false),[dispatchMessage,setDispatchMessage]=useState('');
+ async function refreshScan(){
+  const {data,error}=await client.from('plato_id_scanner_uploads').select('*').eq('id',scan.id).single();
+  if(!error&&data)setScan(data as ScanRow);
+  return error?null:data as ScanRow;
+ }
  async function dispatchOcr(){
   if(dispatchBusy)return;setDispatchBusy(true);setDispatchMessage('');
   try{
-   const {data,error}=await client.functions.invoke('plato-id-scanner-dispatch',{body:{scan_id:row.id}});
-   if(error)throw error;
+   const {data,error}=await client.functions.invoke('plato-id-scanner-dispatch',{body:{scan_id:scan.id}});
+   if(error){
+    const latest=await refreshScan();
+    const status=(error as any)?.context?.status;
+    if(latest?.status==='needs_review'&&latest.ocr_result?.outcome==='succeeded'){
+     setDispatchMessage('پردازش OCR قبلاً با موفقیت انجام شده است؛ نتیجه برای بازبینی آماده است.');return;
+    }
+    if(status===409){setDispatchMessage('این تصویر قبلاً وارد صف پردازش شده است. وضعیت تازه پرونده بارگذاری شد؛ چند لحظه بعد دوباره بررسی کنید.');return;}
+    throw error;
+   }
+   await refreshScan();
    const worker=data?.worker;
    if(!data?.queued){setDispatchMessage('درخواست در صف ثبت نشد؛ پاسخ سرویس کامل نبود.');}
    else if(!worker?.invoked){setDispatchMessage('درخواست در صف ثبت شد، اما Worker اجرا نشد ('+(worker?.reason||'علت نامشخص')+').');}
    else if(worker.http_status!==200){setDispatchMessage('درخواست در صف ثبت شد، اما اجرای Worker ناموفق بود (HTTP '+String(worker.http_status??'نامشخص')+'). '+(worker.response_text==='Unauthorized'?'احراز کلید داخلی Worker رد شد.':'لطفاً گزارش فنی بررسی شود.'));}
    else if(worker.processed===1&&worker.status==='needs_review'){setDispatchMessage('پردازش OCR انجام شد و نتیجه برای بازبینی آماده است.');}
    else{setDispatchMessage('Worker پاسخ داد، اما تکمیل OCR تأیید نشد؛ وضعیت: '+String(worker.status||'نامشخص')+'.');}
-  }catch(e:any){setDispatchMessage(e?.message||'ارسال درخواست پردازش ناموفق بود.');}
+   await refreshScan();
+  }catch(e:any){await refreshScan();setDispatchMessage(e?.message||'ارسال درخواست پردازش ناموفق بود.');}
   finally{setDispatchBusy(false);}
  }
  return <article className="scanner-review-card">
-  <div className="scanner-review-heading"><div><strong>{row.file_name}</strong><small>{new Date(row.created_at).toLocaleString('fa-IR')} · {(row.file_size/1024/1024).toFixed(2)} MB</small></div><span className="scanner-status">{latest?'بازبینی تأییدشده · نسخه '+latest.revision:Array.isArray(row.ocr_result?.ids)&&row.ocr_result.ids.length?'نتیجه OCR آماده بازبینی':row.status==='uploaded'?'ذخیره شده – در انتظار پردازش OCR':row.status}</span></div>
-  {imageUrl&&<a className="scanner-image-link" href={imageUrl} target="_blank" rel="noreferrer"><img src={imageUrl} alt={'تصویر اصلی '+row.file_name}/></a>}
-  {row.ocr_result?.duplicate_audit&&<details className="scanner-review-history scanner-duplicate-audit">
-   <summary>گزارش تکراری‌ها: {row.ocr_result.duplicate_audit.duplicate_count??0} مورد · {row.ocr_result.duplicate_audit.unique_count??0} شناسه یکتا</summary>
+  <div className="scanner-review-heading"><div><strong>{scan.file_name}</strong><small>{new Date(scan.created_at).toLocaleString('fa-IR')} · {(scan.file_size/1024/1024).toFixed(2)} MB</small></div><span className="scanner-status">{latest?'بازبینی تأییدشده · نسخه '+latest.revision:Array.isArray(scan.ocr_result?.ids)&&scan.ocr_result.ids.length?'نتیجه OCR آماده بازبینی':scan.status==='uploaded'?'ذخیره شده – در انتظار پردازش OCR':scan.status}</span></div>
+  {imageUrl&&<a className="scanner-image-link" href={imageUrl} target="_blank" rel="noreferrer"><img src={imageUrl} alt={'تصویر اصلی '+scan.file_name}/></a>}
+  {scan.ocr_result?.duplicate_audit&&<details className="scanner-review-history scanner-duplicate-audit">
+   <summary>گزارش تکراری‌ها: {scan.ocr_result.duplicate_audit.duplicate_count??0} مورد · {scan.ocr_result.duplicate_audit.unique_count??0} شناسه یکتا</summary>
    <div className="scanner-report-stats">
-    <div><strong>{row.ocr_result.duplicate_audit.total_occurrences??0}</strong><small>کل موارد استخراج‌شده</small></div>
-    <div><strong>{row.ocr_result.duplicate_audit.unique_count??0}</strong><small>شناسه یکتا</small></div>
-    <div><strong>{row.ocr_result.duplicate_audit.duplicate_count??0}</strong><small>تکراری دقیق</small></div>
+    <div><strong>{scan.ocr_result.duplicate_audit.total_occurrences??0}</strong><small>کل موارد استخراج‌شده</small></div>
+    <div><strong>{scan.ocr_result.duplicate_audit.unique_count??0}</strong><small>شناسه یکتا</small></div>
+    <div><strong>{scan.ocr_result.duplicate_audit.duplicate_count??0}</strong><small>تکراری دقیق</small></div>
    </div>
-   {(row.ocr_result.duplicate_audit.duplicates||[]).length>0
-    ? <div className="scanner-report-id-list" dir="ltr">{row.ocr_result.duplicate_audit.duplicates.map((item:any,index:number)=><div key={row.id+'-duplicate-'+index}>
+   {(scan.ocr_result.duplicate_audit.duplicates||[]).length>0
+    ? <div className="scanner-report-id-list" dir="ltr">{scan.ocr_result.duplicate_audit.duplicates.map((item:any,index:number)=><div key={scan.id+'-duplicate-'+index}>
       <strong>{item.raw_value}</strong><small>تکرار {item.duplicate_number} · مورد اصلی: {item.duplicate_of_scan_id} / #{item.duplicate_of_candidate_index}</small>
      </div>)}</div>
     : <p className="scanner-empty">در این تصویر تکراری دقیقی ثبت نشده است.</p>}
    <p className="scanner-report-disclaimer">این گزارش فقط موارد کاملاً یکسان را تکراری می‌شمارد؛ موارد مشابه جدا باقی می‌مانند.</p>
   </details>}
-  {(row.status==='uploaded'||row.status==='queued')&&<div className="scanner-review-meta">
+  {(scan.status==='uploaded'||scan.status==='queued')&&<div className="scanner-review-meta">
    <button className="scanner-primary" type="button" disabled={dispatchBusy} onClick={()=>void dispatchOcr()}>{dispatchBusy?'در حال ثبت درخواست…':'شروع پردازش OCR'}</button>
    {dispatchMessage&&<small>{dispatchMessage}</small>}
   </div>}
