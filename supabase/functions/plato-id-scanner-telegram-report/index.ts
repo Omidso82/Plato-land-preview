@@ -88,7 +88,7 @@ Deno.serve(async (request: Request) => {
     return reply({history:(deliveries||[]).map((x:any)=>({
       id:x.id,status:x.delivery_status,message_count:x.message_count,message_ids:x.message_ids,
       created_at:x.created_at,sent_at:x.sent_at,last_error:x.last_error,
-      report:(()=>{const version:any=byId.get(x.report_version_id);return version?{id:version.id,period_key:version.period_key,version:version.version,created_at:version.created_at,excel_attached:version.payload?.excel_attached===true,excel_filename:version.payload?.excel_filename??null}:null;})(),
+      report:(()=>{const version:any=byId.get(x.report_version_id);return version?{id:version.id,period_key:version.period_key,version:version.version,created_at:version.created_at,excel_attached:x.delivery_status==="sent"&&version.payload?.excel_requested===true,excel_filename:version.payload?.excel_filename??null}:null;})(),
     }))});
   }
   const now=new Date();
@@ -113,11 +113,13 @@ Deno.serve(async (request: Request) => {
     periodKey=start!+".."+nextDate(end!,-1);
   }
   try {
-    const scans=await allRows(admin,"plato_id_scanner_uploads","id,created_at,status",(q:any)=>q.gte("created_at",from).lt("created_at",to).order("created_at",{ascending:true}));
+    const scans=await allRows(admin,"plato_id_scanner_uploads","id,created_at,status,operator_id",(q:any)=>{
+      let filtered=q.gte("created_at",from).lt("created_at",to).order("created_at",{ascending:true});
+      if(!isOwner) filtered=filtered.eq("operator_id",auth.user.id);
+      return filtered;
+    });
     const scanIds=scans.map(x=>x.id);
     const revisions=scanIds.length?await allRows(admin,"plato_id_scanner_review_revisions","scan_id,revision,status,canonical_ids",(q:any)=>q.in("scan_id",scanIds).eq("status","approved").order("revision",{ascending:true})): [];
-    const latest=new Map<string,any>();
-    for(const r of revisions){const old=latest.get(r.scan_id);if(!old||r.revision>old.revision)latest.set(r.scan_id,r);}
     const days=buildDailyScannerGroups(scans,revisions);
     const ids=[...new Set(days.flatMap((day)=>day.ids))];
     const idCount=days.reduce((sum,day)=>sum+day.ids.length,0);
@@ -153,7 +155,7 @@ Deno.serve(async (request: Request) => {
     const previous=versions?.[0]?.version??null;
     const {data:report,error:reportError}=await admin.from("plato_id_scanner_report_versions").insert({
       report_kind:"telegram_ids",period_key:periodKey,version:(previous??0)+1,previous_version:previous,
-      payload:{period_key:periodKey,from,to,reviewed_images:reviewedImages,id_count:idCount,unique_id_count:ids.length,ids,days,duplicate_count:duplicates.length,duplicates,messages,excel_attached:includeExcel,excel_filename:includeExcel?"PLATO-ID-Report.xlsx":null},
+      payload:{period_key:periodKey,from,to,reviewed_images:reviewedImages,id_count:idCount,unique_id_count:ids.length,ids,days,duplicate_count:duplicates.length,duplicates,messages,excel_requested:includeExcel,excel_filename:includeExcel?"PLATO-ID-Report.xlsx":null},
       created_by:auth.user.id,note:"Manual send to PLATO LAND test Telegram group",
     }).select("id,version").single();
     if(reportError) throw reportError;
@@ -190,7 +192,7 @@ Deno.serve(async (request: Request) => {
       return reply({sent:true,period_key:periodKey,report_version:report.version,report_version_id:report.id,reviewed_images:reviewedImages,id_count:idCount,unique_id_count:ids.length,message_count:messages.length+(includeExcel?1:0),message_ids:messageIds,excel_attached:includeExcel,excel_filename:includeExcel?"PLATO-ID-Report.xlsx":null},200);
     } catch(error) {
       await admin.from("plato_id_scanner_telegram_deliveries").update({delivery_status:"failed",message_ids:messageIds,last_error:String(error).slice(0,1000)}).eq("id",delivery.id);
-      return reply({sent:false,partial:messageIds.length>0,report_version:report.version,report_version_id:report.id,message_ids:messageIds,error:"Telegram delivery failed; a versioned attempt was recorded."},502);
+      return reply({sent:false,partial:messageIds.length>0,report_version:report.version,report_version_id:report.id,message_ids:messageIds,excel_attached:false,excel_requested:includeExcel,error:"Telegram delivery failed; a versioned attempt was recorded."},502);
     }
   } catch(error) {
     console.error("Scanner Telegram report failed:",error);
