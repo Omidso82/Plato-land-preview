@@ -178,7 +178,7 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
  const [revisions,setRevisions]=useState<any[]>([]),[reviewLoading,setReviewLoading]=useState(false);
  const [period,setPeriod]=useState<'today'|'yesterday'|'last7'|'custom'>('today');
  const [startDate,setStartDate]=useState(''),[endDate,setEndDate]=useState('');
- const [preview,setPreview]=useState<any>(null),[duplicateReviewed,setDuplicateReviewed]=useState(false),[reportBusy,setReportBusy]=useState(false),[reportMessage,setReportMessage]=useState('');
+ const [preview,setPreview]=useState<any>(null),[duplicateReviewed,setDuplicateReviewed]=useState(false),[reportBusy,setReportBusy]=useState(false),[reportMessage,setReportMessage]=useState(''),[deliveryHistory,setDeliveryHistory]=useState<any[]>([]),[historyLoading,setHistoryLoading]=useState(false);
  useEffect(()=>{
   let alive=true;
   (async()=>{
@@ -215,6 +215,17 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
   return auditScannerBatchDuplicates(scans);
  },[uploads,latestByScan]);
  const names=new Map(uploads.map(row=>[row.id,row.file_name]));
+ async function loadDeliveryHistory(){
+  if(!supabase||historyLoading)return;
+  setHistoryLoading(true);
+  try{
+   const {data,error}=await supabase.functions.invoke('plato-id-scanner-telegram-report',{body:{action:'history'}});
+   if(error)throw error;
+   setDeliveryHistory(data?.history||[]);
+  }catch(e:any){setReportMessage(e?.message||'دریافت تاریخچه ارسال ناموفق بود.');}
+  finally{setHistoryLoading(false);}
+ }
+ useEffect(()=>{void loadDeliveryHistory();},[]);
  async function requestReport(action:'preview'|'send'){
   if(reportBusy)return;
   if(period==='custom'&&(!startDate||!endDate||startDate>endDate)){setReportMessage('برای بازه دلخواه، تاریخ شروع و پایان معتبر را انتخاب کن.');return;}
@@ -229,7 +240,7 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
    const {data,error}=await supabase.functions.invoke('plato-id-scanner-telegram-report',{body});
    if(error)throw error;
    if(action==='preview'){setPreview(data);setDuplicateReviewed(false);setReportMessage('پیش‌نمایش آماده شد؛ هنوز هیچ پیامی ارسال نشده است.');}
-   else{setPreview(data);setReportMessage(data?.sent?'ارسال به گروه آزمایشی انجام شد · نسخه '+data.report_version+' · '+data.id_count+' شناسه یکتا · '+data.message_count+' پیام':data?.partial?'ارسال ناقص بود؛ بخشی از پیام‌ها ممکن است در گروه ثبت شده باشند. نسخه و وضعیت خطا ذخیره شد.':'ارسال تأیید نشد؛ وضعیت و جزئیات در پاسخ سرویس ثبت شده است.');}
+   else{setPreview(data);void loadDeliveryHistory();setReportMessage(data?.sent?'ارسال به گروه آزمایشی انجام شد · نسخه '+data.report_version+' · '+data.id_count+' شناسه یکتا · '+data.message_count+' پیام':data?.partial?'ارسال ناقص بود؛ بخشی از پیام‌ها ممکن است در گروه ثبت شده باشند. نسخه و وضعیت خطا ذخیره شد.':'ارسال تأیید نشد؛ وضعیت و جزئیات در پاسخ سرویس ثبت شده است.');}
   }catch(e:any){setReportMessage(e?.message||'تهیه یا ارسال گزارش ناموفق بود.');}
   finally{setReportBusy(false);}
  }
@@ -266,6 +277,16 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
    </div>
    {reportMessage&&<p className="scanner-message" role="status">{reportMessage}</p>}
    {preview?.preview&&<div className="scanner-report-preview"><strong>پیش‌نمایش · {preview.period_key}</strong><small>{preview.reviewed_images} تصویر تأییدشده · {preview.id_count} ID یکتا · {preview.duplicate_count||0} تکراری دقیق · {preview.messages?.length||0} پیام</small>{(preview.duplicates||[]).length>0&&<><div className="scanner-report-id-list" dir="ltr">{preview.duplicates.map((item:any,index:number)=><div key={item.id+'-'+index}><strong>{item.id}</strong><small>اولین تصویر: {names.get(item.first_scan_id)||item.first_scan_id} · تصویر تکراری: {names.get(item.duplicate_scan_id)||item.duplicate_scan_id}</small></div>)}</div><label className="scanner-duplicate-confirm"><input type="checkbox" checked={duplicateReviewed} onChange={e=>setDuplicateReviewed(e.target.checked)}/> موارد تکراری دقیق را بررسی کردم و حذف تکرارها را تأیید می‌کنم.</label></>}<div dir="ltr">{(preview.ids||[]).join('\\n')}</div></div>}
+  </div>
+  <div className="scanner-delivery-history">
+   <div className="scanner-section-heading"><div><h3>تاریخچه ارسال‌های تلگرام</h3><p>نسخه گزارش، وضعیت تحویل و شناسه پیام‌های ارسالی</p></div><button type="button" className="scanner-ghost" disabled={historyLoading} onClick={()=>void loadDeliveryHistory()}>{historyLoading?'در حال بارگذاری…':'به‌روزرسانی تاریخچه'}</button></div>
+   {deliveryHistory.length?deliveryHistory.map((item:any)=><article className="scanner-history-item" key={item.id}>
+    <strong>نسخه {item.report?.version??'—'} · {item.report?.period_key??'بازه نامشخص'}</strong>
+    <small>{item.status==='sent'?'ارسال‌شده':item.status==='failed'?'ناموفق':item.status==='sending'?'در حال ارسال':'در انتظار'} · {item.message_count} پیام · {new Date(item.created_at).toLocaleString('fa-IR')}</small>
+    {item.sent_at&&<small>زمان ارسال: {new Date(item.sent_at).toLocaleString('fa-IR')}</small>}
+    {item.message_ids?.length>0&&<small>شناسه پیام‌ها: {item.message_ids.join('، ')}</small>}
+    {item.last_error&&<small>{item.last_error}</small>}
+   </article>):<p className="scanner-empty">هنوز سابقه ارسالی ثبت نشده است.</p>}
   </div>
   <p className="scanner-report-disclaimer">تطابق فقط بر اساس متن دقیق انجام می‌شود؛ بزرگی و کوچکی حروف و نشانه‌ها تغییر نمی‌کند. سوابق OCR و بازبینی قبلی حذف یا بازنویسی نمی‌شوند.</p>
  </section>;
