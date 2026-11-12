@@ -96,15 +96,15 @@ Deno.serve(async (request: Request) => {
     const latest=new Map<string,any>();
     for(const r of revisions){const old=latest.get(r.scan_id);if(!old||r.revision>old.revision)latest.set(r.scan_id,r);}
     const ordered=[...scans].sort((a,b)=>a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id));
-    const ids:string[]=[];const seen=new Set<string>();let reviewedImages=0;
+    const ids:string[]=[];const seen=new Map<string,string>();const duplicates:any[]=[];let reviewedImages=0;
     for(const scan of ordered){const rev=latest.get(scan.id);if(!rev)continue;reviewedImages++;if(!Array.isArray(rev.canonical_ids))continue;
-      for(const id of rev.canonical_ids){if(typeof id==="string"&&id.length>0&&!seen.has(id)){seen.add(id);ids.push(id);}}
+      for(const id of rev.canonical_ids){if(typeof id!=="string"||id.length===0)continue;const first=seen.get(id);if(!first){seen.set(id,scan.id);ids.push(id);}else{duplicates.push({id,first_scan_id:first,duplicate_scan_id:scan.id});}}
     }
     const periodKey=start+".."+nextDate(end,-1);
     const label="بازه: "+start+" تا "+nextDate(end,-1)+" (Asia/Tehran)";
     const header="<b>♛ PLATO LAND | فهرست نهایی Plato ID</b>\n"+escapeHtml(label)+"\nتصاویر بازبینی و تأییدشده: "+reviewedImages+"\nتعداد ID یکتا: "+ids.length+"\n\n";
     const messages=chunkLines(header,ids);
-    if(body.action==="preview") return reply({preview:true,period_key:periodKey,reviewed_images:reviewedImages,id_count:ids.length,ids,messages});
+    if(body.action==="preview") return reply({preview:true,period_key:periodKey,reviewed_images:reviewedImages,id_count:ids.length,duplicate_count:duplicates.length,duplicates,ids,messages});\n    if(duplicates.length>0&&body.confirm_exact_duplicates!==true) return reply({error:"Exact duplicates require explicit human confirmation before sending.",duplicate_count:duplicates.length,duplicates,period_key:periodKey},409);
     if(typeof body.request_id!=="string"||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.request_id)) return reply({error:"A unique request_id is required."},400);
     const botToken=Deno.env.get("TELEGRAM_BOT_TOKEN"),chatId=Deno.env.get("TELEGRAM_TEST_CHAT_ID");
     if(!botToken||!chatId) return reply({error:"The existing Telegram test-group configuration is unavailable."},503);
@@ -115,7 +115,7 @@ Deno.serve(async (request: Request) => {
     const previous=versions?.[0]?.version??null;
     const {data:report,error:reportError}=await admin.from("plato_id_scanner_report_versions").insert({
       report_kind:"telegram_ids",period_key:periodKey,version:(previous??0)+1,previous_version:previous,
-      payload:{period_key:periodKey,from,to,reviewed_images:reviewedImages,ids,messages},
+      payload:{period_key:periodKey,from,to,reviewed_images:reviewedImages,ids,duplicate_count:duplicates.length,duplicates,messages},
       created_by:auth.user.id,note:"Manual send to PLATO LAND test Telegram group",
     }).select("id,version").single();
     if(reportError) throw reportError;
