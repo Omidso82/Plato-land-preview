@@ -112,7 +112,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
   }
   if(completed.length)setUploads(prev=>[...completed,...prev]);
   setFiles([]);const input=document.getElementById('plato-scanner-files') as HTMLInputElement|null;if(input)input.value='';
-  setMessage((completed.length?'تعداد '+completed.length+' تصویر به‌صورت پرونده‌های مستقل ذخیره شد. ':'')+(failures.length?'موارد ناموفق: '+failures.join(' | '):'')+' پردازش OCR و استخراج IDها هنوز به Backend مستقل متصل نشده است؛ هیچ ID یا پیامی به تلگرام ارسال نشده است.');
+  setMessage((completed.length?'تعداد '+completed.length+' تصویر به‌صورت پرونده‌های مستقل ذخیره شد. ':'')+(failures.length?'موارد ناموفق: '+failures.join(' | '):'')+' اکنون برای هر تصویر، از کارت همان تصویر دکمه «شروع پردازش OCR» را بزن. نتیجه پس از پردازش برای بازبینی نمایش داده می‌شود؛ ارسال تلگرام خودکار انجام نمی‌شود.');
   setBusy(false);
  }
  if(loading)return <Root className={"plato-scanner-shell"+(embedded?" scanner-embedded":"")} dir="rtl"><div className="plato-scanner-card">در حال بررسی حساب…</div></Root>;
