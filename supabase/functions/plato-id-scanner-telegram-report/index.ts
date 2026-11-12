@@ -67,7 +67,7 @@ Deno.serve(async (request: Request) => {
   const body=await request.json().catch(()=>null);
   if(!body||!["preview","send"].includes(body.action)||!["today","yesterday","last7","custom"].includes(body.period)) return reply({error:"Invalid report request."},400);
   const now=new Date();
-  const today=new Intl.DateTimeFormat("en-CA",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).format(now);
+  const todayParts=new Intl.DateTimeFormat("en-US",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(now);\n  const part=(k:string)=>todayParts.find(x=>x.type===k)?.value||"";\n  const today=part("year")+"-"+part("month")+"-"+part("day");
   let start:string,end:string;
   if(body.period==="today"){start=today;end=nextDate(today,1);}
   else if(body.period==="yesterday"){start=nextDate(today,-1);end=today;}
