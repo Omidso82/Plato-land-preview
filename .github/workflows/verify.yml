@@ -19,3 +19,4 @@ jobs:
       - uses: denoland/setup-deno@v2
       - run: deno test supabase/functions/_shared/series2-qualification.test.ts
       - run: deno test supabase/functions/plato-land-series2-progression/_shared/series2-bracket.test.ts
+      - run: deno test supabase/functions/_shared/plato-id-scanner-telegram-report.test.ts
