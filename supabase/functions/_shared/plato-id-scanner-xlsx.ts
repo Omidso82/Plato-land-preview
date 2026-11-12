@@ -109,9 +109,13 @@ function dayKey(value: string): string {
   if (!Number.isFinite(date.getTime())) throw new Error("Invalid report date.");
   return keyFor(date);
 }
+function asciiDigits(value: string): string {
+  return value.replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
+}
 function monthIdentity(key: string) {
   const p = persianParts(key);
-  return { year: p.year, month: p.month, monthKey: p.year + "-" + p.month, day: Number(p.day) };
+  return { year: p.year, month: p.month, monthKey: p.year + "-" + p.month, day: Number(asciiDigits(p.day)) };
 }
 function daysInPersianMonth(anyDay: string): string[] {
   const identity = monthIdentity(anyDay), center = dateFromKey(anyDay), candidates: string[] = [];
