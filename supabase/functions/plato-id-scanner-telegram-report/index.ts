@@ -68,17 +68,25 @@ Deno.serve(async (request: Request) => {
   if(!body||!["preview","send"].includes(body.action)||!["today","yesterday","last7","custom"].includes(body.period)) return reply({error:"Invalid report request."},400);
   const now=new Date();
   const todayParts=new Intl.DateTimeFormat("en-US",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(now);\n  const part=(k:string)=>todayParts.find(x=>x.type===k)?.value||"";\n  const today=part("year")+"-"+part("month")+"-"+part("day");
-  let start:string,end:string;
-  if(body.period==="today"){start=today;end=nextDate(today,1);}
-  else if(body.period==="yesterday"){start=nextDate(today,-1);end=today;}
-  else if(body.period==="last7"){start=nextDate(today,-6);end=nextDate(today,1);}
-  else {
-    if(!validDate(body.start_date)||!validDate(body.end_date)||body.start_date>body.end_date) return reply({error:"Custom date range is invalid."},400);
-    start=body.start_date;end=nextDate(body.end_date,1);
-    const days=(Date.parse(end+"T00:00:00Z")-Date.parse(start+"T00:00:00Z"))/86400000;
-    if(days>366) return reply({error:"Custom report range cannot exceed 366 days."},400);
+  let start:string|undefined,end:string|undefined,from:string,to:string,periodKey:string,label:string;
+  if(body.period==="last7"){
+    from=new Date(now.getTime()-7*24*60*60*1000).toISOString();
+    to=now.toISOString();
+    periodKey=from+".."+to;
+    label="هفت روز شناور اخیر تا "+new Intl.DateTimeFormat("fa-IR",{timeZone:TZ,dateStyle:"short",timeStyle:"short"}).format(now)+" (Asia/Tehran)";
+  } else {
+    if(body.period==="today"){start=today;end=nextDate(today,1);}
+    else if(body.period==="yesterday"){start=nextDate(today,-1);end=today;}
+    else {
+      if(!validDate(body.start_date)||!validDate(body.end_date)||body.start_date>body.end_date) return reply({error:"Custom date range is invalid."},400);
+      start=body.start_date;end=nextDate(body.end_date,1);
+      const days=(Date.parse(end+"T00:00:00Z")-Date.parse(start+"T00:00:00Z"))/86400000;
+      if(days>366) return reply({error:"Custom report range cannot exceed 366 days."},400);
+    }
+    from=tehranMidnightUtc(start);to=tehranMidnightUtc(end);
+    periodKey=start+".."+nextDate(end,-1);
+    label="بازه: "+start+" تا "+nextDate(end,-1)+" (Asia/Tehran)";
   }
-  const from=tehranMidnightUtc(start),to=tehranMidnightUtc(end);
   try {
     const scans=await allRows(admin,"plato_id_scanner_uploads","id,created_at,status",(q:any)=>q.gte("created_at",from).lt("created_at",to).order("created_at",{ascending:true}));
     const scanIds=scans.map(x=>x.id);
