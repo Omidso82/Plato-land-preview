@@ -88,3 +88,20 @@
  .scanner-review-meta .scanner-primary{width:100%}
  .scanner-report-table th,.scanner-report-table td{font-size:10px;padding:7px 3px}
 }
+
+
+/* Dedicated operator scanner dialog */
+.scanner-open-button{width:100%;max-width:420px;min-height:54px;margin:18px auto 4px;display:block;font-size:16px}
+.scanner-modal-backdrop{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:12px;background:rgba(0,0,0,.78);backdrop-filter:blur(5px)}
+.scanner-modal{width:min(100%,920px);max-height:calc(100dvh - 24px);overflow:auto;overscroll-behavior:contain;border:1px solid #8c713c;border-radius:18px;background:#101113;box-shadow:0 24px 90px rgba(0,0,0,.65);padding:14px}
+.scanner-modal-header{position:sticky;top:-14px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-14px -14px 14px;padding:12px 14px;background:rgba(16,17,19,.96);border-bottom:1px solid #51452d}
+.scanner-modal-header h2{margin:0;color:#f6e8c5;font-size:17px}
+.scanner-modal .scanner-flow{margin-top:0}
+.scanner-modal .scanner-view-switch{position:sticky;top:48px;z-index:2}
+@media(max-width:600px){
+ .scanner-modal-backdrop{padding:0;align-items:stretch}
+ .scanner-modal{width:100%;max-height:100dvh;border-radius:0;border:0;padding:12px}
+ .scanner-modal-header{top:-12px;margin:-12px -12px 12px;padding:12px}
+ .scanner-modal .scanner-view-switch{top:46px}
+ .scanner-open-button{max-width:none}
+}

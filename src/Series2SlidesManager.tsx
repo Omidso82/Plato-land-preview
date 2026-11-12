@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import Series2FinalistPredictionAdmin from './Series2FinalistPredictionAdmin';
 import Series2ResultsManager from './Series2ResultsManager';
-import PlatoIdImageUpload from './PlatoIdImageUpload';
 import PlatoIdScannerApp from './PlatoIdScannerApp';
 
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
@@ -19,7 +18,6 @@ export default function Series2SlidesManager() {
   const [signedIn,setSignedIn] = useState(false);
   const [checking,setChecking] = useState(true);
   const [owner,setOwner] = useState(false);
-  const [operatorStatus,setOperatorStatus] = useState<ScannerAccess['status']|null>(null);
   const [operators,setOperators] = useState<ScannerAccess[]>([]);
   const [signup,setSignup] = useState(false);
   const [files,setFiles] = useState<SlideFile[]>([]);
@@ -36,13 +34,12 @@ export default function Series2SlidesManager() {
     if (!supabase) { setMessage('اتصال به سرویس اصلی برقرار نیست.'); setChecking(false); return; }
     setChecking(true);
     const {data:{user}} = await supabase.auth.getUser();
-    if (!user) { setSignedIn(false); setOwner(false); setOperatorStatus(null); setChecking(false); return; }
+    if (!user) { setSignedIn(false); setOwner(false); setChecking(false); return; }
     setSignedIn(true);
     const {data:role,error:roleError} = await supabase.rpc('current_user_role');
     const allowed = !roleError && (role === 'owner' || role === 'مالک کل');
     setOwner(allowed);
     if (allowed) {
-      setOperatorStatus(null);
       const {data:rows,error:rowsError}=await supabase.from('plato_id_scanner_access')
         .select('user_id,email,status,requested_at').order('requested_at',{ascending:false});
       if(rowsError) setMessage('خواندن فهرست اپراتورها ناموفق بود: '+rowsError.message);
@@ -60,7 +57,6 @@ export default function Series2SlidesManager() {
         if(created.error) setMessage('ثبت درخواست اپراتوری ناموفق بود: '+created.error.message);
         else access=created.data as ScannerAccess;
       }
-      setOperatorStatus((access as ScannerAccess|null)?.status||null);
     }
     setChecking(false);
   }
@@ -176,7 +172,7 @@ export default function Series2SlidesManager() {
     finally { setPosterBusy(false); }
   }
 
-  async function signOut() { await supabase?.auth.signOut(); setSignedIn(false); setOwner(false); setOperatorStatus(null); setOperators([]); setFiles([]); setMessage(''); }
+  async function signOut() { await supabase?.auth.signOut(); setSignedIn(false); setOwner(false); setOperators([]); setFiles([]); setMessage(''); }
 
   if (checking) return <main dir="rtl" style={shell}><section style={panel}>در حال بررسی دسترسی مالک…</section></main>;
   if (!signedIn) return <main dir="rtl" style={shell}><section style={panel}>    <h1 style={heading}>ورود به پنل موقت سری دوم</h1>
@@ -187,7 +183,7 @@ export default function Series2SlidesManager() {
       <button style={primary} disabled={busy}>{busy?'لطفاً صبر کن…':signup?'ساخت حساب اپراتور':'ورود امن'}</button>
     </form><button type="button" style={secondary} onClick={()=>{setSignup(!signup);setMessage('')}}>{signup?'بازگشت به ورود':'ثبت‌نام اپراتور جدید'}</button>{message&&<p role="alert" style={muted}>{message}</p>}
   </section></main>;
-  if (!owner) return <main dir="rtl" style={shell}><section style={panel}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}><h1 style={heading}>اسکنر تصاویر Plato ID</h1><button style={secondary} onClick={signOut}>خروج</button></div>{operatorStatus==='approved'?<><p style={muted}>دسترسی شما فعال است؛ فقط تصاویر بارگذاری‌شده توسط حساب خودتان نمایش داده می‌شود.</p><PlatoIdImageUpload/></>:<section style={{marginTop:18,padding:16,border:'1px solid #705b31',borderRadius:12}}><h2 style={heading}>{operatorStatus==='pending'?'درخواست شما در انتظار تأیید مالک است.':'دسترسی شما فعلاً فعال نیست.'}</h2><p style={muted}>{operatorStatus==='pending'?'پس از تأیید مالک، بخش بارگذاری و تصاویر در همین صفحه فعال می‌شود.':'برای فعال‌سازی دسترسی با مالک PLATO LAND تماس بگیر.'}</p></section>}{message&&<p role="status" style={muted}>{message}</p>}</section></main>;
+  if (!owner) return <PlatoIdScannerApp embedded />;
 
   return <main dir="rtl" style={shell}><section style={panel}>
     <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}>
@@ -228,7 +224,6 @@ export default function Series2SlidesManager() {
       </div>
       {scannerOpen&&<div style={{marginTop:14}}><PlatoIdScannerApp ownerMode embedded /></div>}
     </section>
-    <PlatoIdImageUpload />
     {SHOW_SLIDE_EDITOR && (
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12,marginTop:20}}>
       {Array.from({length:18},(_,i)=>{
