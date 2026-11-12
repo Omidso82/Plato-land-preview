@@ -127,7 +127,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
    :access?.status!=='approved'?<section className="plato-scanner-card"><span className={'scanner-status '+(access?.status||'pending')}>{access?.status==='rejected'?'درخواست رد شده':access?.status==='disabled'?'دسترسی غیرفعال':'در انتظار تأیید مالک'}</span><h1>{access?.status==='rejected'?'درخواست دسترسی تأیید نشد':access?.status==='disabled'?'دسترسی شما غیرفعال است':'حساب شما در صف بررسی است'}</h1><p>{access?.status==='pending'?'ایمیل شما تأیید شده است. پس از بررسی مالک، امکان آپلود فعال می‌شود.':'برای پیگیری با مالک PLATO LAND تماس بگیرید.'}</p></section>
   :<section className="scanner-workspace"><div className="scanner-welcome"><div><span className="scanner-eyebrow">پنل اپراتور</span><h1>گزارش‌گیری از Plato IDهای فعال</h1><p>تصاویر کارت‌ها و Guideها را بارگذاری کن، پردازش کن و نتیجه را بازبینی کن.</p></div><span className="scanner-status approved">دسترسی فعال</span></div>
     <ScannerWorkspaceView view={scannerView} setView={setScannerView} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} pendingRows={pendingRows} uploads={uploads} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
-   </section>}}
+   </section>}
   {message&&<p className="scanner-message" role="status">{message}</p>}<footer className="scanner-footer">PLATO LAND · دسترسی محدود و مستقل</footer>
  </Root>;
 }
