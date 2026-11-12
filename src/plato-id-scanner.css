@@ -112,3 +112,15 @@
 .scanner-global-id-list span{display:inline-flex;align-items:center;padding:7px 10px;border:1px solid rgba(214,174,87,.35);border-radius:9px;background:rgba(214,174,87,.08);color:inherit;font-size:13px;direction:ltr}
 .scanner-global-unique-panel .scanner-report-stats{margin:14px 0}
 .scanner-global-unique-panel .scanner-review-history{margin-top:12px}
+
+/* Manual Telegram report controls — Scanner-only */
+.scanner-telegram-report{display:grid;gap:12px;margin-top:22px;padding:16px;border:1px solid rgba(212,175,55,.28);border-radius:14px;background:rgba(12,12,12,.42)}
+.scanner-telegram-report h3{margin:0;color:#e5c66b;font-size:1rem}
+.scanner-telegram-report p{margin:0;line-height:1.8;color:var(--scanner-muted,#aaa)}
+.scanner-telegram-report>label,.scanner-report-date-range label{display:grid;gap:7px;font-size:.9rem}
+.scanner-telegram-report select,.scanner-report-date-range input{width:100%;min-height:44px;padding:9px 12px;border:1px solid rgba(212,175,55,.25);border-radius:9px;background:#171717;color:#f5f0df}
+.scanner-report-date-range{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.scanner-report-preview{display:grid;gap:8px;padding:12px;border-radius:10px;background:rgba(255,255,255,.04)}
+.scanner-report-preview small{color:var(--scanner-muted,#aaa)}
+.scanner-report-preview>div{max-height:220px;overflow:auto;white-space:pre-wrap;text-align:left;font-family:ui-monospace,monospace;line-height:1.8}
+@media(max-width:520px){.scanner-report-date-range{grid-template-columns:1fr}}
