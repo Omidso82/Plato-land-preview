@@ -98,11 +98,21 @@ Deno.serve(async (request: Request) => {
         body: JSON.stringify({}),
         signal: AbortSignal.timeout(30_000),
       });
-      const workerResult = await workerResponse.json().catch(() => null);
+      const workerBody = await workerResponse.text();
+      let workerResult: Record<string, unknown> | null = null;
+      try {
+        const parsed: unknown = JSON.parse(workerBody);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          workerResult = parsed as Record<string, unknown>;
+        }
+      } catch {
+        // Preserve only the known, non-sensitive plain-text auth failure.
+      }
       worker = {
         invoked: true,
         http_status: workerResponse.status,
-        ...(workerResult && typeof workerResult === "object" ? workerResult : {}),
+        ...(workerBody.trim() === "Unauthorized" ? { response_text: "Unauthorized" } : {}),
+        ...(workerResult ?? {}),
       };
     } catch {
       worker = { invoked: true, error: "WORKER_INVOCATION_FAILED" };
