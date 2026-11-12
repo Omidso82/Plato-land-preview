@@ -219,3 +219,6 @@
  .scanner-workspace-toolbar>strong{font-size:14px}
  .scanner-back-button{width:100%;min-height:46px}
 }
+
+.scanner-welcome-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+@media(max-width:600px){.scanner-welcome-actions{width:100%;justify-content:flex-start}}
