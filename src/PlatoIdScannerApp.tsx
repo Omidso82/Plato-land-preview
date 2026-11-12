@@ -187,13 +187,20 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
 </div>}
    </section>
    :access?.status!=='approved'?<section className="plato-scanner-card"><span className={'scanner-status '+(access?.status||'pending')}>{access?.status==='rejected'?'درخواست رد شده':access?.status==='disabled'?'دسترسی غیرفعال':'در انتظار تأیید مالک'}</span><h1>{access?.status==='rejected'?'درخواست دسترسی تأیید نشد':access?.status==='disabled'?'دسترسی شما غیرفعال است':'حساب شما در صف بررسی است'}</h1><p>{access?.status==='pending'?'ایمیل شما تأیید شده است. پس از بررسی مالک، امکان آپلود فعال می‌شود.':'برای پیگیری با مالک PLATO LAND تماس بگیرید.'}</p></section>
-  :<section className="scanner-workspace"><div className="scanner-welcome"><div><span className="scanner-eyebrow">پنل اپراتور</span><h1>گزارش‌گیری از Plato IDهای فعال</h1><p>تصاویر کارت‌ها و Guideها را بارگذاری کن، پردازش کن و نتیجه را بازبینی کن.</p></div><div className="scanner-welcome-actions"><span className="scanner-status approved">دسترسی فعال</span>{!ownerMode&&<button type="button" className="scanner-ghost" onClick={()=>void signOut()}>خروج از پنل</button>}</div></div>
-    <button type="button" className="scanner-primary scanner-open-button" onClick={()=>setScannerOpen(true)}>اسکن تصاویر</button>
-    {scannerOpen&&<div className="scanner-modal-backdrop" role="presentation" onClick={()=>setScannerOpen(false)}>
-      <section className="scanner-modal" role="dialog" aria-modal="true" aria-labelledby="scanner-modal-title" onClick={(e)=>e.stopPropagation()}>
-       <header className="scanner-modal-header"><h2 id="scanner-modal-title">اسکن تصاویر Plato ID</h2><button type="button" className="scanner-ghost" onClick={()=>setScannerOpen(false)}>بستن ×</button></header>
-       <ScannerWorkspaceView view={scannerView} setView={setScannerView} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} onScanUpdated={(updated:ScanRow)=>setUploads(prev=>prev.map(item=>item.id===updated.id?updated:item))} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
-      </section>
+  :<section className="scanner-workspace scanner-admin-dashboard">
+    {scannerSection==='home'?<>
+      <div className="scanner-admin-hero">
+        <div className="scanner-admin-brandline"><span className="scanner-admin-crown">♛</span><span>PLATO LAND</span><i>SCANNER</i></div>
+        <div className="scanner-admin-heading"><div><span className="scanner-eyebrow">فضای کاری اپراتور</span><h1>مدیریت آیدی‌های فعال</h1><p>از همین پنل، فقط بخش‌های فعال اسکنر را باز کن و کارهایت را انجام بده.</p></div><span className="scanner-status approved">دسترسی تأییدشده</span></div>
+      </div>
+      <div className="scanner-home-grid" aria-label="بخش‌های مجاز اسکنر">
+        <button type="button" onClick={()=>{setScannerSection('upload');setScannerView('new');}}><b>↑</b><strong>تصاویر و آپلود</strong><small>افزودن تصویر جدید</small></button>
+        <button type="button" onClick={()=>{setScannerSection('ocr');setScannerView('new');}}><b>⌕</b><strong>استخراج و بررسی</strong><small>پردازش و بازبینی OCR</small></button>
+        <button type="button" onClick={()=>{setScannerSection('archive');setScannerView('archive');}}><b>▤</b><strong>آرشیو تصاویر</strong><small>{uploads.length} تصویر ثبت‌شده</small></button>
+      </div>
+    </>:<div className="scanner-admin-workspace">
+      <div className="scanner-workspace-toolbar"><button type="button" className="scanner-back-button" onClick={()=>{setScannerSection('home');setScannerView('new');}}>← بازگشت به داشبورد</button><strong>{{upload:'تصاویر و آپلود',ocr:'استخراج و بررسی',archive:'آرشیو تصاویر'}[scannerSection]||'فضای کاری اسکنر'}</strong></div>
+      <ScannerWorkspaceView view={scannerView} setView={setScannerView} sectionMode={scannerSection} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} onScanUpdated={(updated:ScanRow)=>setUploads(prev=>prev.map(item=>item.id===updated.id?updated:item))} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
     </div>}
    </section>}
   {message&&<p className="scanner-message" role="status">{message}</p>}<footer className="scanner-footer">PLATO LAND · دسترسی محدود و مستقل</footer>
