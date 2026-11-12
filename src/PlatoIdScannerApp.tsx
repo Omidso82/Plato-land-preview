@@ -219,7 +219,8 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
   if(reportBusy)return;
   if(period==='custom'&&(!startDate||!endDate||startDate>endDate)){setReportMessage('برای بازه دلخواه، تاریخ شروع و پایان معتبر را انتخاب کن.');return;}
   if(action==='send'&&(!preview?.preview)){setReportMessage('ابتدا پیش‌نمایش همین بازه را تهیه و بررسی کن.');return;}
-  if(action==='send'&&(preview?.duplicate_count||0)>0&&!duplicateReviewed){setReportMessage('ابتدا موارد تکراری دقیق را بررسی و تأیید کن.');return;}\n  if(action==='send'&&!window.confirm('فهرست کامل و نهایی بازه انتخاب‌شده به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.'))return;
+  if(action==='send'&&(preview?.duplicate_count||0)>0&&!duplicateReviewed){setReportMessage('ابتدا موارد تکراری دقیق را بررسی و تأیید کن.');return;}
+  if(action==='send'&&!window.confirm('فهرست کامل و نهایی بازه انتخاب‌شده به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.'))return;
   setReportBusy(true);setReportMessage('');
   try{
    const body:any={action,period};
