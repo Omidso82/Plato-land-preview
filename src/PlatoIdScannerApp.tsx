@@ -268,7 +268,8 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
   finally{setReportBusy(false);}
  }
  return <section id="scanner-global-unique-panel" className="scanner-panel scanner-global-unique-panel">
-  {mode==='all'||mode==='ids'?<>\n  <div className="scanner-section-heading"><span className="scanner-step">✓</span><div><h2>فهرست نهایی و یکتای Plato IDها</h2><p>فقط آخرین نسخه بازبینی و تأییدشده هر تصویر در فهرست اصلی محاسبه می‌شود؛ موارد OCR تأییدنشده وارد فهرست و تلگرام نمی‌شوند.</p></div></div>
+  {mode==='all'||mode==='ids'?<>
+  <div className="scanner-section-heading"><span className="scanner-step">✓</span><div><h2>فهرست نهایی و یکتای Plato IDها</h2><p>فقط آخرین نسخه بازبینی و تأییدشده هر تصویر در فهرست اصلی محاسبه می‌شود؛ موارد OCR تأییدنشده وارد فهرست و تلگرام نمی‌شوند.</p></div></div>
   <div className="scanner-report-stats">
    <div><strong>{audit.total_occurrences}</strong><small>کل IDهای تأییدشده</small></div>
    <div><strong>{audit.unique_count}</strong><small>ID یکتای تجمیعی</small></div>
@@ -284,7 +285,9 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
     <strong>{item.raw_value}</strong><small>تصویر تکراری: {names.get(item.scan_id)||item.scan_id} · اولین مورد: {names.get(item.duplicate_of_scan_id)||item.duplicate_of_scan_id}</small>
    </div>)}</div>
   </details>}
-  </>:null}\n  {mode==='all'||mode==='report'?<>\n  <div id="scanner-telegram-report" className="scanner-telegram-report">
+  </>:null}
+  {mode==='all'||mode==='report'?<>
+  <div id="scanner-telegram-report" className="scanner-telegram-report">
    <h3>ارسال گزارش به گروه آزمایشی تلگرام</h3>
    <p>ارسال فقط با اقدام دستی انجام می‌شود. هر بار کل فهرست تأییدشده بازه انتخابی ارسال خواهد شد؛ کانال اصلی مقصد این مرحله نیست.</p>
    <label>بازه گزارش<select value={period} onChange={e=>{setPeriod(e.target.value as any);setPreview(null);setDuplicateReviewed(false);setReportMessage('');}}>
@@ -301,7 +304,9 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
    {reportMessage&&<p className="scanner-message" role="status">{reportMessage}</p>}
    {preview?.preview&&<div className="scanner-report-preview"><strong>پیش‌نمایش · <span dir="rtl" style={{ unicodeBidi: 'isolate', display: 'inline-block' }}>{(()=>{const [from,to]=(preview.period_key||'').split('..');const formatJalali=(value:string)=>{const date=value.slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return date;return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));};const first=formatJalali(from||'');const last=formatJalali(to||'');return !last||first===last?first:first+' تا '+last;})()}</span></strong><small>{preview.reviewed_images} تصویر تأییدشده · {preview.id_count} ID یکتا · {preview.duplicate_count||0} تکراری دقیق · {preview.messages?.length||0} پیام</small>{(preview.duplicates||[]).length>0&&<><div className="scanner-report-id-list" dir="ltr">{preview.duplicates.map((item:any,index:number)=><div key={item.id+'-'+index}><strong>{item.id}</strong><small>اولین تصویر: {names.get(item.first_scan_id)||item.first_scan_id} · تصویر تکراری: {names.get(item.duplicate_scan_id)||item.duplicate_scan_id}</small></div>)}</div><label className="scanner-duplicate-confirm"><input type="checkbox" checked={duplicateReviewed} onChange={e=>setDuplicateReviewed(e.target.checked)}/> موارد تکراری دقیق را بررسی کردم و حذف تکرارها را تأیید می‌کنم.</label></>}<pre className="scanner-report-ids" dir="ltr" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', unicodeBidi: 'isolate', margin: 0 }}>{(preview.ids||[]).join('\n')}</pre></div>}
   </div>
-  </>:null}\n  {mode==='all'||mode==='history'?<>\n  <div id="scanner-delivery-history" className="scanner-delivery-history">
+  </>:null}
+  {mode==='all'||mode==='history'?<>
+  <div id="scanner-delivery-history" className="scanner-delivery-history">
    <div className="scanner-section-heading"><div><h3>تاریخچه ارسال‌های تلگرام</h3><p>نسخه گزارش، وضعیت تحویل و شناسه پیام‌های ارسالی</p></div><button type="button" className="scanner-ghost" disabled={historyLoading} onClick={()=>void loadDeliveryHistory()}>{historyLoading?'در حال بارگذاری…':'به‌روزرسانی تاریخچه'}</button></div>
    {deliveryHistory.length?deliveryHistory.map((item:any)=><article className="scanner-history-item" key={item.id}>
     <strong>نسخه {item.report?.version??'—'} · {item.report?.period_key??'بازه نامشخص'}</strong>
@@ -311,7 +316,8 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
     {item.last_error&&<small>{item.last_error}</small>}
    </article>):<p className="scanner-empty">هنوز سابقه ارسالی ثبت نشده است.</p>}
   </div>
-  </>:null}\n  <p className="scanner-report-disclaimer">تطابق فقط بر اساس متن دقیق انجام می‌شود؛ بزرگی و کوچکی حروف و نشانه‌ها تغییر نمی‌کند. سوابق OCR و بازبینی قبلی حذف یا بازنویسی نمی‌شوند.</p>
+  </>:null}
+  <p className="scanner-report-disclaimer">تطابق فقط بر اساس متن دقیق انجام می‌شود؛ بزرگی و کوچکی حروف و نشانه‌ها تغییر نمی‌کند. سوابق OCR و بازبینی قبلی حذف یا بازنویسی نمی‌شوند.</p>
  </section>;
 }
 
@@ -332,7 +338,8 @@ function ScannerWorkspaceView({view,setView,sectionMode='all',archiveDate,setArc
    {(sectionMode==='all'||sectionMode==='ocr')&&<section id="scanner-queue-panel" className="scanner-panel scanner-queue-panel"><div className="scanner-section-heading"><span className="scanner-step">۲</span><div><h2>تصاویر امروز · {todayLabel}</h2><p>هر تصویر فقط یک بار برای OCR ارسال می‌شود؛ نتیجه و بازبینی آن زیر همان تصویر باقی می‌ماند.</p></div></div>
     {todayRows.length?<UploadList rows={todayRows} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated}/>:<div className="scanner-empty-state"><strong>امروز هنوز تصویری آپلود نشده است</strong><small>یک تصویر انتخاب و ذخیره کن تا دکمه اسکن آن نمایش داده شود.</small></div>}
    </section>}
-  </div>:null}\n  {(sectionMode==='all'||sectionMode==='archive')&&view==='archive'?<section className="scanner-panel scanner-archive-panel">
+  </div>:null}
+  {(sectionMode==='all'||sectionMode==='archive')&&view==='archive'?<section className="scanner-panel scanner-archive-panel">
    <div className="scanner-section-heading"><span className="scanner-step">▤</span><div><h2>آرشیو اسکن‌ها</h2><p>سوابق را بر اساس روز انتخاب کن و نتیجه هر تصویر را دوباره ببین.</p></div></div>
    <label className="scanner-archive-filter">انتخاب روز<select value={archiveDate} onChange={(e:any)=>setArchiveDate(e.target.value)}><option value="all">همه روزها</option>{archiveDays.map((d:string)=><option value={d} key={d}>{d.replace(/\d/g,n=>'۰۱۲۳۴۵۶۷۸۹'[Number(n)])}</option>)}</select></label>
    <div className="scanner-archive-summary"><strong>{archiveRows.length}</strong><span>تصویر در این فهرست</span></div>
