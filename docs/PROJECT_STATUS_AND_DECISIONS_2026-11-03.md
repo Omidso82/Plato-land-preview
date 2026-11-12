@@ -223,3 +223,17 @@ Supabase اصلی: `dfrppbapaaydbjeflozw`
 
 ### حدود و ایمنی
 این ثبت صرفاً مستندسازی پذیرش مالک در Preview است؛ QA ماتریسی، E2E، Auth/DB، Staging و Production approval همچنان وضعیت مستقل دارند. هیچ تغییر در Production، main، Supabase، Storage، DNS یا Deploy در این الحاقیه انجام نشده است.
+
+
+---
+
+## الحاقیه وضعیت جاری — PLATO-DOC-SEAL، ۴ نوامبر ۲۰۲۶
+
+- این الحاقیه جایگزین Snapshotهای قدیمی این سند می‌شود که Staging را ایجادنشده معرفی می‌کردند.
+- Staging مستقل با شناسه `vgezfuztgzxbmvkmaoqn` بازسازی شده است؛ جزئیات و محدودیت‌ها در `docs/PLATO_DOC_SEAL_STAGING_PREVIEW_2026-11-04.md` ثبت شده است.
+- شاخه `cloudflare-preview` با commit `d4dde5f608a915505f82a3f1f3b2a8f875ba1aff` به URL و publishable key مربوط به Staging متصل شده است؛ `main` همچنان به Production متصل است.
+- Cloudflare deployment موفق است و URL اختصاصی `https://b8205280.plato-land-preview.pages.dev` دارد؛ alias `https://plato-land-preview.pages.dev` نیز توسط مالک در Safari موبایل باز و مشاهده شده است.
+- این مشاهده فقط بارگذاری و رندر صفحه را ثابت می‌کند؛ درخواست واقعی مرورگر به دیتابیس هنوز تأیید نشده است.
+- Staging از نظر schema بازسازی شده اما برای QA کامل آماده نیست: تست browser-to-DB، Auth leaked-password protection، حساب‌های synthetic، هفت Edge Function، بازبینی دو SECURITY DEFINER و reconciliation تاریخچه migrationها باز هستند.
+- بسته A و B در سطح طراحی Preview توسط مالک پذیرفته شده‌اند؛ این پذیرش به معنی QA فنی یا تأیید Production نیست. بخش C همچنان پیش از پیاده‌سازی نیازمند استخراج و تأیید است.
+- هیچ تغییر در Production، `main`، Supabase اصلی، Storage اصلی، DNS یا انتشار Production انجام نشده است.

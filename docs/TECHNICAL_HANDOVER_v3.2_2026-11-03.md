@@ -215,3 +215,32 @@ Query مستقیم و فقط‌خواندنی در ۳ نوامبر ۲۰۲۶:
 
 ### آزمون و محدودیت
 پذیرش A/B فقط پذیرش مالک در Preview است. QA ماتریسی، E2E، دسترس‌پذیری، Auth/DB عملیاتی، Staging و Production approval همچنان مستقل و باز هستند تا با شواهد واقعی انجام شوند. این الحاقیه مستنداتی است و هیچ تغییر اجرایی/انتشاری انجام نمی‌دهد.
+
+
+---
+
+## الحاقیه v4.0 — اتصال Preview به Staging و وضعیت تحویل (۴ نوامبر ۲۰۲۶)
+
+### محیط‌ها و شواهد
+- Production Supabase: `dfrppbapaaydbjeflozw`؛ فایل `src/supabase.ts` در `main` همچنان به این پروژه متصل است.
+- Staging Supabase: `vgezfuztgzxbmvkmaoqn`؛ فایل `src/supabase.ts` در شاخه `cloudflare-preview` به این پروژه و publishable key مرورگری متصل شده است.
+- Preview commit: `d4dde5f608a915505f82a3f1f3b2a8f875ba1aff`.
+- Cloudflare Pages deploy: موفق؛ unique URL `https://b8205280.plato-land-preview.pages.dev`؛ deployment ID `b8205280-1c76-4284-b195-21a0e965fbdb`؛ alias `https://plato-land-preview.pages.dev`.
+- مالک با اسکرین‌شات Safari موبایل، بازشدن alias و رندر صفحه را تأیید کرد.
+
+### سطح راستی‌آزمایی
+- کد Preview برای استفاده از Staging تنظیم و deploy شده است.
+- درخواست واقعی مرورگر به Staging هنوز با network/response مستقل اثبات نشده؛ screenshot فقط page rendering را اثبات می‌کند.
+- Staging schema rebuild شده اما operational readiness آن PARTIAL است.
+
+### موارد باز تحویل
+1. تست read-only browser-to-Staging request.
+2. فعال‌سازی leaked-password protection در Auth Staging.
+3. ایجاد حساب‌های synthetic و نقش‌های Owner/Manager/Player.
+4. بررسی و Deploy هفت Edge Function با secrets مخصوص Staging.
+5. بازبینی SECURITY DEFINER برای دو تابع ثبت‌شده.
+6. تکمیل migration ledger/source reconciliation بدون replay.
+7. اجرای QA نقش‌ها، RLS، Storage، Auth، E2E، Regression و ماتریس موبایل/دسکتاپ.
+
+### محدودیت‌ها
+هیچ تغییری در Production، main، Supabase اصلی، Storage اصلی، DNS یا دامنه Production انجام نشده است. service_role در کلاینت قرار نگرفته است. هیچ داده Production به Staging کپی نشده است.
