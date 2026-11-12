@@ -23,15 +23,17 @@ Version 0.4 · 2026-11-12 · Persian header specification
 - Multi-message reports store each Telegram message ID. Partial failures retain already-sent IDs and are recorded as failed.
 
 ## Implementation status
-- Isolated branch: feature/plato-id-scanner-telegram-test-group.
-- Draft PR: #135, based on main and including Scanner global-dedup foundation.
+- PR #135 merged the Scanner global list, preview/send UI and delivery history.
+- PR #138 merged the Persian-only Telegram header and CI formatter test.
 - UI gates the global list on approved reviews, offers report preview/send controls, duplicate review confirmation and delivery history.
 - Edge Function source: supabase/functions/plato-id-scanner-telegram-report/index.ts.
-- Draft migration: supabase/migrations/20261112120000_plato_id_scanner_telegram_test_delivery.sql.
-- Migration is NOT applied to Supabase.
-- Edge Function is NOT deployed.
-- No Telegram message has been sent from Scanner.
-- No PR has been merged and no main-site production deployment has been performed.
+- Migration: `supabase/migrations/20261112120000_plato_id_scanner_telegram_test_delivery.sql` (applied to primary project).
+- Scanner Telegram migration was applied to the existing primary Supabase project `dfrppbapaaydbjeflozw` before the first successful Scanner test send.
+- PR #135 integrated the Scanner UI and report workflow; PR #138 merged the approved Persian-only header implementation (merge commit `fa70d211bbd4b60d5d1c568000ae6c2aecc6e3c1`).
+- Edge Function `plato-id-scanner-telegram-report` is ACTIVE at version 2 in the primary Supabase project; `verify_jwt=true` is preserved.
+- The first manual test-group report was delivered successfully: 15 approved IDs, one Telegram message, Telegram message ID 94, delivery status `sent`, no recorded error. No additional message was sent during the header update.
+- GitHub Pages production deployment for merge commit `fa70d211bbd4b60d5d1c568000ae6c2aecc6e3c1` completed successfully.
+- No main Telegram channel delivery was performed.
 - Main Telegram channel is not referenced or configured.
 
 ## Activation gates
