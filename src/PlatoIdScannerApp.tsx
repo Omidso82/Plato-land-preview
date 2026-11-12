@@ -223,7 +223,7 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
  const [revisions,setRevisions]=useState<any[]>([]),[reviewLoading,setReviewLoading]=useState(false);
  const [period,setPeriod]=useState<'today'|'yesterday'|'last7'|'custom'>('today');
  const [startDate,setStartDate]=useState(''),[endDate,setEndDate]=useState('');
- const [preview,setPreview]=useState<any>(null),[duplicateReviewed,setDuplicateReviewed]=useState(false),[reportBusy,setReportBusy]=useState(false),[reportMessage,setReportMessage]=useState(''),[deliveryHistory,setDeliveryHistory]=useState<any[]>([]),[historyLoading,setHistoryLoading]=useState(false);
+ const [preview,setPreview]=useState<any>(null),[duplicateReviewed,setDuplicateReviewed]=useState(false),[includeExcel,setIncludeExcel]=useState(false),[reportBusy,setReportBusy]=useState(false),[reportMessage,setReportMessage]=useState(''),[deliveryHistory,setDeliveryHistory]=useState<any[]>([]),[historyLoading,setHistoryLoading]=useState(false);
  useEffect(()=>{
   let alive=true;
   (async()=>{
@@ -275,16 +275,16 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
   if(period==='custom'&&(!startDate||!endDate||startDate>endDate)){setReportMessage('برای بازه دلخواه، تاریخ شروع و پایان معتبر را انتخاب کن.');return;}
   if(action==='send'&&(!preview?.preview)){setReportMessage('ابتدا پیش‌نمایش همین بازه را تهیه و بررسی کن.');return;}
   if(action==='send'&&(preview?.duplicate_count||0)>0&&!duplicateReviewed){setReportMessage('ابتدا موارد تکراری دقیق را بررسی و تأیید کن.');return;}
-  if(action==='send'&&!window.confirm('فهرست کامل و نهایی بازه انتخاب‌شده به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.'))return;
+  if(action==='send'&&!window.confirm(includeExcel?'گزارش گروه‌بندی‌شده بازه انتخابی همراه فایل Excel به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.':'گزارش گروه‌بندی‌شده بازه انتخابی به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.'))return;
   setReportBusy(true);setReportMessage('');
   try{
    const body:any={action,period};
    if(period==='custom'){body.start_date=startDate;body.end_date=endDate;}
-   if(action==='send'){body.request_id=crypto.randomUUID();body.confirm_exact_duplicates=duplicateReviewed;body.preview_fingerprint=preview.fingerprint;}
+   if(action==='send'){body.request_id=crypto.randomUUID();body.confirm_exact_duplicates=duplicateReviewed;body.preview_fingerprint=preview.fingerprint;body.include_excel=includeExcel;}
    const {data,error}=await supabase.functions.invoke('plato-id-scanner-telegram-report',{body});
    if(error)throw error;
    if(action==='preview'){setPreview(data);setDuplicateReviewed(false);setReportMessage('پیش‌نمایش آماده شد؛ هنوز هیچ پیامی ارسال نشده است.');}
-   else{setPreview(data);void loadDeliveryHistory();setReportMessage(data?.sent?'ارسال به گروه آزمایشی انجام شد · نسخه '+data.report_version+' · '+data.id_count+' شناسه یکتا · '+data.message_count+' پیام':data?.partial?'ارسال ناقص بود؛ بخشی از پیام‌ها ممکن است در گروه ثبت شده باشند. نسخه و وضعیت خطا ذخیره شد.':'ارسال تأیید نشد؛ وضعیت و جزئیات در پاسخ سرویس ثبت شده است.');}
+   else{setPreview(data);void loadDeliveryHistory();setReportMessage(data?.sent?'ارسال به گروه آزمایشی انجام شد · نسخه '+data.report_version+' · '+data.id_count+' ردیف ID روزانه · '+data.message_count+' پیام'+(data.excel_attached?' · فایل Excel پیوست شد':''):data?.partial?'ارسال ناقص بود؛ بخشی از پیام‌ها ممکن است در گروه ثبت شده باشند. نسخه و وضعیت خطا ذخیره شد.':'ارسال تأیید نشد؛ وضعیت و جزئیات در پاسخ سرویس ثبت شده است.');}
   }catch(e:any){setReportMessage(e?.message||'تهیه یا ارسال گزارش ناموفق بود.');}
   finally{setReportBusy(false);}
  }
@@ -310,7 +310,7 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
   {mode==='all'||mode==='report'?<>
   <div id="scanner-telegram-report" className="scanner-telegram-report">
    <h3>ارسال گزارش به گروه آزمایشی تلگرام</h3>
-   <p>ارسال فقط با اقدام دستی انجام می‌شود. هر بار کل فهرست تأییدشده بازه انتخابی ارسال خواهد شد؛ کانال اصلی مقصد این مرحله نیست.</p>
+   <p>گزارش بر اساس روز ثبت تصویر در منطقه زمانی تهران گروه‌بندی می‌شود. فقط آخرین نسخه بازبینی و تأییدشده هر تصویر وارد گزارش می‌شود؛ ارسال فقط با اقدام دستی به گروه آزمایشی انجام می‌شود.</p>
    <label>بازه گزارش<select value={period} onChange={e=>{setPeriod(e.target.value as any);setPreview(null);setDuplicateReviewed(false);setReportMessage('');}}>
     <option value="today">امروز</option><option value="yesterday">دیروز</option><option value="last7">هفت روز اخیر (بازه شناور)</option><option value="custom">بازه دلخواه</option>
    </select></label>
@@ -318,12 +318,13 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
     <label>از تاریخ<input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/></label>
     <label>تا تاریخ<input type="date" value={endDate} onChange={e=>{setEndDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/></label>
    </div>}
+   <label className="scanner-duplicate-confirm"><input type="checkbox" checked={includeExcel} onChange={e=>setIncludeExcel(e.target.checked)}/> پیوست اختیاری فایل Excel (.xlsx) شامل خلاصه و یک برگه جداگانه برای هر روز</label>
    <div className="scanner-actions">
     <button type="button" className="scanner-ghost" disabled={reportBusy||reviewLoading} onClick={()=>void requestReport('preview')}>{reportBusy?'در حال آماده‌سازی…':'پیش‌نمایش گزارش'}</button>
     <button type="button" className="scanner-primary" disabled={reportBusy||reviewLoading||audit.unique_count===0} onClick={()=>void requestReport('send')}>{reportBusy?'در حال ارسال…':'ارسال فهرست کامل به گروه آزمایشی'}</button>
    </div>
    {reportMessage&&<p className="scanner-message" role="status">{reportMessage}</p>}
-   {preview?.preview&&<div className="scanner-report-preview"><strong>پیش‌نمایش · <span dir="rtl" style={{ unicodeBidi: 'isolate', display: 'inline-block' }}>{(()=>{const [from,to]=(preview.period_key||'').split('..');const formatJalali=(value:string)=>{const date=value.slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return date;return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));};const first=formatJalali(from||'');const last=formatJalali(to||'');return !last||first===last?first:first+' تا '+last;})()}</span></strong><small>{preview.reviewed_images} تصویر تأییدشده · {preview.id_count} ID یکتا · {preview.duplicate_count||0} تکراری دقیق · {preview.messages?.length||0} پیام</small>{(preview.duplicates||[]).length>0&&<><div className="scanner-report-id-list" dir="ltr">{preview.duplicates.map((item:any,index:number)=><div key={item.id+'-'+index}><strong>{item.id}</strong><small>اولین تصویر: {names.get(item.first_scan_id)||item.first_scan_id} · تصویر تکراری: {names.get(item.duplicate_scan_id)||item.duplicate_scan_id}</small></div>)}</div><label className="scanner-duplicate-confirm"><input type="checkbox" checked={duplicateReviewed} onChange={e=>setDuplicateReviewed(e.target.checked)}/> موارد تکراری دقیق را بررسی کردم و حذف تکرارها را تأیید می‌کنم.</label></>}<pre className="scanner-report-ids" dir="ltr" style={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere', unicodeBidi: 'isolate', margin: 0 }}>{(preview.ids||[]).join('\n')}</pre></div>}
+   {preview?.preview&&<div className="scanner-report-preview"><strong>پیش‌نمایش · <span dir="rtl" style={{ unicodeBidi: 'isolate', display: 'inline-block' }}>{(()=>{const [from,to]=(preview.period_key||'').split('..');const formatJalali=(value:string)=>{const date=value.slice(0,10);if(!/^\d{4}-\d{2}-\d{2}$/.test(date))return date;return new Intl.DateTimeFormat('fa-IR-u-ca-persian',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(date+'T12:00:00Z'));};const first=formatJalali(from||'');const last=formatJalali(to||'');return !last||first===last?first:first+' تا '+last;})()}</span></strong><small>{preview.reviewed_images} تصویر تأییدشده · {preview.days?.length||0} روز · {preview.id_count} ردیف ID روزانه · {preview.unique_id_count||0} ID یکتای کل بازه · {preview.duplicate_count||0} تکراری دقیق · {preview.messages?.length||0} پیام متنی</small>{(preview.duplicates||[]).length>0&&<><div className="scanner-report-id-list" dir="ltr">{preview.duplicates.map((item:any,index:number)=><div key={item.id+'-'+index}><strong>{item.id}</strong><small>{item.date_label||item.date_key} · اولین تصویر: {names.get(item.first_scan_id)||item.first_scan_id} · تصویر تکراری: {names.get(item.duplicate_scan_id)||item.duplicate_scan_id}</small></div>)}</div><label className="scanner-duplicate-confirm"><input type="checkbox" checked={duplicateReviewed} onChange={e=>setDuplicateReviewed(e.target.checked)}/> موارد تکراری دقیق را بررسی کردم و حذف تکرارها را تأیید می‌کنم.</label></>}<div className="scanner-report-days">{(preview.days||[]).map((day:any)=><section className="scanner-report-day" key={day.date_key}><strong>{day.weekday} · {day.jalali_date}</strong><small>{day.scan_count} تصویر ثبت‌شده · {day.reviewed_images} تصویر تأییدشده · {day.ids.length} ID یکتا</small>{day.ids.length?<div className="scanner-report-ids" dir="ltr">{day.ids.map((id:string,index:number)=><div key={day.date_key+'-'+index}>{index+1}. {id}</div>)}</div>:<small>شناسه تأییدشده‌ای برای این روز ثبت نشده است.</small>}</section>)}</div></div>}
   </div>
   </>:null}
   {mode==='all'||mode==='history'?<>
@@ -334,6 +335,7 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
     <small>{item.status==='sent'?'ارسال‌شده':item.status==='failed'?'ناموفق':item.status==='sending'?'در حال ارسال':'در انتظار'} · {item.message_count} پیام · {new Date(item.created_at).toLocaleString('fa-IR')}</small>
     {item.sent_at&&<small>زمان ارسال: {new Date(item.sent_at).toLocaleString('fa-IR')}</small>}
     {item.message_ids?.length>0&&<small>شناسه پیام‌ها: {item.message_ids.join('، ')}</small>}
+    {item.report?.excel_attached&&<small>فایل Excel پیوست‌شده: {item.report.excel_filename||'PLATO-ID-Report.xlsx'}</small>}
     {item.last_error&&<small>{item.last_error}</small>}
    </article>):<p className="scanner-empty">هنوز سابقه ارسالی ثبت نشده است.</p>}
   </div>
