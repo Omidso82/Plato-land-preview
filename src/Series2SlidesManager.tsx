@@ -227,7 +227,6 @@ export default function Series2SlidesManager() {
       </div>
       {scannerOpen&&<div style={{marginTop:14}}><PlatoIdScannerApp ownerMode embedded /></div>}
     </section>
-    <PlatoIdImageUpload />
     {SHOW_SLIDE_EDITOR && (
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:12,marginTop:20}}>
       {Array.from({length:18},(_,i)=>{
