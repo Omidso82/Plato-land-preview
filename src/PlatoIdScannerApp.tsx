@@ -173,7 +173,12 @@ function UploadList({rows,client,reviewerId}:{rows:ScanRow[];client:any;reviewer
   try{
    const {data,error}=await client.functions.invoke('plato-id-scanner-dispatch',{body:{scan_id:row.id}});
    if(error)throw error;
-   setDispatchMessage(data?.message||'درخواست پردازش ثبت شد.');
+   const worker=data?.worker;
+   if(!data?.queued){setDispatchMessage('درخواست در صف ثبت نشد؛ پاسخ سرویس کامل نبود.');}
+   else if(!worker?.invoked){setDispatchMessage('درخواست در صف ثبت شد، اما Worker اجرا نشد ('+(worker?.reason||'علت نامشخص')+').');}
+   else if(worker.http_status!==200){setDispatchMessage('درخواست در صف ثبت شد، اما اجرای Worker ناموفق بود (HTTP '+String(worker.http_status??'نامشخص')+'). '+(worker.response_text==='Unauthorized'?'احراز کلید داخلی Worker رد شد.':'لطفاً گزارش فنی بررسی شود.'));}
+   else if(worker.processed===1&&worker.status==='needs_review'){setDispatchMessage('پردازش OCR انجام شد و نتیجه برای بازبینی آماده است.');}
+   else{setDispatchMessage('Worker پاسخ داد، اما تکمیل OCR تأیید نشد؛ وضعیت: '+String(worker.status||'نامشخص')+'.');}
   }catch(e:any){setDispatchMessage(e?.message||'ارسال درخواست پردازش ناموفق بود.');}
   finally{setDispatchBusy(false);}
  }
