@@ -59,14 +59,23 @@ function columnName(index: number): string {
   return name;
 }
 function worksheet(rows: string[][]): string {
+  const columnCount = Math.max(1, ...rows.map((row) => row.length));
+  const widths = Array.from({ length: columnCount }, (_, columnIndex) => {
+    const maxLength = Math.max(0, ...rows.map((row) => [...(row[columnIndex] ?? "")].length));
+    return Math.min(30, Math.max(columnIndex === 0 ? 18 : 9, maxLength + 3));
+  });
+  const cols = widths.map((width, index) =>
+    `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`
+  ).join("");
   const body = rows.map((row, rowIndex) => {
     const cells = row.map((value, columnIndex) => {
       const ref = columnName(columnIndex) + (rowIndex + 1);
-      return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
+      const style = rowIndex === 0 ? 1 : value === "★" ? 2 : 0;
+      return `<c r="${ref}" s="${style}" t="inlineStr"><is><t xml:space="preserve">${xmlEscape(value)}</t></is></c>`;
     }).join("");
-    return `<row r="${rowIndex + 1}">${cells}</row>`;
+    return `<row r="${rowIndex + 1}" ht="${rowIndex === 0 ? 25 : 22}" customHeight="1">${cells}</row>`;
   }).join("");
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" rightToLeft="1"/></sheetViews><sheetFormatPr defaultRowHeight="18"/><sheetData>${body}</sheetData></worksheet>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" rightToLeft="1"/></sheetViews><sheetFormatPr defaultRowHeight="22"/><cols>${cols}</cols><sheetData>${body}</sheetData></worksheet>`;
 }
 
 /** Builds a real .xlsx workbook: one summary sheet and one sheet per Tehran upload day. */
@@ -100,9 +109,13 @@ function dayKey(value: string): string {
   if (!Number.isFinite(date.getTime())) throw new Error("Invalid report date.");
   return keyFor(date);
 }
+function asciiDigits(value: string): string {
+  return value.replace(/[۰-۹]/g, (digit) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(digit)))
+    .replace(/[٠-٩]/g, (digit) => String("٠١٢٣٤٥٦٧٨٩".indexOf(digit)));
+}
 function monthIdentity(key: string) {
   const p = persianParts(key);
-  return { year: p.year, month: p.month, monthKey: p.year + "-" + p.month, day: Number(p.day) };
+  return { year: p.year, month: p.month, monthKey: p.year + "-" + p.month, day: Number(asciiDigits(p.day)) };
 }
 function daysInPersianMonth(anyDay: string): string[] {
   const identity = monthIdentity(anyDay), center = dateFromKey(anyDay), candidates: string[] = [];
@@ -126,7 +139,10 @@ function weeklySheet(days: ScannerDailyGroup[], weekStart: string) {
       id, ...weekKeys.map((key) => activity.get(id)!.has(key) ? "★" : ""),
     ]),
   ];
-  return { name: ("هفته " + weekStart).slice(0, 31), rows };
+  const start = persianParts(weekKeys[0]);
+  const end = persianParts(weekKeys[6]);
+  const weekLabel = "هفته " + start.day + " تا " + end.day + " " + end.month + " " + end.year;
+  return { name: weekLabel.slice(0, 31), rows };
 }
 function monthlySheet(days: ScannerDailyGroup[], anyDay: string) {
   const monthDays = daysInPersianMonth(anyDay), identity = monthIdentity(anyDay), daySet = new Set(monthDays);
@@ -135,7 +151,7 @@ function monthlySheet(days: ScannerDailyGroup[], anyDay: string) {
     const active = activity.get(id) ?? new Set<string>(); active.add(day.date_key); activity.set(id, active);
   }
   const rows = [
-    ["Plato ID", ...monthDays.map((key) => String(monthIdentity(key).day))],
+    ["Plato ID", ...monthDays.map((key) => String(persianParts(key).day))],
     ...[...activity.keys()].sort((a, b) => a.localeCompare(b)).map((id) => [
       id, ...monthDays.map((key) => activity.get(id)!.has(key) ? "★" : ""),
     ]),
@@ -180,7 +196,13 @@ export function buildScannerExcelWorkbook(days: ScannerDailyGroup[], periodStart
   const workbookRels = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
     sheets.map((_, index) => '<Relationship Id="rId' + (index + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + (index + 1) + '.xml"/>').join("") +
     '<Relationship Id="rId' + (sheets.length + 1) + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
-  const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+  const styles = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<fonts count="3"><font><sz val="11"/><name val="Aptos"/></font><font><b/><sz val="11"/><color rgb="FF3A2B12"/><name val="Aptos Display"/></font><font><b/><sz val="15"/><color rgb="FFFFC000"/><name val="Aptos Display"/></font></fonts>' +
+    '<fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFFE8A3"/><bgColor indexed="64"/></patternFill></fill></fills>' +
+    '<borders count="2"><border><left style="medium"><color rgb="FF777777"/></left><right style="medium"><color rgb="FF777777"/></right><top style="medium"><color rgb="FF777777"/></top><bottom style="medium"><color rgb="FF777777"/></bottom><diagonal/></border><border><left style="medium"><color rgb="FF777777"/></left><right style="medium"><color rgb="FF777777"/></right><top style="medium"><color rgb="FF777777"/></top><bottom style="medium"><color rgb="FF777777"/></bottom><diagonal/></border></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs>' +
+    '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
   const entries = [
     { name: "[Content_Types].xml", data: bytes(contentTypes) },
     { name: "_rels/.rels", data: bytes(rootRels) },

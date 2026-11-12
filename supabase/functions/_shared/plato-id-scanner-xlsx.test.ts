@@ -10,9 +10,10 @@ Deno.test("Excel export contains Saturday-Friday weekly matrices and full Jalali
   const workbook = buildScannerExcelWorkbook(days, "2026-11-14T00:00:00.000Z", "2026-11-20T20:30:00.000Z");
   assertEquals(String.fromCharCode(...workbook.slice(0, 4)), "PK\u0003\u0004");
   const xml = new TextDecoder().decode(workbook);
-  for (const expected of ["خلاصه", "هفته 2026-11-14", "ماه ۱۴۰۵ آبان", "Player_01", "A@B", "★", "۳۰"]) {
+  for (const expected of ["خلاصه", "هفته ۲۳ تا ۲۹ آبان ۱۴۰۵", "ماه ۱۴۰۵ آبان", "Player_01", "A@B", "★", "۳۰", "Aptos", "FFFFC000", "s=\"1\"", "width=\"18\""]) {
     if (!xml.includes(expected)) throw new Error("Workbook is missing " + expected);
   }
+  if (xml.includes("NaN")) throw new Error("Monthly Jalali day labels must not contain NaN.");
   if (!xml.includes("شنبه ۲۳") || !xml.includes("یکشنبه ۲۴") || !xml.includes("دوشنبه ۲۵") || !xml.includes("جمعه ۲۹")) {
     throw new Error("Weekly weekday/date columns are incomplete.");
   }
