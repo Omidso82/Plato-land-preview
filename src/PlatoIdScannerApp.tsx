@@ -206,6 +206,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
       {scannerSection==='ids'||scannerSection==='report'||scannerSection==='history'
         ? <GlobalUniqueIdsPanel uploads={uploads} mode={scannerSection}/>
         : <ScannerWorkspaceView view={scannerView} setView={setScannerView} sectionMode={scannerSection} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} onScanUpdated={(updated:ScanRow)=>setUploads(prev=>prev.map(item=>item.id===updated.id?updated:item))} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
+      }
     </div>}
    </section>}
   {message&&<p className="scanner-message" role="status">{message}</p>}<footer className="scanner-footer">PLATO LAND · دسترسی محدود و مستقل</footer>
