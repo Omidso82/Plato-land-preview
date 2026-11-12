@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { supabase } from './supabase';
 import './plato-id-scanner.css';
 import { parseScannerReviewDraft } from './plato-id-scanner-review';
