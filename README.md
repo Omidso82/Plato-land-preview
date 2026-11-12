@@ -116,3 +116,14 @@ npm run dev
 
 ## اصلاحیه مرجع جاری — ۴ نوامبر ۲۰۲۶
 این README نقطه ورود اسناد است. وضعیت معتبر طراحی در حال حاضر A و B برابر `OWNER ACCEPTED` در Preview است؛ بخش C باز است. برای جزئیات و حدود پذیرش به دو گزارش مستقل A/B و الحاقیه‌های جاری Project Status، Implementation Register، Technical Handover و QA مراجعه شود. متن‌های قدیمی‌تر در همین README و Snapshotهای تاریخی، وضعیت زمان ثبت خود را توصیف می‌کنند و در صورت تعارض، این اصلاحیه جدیدتر مرجع است.
+
+
+## ثبت وضعیت امنیت حساب در Preview — ۵ نوامبر ۲۰۲۶
+- PR #53 با موفقیت در شاخه `cloudflare-preview` ادغام شد؛ merge commit: `622a404ba83645438dd8958d6c4d866e57102e64`.
+- Cloudflare Pages پروژه `plato-land-preview` گزارش Deploy موفق برای همین commit را برگرداند؛ URL نسخه: https://94deeab5.plato-land-preview.pages.dev/ .
+- تغییرات شامل تغییر رمز با تأیید رمز فعلی، درخواست ایمیل بازیابی، تعیین رمز جدید پس از بازگشت از recovery، خروج از همه نشست‌ها با تأیید، خروج محلی از مرورگر فعلی، پیام‌های خطا/موفقیت در صفحه و استایل موبایل است.
+- هشدار ورود جدید هنوز پیکربندی نشده؛ فهرست/مدیریت نشست‌ها نیز در این PR پیاده‌سازی نشده است.
+- مرورگر TinyFish هنگام بررسی صفحه تنظیمات با Cloudflare Access gate مواجه شد؛ ورود یا ارسال کد انجام نشد. بنابراین تست E2E فرم‌ها، recovery callback و global sign-out هنوز تأیید نشده‌اند.
+- مجاز بودن redirect URL بازیابی در Supabase Auth Staging هنوز بررسی/تأیید نشده است.
+- این تغییرات فقط در Preview و با Supabase Staging موجود در پیکربندی Preview انجام شده‌اند؛ هیچ تغییر DB/schema/migration، main، Production، دامنه platoland.org، Supabase Production، Storage یا DNS در PR #53 انجام نشد.
+- این وضعیت supersede می‌کند هر متن قدیمی که می‌گوید قابلیت امنیت حساب در Preview هنوز وجود ندارد؛ اما هیچ تست فنی اجرا‌نشده‌ای را PASS نمی‌کند.

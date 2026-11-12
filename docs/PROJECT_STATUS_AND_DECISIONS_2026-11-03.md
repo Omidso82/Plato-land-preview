@@ -223,3 +223,31 @@ Supabase اصلی: `dfrppbapaaydbjeflozw`
 
 ### حدود و ایمنی
 این ثبت صرفاً مستندسازی پذیرش مالک در Preview است؛ QA ماتریسی، E2E، Auth/DB، Staging و Production approval همچنان وضعیت مستقل دارند. هیچ تغییر در Production، main، Supabase، Storage، DNS یا Deploy در این الحاقیه انجام نشده است.
+
+
+---
+
+## الحاقیه وضعیت جاری — امنیت حساب در Preview (۵ نوامبر ۲۰۲۶)
+
+### تغییر ثبت‌شده
+PR #53 با عنوان `Implement working account security settings in Preview` در شاخه `cloudflare-preview` ادغام شده است. Merge commit: `622a404ba83645438dd8958d6c4d866e57102e64`. Cloudflare Pages پروژه `plato-land-preview` وضعیت Deployed را برای همین commit گزارش کرده و URL نسخه این deployment برابر است با https://94deeab5.plato-land-preview.pages.dev/ .
+
+### قابلیت‌های پیاده‌سازی‌شده در کد Preview
+- تغییر رمز عبور با دریافت رمز فعلی و تأیید آن پیش از تغییر.
+- ارسال ایمیل بازیابی رمز به ایمیل حساب و بازگشت به صفحه تنظیمات برای تعیین رمز جدید.
+- خروج از همه نشست‌ها با تأیید کاربر؛ خروج عادی منو فقط نشست مرورگر فعلی را می‌بندد.
+- نمایش پیام‌های موفقیت/خطا و چیدمان سازگار با موبایل.
+- وضعیت هشدار ورود جدید به‌صورت شفاف «هنوز پیکربندی نشده» اعلام می‌شود؛ کنترل نمایشیِ غیرفعال/جعلی ارائه نشده است.
+
+### مرزهای تأیید و موارد باز
+- بررسی بصری/عملی فرم‌ها در مرورگر هنوز انجام نشده؛ TinyFish به Cloudflare Access gate رسید و ورود صورت نگرفت.
+- عملکرد واقعی ارسال و بازگشت ایمیل recovery و allowlist بودن redirect URL در Auth Staging تأیید نشده است.
+- global sign-out، تغییر رمز و خروج محلی هنوز به‌صورت E2E توسط مالک/مرورگر تأیید نشده‌اند.
+- هشدار ورود جدید و صفحه فهرست دستگاه‌ها/نشست‌ها جزو قابلیت‌های پیاده‌سازی‌شده این PR نیستند.
+- پذیرش مالک، Deploy موفق و تست E2E سه وضعیت جدا هستند؛ فعلاً فقط ادغام و Deploy Preview تأیید شده‌اند.
+
+### ایمنی محیط
+PR #53 فقط از `feat/account-security-settings` به `cloudflare-preview` ادغام شد. هیچ تغییر در `main`، `platoland.org`، Supabase Production با شناسه `dfrppbapaaydbjeflozw`، schema/migration، Storage یا DNS انجام نشده است. تست‌ها و تنظیمات بعدی باید فقط در Supabase Staging با شناسه `vgezfuztgzxbmvkmaoqn` انجام شوند.
+
+### نقطه ادامه
+۱) مالک نسخه Preview را باز کند و تغییر رمز، ارسال ایمیل recovery و خروج از همه نشست‌ها را تست کند. ۲) در صورت خطای recovery، فقط تنظیمات URL/Auth پروژه Staging بررسی شود. ۳) تا پیش از شواهد واقعی، هیچ موردی در QA به PASS تغییر نکند.
