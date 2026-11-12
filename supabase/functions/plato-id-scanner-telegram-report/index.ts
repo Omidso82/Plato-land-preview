@@ -65,7 +65,15 @@ Deno.serve(async (request: Request) => {
     if(access?.status!=="approved") return reply({error:"Approved Scanner access required."},403);
   }
   const body=await request.json().catch(()=>null);
-  if(!body||!["preview","send","history"].includes(body.action)) return reply({error:"Invalid report request."},400);\n  if(body.action!=="history"&&!["today","yesterday","last7","custom"].includes(body.period)) return reply({error:"Invalid report period."},400);\n  if(body.action==="history"){\n    const {data:deliveries,error}=await admin.from("plato_id_scanner_telegram_deliveries").select("id,delivery_status,report_version_id,message_count,message_ids,created_at,sent_at,last_error").order("created_at",{ascending:false}).limit(20);\n    if(error) return reply({error:"Delivery history is not available. The Scanner delivery migration may not be applied."},503);\n    const versionIds=(deliveries||[]).map((x:any)=>x.report_version_id);\n    const {data:versions,error:versionsError}=versionIds.length?await admin.from("plato_id_scanner_report_versions").select("id,period_key,version,created_at").in("id",versionIds):{data:[],error:null};\n    if(versionsError) return reply({error:"Report version history could not be loaded."},500);\n    const byId=new Map((versions||[]).map((x:any)=>[x.id,x]));\n    return reply({history:(deliveries||[]).map((x:any)=>({id:x.id,status:x.delivery_status,message_count:x.message_count,message_ids:x.message_ids,created_at:x.created_at,sent_at:x.sent_at,last_error:x.last_error,report:byId.get(x.report_version_id)||null}))});\n  }
+  if(!body||!["preview","send","history"].includes(body.action)) return reply({error:"Invalid report request."},400);
+  if(body.action!=="history"&&!["today","yesterday","last7","custom"].includes(body.period)) return reply({error:"Invalid report period."},400);
+  if(body.action==="history"){\n    const {data:deliveries,error}=await admin.from("plato_id_scanner_telegram_deliveries").select("id,delivery_status,report_version_id,message_count,message_ids,created_at,sent_at,last_error").order("created_at",{ascending:false}).limit(20);
+    if(error) return reply({error:"Delivery history is not available. The Scanner delivery migration may not be applied."},503);
+    const versionIds=(deliveries||[]).map((x:any)=>x.report_version_id);
+    const {data:versions,error:versionsError}=versionIds.length?await admin.from("plato_id_scanner_report_versions").select("id,period_key,version,created_at").in("id",versionIds):{data:[],error:null};
+    if(versionsError) return reply({error:"Report version history could not be loaded."},500);
+    const byId=new Map((versions||[]).map((x:any)=>[x.id,x]));
+    return reply({history:(deliveries||[]).map((x:any)=>({id:x.id,status:x.delivery_status,message_count:x.message_count,message_ids:x.message_ids,created_at:x.created_at,sent_at:x.sent_at,last_error:x.last_error,report:byId.get(x.report_version_id)||null}))});\n  }
   const now=new Date();
   const todayParts=new Intl.DateTimeFormat("en-US",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(now);
   const part=(k:string)=>todayParts.find(x=>x.type===k)?.value||"";
