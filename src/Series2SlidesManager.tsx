@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 import Series2FinalistPredictionAdmin from './Series2FinalistPredictionAdmin';
 import Series2ResultsManager from './Series2ResultsManager';
 import PlatoIdImageUpload from './PlatoIdImageUpload';
+import PlatoIdScannerApp from './PlatoIdScannerApp';
 
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
 
@@ -29,6 +30,7 @@ export default function Series2SlidesManager() {
   const [busySlot,setBusySlot] = useState<number|null>(null);
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
+  const [scannerOpen,setScannerOpen] = useState(false);
 
   async function verifyOwner() {
     if (!supabase) { setMessage('اتصال به سرویس اصلی برقرار نیست.'); setChecking(false); return; }
@@ -218,6 +220,13 @@ export default function Series2SlidesManager() {
           {row.status==='suspended'&&<button style={secondary} disabled={busy} onClick={()=>void changeOperatorStatus(row,'pending')}>بازگشت به انتظار</button>}
         </div>
       </div>)}
+    </section>
+    <section style={{marginTop:20,padding:16,border:'1px solid #b18b45',borderRadius:12,background:'#111214'}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:12,flexWrap:'wrap'}}>
+        <div><h2 style={{color:'#f6e8c5',fontSize:19,margin:'0 0 6px'}}>اسکنر تصاویر Plato ID</h2><p style={muted}>بارگذاری تصاویر، استخراج شناسه‌ها و بازبینی دستی نتایج</p></div>
+        <button type="button" style={primary} onClick={()=>setScannerOpen(v=>!v)}>{scannerOpen?'بستن اسکنر':'ورود به اسکنر Plato ID'}</button>
+      </div>
+      {scannerOpen&&<div style={{marginTop:14}}><PlatoIdScannerApp ownerMode embedded /></div>}
     </section>
     <PlatoIdImageUpload />
     {SHOW_SLIDE_EDITOR && (
