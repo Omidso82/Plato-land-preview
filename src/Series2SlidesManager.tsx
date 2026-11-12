@@ -18,7 +18,6 @@ export default function Series2SlidesManager() {
   const [signedIn,setSignedIn] = useState(false);
   const [checking,setChecking] = useState(true);
   const [owner,setOwner] = useState(false);
-  const [operatorStatus,setOperatorStatus] = useState<ScannerAccess['status']|null>(null);
   const [operators,setOperators] = useState<ScannerAccess[]>([]);
   const [signup,setSignup] = useState(false);
   const [files,setFiles] = useState<SlideFile[]>([]);
@@ -35,13 +34,12 @@ export default function Series2SlidesManager() {
     if (!supabase) { setMessage('اتصال به سرویس اصلی برقرار نیست.'); setChecking(false); return; }
     setChecking(true);
     const {data:{user}} = await supabase.auth.getUser();
-    if (!user) { setSignedIn(false); setOwner(false); setOperatorStatus(null); setChecking(false); return; }
+    if (!user) { setSignedIn(false); setOwner(false); setChecking(false); return; }
     setSignedIn(true);
     const {data:role,error:roleError} = await supabase.rpc('current_user_role');
     const allowed = !roleError && (role === 'owner' || role === 'مالک کل');
     setOwner(allowed);
     if (allowed) {
-      setOperatorStatus(null);
       const {data:rows,error:rowsError}=await supabase.from('plato_id_scanner_access')
         .select('user_id,email,status,requested_at').order('requested_at',{ascending:false});
       if(rowsError) setMessage('خواندن فهرست اپراتورها ناموفق بود: '+rowsError.message);
@@ -59,7 +57,6 @@ export default function Series2SlidesManager() {
         if(created.error) setMessage('ثبت درخواست اپراتوری ناموفق بود: '+created.error.message);
         else access=created.data as ScannerAccess;
       }
-      setOperatorStatus((access as ScannerAccess|null)?.status||null);
     }
     setChecking(false);
   }
@@ -175,7 +172,7 @@ export default function Series2SlidesManager() {
     finally { setPosterBusy(false); }
   }
 
-  async function signOut() { await supabase?.auth.signOut(); setSignedIn(false); setOwner(false); setOperatorStatus(null); setOperators([]); setFiles([]); setMessage(''); }
+  async function signOut() { await supabase?.auth.signOut(); setSignedIn(false); setOwner(false); setOperators([]); setFiles([]); setMessage(''); }
 
   if (checking) return <main dir="rtl" style={shell}><section style={panel}>در حال بررسی دسترسی مالک…</section></main>;
   if (!signedIn) return <main dir="rtl" style={shell}><section style={panel}>    <h1 style={heading}>ورود به پنل موقت سری دوم</h1>
