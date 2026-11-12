@@ -175,33 +175,96 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
 }
 
 function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
- const audit=useMemo(()=>{
-  const scans=[...uploads]
-   .filter(row=>Array.isArray(row.ocr_result?.ids)&&row.ocr_result?.outcome==='succeeded')
-   .sort((a,b)=>a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id))
-   .map(row=>({scan_id:row.id,candidates:(row.ocr_result.ids as unknown[])
-    .filter((id):id is string=>typeof id==='string'&&id.length>0)
-    .map(raw_value=>({raw_value}))}));
-  return auditScannerBatchDuplicates(scans);
+ const [revisions,setRevisions]=useState<any[]>([]),[reviewLoading,setReviewLoading]=useState(false);
+ const [period,setPeriod]=useState<'today'|'yesterday'|'last7'|'custom'>('today');
+ const [startDate,setStartDate]=useState(''),[endDate,setEndDate]=useState('');
+ const [preview,setPreview]=useState<any>(null),[reportBusy,setReportBusy]=useState(false),[reportMessage,setReportMessage]=useState('');
+ useEffect(()=>{
+  let alive=true;
+  (async()=>{
+   if(!supabase||!uploads.length){setRevisions([]);return;}
+   setReviewLoading(true);
+   try{
+    const ids=uploads.map(x=>x.id);
+    const rows:any[]=[];
+    for(let offset=0;;offset+=500){
+     const {data,error}=await supabase.from('plato_id_scanner_review_revisions')
+      .select('scan_id,revision,status,canonical_ids').in('scan_id',ids)
+      .eq('status','approved').order('revision',{ascending:true}).range(offset,offset+499);
+     if(error)throw error;
+     rows.push(...(data||[]));if(!data||data.length<500)break;
+    }
+    if(alive)setRevisions(rows);
+   }catch(e:any){if(alive)setReportMessage('بارگذاری بازبینی‌های تأییدشده ناموفق بود: '+(e?.message||'خطا'));}
+   finally{if(alive)setReviewLoading(false);}
+  })();
+  return()=>{alive=false;};
  },[uploads]);
+ const latestByScan=useMemo(()=>{
+  const map=new Map<string,any>();
+  for(const row of revisions){const old=map.get(row.scan_id);if(!old||row.revision>old.revision)map.set(row.scan_id,row);}
+  return map;
+ },[revisions]);
+ const audit=useMemo(()=>{
+  const scans=[...uploads].filter(row=>latestByScan.has(row.id))
+   .sort((a,b)=>a.created_at.localeCompare(b.created_at)||a.id.localeCompare(b.id))
+   .map(row=>({scan_id:row.id,candidates:(latestByScan.get(row.id)?.canonical_ids||[])
+    .filter((id:unknown):id is string=>typeof id==='string'&&id.length>0)
+    .map((raw_value:string)=>({raw_value}))}));
+  return auditScannerBatchDuplicates(scans);
+ },[uploads,latestByScan]);
  const names=new Map(uploads.map(row=>[row.id,row.file_name]));
+ async function requestReport(action:'preview'|'send'){
+  if(reportBusy)return;
+  if(period==='custom'&&(!startDate||!endDate||startDate>endDate)){setReportMessage('برای بازه دلخواه، تاریخ شروع و پایان معتبر را انتخاب کن.');return;}
+  if(action==='send'&&!window.confirm('فهرست کامل و نهایی بازه انتخاب‌شده به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.'))return;
+  setReportBusy(true);setReportMessage('');
+  try{
+   const body:any={action,period};
+   if(period==='custom'){body.start_date=startDate;body.end_date=endDate;}
+   if(action==='send')body.request_id=crypto.randomUUID();
+   const {data,error}=await supabase.functions.invoke('plato-id-scanner-telegram-report',{body});
+   if(error)throw error;
+   if(action==='preview'){setPreview(data);setReportMessage('پیش‌نمایش آماده شد؛ هنوز هیچ پیامی ارسال نشده است.');}
+   else{setPreview(data);setReportMessage(data?.sent?'ارسال به گروه آزمایشی انجام شد · نسخه '+data.report_version+' · '+data.id_count+' شناسه یکتا · '+data.message_count+' پیام':data?.partial?'ارسال ناقص بود؛ بخشی از پیام‌ها ممکن است در گروه ثبت شده باشند. نسخه و وضعیت خطا ذخیره شد.':'ارسال تأیید نشد؛ وضعیت و جزئیات در پاسخ سرویس ثبت شده است.');}
+  }catch(e:any){setReportMessage(e?.message||'تهیه یا ارسال گزارش ناموفق بود.');}
+  finally{setReportBusy(false);}
+ }
  return <section className="scanner-panel scanner-global-unique-panel">
-  <div className="scanner-section-heading"><span className="scanner-step">✓</span><div><h2>فهرست یکتای Plato IDها</h2><p>مقایسه دقیق IDهای استخراج‌شده از تمام تصاویر ذخیره‌شده؛ هر ID فقط یک بار در این فهرست نمایش داده می‌شود.</p></div></div>
+  <div className="scanner-section-heading"><span className="scanner-step">✓</span><div><h2>فهرست نهایی و یکتای Plato IDها</h2><p>فقط آخرین نسخه بازبینی و تأییدشده هر تصویر در فهرست اصلی محاسبه می‌شود؛ موارد OCR تأییدنشده وارد فهرست و تلگرام نمی‌شوند.</p></div></div>
   <div className="scanner-report-stats">
-   <div><strong>{audit.total_occurrences}</strong><small>کل IDهای استخراج‌شده</small></div>
-   <div><strong>{audit.unique_count}</strong><small>ID یکتا</small></div>
-   <div><strong>{audit.duplicate_count}</strong><small>تکراری حذف‌شده از فهرست</small></div>
+   <div><strong>{audit.total_occurrences}</strong><small>کل IDهای تأییدشده</small></div>
+   <div><strong>{audit.unique_count}</strong><small>ID یکتای تجمیعی</small></div>
+   <div><strong>{audit.duplicate_count}</strong><small>تکراری دقیق</small></div>
+   <div><strong>{uploads.filter(x=>x.ocr_result?.outcome==='succeeded'&&!latestByScan.has(x.id)).length}</strong><small>تصویر منتظر بازبینی</small></div>
   </div>
-  {audit.accepted_ids.length
+  {reviewLoading?<div className="scanner-empty-state">در حال بارگذاری آخرین نسخه‌های بازبینی…</div>:audit.accepted_ids.length
    ? <div className="scanner-global-id-list" dir="ltr">{audit.accepted_ids.map((id,index)=><span key={id+'-'+index}>{id}</span>)}</div>
-   : <div className="scanner-empty-state"><strong>هنوز نتیجه OCR موفقی برای مقایسه وجود ندارد</strong><small>پس از پردازش تصاویر، فهرست IDهای یکتا اینجا نمایش داده می‌شود.</small></div>}
+   : <div className="scanner-empty-state"><strong>هنوز فهرست تأییدشده‌ای وجود ندارد</strong><small>پس از OCR، شناسه‌ها را با تصویر تطبیق بده و نسخه بازبینی را ثبت کن.</small></div>}
   {audit.duplicates.length>0&&<details className="scanner-review-history">
    <summary>مشاهده {audit.duplicates.length} مورد تکراری و منبع آن‌ها</summary>
    <div className="scanner-report-id-list" dir="ltr">{audit.duplicates.map((item,index)=><div key={item.scan_id+'-'+item.candidate_index+'-'+index}>
     <strong>{item.raw_value}</strong><small>تصویر تکراری: {names.get(item.scan_id)||item.scan_id} · اولین مورد: {names.get(item.duplicate_of_scan_id)||item.duplicate_of_scan_id}</small>
    </div>)}</div>
   </details>}
-  <p className="scanner-report-disclaimer">فقط تطابق دقیق متن ID تکراری محسوب می‌شود؛ بزرگی و کوچکی حروف یا شکل نوشتاری تغییر داده نمی‌شود. تصاویر و نتایج OCR اصلی دست‌نخورده می‌مانند.</p>
+  <div className="scanner-telegram-report">
+   <h3>ارسال گزارش به گروه آزمایشی تلگرام</h3>
+   <p>ارسال فقط با اقدام دستی انجام می‌شود. هر بار کل فهرست تأییدشده بازه انتخابی ارسال خواهد شد؛ کانال اصلی مقصد این مرحله نیست.</p>
+   <label>بازه گزارش<select value={period} onChange={e=>{setPeriod(e.target.value as any);setPreview(null);setReportMessage('');}}>
+    <option value="today">امروز</option><option value="yesterday">دیروز</option><option value="last7">هفت روز اخیر (بازه شناور)</option><option value="custom">بازه دلخواه</option>
+   </select></label>
+   {period==='custom'&&<div className="scanner-report-date-range">
+    <label>از تاریخ<input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}/></label>
+    <label>تا تاریخ<input type="date" value={endDate} onChange={e=>setEndDate(e.target.value)}/></label>
+   </div>}
+   <div className="scanner-actions">
+    <button type="button" className="scanner-ghost" disabled={reportBusy||reviewLoading} onClick={()=>void requestReport('preview')}>{reportBusy?'در حال آماده‌سازی…':'پیش‌نمایش گزارش'}</button>
+    <button type="button" className="scanner-primary" disabled={reportBusy||reviewLoading||audit.unique_count===0} onClick={()=>void requestReport('send')}>{reportBusy?'در حال ارسال…':'ارسال فهرست کامل به گروه آزمایشی'}</button>
+   </div>
+   {reportMessage&&<p className="scanner-message" role="status">{reportMessage}</p>}
+   {preview?.preview&&<div className="scanner-report-preview"><strong>پیش‌نمایش · {preview.period_key}</strong><small>{preview.reviewed_images} تصویر تأییدشده · {preview.id_count} ID یکتا · {preview.messages?.length||0} پیام</small><div dir="ltr">{(preview.ids||[]).join('\n')}</div></div>}
+  </div>
+  <p className="scanner-report-disclaimer">تطابق فقط بر اساس متن دقیق انجام می‌شود؛ بزرگی و کوچکی حروف و نشانه‌ها تغییر نمی‌کند. سوابق OCR و بازبینی قبلی حذف یا بازنویسی نمی‌شوند.</p>
  </section>;
 }
 
