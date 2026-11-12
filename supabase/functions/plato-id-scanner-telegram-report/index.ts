@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { formatTehranPersianHeader } from "../_shared/plato-id-scanner-telegram-format.ts";
 
 const TZ = "Asia/Tehran";
 const cors = {
@@ -90,12 +91,11 @@ Deno.serve(async (request: Request) => {
   const todayParts=new Intl.DateTimeFormat("en-US",{timeZone:TZ,year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(now);
   const part=(k:string)=>todayParts.find(x=>x.type===k)?.value||"";
   const today=part("year")+"-"+part("month")+"-"+part("day");
-  let start:string|undefined,end:string|undefined,from:string,to:string,periodKey:string,label:string;
+  let start:string|undefined,end:string|undefined,from:string,to:string,periodKey:string;
   if(body.period==="last7"){
     from=new Date(now.getTime()-7*24*60*60*1000).toISOString();
     to=now.toISOString();
     periodKey=from+".."+to;
-    label="هفت روز شناور اخیر تا "+new Intl.DateTimeFormat("fa-IR",{timeZone:TZ,dateStyle:"short",timeStyle:"short"}).format(now)+" (Asia/Tehran)";
   } else {
     if(body.period==="today"){start=today;end=nextDate(today,1);}
     else if(body.period==="yesterday"){start=nextDate(today,-1);end=today;}
@@ -107,7 +107,6 @@ Deno.serve(async (request: Request) => {
     }
     from=tehranMidnightUtc(start!);to=tehranMidnightUtc(end!);
     periodKey=start!+".."+nextDate(end!,-1);
-    label="بازه: "+start!+" تا "+nextDate(end!,-1)+" (Asia/Tehran)";
   }
   try {
     const scans=await allRows(admin,"plato_id_scanner_uploads","id,created_at,status",(q:any)=>q.gte("created_at",from).lt("created_at",to).order("created_at",{ascending:true}));
@@ -123,7 +122,8 @@ Deno.serve(async (request: Request) => {
     const fingerprintSource=JSON.stringify({periodKey,reviewed:ordered.filter((scan:any)=>latest.has(scan.id)).map((scan:any)=>({scan_id:scan.id,revision:latest.get(scan.id).revision})),ids,duplicates});
     const fingerprintBytes=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(fingerprintSource));
     const fingerprint=[...new Uint8Array(fingerprintBytes)].map(x=>x.toString(16).padStart(2,"0")).join("");
-    const header="<b>♛ PLATO LAND | فهرست نهایی Plato ID</b>\n"+escapeHtml(label)+"\nتصاویر بازبینی و تأییدشده: "+reviewedImages+"\nتعداد ID یکتا: "+ids.length+"\n\n";
+    const headerDate = formatTehranPersianHeader(now);
+    const header="<b>♛ آیدی‌های فعال PLATO LAND</b>\n"+escapeHtml(headerDate.weekday)+"\n"+escapeHtml(headerDate.date)+"\n\n";
     const messages=chunkLines(header,ids);
     if(body.action==="preview") return reply({preview:true,period_key:periodKey,reviewed_images:reviewedImages,id_count:ids.length,duplicate_count:duplicates.length,duplicates,ids,messages,fingerprint});
     if(body.action==="send"&&body.preview_fingerprint!==fingerprint) return reply({error:"The report changed after preview. Generate a fresh preview before sending.",stale_preview:true,period_key:periodKey,fingerprint},409);
