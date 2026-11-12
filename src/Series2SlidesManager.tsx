@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import Series2FinalistPredictionAdmin from './Series2FinalistPredictionAdmin';
 import Series2ResultsManager from './Series2ResultsManager';
-import PlatoIdImageUpload from './PlatoIdImageUpload';
 import PlatoIdScannerApp from './PlatoIdScannerApp';
 
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
@@ -187,7 +186,7 @@ export default function Series2SlidesManager() {
       <button style={primary} disabled={busy}>{busy?'لطفاً صبر کن…':signup?'ساخت حساب اپراتور':'ورود امن'}</button>
     </form><button type="button" style={secondary} onClick={()=>{setSignup(!signup);setMessage('')}}>{signup?'بازگشت به ورود':'ثبت‌نام اپراتور جدید'}</button>{message&&<p role="alert" style={muted}>{message}</p>}
   </section></main>;
-  if (!owner) return <main dir="rtl" style={shell}><section style={panel}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}><h1 style={heading}>اسکنر تصاویر Plato ID</h1><button style={secondary} onClick={signOut}>خروج</button></div>{operatorStatus==='approved'?<><p style={muted}>دسترسی شما فعال است؛ فقط تصاویر بارگذاری‌شده توسط حساب خودتان نمایش داده می‌شود.</p><PlatoIdImageUpload/></>:<section style={{marginTop:18,padding:16,border:'1px solid #705b31',borderRadius:12}}><h2 style={heading}>{operatorStatus==='pending'?'درخواست شما در انتظار تأیید مالک است.':'دسترسی شما فعلاً فعال نیست.'}</h2><p style={muted}>{operatorStatus==='pending'?'پس از تأیید مالک، بخش بارگذاری و تصاویر در همین صفحه فعال می‌شود.':'برای فعال‌سازی دسترسی با مالک PLATO LAND تماس بگیر.'}</p></section>}{message&&<p role="status" style={muted}>{message}</p>}</section></main>;
+  if (!owner) return <PlatoIdScannerApp embedded />;
 
   return <main dir="rtl" style={shell}><section style={panel}>
     <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}>
