@@ -85,9 +85,9 @@ Deno.serve(async (request: Request) => {
       const days=(Date.parse(end+"T00:00:00Z")-Date.parse(start+"T00:00:00Z"))/86400000;
       if(days>366) return reply({error:"Custom report range cannot exceed 366 days."},400);
     }
-    from=tehranMidnightUtc(start);to=tehranMidnightUtc(end);
-    periodKey=start+".."+nextDate(end,-1);
-    label="بازه: "+start+" تا "+nextDate(end,-1)+" (Asia/Tehran)";
+    from=tehranMidnightUtc(start!);to=tehranMidnightUtc(end!);
+    periodKey=start!+".."+nextDate(end!,-1);
+    label="بازه: "+start!+" تا "+nextDate(end!,-1)+" (Asia/Tehran)";
   }
   try {
     const scans=await allRows(admin,"plato_id_scanner_uploads","id,created_at,status",(q:any)=>q.gte("created_at",from).lt("created_at",to).order("created_at",{ascending:true}));
