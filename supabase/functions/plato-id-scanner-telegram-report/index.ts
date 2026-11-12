@@ -173,10 +173,12 @@ Deno.serve(async (request: Request) => {
       }
       if(includeExcel){
         const workbook=buildScannerExcelWorkbook(days);
+        const excelBuffer=new ArrayBuffer(workbook.byteLength);
+        new Uint8Array(excelBuffer).set(workbook);
         const excelFilename="PLATO-ID-Report.xlsx";
         const form=new FormData();
         form.set("chat_id",chatId);
-        form.set("document",new File([workbook],excelFilename,{
+        form.set("document",new File([excelBuffer],excelFilename,{
           type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }));
         const response=await fetch("https://api.telegram.org/bot"+botToken+"/sendDocument",{
