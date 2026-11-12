@@ -204,3 +204,18 @@
 .scanner-back-button{border:1px solid #806334;border-radius:9px;background:#211c12;color:#e7c878;padding:9px 12px;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
 @keyframes scanner-workspace-in{from{opacity:.65;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
 @media(max-width:600px){.scanner-home-grid{grid-template-columns:1fr}.scanner-home-grid>.scanner-home-wide{grid-column:auto}.scanner-home-grid>button{min-height:76px}.scanner-workspace-toolbar{align-items:stretch;flex-direction:column}.scanner-back-button{width:100%;min-height:44px}.scanner-workspace-toolbar>strong{font-size:13px}}
+
+/* Exclusive full-page Scanner workspaces — v3 */
+.scanner-admin-dashboard{min-height:calc(100dvh - 24px);align-content:start}
+.scanner-admin-workspace{min-height:calc(100dvh - 40px);align-content:start;gap:16px}
+.scanner-workspace-toolbar{position:sticky;top:0;z-index:30;display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:14px;padding:12px 14px;border:1px solid rgba(213,173,85,.48);border-radius:0 0 15px 15px;background:rgba(17,17,17,.96);backdrop-filter:blur(12px);box-shadow:0 8px 24px rgba(0,0,0,.22)}
+.scanner-workspace-toolbar>strong{font-size:15px;line-height:1.5}
+.scanner-back-button{min-height:44px;white-space:nowrap}
+.scanner-admin-workspace>.scanner-flow,.scanner-admin-workspace>.scanner-panel,.scanner-admin-workspace>.scanner-access-panel{width:100%;min-width:0}
+@media(max-width:600px){
+ .scanner-admin-dashboard{min-height:calc(100dvh - 12px);gap:14px!important}
+ .scanner-admin-workspace{min-height:calc(100dvh - 12px);gap:12px}
+ .scanner-workspace-toolbar{grid-template-columns:1fr;gap:9px;padding:10px 12px;border-radius:0 0 13px 13px}
+ .scanner-workspace-toolbar>strong{font-size:14px}
+ .scanner-back-button{width:100%;min-height:46px}
+}
