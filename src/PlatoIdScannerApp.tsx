@@ -152,7 +152,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
     {scannerOpen&&<div className="scanner-modal-backdrop" role="presentation" onClick={()=>setScannerOpen(false)}>
       <section className="scanner-modal" role="dialog" aria-modal="true" aria-labelledby="scanner-modal-title" onClick={(e)=>e.stopPropagation()}>
        <header className="scanner-modal-header"><h2 id="scanner-modal-title">اسکن تصاویر Plato ID</h2><button type="button" className="scanner-ghost" onClick={()=>setScannerOpen(false)}>بستن ×</button></header>
-       <ScannerWorkspaceView view={scannerView} setView={setScannerView} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} uploads={uploads} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
+       <ScannerWorkspaceView view={scannerView} setView={setScannerView} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} client={supabase} reviewerId={user.id}/>
       </section>
     </div>}
    </section>}
