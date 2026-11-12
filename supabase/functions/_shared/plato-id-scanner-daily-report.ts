@@ -142,6 +142,7 @@ export function formatDailyGroupedTelegramMessages(
       if (current.length + line.length > maxChars) {
         push();
         current = header + "\n" + heading + line;
+        if (current.length > maxChars) throw new Error("A daily report row exceeds Telegram message limit.");
       } else current += line;
     }
   }
