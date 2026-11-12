@@ -182,7 +182,8 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
  useEffect(()=>{
   let alive=true;
   (async()=>{
-   if(!supabase||!uploads.length){setRevisions([]);return;}
+   if(!supabase||!uploads.length){setRevisions([]);setPreview(null);setDuplicateReviewed(false);return;}
+   setPreview(null);setDuplicateReviewed(false);
    setReviewLoading(true);
    try{
     const ids=uploads.map(x=>x.id);
@@ -217,7 +218,8 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
  async function requestReport(action:'preview'|'send'){
   if(reportBusy)return;
   if(period==='custom'&&(!startDate||!endDate||startDate>endDate)){setReportMessage('برای بازه دلخواه، تاریخ شروع و پایان معتبر را انتخاب کن.');return;}
-  if(action==='send'&&(!preview?.preview)){setReportMessage('ابتدا پیش‌نمایش همین بازه را تهیه و بررسی کن.');return;}\n  if(action==='send'&&(preview?.duplicate_count||0)>0&&!duplicateReviewed){setReportMessage('ابتدا موارد تکراری دقیق را بررسی و تأیید کن.');return;}\n  if(action==='send'&&!window.confirm('فهرست کامل و نهایی بازه انتخاب‌شده به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.'))return;
+  if(action==='send'&&(!preview?.preview)){setReportMessage('ابتدا پیش‌نمایش همین بازه را تهیه و بررسی کن.');return;}
+  if(action==='send'&&(preview?.duplicate_count||0)>0&&!duplicateReviewed){setReportMessage('ابتدا موارد تکراری دقیق را بررسی و تأیید کن.');return;}\n  if(action==='send'&&!window.confirm('فهرست کامل و نهایی بازه انتخاب‌شده به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.'))return;
   setReportBusy(true);setReportMessage('');
   try{
    const body:any={action,period};
@@ -225,7 +227,7 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
    if(action==='send'){body.request_id=crypto.randomUUID();body.confirm_exact_duplicates=duplicateReviewed;}
    const {data,error}=await supabase.functions.invoke('plato-id-scanner-telegram-report',{body});
    if(error)throw error;
-   if(action==='preview'){setPreview(data);setReportMessage('پیش‌نمایش آماده شد؛ هنوز هیچ پیامی ارسال نشده است.');}
+   if(action==='preview'){setPreview(data);setDuplicateReviewed(false);setReportMessage('پیش‌نمایش آماده شد؛ هنوز هیچ پیامی ارسال نشده است.');}
    else{setPreview(data);setReportMessage(data?.sent?'ارسال به گروه آزمایشی انجام شد · نسخه '+data.report_version+' · '+data.id_count+' شناسه یکتا · '+data.message_count+' پیام':data?.partial?'ارسال ناقص بود؛ بخشی از پیام‌ها ممکن است در گروه ثبت شده باشند. نسخه و وضعیت خطا ذخیره شد.':'ارسال تأیید نشد؛ وضعیت و جزئیات در پاسخ سرویس ثبت شده است.');}
   }catch(e:any){setReportMessage(e?.message||'تهیه یا ارسال گزارش ناموفق بود.');}
   finally{setReportBusy(false);}
@@ -262,7 +264,7 @@ function GlobalUniqueIdsPanel({uploads}:{uploads:ScanRow[]}){
     <button type="button" className="scanner-primary" disabled={reportBusy||reviewLoading||audit.unique_count===0} onClick={()=>void requestReport('send')}>{reportBusy?'در حال ارسال…':'ارسال فهرست کامل به گروه آزمایشی'}</button>
    </div>
    {reportMessage&&<p className="scanner-message" role="status">{reportMessage}</p>}
-   {preview?.preview&&<div className="scanner-report-preview"><strong>پیش‌نمایش · {preview.period_key}</strong><small>{preview.reviewed_images} تصویر تأییدشده · {preview.id_count} ID یکتا · {preview.messages?.length||0} پیام</small><div dir="ltr">{(preview.ids||[]).join('\n')}</div></div>}
+   {preview?.preview&&<div className="scanner-report-preview"><strong>پیش‌نمایش · {preview.period_key}</strong><small>{preview.reviewed_images} تصویر تأییدشده · {preview.id_count} ID یکتا · {preview.duplicate_count||0} تکراری دقیق · {preview.messages?.length||0} پیام</small>{(preview.duplicates||[]).length>0&&<><div className="scanner-report-id-list" dir="ltr">{preview.duplicates.map((item:any,index:number)=><div key={item.id+'-'+index}><strong>{item.id}</strong><small>اولین تصویر: {names.get(item.first_scan_id)||item.first_scan_id} · تصویر تکراری: {names.get(item.duplicate_scan_id)||item.duplicate_scan_id}</small></div>)}</div><label className="scanner-duplicate-confirm"><input type="checkbox" checked={duplicateReviewed} onChange={e=>setDuplicateReviewed(e.target.checked)}/> موارد تکراری دقیق را بررسی کردم و حذف تکرارها را تأیید می‌کنم.</label></>}<div dir="ltr">{(preview.ids||[]).join('\\n')}</div></div>}
   </div>
   <p className="scanner-report-disclaimer">تطابق فقط بر اساس متن دقیق انجام می‌شود؛ بزرگی و کوچکی حروف و نشانه‌ها تغییر نمی‌کند. سوابق OCR و بازبینی قبلی حذف یا بازنویسی نمی‌شوند.</p>
  </section>;
