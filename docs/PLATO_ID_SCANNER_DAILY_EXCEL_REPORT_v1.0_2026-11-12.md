@@ -1,9 +1,9 @@
 # PLATO ID Scanner — Daily Telegram Report and Optional Excel Attachment
 
-**Document version:** 1.0  
+**Document version:** 1.1  
 **Date:** 2026-11-12  
 **Project:** PLATO LAND – Temporary Projects / PLATO ID Scanner  
-**Status:** Implementation in PR review; not deployed to the operational site or Supabase Edge Functions.
+**Status:** CI passed for implementation commit; PR remains Draft/unmerged; not deployed to the operational site or Supabase Edge Functions.
 
 ## 1. Approved user decision
 
@@ -74,16 +74,41 @@ The PR's Pages workflow may build and upload a workflow artifact, but its produc
 
 The updated Edge Function source is not yet deployed to Supabase. The currently active production function remains unchanged until a separately approved deployment. No Telegram message has been sent as part of this implementation.
 
-## 8. Remaining validation and next steps
+## 8. Validation results and remaining steps
 
-1. Complete CI on the latest PR head, including TypeScript, Vite build, all Deno tests and Edge Function type checking.
-2. Review the PR diff and the generated XLSX in a real Excel-compatible application before release.
-3. Keep PR #145 Draft and unmerged until the owner explicitly approves merging.
-4. After merge approval, deploy the updated Scanner Telegram-report Edge Function separately to the primary Supabase project, without applying a migration.
-5. Perform an owner-controlled preview and test-group delivery test, first without Excel and then with Excel. Verify the workbook opens and its day sheets/IDs match the preview.
-6. Verify delivery history, partial-failure behavior and operator-only data scoping.
-7. Do not claim the operational feature is live until the function deployment and the actual `platoland.org` UI have both been verified.
+### CI evidence
+
+For implementation commit `dffb57e75dd6d17fdac6380b0ef6a050fde44aec`:
+
+- GitHub Actions verify run `43314880322`: **SUCCESS**.
+- npm install, TypeScript typecheck and Vite build: **SUCCESS**.
+- Existing Series 2 qualification/bracket tests and Scanner Telegram/report tests: **SUCCESS**.
+- New Tehran daily-grouping and XLSX package tests: **SUCCESS**.
+- Deno type check for `plato-id-scanner-telegram-report/index.ts`: **SUCCESS**.
+- Pages workflow run `43314880301`: build/artifact preparation **SUCCESS**; production deploy job **SKIPPED** as required for a pull request.
+
+### Still outstanding
+
+1. Review the PR diff and open the generated workbook in a real Excel-compatible application before release.
+2. Keep PR #145 Draft and unmerged until the owner explicitly approves merging.
+3. After merge approval, deploy the updated Scanner Telegram-report Edge Function separately to the primary Supabase project, without applying a migration.
+4. Perform an owner-controlled preview and test-group delivery test, first without Excel and then with Excel. Verify the workbook opens and its day sheets/IDs match the preview.
+5. Verify delivery history, partial-failure behavior and operator-only data scoping.
+6. Do not claim the operational feature is live until the function deployment and the actual `platoland.org` UI have both been verified.
+
+### Live production boundary checked after CI
+
+- Supabase function `plato-id-scanner-telegram-report` remains active at **version 2**, with its previous source hash unchanged.
+- No Scanner migration or database write was performed for this PR.
+- No Telegram message was sent.
+- PR #145 remains Open / Draft / Unmerged.
+- No production Pages deployment occurred.
+
+## 9. Version history
+
+- **v1.0 — 2026-11-12:** Records the approved daily grouping and optional Excel delivery design and implementation scope.
+- **v1.1 — 2026-11-12:** Records successful CI, the skipped production deploy job, and the unchanged live Supabase function boundary.
 
 ---
 
-**PLATO LAND – Temporary Projects | PLATO ID Scanner | Daily Report & Excel Attachment v1.0**
+**PLATO LAND – Temporary Projects | PLATO ID Scanner | Daily Report & Excel Attachment v1.1**
