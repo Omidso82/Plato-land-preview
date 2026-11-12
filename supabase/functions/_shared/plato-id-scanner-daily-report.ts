@@ -72,6 +72,7 @@ export function buildDailyScannerGroups(
     a.created_at.localeCompare(b.created_at) || a.id.localeCompare(b.id)
   );
   const groups = new Map<string, ScannerDailyGroup>();
+  const firstSeenByDay = new Map<string, Map<string, string>>();
   for (const scan of ordered) {
     const date_key = tehranDateKey(scan.created_at);
     let group = groups.get(date_key);
@@ -87,23 +88,21 @@ export function buildDailyScannerGroups(
         duplicates: [],
       };
       groups.set(date_key, group);
+      firstSeenByDay.set(date_key, new Map<string, string>());
     }
     group.scan_count += 1;
     const revision = latest.get(scan.id);
     if (!revision) continue;
     group.reviewed_images += 1;
     if (!Array.isArray(revision.canonical_ids)) continue;
-    const seen = new Set(group.ids);
+    const firstSeen = firstSeenByDay.get(date_key)!;
     for (const candidate of revision.canonical_ids) {
       if (typeof candidate !== "string" || candidate.trim().length === 0) continue;
-      if (seen.has(candidate)) {
-        const first = group.duplicates.find((item) => item.id === candidate)?.first_scan_id
-          ?? ordered.find((item) => item.id !== scan.id && tehranDateKey(item.created_at) === date_key
-            && latest.get(item.id)?.canonical_ids instanceof Array
-            && (latest.get(item.id)!.canonical_ids as unknown[]).includes(candidate))?.id;
-        if (first) group.duplicates.push({ id: candidate, first_scan_id: first, duplicate_scan_id: scan.id });
+      const first = firstSeen.get(candidate);
+      if (first) {
+        if (first !== scan.id) group.duplicates.push({ id: candidate, first_scan_id: first, duplicate_scan_id: scan.id });
       } else {
-        seen.add(candidate);
+        firstSeen.set(candidate, scan.id);
         group.ids.push(candidate);
       }
     }
