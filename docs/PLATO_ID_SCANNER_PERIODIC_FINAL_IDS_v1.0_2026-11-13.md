@@ -1,6 +1,6 @@
 # PLATO ID Scanner — Periodic Final ID Archive
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Date:** 13 November 2026  
 **Project:** PLATO LAND – Temporary Projects  
 **Status:** v1.0 deployed; v1.1 selector-layout refinement in progress on a separate branch.
@@ -70,3 +70,15 @@ Approved by the project owner after reviewing the deployed UI.
 - Weekly labels remain a single Saturday–Friday date range; monthly labels remain Jalali month/year; daily labels remain one Jalali date.
 - No changes to grouping boundaries, approved-revision selection, duplicate calculations, stored data, database, OCR, Telegram, or other project surfaces.
 - Mobile layout uses a full-width native select with RTL direction and visible focus styling.
+
+
+## 8. v1.2 period detail modal — 13 November 2026
+
+- Daily, weekly, and monthly period selection remains on the archive page.
+- Choosing a day, week, or month opens that period's details in a separate dismissible modal.
+- The modal includes a close control, a return-to-period-list control, and closes when the backdrop is tapped or Escape is pressed.
+- Closing the modal returns to the same daily, weekly, or monthly period list so another period can be selected.
+- The period details are no longer rendered inline beneath the period selector.
+- Period grouping, Jalali labels, Saturday–Friday weekly boundaries, approved revision selection, unique-ID calculations, duplicate calculations, and stored data remain unchanged.
+- No database, OCR, Telegram, authentication, storage, or Main Website changes.
+- This update is implemented on the existing isolated feature branch and remains subject to preview verification and owner approval before production merge/deployment.
