@@ -51,6 +51,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
  useEffect(()=>{window.scrollTo({top:0,left:0,behavior:'instant' as ScrollBehavior});},[scannerSection]);
  const [scannerOpen,setScannerOpen]=useState(false);
  const [archiveDate,setArchiveDate]=useState('all');
+ const [approvedArchiveIds,setApprovedArchiveIds]=useState<Set<string>>(new Set());
  const dateKey=(value:string)=>{
   const parts=new Intl.DateTimeFormat('en-US-u-ca-persian-nu-latn',{timeZone:'Asia/Tehran',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(value));
   const part=(type:string)=>parts.find(x=>x.type===type)?.value||'';
@@ -59,9 +60,18 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
  const [todayKey,setTodayKey]=useState(()=>dateKey(new Date().toISOString()));
  useEffect(()=>{const timer=window.setInterval(()=>setTodayKey(dateKey(new Date().toISOString())),30_000);return()=>window.clearInterval(timer);},[]);
  const todayLabel=todayKey.replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[Number(d)]);
- const archiveDays=Array.from(new Set(uploads.map(x=>dateKey(x.created_at)).filter(day=>day!==todayKey))).sort((a,b)=>b.localeCompare(a));
  const todayRows=uploads.filter(x=>dateKey(x.created_at)===todayKey);
- const archiveRows=uploads.filter(x=>dateKey(x.created_at)!==todayKey&&(archiveDate==='all'||dateKey(x.created_at)===archiveDate));
+ useEffect(()=>{
+  let alive=true;
+  if(!supabase||!uploads.length){setApprovedArchiveIds(new Set());return()=>{alive=false;};}
+  const ids=uploads.map(row=>row.id);
+  supabase.from('plato_id_scanner_review_revisions').select('scan_id,status').in('scan_id',ids).eq('status','approved')
+   .then(({data,error}:any)=>{if(!alive)return;if(error){setMessage('دریافت وضعیت آرشیو ناموفق بود: '+error.message);return;}setApprovedArchiveIds(new Set((data||[]).map((row:any)=>row.scan_id)));});
+  return()=>{alive=false;};
+ },[uploads.map(row=>row.id+':'+row.status).join('|')]);
+ const archiveRows=uploads.filter(row=>dateKey(row.created_at)!==todayKey||approvedArchiveIds.has(row.id));
+ const archiveDays=Array.from(new Set(archiveRows.map(x=>dateKey(x.created_at)))).sort((a,b)=>b.localeCompare(a));
+ const visibleArchiveRows=archiveRows.filter(row=>archiveDate==='all'||dateKey(row.created_at)===archiveDate);
 
  const Root:React.ElementType=embedded?'div':'main';
  const refresh=useCallback(async(u:any)=>{
@@ -183,7 +193,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
 <div className="scanner-workspace-toolbar"><button type="button" className="scanner-back-button" onClick={()=>setScannerSection('home')}>← بازگشت به داشبورد</button><strong>{{upload:'تصاویر و آپلود',ocr:'استخراج و بررسی',archive:'آرشیو تصاویر',ids:'فهرست نهایی آیدی‌ها',report:'گزارش تلگرام',history:'تاریخچه ارسال',operators:'مدیریت دسترسی اپراتورها'}[scannerSection]}</strong></div>
 {scannerSection==='operators'?<div className="scanner-panel scanner-access-panel"><h2>درخواست‌های اپراتورها</h2>{applications.length===0?<p className="scanner-empty">درخواستی ثبت نشده است.</p>:applications.map(a=><article className="scanner-row" key={a.user_id}><div><strong>{a.email}</strong><small>{new Date(a.requested_at).toLocaleString('fa-IR')}</small><span className={'scanner-status '+a.status}>{a.status==='pending'?'در انتظار بررسی':a.status==='approved'?'تأییدشده':a.status==='rejected'?'ردشده':'غیرفعال'}</span></div><div className="scanner-actions"><button disabled={busy||a.status==='approved'} onClick={()=>void review(a.user_id,'approved')}>تأیید</button><button disabled={busy||a.status==='rejected'} onClick={()=>void review(a.user_id,'rejected')}>رد</button><button disabled={busy||a.status==='disabled'} onClick={()=>void review(a.user_id,'disabled')}>غیرفعال‌سازی</button></div></article>)}</div>
 :scannerSection==='ids'||scannerSection==='report'||scannerSection==='history'?<GlobalUniqueIdsPanel uploads={uploads} mode={scannerSection}/>
-:<ScannerWorkspaceView view={scannerView} setView={setScannerView} sectionMode={scannerSection} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} onScanUpdated={(updated:ScanRow)=>setUploads(prev=>prev.map(item=>item.id===updated.id?updated:item))} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} uploadSuccessRows={uploadSuccessRows} onContinueToOcr={()=>{setUploadSuccessRows([]);setScannerSection('ocr');}} client={supabase} reviewerId={user.id}/>}
+:<ScannerWorkspaceView view={scannerView} setView={setScannerView} sectionMode={scannerSection} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={visibleArchiveRows} todayRows={todayRows} onReviewApproved={(id:string)=>setApprovedArchiveIds(prev=>new Set([...prev,id]))} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} onScanUpdated={(updated:ScanRow)=>setUploads(prev=>prev.map(item=>item.id===updated.id?updated:item))} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} uploadSuccessRows={uploadSuccessRows} onContinueToOcr={()=>{setUploadSuccessRows([]);setScannerSection('ocr');}} client={supabase} reviewerId={user.id}/>}
 </div>}
    </section>
    :access?.status!=='approved'?<section className="plato-scanner-card"><span className={'scanner-status '+(access?.status||'pending')}>{access?.status==='rejected'?'درخواست رد شده':access?.status==='disabled'?'دسترسی غیرفعال':'در انتظار تأیید مالک'}</span><h1>{access?.status==='rejected'?'درخواست دسترسی تأیید نشد':access?.status==='disabled'?'دسترسی شما غیرفعال است':'حساب شما در صف بررسی است'}</h1><p>{access?.status==='pending'?'ایمیل شما تأیید شده است. پس از بررسی مالک، امکان آپلود فعال می‌شود.':'برای پیگیری با مالک PLATO LAND تماس بگیرید.'}</p></section>
@@ -344,7 +354,7 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
  </section>;
 }
 
-function ScannerWorkspaceView({view,setView,sectionMode='all',archiveDate,setArchiveDate,archiveDays,archiveRows,todayRows,todayLabel,uploads,onDelete,onScanUpdated,setFiles,setMessage,files,fileChecking,busy,selectFiles,upload,uploadSuccessRows=[],onContinueToOcr,client,reviewerId}:any){
+function ScannerWorkspaceView({view,setView,sectionMode='all',archiveDate,setArchiveDate,archiveDays,archiveRows,todayRows,todayLabel,uploads,onDelete,onScanUpdated,onReviewApproved,setFiles,setMessage,files,fileChecking,busy,selectFiles,upload,uploadSuccessRows=[],onContinueToOcr,client,reviewerId}:any){
  return <div className="scanner-flow">
   {sectionMode==='all'&&<GlobalUniqueIdsPanel uploads={uploads}/>}
  {sectionMode==='all'&&<nav className="scanner-view-switch" aria-label="بخش‌های اسکنر">
@@ -359,7 +369,7 @@ function ScannerWorkspaceView({view,setView,sectionMode='all',archiveDate,setArc
     <button className="scanner-primary" disabled={!files.length||busy||fileChecking}>{fileChecking?'در حال بررسی…':busy?'در حال ذخیره تصاویر…':'ذخیره تصاویر انتخاب‌شده'}</button>
     {uploadSuccessRows.length>0&&<div className="scanner-upload-success" role="status" aria-live="polite"><div className="scanner-upload-success-heading"><span aria-hidden="true">✓</span><strong>{uploadSuccessRows.length===1?'تصویر با موفقیت ذخیره شد':uploadSuccessRows.length+' تصویر با موفقیت ذخیره شدند'}</strong></div><p>{uploadSuccessRows.map((row:ScanRow)=>row.file_name).join('، ')}</p><small>مرحله بعد: وارد «استخراج و بررسی» شوید و برای تصویر ذخیره‌شده، پردازش OCR را شروع کنید. تصویر هنوز فقط ذخیره شده و OCR خودکار اجرا نشده است.</small><button type="button" className="scanner-primary scanner-upload-next-step" onClick={onContinueToOcr}>رفتن به استخراج و بررسی ←</button></div>}
    </form>}
-   {(sectionMode==='all'||sectionMode==='ocr')&&<ScannerOcrQueue rows={todayRows} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated}/ >}
+   {(sectionMode==='all'||sectionMode==='ocr')&&<ScannerOcrQueue rows={todayRows} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated} onReviewApproved={onReviewApproved}/>}
   </div>:null}
   {(sectionMode==='all'||sectionMode==='archive')&&view==='archive'?<section className="scanner-panel scanner-archive-panel">
    <div className="scanner-section-heading"><span className="scanner-step">▤</span><div><h2>آرشیو اسکن‌ها</h2><p>سوابق را بر اساس روز انتخاب کن و نتیجه هر تصویر را دوباره ببین.</p></div></div>
@@ -369,7 +379,7 @@ function ScannerWorkspaceView({view,setView,sectionMode='all',archiveDate,setArc
   </section>:null}
  </div>;
 }
-function ScannerOcrQueue({rows,client,reviewerId,onDelete,onScanUpdated}:{rows:ScanRow[];client:any;reviewerId:string;onDelete:(row:ScanRow)=>void;onScanUpdated:(row:ScanRow)=>void}){
+function ScannerOcrQueue({rows,client,reviewerId,onDelete,onScanUpdated,onReviewApproved}:{rows:ScanRow[];client:any;reviewerId:string;onDelete:(row:ScanRow)=>void;onScanUpdated:(row:ScanRow)=>void;onReviewApproved:(id:string)=>void}){
  const [reviewedIds,setReviewedIds]=useState<Set<string>>(new Set());
  const [checking,setChecking]=useState(true);
  useEffect(()=>{
@@ -394,7 +404,7 @@ function ScannerOcrQueue({rows,client,reviewerId,onDelete,onScanUpdated}:{rows:S
   <div className="scanner-archive-summary"><strong>{queue.length}</strong><span>تصویر باقی‌مانده در صف امروز</span></div>
   {checking?<div className="scanner-empty-state">در حال بررسی سوابق تأیید تصاویر…</div>
    :current?<><div className="scanner-queue-position"><strong>تصویر بعدی برای رسیدگی</strong><small>{current.file_name}</small></div>
-     <ScannerReviewCard key={current.id} row={current} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated} queueMode onReviewApproved={(id)=>setReviewedIds(prev=>new Set([...prev,id]))}/>
+     <ScannerReviewCard key={current.id} row={current} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated} queueMode onReviewApproved={(id)=>{setReviewedIds(prev=>new Set([...prev,id]));onReviewApproved(id);}}/>
      <p className="scanner-report-disclaimer">تصاویر به‌ترتیب رسیدگی می‌شوند؛ پس از تأیید نهایی، تصویر جاری از صف خارج می‌شود و تصویر بعدی نمایش داده خواهد شد.</p>
     </>
    :<div className="scanner-empty-state"><strong>{rows.length?'همه تصاویر این صف تأیید نهایی شده‌اند':'تصویری برای پردازش یا بازبینی وجود ندارد'}</strong><small>{rows.length?'تصاویر تأییدشده از صف OCR خارج شده‌اند. برای مشاهده آن‌ها به آرشیو تصاویر برو.':'تصویر جدید را از بخش آپلود اضافه کن؛ OCR به‌صورت خودکار اجرا نمی‌شود.'}</small></div>}
