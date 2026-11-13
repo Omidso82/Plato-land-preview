@@ -318,3 +318,22 @@
 .scanner-period-sources>div{display:grid;gap:2px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035)}
 .scanner-period-sources strong{font-size:13px;direction:ltr;text-align:left}
 @media(max-width:560px){.scanner-period-tabs{gap:5px}.scanner-period-tabs button{padding:10px 3px;font-size:12px}.scanner-period-item{padding:11px}.scanner-period-detail{padding:10px}}
+
+
+/* Compact period selector: one selectable period, one detail heading */
+.scanner-period-picker{display:grid;gap:7px;margin:12px 0 14px;padding:12px;border:1px solid rgba(205,160,72,.28);border-radius:13px;background:rgba(0,0,0,.12)}
+.scanner-period-picker label{color:#e7c36f;font-size:13px;font-weight:700}
+.scanner-period-picker select{width:100%;min-height:46px;padding:10px 38px 10px 12px;border:1px solid rgba(205,160,72,.42);border-radius:10px;background:#1b1915;color:#f1e6ce;font:inherit;font-size:14px;direction:rtl}
+.scanner-period-picker select:focus{outline:2px solid #d6ad58;outline-offset:2px}
+
+
+/* Period detail modal: keep the period list visible underneath */
+.scanner-period-modal-backdrop{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.78);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+.scanner-period-modal{width:min(100%,680px);max-height:min(86dvh,900px);overflow:auto;padding:18px;border:1px solid rgba(220,178,91,.7);border-radius:18px;background:#17140f;color:#f5e8c9;box-shadow:0 24px 80px rgba(0,0,0,.6)}
+.scanner-period-modal-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px}
+.scanner-period-modal-top h3{margin:0;color:#e8c675;font-size:18px}
+.scanner-period-modal-top button{flex:0 0 40px;width:40px;height:40px;border:1px solid rgba(220,178,91,.45);border-radius:11px;background:rgba(255,255,255,.05);color:#f5e8c9;font-size:27px;line-height:1;cursor:pointer}
+.scanner-period-modal .scanner-period-detail{margin:0;padding:0;border:0;background:transparent}
+.scanner-period-modal .scanner-period-detail-heading{margin-bottom:12px}
+.scanner-period-modal-back{width:100%;min-height:46px;margin-top:16px;padding:10px 14px;border:1px solid rgba(220,178,91,.55);border-radius:11px;background:rgba(205,160,72,.12);color:#f1d48d;font:inherit;font-weight:700;cursor:pointer}
+@media(max-width:560px){.scanner-period-modal-backdrop{align-items:flex-end;padding:10px}.scanner-period-modal{width:100%;max-height:88dvh;padding:14px;border-radius:17px 17px 12px 12px}.scanner-period-modal-top h3{font-size:16px}}
