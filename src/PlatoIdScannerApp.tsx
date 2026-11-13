@@ -297,7 +297,7 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
     let group=groups.get(mapKey);
     if(!group){group={key:mapKey,label,sort,rows:[],ids:new Set<string>(),sources:new Map<string,{scan_id:string;dayKey:string}[]>(),duplicateCount:0};groups.set(mapKey,group);}
     group.rows.push(row);
-    for(const id of new Set(ids)){
+    for(const id of new Set<string>(ids)){
      group.ids.add(id);
      const sourceList=group.sources.get(id)||[];
      sourceList.push({scan_id:row.id,dayKey});
