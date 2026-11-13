@@ -227,3 +227,12 @@
 
 .scanner-welcome-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
 @media(max-width:600px){.scanner-welcome-actions{width:100%;justify-content:flex-start}}
+
+
+/* Scanner upload success and next-step guidance — mobile-first */
+.scanner-upload-success{display:grid;gap:9px;margin-top:14px;padding:15px;border:1px solid rgba(93,156,105,.62);border-radius:13px;background:linear-gradient(145deg,rgba(43,83,49,.22),rgba(19,29,21,.72));color:#f1f5eb}
+.scanner-upload-success-heading{display:flex;align-items:center;gap:9px;color:#d7edcf;line-height:1.6}
+.scanner-upload-success-heading>span{display:grid;place-items:center;flex:0 0 27px;width:27px;height:27px;border-radius:50%;background:rgba(93,156,105,.22);color:#a9d59f;font-weight:900}
+.scanner-upload-success>p{margin:0;color:#f3ecdc;font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+.scanner-upload-success>small{color:#c4cbbd;font-size:12px;line-height:1.9}
+.scanner-upload-success .scanner-upload-next-step{width:100%;margin-top:3px;min-height:48px}
