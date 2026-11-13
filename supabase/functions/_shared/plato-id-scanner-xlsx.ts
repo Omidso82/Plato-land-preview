@@ -62,7 +62,9 @@ function worksheet(rows: string[][]): string {
   const columnCount = Math.max(1, ...rows.map((row) => row.length));
   const widths = Array.from({ length: columnCount }, (_, columnIndex) => {
     const maxLength = Math.max(0, ...rows.map((row) => [...(row[columnIndex] ?? "")].length));
-    return Math.min(30, Math.max(columnIndex === 0 ? 18 : 9, maxLength + 3));
+    return columnIndex === 0
+      ? Math.min(40, Math.max(26, maxLength + 4))
+      : Math.min(18, Math.max(9, maxLength + 3));
   });
   const cols = widths.map((width, index) =>
     `<col min="${index + 1}" max="${index + 1}" width="${width}" customWidth="1"/>`
@@ -75,7 +77,7 @@ function worksheet(rows: string[][]): string {
     }).join("");
     return `<row r="${rowIndex + 1}" ht="${rowIndex === 0 ? 25 : 22}" customHeight="1">${cells}</row>`;
   }).join("");
-  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" rightToLeft="1"/></sheetViews><sheetFormatPr defaultRowHeight="22"/><cols>${cols}</cols><sheetData>${body}</sheetData></worksheet>`;
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetViews><sheetView workbookViewId="0" rightToLeft="1"><pane xSplit="1" ySplit="1" topLeftCell="B2" activePane="bottomRight" state="frozen"/></sheetView></sheetViews><sheetFormatPr defaultRowHeight="22"/><cols>${cols}</cols><sheetData>${body}</sheetData></worksheet>`;
 }
 
 /** Builds a real .xlsx workbook: one summary sheet and one sheet per Tehran upload day. */
@@ -161,13 +163,22 @@ function monthlySheet(days: ScannerDailyGroup[], anyDay: string) {
 
 /** One Saturday–Friday activity matrix per week and one complete Jalali-month matrix per month. */
 export function buildScannerExcelWorkbook(days: ScannerDailyGroup[], periodStart: string, periodEnd: string): Uint8Array {
-  const startKey = dayKey(periodStart), endKey = dayKey(periodEnd);
-  if (startKey > endKey) throw new Error("Excel report period is invalid.");
+  const startKey = dayKey(periodStart);
+  const endBoundary = new Date(periodEnd);
+  if (!Number.isFinite(endBoundary.getTime())) throw new Error("Excel report period is invalid.");
+  // Report queries use an exclusive end timestamp; subtract 1 ms to derive the final included Tehran day.
+  const inclusiveEnd = new Date(endBoundary.getTime() - 1);
+  if (inclusiveEnd.getTime() < new Date(periodStart).getTime()) throw new Error("Excel report period is invalid.");
+  const endKey = dayKey(inclusiveEnd.toISOString());
   const reportDays = [...new Map(days.map((day) => [day.date_key, day])).values()];
+  const jalaliLabel = (key: string) => {
+    const p = persianParts(key);
+    return p.day + " " + p.month + " " + p.year;
+  };
   const summary = {
     name: "خلاصه",
     rows: [
-      ["گزارش فعالیت Plato ID", "از", startKey, "تا", endKey],
+      ["گزارش فعالیت Plato ID", "از", jalaliLabel(startKey), "تا", jalaliLabel(endKey)],
       ["روزهای دارای گزارش", String(reportDays.length), "تعداد آیدی‌های یکتا", String(new Set(reportDays.flatMap((day) => day.ids)).size)],
       ["ساختار", "هر هفته یک جدول شنبه تا جمعه؛ هر ماه شمسی یک جدول کامل روزانه"],
     ],
