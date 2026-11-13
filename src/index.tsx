@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import App from './App';
 import Series2Registration from './Series2Registration';
 import Series2SlidesManager from './Series2SlidesManager';
+import Series3Gallery from './Series3Gallery';
 import './styles.css';
 import './Series2Registration.css';
 
@@ -25,7 +26,9 @@ const retiredPaths = new Set([
 ]);
 const retiredResultsQuery = (path==='/' || path==='/index.html') && page==='series2-results-manager';
 
-if(path==='/series2-slides-manager') {
+if(path==='/series3') {
+  root.render(<React.StrictMode><Series3Gallery/></React.StrictMode>);
+} else if(path==='/series2-slides-manager') {
   root.render(<React.StrictMode><Series2SlidesManager/></React.StrictMode>);
 } else if(path==='/' || path==='/index.html' || retiredPaths.has(path) || retiredResultsQuery) {
   if(retiredPaths.has(path) || retiredResultsQuery) {
