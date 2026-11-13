@@ -1,9 +1,9 @@
 # PLATO ID Scanner — Periodic Final ID Archive
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 13 November 2026  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** Implemented on feature branch; PR #154 open, not merged or deployed.
+**Status:** v1.0 deployed; v1.1 selector-layout refinement in progress on a separate branch.
 
 ## 1. Approved product decision
 
@@ -57,3 +57,16 @@ The first CI attempt found a TypeScript inference issue in the new grouping loop
 2. Review any CI failures and fix them on the same feature branch.
 3. Request explicit approval before merging.
 4. After an approved merge, verify the actual release and ask the owner to test daily, weekly, monthly and all-history views in the existing authenticated Scanner panel.
+
+
+## 7. v1.1 period selection layout refinement — 13 November 2026
+
+Approved by the project owner after reviewing the deployed UI.
+
+- Replace the long stack of period cards with one compact native period selector.
+- Selector label adapts to the active view: روز / هفته / ماه.
+- Each available period appears once as a single option, including its period label and compact image/unique-ID counts.
+- Selecting an option displays one detail panel. The selected period title appears only in that detail heading, not as a repeated card and heading.
+- Weekly labels remain a single Saturday–Friday date range; monthly labels remain Jalali month/year; daily labels remain one Jalali date.
+- No changes to grouping boundaries, approved-revision selection, duplicate calculations, stored data, database, OCR, Telegram, or other project surfaces.
+- Mobile layout uses a full-width native select with RTL direction and visible focus styling.
