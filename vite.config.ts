@@ -12,6 +12,9 @@ const series2ManagerStaticEntry = {
     const managerDirectory = resolve(output, 'series2-slides-manager');
     mkdirSync(managerDirectory, { recursive: true });
     copyFileSync(resolve(output, 'index.html'), resolve(managerDirectory, 'index.html'));
+    const series3Directory = resolve(output, 'series3');
+    mkdirSync(series3Directory, { recursive: true });
+    copyFileSync(resolve(output, 'index.html'), resolve(series3Directory, 'index.html'));
   },
 };
 
