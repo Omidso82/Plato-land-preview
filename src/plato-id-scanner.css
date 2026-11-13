@@ -357,3 +357,24 @@
 .scanner-telegram-report .scanner-actions button{min-height:48px;margin:0;font-size:12px}
 .scanner-telegram-report .scanner-report-preview{margin-top:14px;padding:13px;border:1px solid #65502e;border-radius:12px;background:#0c0c0c}
 @media(max-width:560px){.scanner-telegram-report{padding:12px}.scanner-jalali-range{grid-template-columns:1fr}.scanner-telegram-report .scanner-actions{grid-template-columns:1fr}.scanner-telegram-report .scanner-actions button{width:100%;min-height:49px}}
+
+/* Native iOS date input replaced with an in-panel Jalali calendar */
+.scanner-jalali-picker{display:grid;gap:7px;min-width:0}
+.scanner-jalali-picker-label{color:#d8c99f;font-size:12px;font-weight:800}
+.scanner-jalali-picker-trigger{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:49px;padding:11px 12px;border:1px solid #806334;border-radius:11px;background:#171613;color:#f4ead4;text-align:right;font:inherit;cursor:pointer}
+.scanner-jalali-picker-trigger span{font-size:12px;line-height:1.7}
+.scanner-jalali-picker-trigger b{flex:0 0 auto;color:#e8c675;font-size:11px}
+.scanner-jalali-calendar{margin-top:3px;padding:12px;border:1px solid #98763c;border-radius:14px;background:#171511;box-shadow:0 12px 30px rgba(0,0,0,.38)}
+.scanner-jalali-calendar-head{display:grid;grid-template-columns:42px 1fr 42px;align-items:center;gap:8px;margin-bottom:12px}
+.scanner-jalali-calendar-head strong{text-align:center;color:#f0d58d;font-size:15px}
+.scanner-jalali-calendar-head button,.scanner-jalali-calendar-foot button{min-height:38px;border:1px solid #65502e;border-radius:9px;background:#211c12;color:#f1d48d;font:inherit;font-weight:800;cursor:pointer}
+.scanner-jalali-calendar-head button{font-size:25px}
+.scanner-jalali-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.scanner-jalali-weekday{display:grid;place-items:center;min-height:30px;color:#b9a77f;font-size:11px;font-weight:800}
+.scanner-jalali-calendar-grid>button{min-width:0;min-height:39px;border:1px solid transparent;border-radius:9px;background:#24211b;color:#f5ead2;font:inherit;font-size:13px;cursor:pointer}
+.scanner-jalali-calendar-grid>button.outside{visibility:hidden}
+.scanner-jalali-calendar-grid>button.selected{border-color:#f0cf78;background:#8b682d;color:#fff;font-weight:900}
+.scanner-jalali-calendar-grid>button:active{background:#6e5329}
+.scanner-jalali-calendar-foot{display:flex;justify-content:space-between;gap:8px;margin-top:12px}
+.scanner-jalali-calendar-foot button{flex:1;font-size:12px}
+@media(max-width:560px){.scanner-jalali-calendar{padding:10px}.scanner-jalali-calendar-grid{gap:4px}.scanner-jalali-calendar-grid>button{min-height:42px;font-size:14px}}
