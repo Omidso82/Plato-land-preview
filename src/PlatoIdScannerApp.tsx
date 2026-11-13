@@ -171,7 +171,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
       <div className="scanner-admin-stat"><span>در انتظار بازبینی</span><strong>{uploads.filter(x=>x.status==='needs_review').length}</strong><small>تأیید انسانی لازم است</small></div>
     </div>
 <div className="scanner-home-grid" aria-label="بخش‌های مدیریت اسکنر">
-<button type="button" onClick={()=>setScannerSection('upload')}><b>↑</b><strong>تصاویر و آپلود</strong><small>افزودن تصویر جدید</small></button>
+<button type="button" onClick={()=>{setUploadSuccessRows([]);setScannerSection('upload');}}><b>↑</b><strong>تصاویر و آپلود</strong><small>افزودن تصویر جدید</small></button>
 <button type="button" onClick={()=>setScannerSection('ocr')}><b>⌕</b><strong>استخراج و بررسی</strong><small>پردازش و بازبینی OCR</small></button>
 <button type="button" onClick={()=>setScannerSection('archive')}><b>▤</b><strong>آرشیو تصاویر</strong><small>{uploads.length} تصویر ثبت‌شده</small></button>
 <button type="button" onClick={()=>setScannerSection('ids')}><b>✓</b><strong>فهرست نهایی آیدی‌ها</strong><small>شناسه‌های یکتا و تکراری‌ها</small></button>
@@ -200,7 +200,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
         <div className="scanner-admin-stat"><span>در انتظار بازبینی</span><strong>{uploads.filter(x=>x.status==='needs_review').length}</strong><small>تأیید انسانی لازم است</small></div>
       </div>
       <div className="scanner-home-grid" aria-label="بخش‌های مجاز اسکنر">
-        <button type="button" onClick={()=>{setScannerSection('upload');setScannerView('new');}}><b>↑</b><strong>تصاویر و آپلود</strong><small>افزودن تصویر جدید</small></button>
+        <button type="button" onClick={()=>{setUploadSuccessRows([]);setScannerSection('upload');setScannerView('new');}}><b>↑</b><strong>تصاویر و آپلود</strong><small>افزودن تصویر جدید</small></button>
         <button type="button" onClick={()=>{setScannerSection('ocr');setScannerView('new');}}><b>⌕</b><strong>استخراج و بررسی</strong><small>پردازش و بازبینی OCR</small></button>
         <button type="button" onClick={()=>{setScannerSection('archive');setScannerView('archive');}}><b>▤</b><strong>آرشیو تصاویر</strong><small>{uploads.length} تصویر ثبت‌شده</small></button>
         <button type="button" onClick={()=>setScannerSection('ids')}><b>✓</b><strong>فهرست نهایی آیدی‌ها</strong><small>شناسه‌های یکتا و تکراری‌ها</small></button>
