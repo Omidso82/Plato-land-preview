@@ -382,32 +382,41 @@ function ScannerWorkspaceView({view,setView,sectionMode='all',archiveDate,setArc
 function ScannerOcrQueue({rows,client,reviewerId,onDelete,onScanUpdated,onReviewApproved}:{rows:ScanRow[];client:any;reviewerId:string;onDelete:(row:ScanRow)=>void;onScanUpdated:(row:ScanRow)=>void;onReviewApproved:(id:string)=>void}){
  const [reviewedIds,setReviewedIds]=useState<Set<string>>(new Set());
  const [checking,setChecking]=useState(true);
+ const [loadError,setLoadError]=useState('');
+ const [reloadKey,setReloadKey]=useState(0);
  useEffect(()=>{
   let alive=true;
   (async()=>{
    setChecking(true);
+   setLoadError('');
    try{
     const results=await Promise.all(rows.map(row=>loadScannerReviewRevisions(client,row.id)));
     if(!alive)return;
     const approved=new Set<string>();
     results.forEach((history,index)=>{if(history.some(item=>item.status==='approved'))approved.add(rows[index].id);});
     setReviewedIds(approved);
-   }catch(e){if(alive)setReviewedIds(new Set());}
-   finally{if(alive)setChecking(false);}
+   }catch(e:any){
+    if(alive){
+     setReviewedIds(new Set());
+     setLoadError(e?.message||'خواندن تاریخچه تأییدها ناموفق بود. برای جلوگیری از نمایش اشتباه تصاویر تأییدشده، صف موقتاً متوقف شد.');
+    }
+   }finally{if(alive)setChecking(false);}
   })();
   return()=>{alive=false;};
- },[client,rows.map(row=>row.id).join('|')]);
+ },[client,rows.map(row=>row.id).join('|'),reloadKey]);
  const queue=rows.filter(row=>!reviewedIds.has(row.id)&&['uploaded','queued','needs_review'].includes(row.status));
  const current=queue[0]||null;
  return <section id="scanner-queue-panel" className="scanner-panel scanner-queue-panel">
   <div className="scanner-section-heading"><span className="scanner-step">۲</span><div><h2>صف پردازش و بازبینی OCR</h2><p>هر تصویر فقط یک‌بار پردازش می‌شود. پس از پایان OCR، بازبینی انسانی انجام بده و با تأیید نهایی تصویر را به آرشیو بفرست.</p></div></div>
-  <div className="scanner-archive-summary"><strong>{queue.length}</strong><span>تصویر باقی‌مانده در صف امروز</span></div>
   {checking?<div className="scanner-empty-state">در حال بررسی سوابق تأیید تصاویر…</div>
-   :current?<><div className="scanner-queue-position"><strong>تصویر بعدی برای رسیدگی</strong><small>{current.file_name}</small></div>
-     <ScannerReviewCard key={current.id} row={current} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated} queueMode onReviewApproved={(id)=>{setReviewedIds(prev=>new Set([...prev,id]));onReviewApproved(id);}}/>
-     <p className="scanner-report-disclaimer">تصاویر به‌ترتیب رسیدگی می‌شوند؛ پس از تأیید نهایی، تصویر جاری از صف خارج می‌شود و تصویر بعدی نمایش داده خواهد شد.</p>
-    </>
-   :<div className="scanner-empty-state"><strong>{rows.length?'همه تصاویر این صف تأیید نهایی شده‌اند':'تصویری برای پردازش یا بازبینی وجود ندارد'}</strong><small>{rows.length?'تصاویر تأییدشده از صف OCR خارج شده‌اند. برای مشاهده آن‌ها به آرشیو تصاویر برو.':'تصویر جدید را از بخش آپلود اضافه کن؛ OCR به‌صورت خودکار اجرا نمی‌شود.'}</small></div>}
+   :loadError?<div className="scanner-empty-state" role="alert"><strong>امکان بررسی امن صف وجود ندارد</strong><small>{loadError}</small><button type="button" className="scanner-primary" onClick={()=>setReloadKey(value=>value+1)}>تلاش مجدد برای بارگذاری سوابق</button></div>
+   :<><div className="scanner-archive-summary"><strong>{queue.length}</strong><span>تصویر باقی‌مانده در صف امروز</span></div>
+    {current?<><div className="scanner-queue-position"><strong>تصویر بعدی برای رسیدگی</strong><small>{current.file_name}</small></div>
+      <ScannerReviewCard key={current.id} row={current} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated} queueMode onReviewApproved={(id)=>{setReviewedIds(prev=>new Set([...prev,id]));onReviewApproved(id);}}/>
+      <p className="scanner-report-disclaimer">تصاویر به‌ترتیب رسیدگی می‌شوند؛ پس از تأیید نهایی، تصویر جاری از صف خارج می‌شود و تصویر بعدی نمایش داده خواهد شد.</p>
+     </>
+    :<div className="scanner-empty-state"><strong>{rows.length?'همه تصاویر این صف تأیید نهایی شده‌اند':'تصویری برای پردازش یا بازبینی وجود ندارد'}</strong><small>{rows.length?'تصاویر تأییدشده از صف OCR خارج شده‌اند. برای مشاهده آن‌ها به آرشیو تصاویر برو.':'تصویر جدید را از بخش آپلود اضافه کن؛ OCR به‌صورت خودکار اجرا نمی‌شود.'}</small></div>}
+   </>}
  </section>;
 }
 function UploadList({rows,client,reviewerId,onDelete,onScanUpdated}:{rows:ScanRow[];client:any;reviewerId:string;onDelete:(row:ScanRow)=>void;onScanUpdated:(row:ScanRow)=>void}){
