@@ -491,6 +491,7 @@ function ScannerArchiveCard({row,client,reviewerId,onDelete}:{row:ScanRow;client
       {ocrIds.length>0&&<><b>خروجی اولیه OCR</b><div className="scanner-archive-id-list" dir="ltr">{ocrIds.map((id:string,index:number)=><span key={row.id+'-ocr-'+index}>{String(id)}</span>)}</div></>}
       {audit&&<p>کل موارد: {audit.total_occurrences??'—'} · شناسه یکتا: {audit.unique_count??'—'} · تکراری دقیق: {audit.duplicate_count??'—'}</p>}
       <p><b>زمان آپلود:</b> {dateLabel}</p><p><b>وضعیت پرونده:</b> {row.status}</p>
+      <details className="scanner-archive-raw-report"><summary>جزئیات کامل داده گزارش OCR</summary><pre dir="ltr">{JSON.stringify(row.ocr_result??{},null,2)}</pre></details>
      </div>
     </details>
     <details className="scanner-archive-history">
