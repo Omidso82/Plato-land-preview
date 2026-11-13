@@ -104,7 +104,7 @@ export function Series3SlidesPanel() {
             <span style={{fontSize:11,color:item?'#9ed6a3':'#b5a98e'}}>{item?'ثبت‌شده':'خالی'}</span>
           </div>
           {item?<img src={item.url+'?v='+encodeURIComponent(item.updated_at||'')} alt={'تصویر '+n+' سری سوم'} style={{width:'100%',height:115,objectFit:'contain',background:'#090a0c',borderRadius:7,marginBottom:8}}/>:<div style={{height:115,display:'grid',placeItems:'center',background:'#090a0c',borderRadius:7,color:'#817968',fontSize:12,marginBottom:8}}>تصویری ثبت نشده</div>}
-          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setSelected(prev=>({...prev,[n]:e.target.files?.[0]||undefined as any}))} style={{width:'100%',color:'#ddd',fontSize:11,marginBottom:7}}/>
+          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0];setSelected(prev=>{const next={...prev};if(file)next[n]=file;else delete next[n];return next;});}} style={{width:'100%',color:'#ddd',fontSize:11,marginBottom:7}}/>
           {selected[n]&&<p style={{fontSize:11,color:'#c8c0b0',overflowWrap:'anywhere'}}>{selected[n].name}</p>}
           <button style={button} disabled={!selected[n]||busySlot!==null} onClick={()=>void uploadSlide(n)}>{busySlot===n?'در حال ذخیره…':item?'جایگزینی تصویر':'ذخیره تصویر'}</button>
         </div>;
