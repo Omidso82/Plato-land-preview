@@ -426,9 +426,9 @@ function ScannerArchiveList({rows,client,reviewerId,onDelete}:{rows:ScanRow[];cl
 function ScannerArchiveCard({row,client,reviewerId,onDelete}:{row:ScanRow;client:any;reviewerId:string;onDelete:(row:ScanRow)=>void}){
  const [history,setHistory]=useState<any[]>([]),[imageUrl,setImageUrl]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState('');
  const [editing,setEditing]=useState(false),[draft,setDraft]=useState(''),[note,setNote]=useState(''),[saving,setSaving]=useState(false),[message,setMessage]=useState('');
- const [expanded,setExpanded]=useState(false);
+ const [expanded,setExpanded]=useState(false),[retryKey,setRetryKey]=useState(0);
  useEffect(()=>{
-  if(!expanded||history.length||imageUrl)return;
+  if(!expanded)return;
   let alive=true;
   (async()=>{
    setLoading(true);setError('');
@@ -440,12 +440,14 @@ function ScannerArchiveCard({row,client,reviewerId,onDelete}:{row:ScanRow;client
     const signed=await client.storage.from(BUCKET).createSignedUrl(row.storage_path,3600);
     if(!alive)return;
     if(signed.error)throw signed.error;
-    setImageUrl(signed.data?.signedUrl||'');
+    const url=signed.data?.signedUrl;
+    if(!url)throw new Error('لینک امن تصویر از فضای ذخیره‌سازی دریافت نشد.');
+    setImageUrl(url);
    }catch(e:any){if(alive)setError(e?.message||'بارگذاری جزئیات تصویر ناموفق بود.');}
    finally{if(alive)setLoading(false);}
   })();
   return()=>{alive=false;};
- },[client,row.id,row.storage_path,expanded,history.length,imageUrl]);
+ },[client,row.id,row.storage_path,expanded,retryKey]);
  const latest=history.at(-1);
  const finalIds=latest?.canonical_ids??[];
  const ocrIds=Array.isArray(row.ocr_result?.ids)?row.ocr_result.ids:[];
@@ -472,7 +474,7 @@ function ScannerArchiveCard({row,client,reviewerId,onDelete}:{row:ScanRow;client
   </button>
   {expanded&&<div className="scanner-archive-detail">
    {loading?<div className="scanner-empty-state">در حال بارگذاری تصویر و سوابق…</div>:<>
-    {error&&<p className="scanner-review-error" role="alert">{error}</p>}
+    {error&&<div className="scanner-review-error" role="alert"><p>{error}</p><button type="button" className="scanner-primary" onClick={()=>setRetryKey(value=>value+1)}>تلاش دوباره برای بارگذاری جزئیات</button></div>}
     {imageUrl?<a className="scanner-archive-original" href={imageUrl} target="_blank" rel="noreferrer"><img src={imageUrl} alt={'تصویر اصلی '+row.file_name}/><span>نمایش تصویر اصلی در اندازه کامل ↗</span></a>:<div className="scanner-empty-state">تصویر اصلی در حال حاضر قابل دریافت نیست.</div>}
     <section className="scanner-archive-detail-section">
      <div className="scanner-archive-detail-heading"><strong>آیدی‌های نهایی تصویر</strong><span>{finalIds.length} مورد</span></div>
