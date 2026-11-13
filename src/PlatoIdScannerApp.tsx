@@ -192,7 +192,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
 </>:<div className="scanner-admin-workspace">
 <div className="scanner-workspace-toolbar"><button type="button" className="scanner-back-button" onClick={()=>setScannerSection('home')}>← بازگشت به داشبورد</button><strong>{{upload:'تصاویر و آپلود',ocr:'استخراج و بررسی',archive:'آرشیو تصاویر',ids:'فهرست نهایی آیدی‌ها',report:'گزارش تلگرام',history:'تاریخچه ارسال',operators:'مدیریت دسترسی اپراتورها'}[scannerSection]}</strong></div>
 {scannerSection==='operators'?<div className="scanner-panel scanner-access-panel"><h2>درخواست‌های اپراتورها</h2>{applications.length===0?<p className="scanner-empty">درخواستی ثبت نشده است.</p>:applications.map(a=><article className="scanner-row" key={a.user_id}><div><strong>{a.email}</strong><small>{new Date(a.requested_at).toLocaleString('fa-IR')}</small><span className={'scanner-status '+a.status}>{a.status==='pending'?'در انتظار بررسی':a.status==='approved'?'تأییدشده':a.status==='rejected'?'ردشده':'غیرفعال'}</span></div><div className="scanner-actions"><button disabled={busy||a.status==='approved'} onClick={()=>void review(a.user_id,'approved')}>تأیید</button><button disabled={busy||a.status==='rejected'} onClick={()=>void review(a.user_id,'rejected')}>رد</button><button disabled={busy||a.status==='disabled'} onClick={()=>void review(a.user_id,'disabled')}>غیرفعال‌سازی</button></div></article>)}</div>
-:scannerSection==='ids'||scannerSection==='report'||scannerSection==='history'?<GlobalUniqueIdsPanel uploads={uploads} mode={scannerSection}/>
+:scannerSection==='ids'||scannerSection==='report'||scannerSection==='history'?<GlobalUniqueIdsPanel uploads={uploads} mode={scannerSection} onGoReport={()=>setScannerSection('report')}/>
 :<ScannerWorkspaceView view={scannerView} setView={setScannerView} onGoArchive={()=>{setScannerSection('archive');setScannerView('archive');}} sectionMode={scannerSection} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={visibleArchiveRows} todayRows={todayRows} onReviewApproved={(id:string)=>setApprovedArchiveIds(prev=>new Set([...prev,id]))} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} onScanUpdated={(updated:ScanRow)=>setUploads(prev=>prev.map(item=>item.id===updated.id?updated:item))} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} uploadSuccessRows={uploadSuccessRows} onContinueToOcr={()=>{setUploadSuccessRows([]);setScannerSection('ocr');}} client={supabase} reviewerId={user.id}/>}
 </div>}
    </section>
@@ -220,7 +220,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
     </>:<div className="scanner-admin-workspace">
       <div className="scanner-workspace-toolbar"><button type="button" className="scanner-back-button" onClick={()=>{setScannerSection('home');setScannerView('new');}}>← بازگشت به داشبورد</button><strong>{{upload:'تصاویر و آپلود',ocr:'استخراج و بررسی',archive:'آرشیو تصاویر',ids:'فهرست نهایی آیدی‌ها',report:'گزارش تلگرام',history:'تاریخچه ارسال'}[scannerSection]||'فضای کاری اسکنر'}</strong></div>
       {scannerSection==='ids'||scannerSection==='report'||scannerSection==='history'
-        ? <GlobalUniqueIdsPanel uploads={uploads} mode={scannerSection}/>
+        ? <GlobalUniqueIdsPanel uploads={uploads} mode={scannerSection} onGoReport={()=>setScannerSection('report')}/>
         : <ScannerWorkspaceView view={scannerView} setView={setScannerView} onGoArchive={()=>{setScannerSection('archive');setScannerView('archive');}} sectionMode={scannerSection} archiveDate={archiveDate} setArchiveDate={setArchiveDate} archiveDays={archiveDays} archiveRows={archiveRows} todayRows={todayRows} todayLabel={todayLabel} uploads={uploads} onDelete={deleteScan} onScanUpdated={(updated:ScanRow)=>setUploads(prev=>prev.map(item=>item.id===updated.id?updated:item))} setFiles={setFiles} setMessage={setMessage} files={files} fileChecking={fileChecking} busy={busy} selectFiles={selectFiles} upload={upload} uploadSuccessRows={uploadSuccessRows} onContinueToOcr={()=>{setUploadSuccessRows([]);setScannerSection('ocr');}} client={supabase} reviewerId={user.id}/>
       }
     </div>}
@@ -229,7 +229,7 @@ export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{owne
  </Root>;
 }
 
-function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all'|'ids'|'report'|'history'}){
+function GlobalUniqueIdsPanel({uploads,mode='all',onGoReport}:{uploads:ScanRow[];mode?:'all'|'ids'|'report'|'history';onGoReport?:()=>void}){
  const [revisions,setRevisions]=useState<any[]>([]),[reviewLoading,setReviewLoading]=useState(false);
  const [period,setPeriod]=useState<'today'|'yesterday'|'last7'|'custom'>('today');
  const [startDate,setStartDate]=useState(''),[endDate,setEndDate]=useState('');
@@ -349,7 +349,7 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
  }
  return <section id="scanner-global-unique-panel" className="scanner-panel scanner-global-unique-panel">
   {mode==='all'||mode==='ids'?<>
-  <div className="scanner-section-heading"><span className="scanner-step">✓</span><div><h2>فهرست نهایی و یکتای Plato IDها</h2><p>فقط آخرین نسخه بازبینی و تأییدشده هر تصویر در فهرست اصلی محاسبه می‌شود؛ موارد OCR تأییدنشده وارد فهرست و تلگرام نمی‌شوند.</p></div></div>
+  <div className="scanner-section-heading scanner-ids-heading"><span className="scanner-step">✓</span><div><h2>فهرست نهایی و یکتای Plato IDها</h2><p>فقط آخرین نسخه بازبینی و تأییدشده هر تصویر در فهرست اصلی محاسبه می‌شود؛ موارد OCR تأییدنشده وارد فهرست و تلگرام نمی‌شوند.</p></div><button type="button" className="scanner-primary scanner-ids-report-shortcut" onClick={onGoReport}>↗ ارسال گزارش Excel و تلگرام</button></div>
   <div className="scanner-report-stats">
    <div><strong>{audit.total_occurrences}</strong><small>کل IDهای تأییدشده</small></div>
    <div><strong>{audit.unique_count}</strong><small>ID یکتای تجمیعی</small></div>
