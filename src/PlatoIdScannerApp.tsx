@@ -333,13 +333,12 @@ function GlobalUniqueIdsPanel({uploads,mode='all',onGoReport}:{uploads:ScanRow[]
   if(reportBusy)return;
   if(period==='custom'&&(!startDate||!endDate||startDate>endDate)){setReportMessage('برای بازه دلخواه، تاریخ شروع و پایان معتبر را انتخاب کن.');return;}
   if(action==='send'&&(!preview?.preview)){setReportMessage('ابتدا پیش‌نمایش همین بازه را تهیه و بررسی کن.');return;}
-  if(action==='send'&&(preview?.duplicate_count||0)>0&&!duplicateReviewed){setReportMessage('ابتدا موارد تکراری دقیق را بررسی و تأیید کن.');return;}
   if(action==='send'&&!window.confirm(includeExcel?'گزارش گروه‌بندی‌شده بازه انتخابی همراه فایل Excel به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.':'گزارش گروه‌بندی‌شده بازه انتخابی به گروه آزمایشی تلگرام ارسال شود؟ این ارسال یک نسخه جدید در تاریخچه ایجاد می‌کند.'))return;
   setReportBusy(true);setReportMessage('');
   try{
    const body:any={action,period};
    if(period==='custom'){body.start_date=startDate;body.end_date=endDate;}
-   if(action==='send'){body.request_id=crypto.randomUUID();body.confirm_exact_duplicates=duplicateReviewed;body.preview_fingerprint=preview.fingerprint;body.include_excel=includeExcel;}
+   if(action==='send'){body.request_id=crypto.randomUUID();body.preview_fingerprint=preview.fingerprint;body.include_excel=includeExcel;}
    const {data,error}=await supabase.functions.invoke('plato-id-scanner-telegram-report',{body});
    if(error)throw error;
    if(action==='preview'){setPreview(data);setDuplicateReviewed(false);setReportMessage('پیش‌نمایش آماده شد؛ هنوز هیچ پیامی ارسال نشده است.');}
@@ -397,9 +396,9 @@ function GlobalUniqueIdsPanel({uploads,mode='all',onGoReport}:{uploads:ScanRow[]
    <label>بازه گزارش<select value={period} onChange={e=>{setPeriod(e.target.value as any);setPreview(null);setDuplicateReviewed(false);setReportMessage('');}}>
     <option value="today">امروز</option><option value="yesterday">دیروز</option><option value="last7">هفت روز اخیر (بازه شناور)</option><option value="custom">بازه دلخواه</option>
    </select></label>
-   {period==='custom'&&<div className="scanner-report-date-range">
-    <label>از تاریخ<input type="date" value={startDate} onChange={e=>{setStartDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/></label>
-    <label>تا تاریخ<input type="date" value={endDate} onChange={e=>{setEndDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/></label>
+   {period==='custom'&&<div className="scanner-report-date-range scanner-jalali-range">
+    <label>از تاریخ<input type="date" lang="fa-IR" value={startDate} onChange={e=>{setStartDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/><small>{startDate?new Intl.DateTimeFormat('fa-IR-u-ca-persian',{dateStyle:'full',timeZone:'UTC'}).format(new Date(startDate+'T12:00:00Z')):'تاریخ شروع بازه'}</small></label>
+    <label>تا تاریخ<input type="date" lang="fa-IR" value={endDate} onChange={e=>{setEndDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/><small>{endDate?new Intl.DateTimeFormat('fa-IR-u-ca-persian',{dateStyle:'full',timeZone:'UTC'}).format(new Date(endDate+'T12:00:00Z')):'تاریخ پایان بازه'}</small></label>
    </div>}
    <label className="scanner-duplicate-confirm"><input type="checkbox" checked={includeExcel} onChange={e=>setIncludeExcel(e.target.checked)}/> پیوست اختیاری فایل Excel (.xlsx) شامل خلاصه و یک برگه جداگانه برای هر روز</label>
    <div className="scanner-actions">
