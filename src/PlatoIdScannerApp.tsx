@@ -365,7 +365,12 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
     {audit.accepted_ids.length?<div className="scanner-global-id-list" dir="ltr">{audit.accepted_ids.map((id,index)=><span key={id+'-'+index}>{id}</span>)}</div>:<div className="scanner-empty-state">هنوز فهرست تأییدشده‌ای وجود ندارد.</div>}
     {audit.duplicates.length>0&&<details className="scanner-review-history"><summary>مشاهده {audit.duplicates.length} مورد تکراری و منبع آن‌ها</summary><div className="scanner-report-id-list" dir="ltr">{audit.duplicates.map((item,index)=><div key={item.scan_id+'-'+item.candidate_index+'-'+index}><strong>{item.raw_value}</strong><small>تصویر تکراری: {names.get(item.scan_id)||item.scan_id} · اولین مورد: {names.get(item.duplicate_of_scan_id)||item.duplicate_of_scan_id}</small></div>)}</div></details>}
    </>:visiblePeriodicGroups.length?<>
-    <div className="scanner-period-list">{visiblePeriodicGroups.map(group=><button type="button" key={group.key} className={'scanner-period-item'+(selectedPeriodicGroup?.key===group.key?' active':'')} onClick={()=>setSelectedIdsPeriodKey(group.key)}><strong>{group.label}</strong><span>{group.rows.length} تصویر · {group.ids.size} آیدی یکتا · {group.duplicateCount} تکراری در همان روز</span></button>)}</div>
+    <div className="scanner-period-picker">
+     <label htmlFor="scanner-period-select">{idsPeriod==='daily'?'انتخاب روز':idsPeriod==='weekly'?'انتخاب هفته':'انتخاب ماه'}</label>
+     <select id="scanner-period-select" value={selectedPeriodicGroup?.key||''} onChange={event=>setSelectedIdsPeriodKey(event.target.value)}>
+      {visiblePeriodicGroups.map(group=><option key={group.key} value={group.key}>{group.label} — {group.rows.length} تصویر · {group.ids.size} آیدی یکتا</option>)}
+     </select>
+    </div>
     {selectedPeriodicGroup&&<div className="scanner-period-detail">
      <div className="scanner-period-detail-heading"><h3>{selectedPeriodicGroup.label}</h3><small>{selectedPeriodicGroup.rows.length} تصویر تأییدشده · {selectedPeriodicGroup.ids.size} آیدی یکتا در این دوره · {selectedPeriodicGroup.duplicateCount} تکراری دقیق در روزهای این دوره</small></div>
      <div className="scanner-period-sources">{selectedPeriodicGroup.rows.slice().sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(row=><div key={row.id}><strong>{row.file_name}</strong><small>{new Date(row.created_at).toLocaleString('fa-IR',{timeZone:'Asia/Tehran'})} · نسخه تأییدشده {latestByScan.get(row.id)?.revision}</small></div>)}</div>
