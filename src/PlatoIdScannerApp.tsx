@@ -375,7 +375,7 @@ function ScannerWorkspaceView({view,setView,onGoArchive,sectionMode='all',archiv
    <div className="scanner-section-heading"><span className="scanner-step">▤</span><div><h2>آرشیو اسکن‌ها</h2><p>سوابق را بر اساس روز انتخاب کن و نتیجه هر تصویر را دوباره ببین.</p></div></div>
    <label className="scanner-archive-filter">انتخاب روز<select value={archiveDate} onChange={(e:any)=>setArchiveDate(e.target.value)}><option value="all">همه روزها</option>{archiveDays.map((d:string)=><option value={d} key={d}>{d.replace(/\d/g,n=>'۰۱۲۳۴۵۶۷۸۹'[Number(n)])}</option>)}</select></label>
    <div className="scanner-archive-summary"><strong>{archiveRows.length}</strong><span>تصویر در این فهرست</span></div>
-   <UploadList rows={archiveRows} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated}/>
+   <ScannerArchiveList rows={archiveRows} client={client} reviewerId={reviewerId} onDelete={onDelete}/>
   </section>:null}
  </div>;
 }
@@ -418,6 +418,104 @@ function ScannerOcrQueue({rows,client,reviewerId,onDelete,onScanUpdated,onReview
     :<div className="scanner-empty-state"><strong>{rows.length?'همه تصاویر این صف تأیید نهایی شده‌اند':'تصویری برای پردازش یا بازبینی وجود ندارد'}</strong><small>{rows.length?'برای مشاهده دوباره تصاویر، دیدن گزارش هر تصویر یا اصلاح مجدد آن، به آرشیو تصاویر مراجعه کن.':'تصویر جدید را از بخش آپلود اضافه کن؛ OCR به‌صورت خودکار اجرا نمی‌شود.'}</small>{rows.length>0&&<button type="button" className="scanner-primary" onClick={onGoArchive}>رفتن به آرشیو تصاویر ←</button>}</div>}
    </>}
  </section>;
+}
+function ScannerArchiveList({rows,client,reviewerId,onDelete}:{rows:ScanRow[];client:any;reviewerId:string;onDelete:(row:ScanRow)=>void}){
+ if(!rows.length)return <div className="scanner-empty-state"><strong>تصویری در این بازه وجود ندارد</strong><small>با انتخاب روز دیگر یا «همه روزها» سوابق را بررسی کن.</small></div>;
+ return <div className="scanner-archive-grid">{rows.map(row=><ScannerArchiveCard key={row.id} row={row} client={client} reviewerId={reviewerId} onDelete={onDelete}/>)}</div>;
+}
+function ScannerArchiveCard({row,client,reviewerId,onDelete}:{row:ScanRow;client:any;reviewerId:string;onDelete:(row:ScanRow)=>void}){
+ const [history,setHistory]=useState<any[]>([]),[imageUrl,setImageUrl]=useState(''),[loading,setLoading]=useState(true),[error,setError]=useState('');
+ const [editing,setEditing]=useState(false),[draft,setDraft]=useState(''),[note,setNote]=useState(''),[saving,setSaving]=useState(false),[message,setMessage]=useState('');
+ const [expanded,setExpanded]=useState(false);
+ useEffect(()=>{
+  if(!expanded||history.length||imageUrl)return;
+  let alive=true;
+  (async()=>{
+   setLoading(true);setError('');
+   try{
+    const revisions=await loadScannerReviewRevisions(client,row.id);
+    if(!alive)return;
+    setHistory(revisions);
+    setDraft(scannerReviewText(revisions.at(-1)?.canonical_ids??row.ocr_result?.ids??[]));
+    const signed=await client.storage.from(BUCKET).createSignedUrl(row.storage_path,3600);
+    if(!alive)return;
+    if(signed.error)throw signed.error;
+    setImageUrl(signed.data?.signedUrl||'');
+   }catch(e:any){if(alive)setError(e?.message||'بارگذاری جزئیات تصویر ناموفق بود.');}
+   finally{if(alive)setLoading(false);}
+  })();
+  return()=>{alive=false;};
+ },[client,row.id,row.storage_path,expanded,history.length,imageUrl]);
+ const latest=history.at(-1);
+ const finalIds=latest?.canonical_ids??[];
+ const ocrIds=Array.isArray(row.ocr_result?.ids)?row.ocr_result.ids:[];
+ const audit=row.ocr_result?.duplicate_audit;
+ const statusLabel=latest?'تأیید نهایی · نسخه '+latest.revision:row.ocr_result?.outcome==='succeeded'?'OCR انجام شده · بازبینی ثبت نشده':row.status==='uploaded'?'هنوز OCR اجرا نشده':row.status==='queued'?'در صف OCR':row.status==='failed'?'پردازش ناموفق':'وضعیت: '+row.status;
+ async function saveRevision(){
+  if(saving||!draft.trim())return;
+  setSaving(true);setError('');setMessage('');
+  try{
+   const ids=parseScannerReviewDraft(draft);
+   const saved=await appendScannerReviewRevision(client,{scanId:row.id,ids,reviewerId,note});
+   setHistory(prev=>[...prev,saved]);setDraft(scannerReviewText(saved.canonical_ids));setNote('');setEditing(false);
+   setMessage('نسخه اصلاح‌شده با موفقیت در تاریخچه آرشیو ثبت شد.');
+  }catch(e:any){setError(e?.message||'ثبت نسخه اصلاح‌شده ناموفق بود.');}
+  finally{setSaving(false);}
+ }
+ const dateLabel=new Intl.DateTimeFormat('fa-IR',{dateStyle:'full',timeStyle:'short',timeZone:'Asia/Tehran'}).format(new Date(row.created_at));
+ return <article className={'scanner-archive-card'+(expanded?' is-expanded':'')}>
+  <button type="button" className="scanner-archive-card-trigger" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>
+   <span className="scanner-archive-thumb">{imageUrl?<img src={imageUrl} alt=""/>:<span>▧</span>}</span>
+   <span className="scanner-archive-card-title"><strong>{row.file_name}</strong><small>{dateLabel}</small><small>{(row.file_size/1024/1024).toFixed(2)} MB · {finalIds.length||ocrIds.length} شناسه {latest?'تأییدشده':'استخراج‌شده'}</small></span>
+   <span className="scanner-archive-card-state">{statusLabel}</span>
+   <span className="scanner-archive-chevron">{expanded?'−':'+'}</span>
+  </button>
+  {expanded&&<div className="scanner-archive-detail">
+   {loading?<div className="scanner-empty-state">در حال بارگذاری تصویر و سوابق…</div>:<>
+    {error&&<p className="scanner-review-error" role="alert">{error}</p>}
+    {imageUrl?<a className="scanner-archive-original" href={imageUrl} target="_blank" rel="noreferrer"><img src={imageUrl} alt={'تصویر اصلی '+row.file_name}/><span>نمایش تصویر اصلی در اندازه کامل ↗</span></a>:<div className="scanner-empty-state">تصویر اصلی در حال حاضر قابل دریافت نیست.</div>}
+    <section className="scanner-archive-detail-section">
+     <div className="scanner-archive-detail-heading"><strong>آیدی‌های نهایی تصویر</strong><span>{finalIds.length} مورد</span></div>
+     {latest&&finalIds.length?<div className="scanner-archive-id-list" dir="ltr">{finalIds.map((id:string,index:number)=><span key={row.id+'-final-'+index}>{id}</span>)}</div>:<p className="scanner-empty">برای این تصویر هنوز نسخه تأیید نهایی ثبت نشده است.</p>}
+     {latest&&<small className="scanner-archive-muted">آخرین تأیید: نسخه {latest.revision} · {new Date(latest.reviewed_at).toLocaleString('fa-IR')}</small>}
+    </section>
+    <details className="scanner-archive-report">
+     <summary>گزارش این تصویر</summary>
+     <div className="scanner-archive-report-body">
+      <div className="scanner-archive-report-stats">
+       <div><strong>{ocrIds.length}</strong><small>ID استخراج‌شده توسط OCR</small></div>
+       <div><strong>{finalIds.length}</strong><small>ID نهایی تأییدشده</small></div>
+       <div><strong>{audit?.duplicate_count??0}</strong><small>تکراری دقیق گزارش‌شده</small></div>
+      </div>
+      <p><b>وضعیت OCR:</b> {row.ocr_result?.outcome==='succeeded'?'موفق':row.ocr_result?.outcome==='failed'?'ناموفق':'ثبت نشده یا نامشخص'}</p>
+      {ocrIds.length>0&&<><b>خروجی اولیه OCR</b><div className="scanner-archive-id-list" dir="ltr">{ocrIds.map((id:string,index:number)=><span key={row.id+'-ocr-'+index}>{String(id)}</span>)}</div></>}
+      {audit&&<p>کل موارد: {audit.total_occurrences??'—'} · شناسه یکتا: {audit.unique_count??'—'} · تکراری دقیق: {audit.duplicate_count??'—'}</p>}
+      <p><b>زمان آپلود:</b> {dateLabel}</p><p><b>وضعیت پرونده:</b> {row.status}</p>
+      <details className="scanner-archive-raw-report"><summary>جزئیات کامل داده گزارش OCR</summary><pre dir="ltr">{JSON.stringify(row.ocr_result??{},null,2)}</pre></details>
+     </div>
+    </details>
+    <details className="scanner-archive-history">
+     <summary>تاریخچه اصلاحات ({history.length} نسخه)</summary>
+     {history.length?<div className="scanner-archive-history-list">{history.map(item=><article className="scanner-archive-revision" key={item.id}>
+      <div><strong>نسخه {item.revision}</strong><small>{new Date(item.reviewed_at).toLocaleString('fa-IR')}</small></div>
+      <p dir="ltr">{(item.canonical_ids||[]).join(' · ')||'بدون ID'}</p>
+      {item.note&&<small>یادداشت: {item.note}</small>}<small>ثبت‌کننده: {item.reviewer_id}</small>
+     </article>)}</div>:<p className="scanner-empty">هنوز نسخه بازبینی ثبت نشده است.</p>}
+    </details>
+    <section className="scanner-archive-edit">
+     {!editing?<button type="button" className="scanner-primary" onClick={()=>{setDraft(scannerReviewText(latest?.canonical_ids??row.ocr_result?.ids??[]));setEditing(true);setMessage('');}}>اصلاح دستی آیدی‌ها</button>
+      :<div className="scanner-archive-editor">
+       <strong>ثبت نسخه اصلاح‌شده</strong><small>هر Plato ID را در یک خط وارد کن. نسخه‌های قبلی حذف یا بازنویسی نمی‌شوند؛ این تغییر به‌عنوان نسخه جدید ثبت می‌شود.</small>
+       <textarea className="scanner-review-textarea" dir="ltr" spellCheck={false} value={draft} onChange={e=>setDraft(e.target.value)} rows={Math.min(12,Math.max(5,draft.split('\n').length))} placeholder="هر Plato ID در یک خط"/>
+       <input className="scanner-review-note" value={note} onChange={e=>setNote(e.target.value)} placeholder="دلیل یا یادداشت اصلاح (اختیاری)"/>
+       <div className="scanner-archive-edit-actions"><button type="button" className="scanner-ghost" disabled={saving} onClick={()=>{setEditing(false);setDraft(scannerReviewText(latest?.canonical_ids??row.ocr_result?.ids??[]));}}>انصراف</button><button type="button" className="scanner-primary" disabled={saving||!draft.trim()} onClick={()=>void saveRevision()}>{saving?'در حال ثبت…':'ثبت نسخه جدید در آرشیو'}</button></div>
+      </div>}
+     {message&&<p className="scanner-archive-success" role="status">{message}</p>}
+     <button type="button" className="scanner-ghost scanner-delete-button" onClick={()=>onDelete(row)}>حذف تصویر و سوابق آن</button>
+    </section>
+   </>}
+  </div>}
+ </article>;
 }
 function UploadList({rows,client,reviewerId,onDelete,onScanUpdated}:{rows:ScanRow[];client:any;reviewerId:string;onDelete:(row:ScanRow)=>void;onScanUpdated:(row:ScanRow)=>void}){
   if(!rows.length)return <p className="scanner-empty">هنوز تصویری ذخیره نشده است.</p>;
