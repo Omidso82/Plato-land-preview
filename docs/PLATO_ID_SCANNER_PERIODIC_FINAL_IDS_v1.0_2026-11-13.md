@@ -34,6 +34,7 @@ This is an enhancement inside the existing Scanner panel and workspace. No paral
 Changed files:
 - `src/PlatoIdScannerApp.tsx`
 - `src/plato-id-scanner.css`
+- `docs/PLATO_ID_SCANNER_PERIODIC_FINAL_IDS_v1.0_2026-11-13.md`
 
 No database schema or data changes. No changes to OCR dispatch, OCR execution, image storage, RLS, Auth, Telegram delivery, report Edge Functions, or PLATO LAND – Main Website.
 
@@ -43,12 +44,12 @@ No database schema or data changes. No changes to OCR dispatch, OCR execution, i
 - Branch: `feat/scanner-periodic-final-ids`
 - PR: [#154](https://github.com/Omidso82/Plato-land-preview/pull/154)
 - Base: `main`
-- Current head: `7a0388bcabaea1c4c511cbe601b25d0a9dd5a3f4`
+- Current head: `7b7897ef21c830c25b386955d436f5772fd798fd`
 - Merge/deployment: not performed.
 
 ## 5. Verification boundary
 
-At the time of this document, GitHub Actions verification and site build workflows were still in progress. No successful CI or production deployment is claimed. Authenticated iPhone/Safari visual QA remains pending after an approved merge and release.
+The first CI attempt found a TypeScript inference issue in the new grouping loop. It was corrected in commit `7b7897ef21c830c25b386955d436f5772fd798fd`; the corrected head must pass fresh CI before merge. No successful CI or production deployment is claimed. Authenticated iPhone/Safari visual QA remains pending after an approved merge and release.
 
 ## 6. Next steps
 
