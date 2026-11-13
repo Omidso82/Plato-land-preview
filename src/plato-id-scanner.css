@@ -318,3 +318,10 @@
 .scanner-period-sources>div{display:grid;gap:2px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035)}
 .scanner-period-sources strong{font-size:13px;direction:ltr;text-align:left}
 @media(max-width:560px){.scanner-period-tabs{gap:5px}.scanner-period-tabs button{padding:10px 3px;font-size:12px}.scanner-period-item{padding:11px}.scanner-period-detail{padding:10px}}
+
+
+/* Compact period selector: one selectable period, one detail heading */
+.scanner-period-picker{display:grid;gap:7px;margin:12px 0 14px;padding:12px;border:1px solid rgba(205,160,72,.28);border-radius:13px;background:rgba(0,0,0,.12)}
+.scanner-period-picker label{color:#e7c36f;font-size:13px;font-weight:700}
+.scanner-period-picker select{width:100%;min-height:46px;padding:10px 38px 10px 12px;border:1px solid rgba(205,160,72,.42);border-radius:10px;background:#1b1915;color:#f1e6ce;font:inherit;font-size:14px;direction:rtl}
+.scanner-period-picker select:focus{outline:2px solid #d6ad58;outline-offset:2px}
