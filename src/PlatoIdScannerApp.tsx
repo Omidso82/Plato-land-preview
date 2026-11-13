@@ -369,7 +369,7 @@ function ScannerWorkspaceView({view,setView,sectionMode='all',archiveDate,setArc
     <button className="scanner-primary" disabled={!files.length||busy||fileChecking}>{fileChecking?'در حال بررسی…':busy?'در حال ذخیره تصاویر…':'ذخیره تصاویر انتخاب‌شده'}</button>
     {uploadSuccessRows.length>0&&<div className="scanner-upload-success" role="status" aria-live="polite"><div className="scanner-upload-success-heading"><span aria-hidden="true">✓</span><strong>{uploadSuccessRows.length===1?'تصویر با موفقیت ذخیره شد':uploadSuccessRows.length+' تصویر با موفقیت ذخیره شدند'}</strong></div><p>{uploadSuccessRows.map((row:ScanRow)=>row.file_name).join('، ')}</p><small>مرحله بعد: وارد «استخراج و بررسی» شوید و برای تصویر ذخیره‌شده، پردازش OCR را شروع کنید. تصویر هنوز فقط ذخیره شده و OCR خودکار اجرا نشده است.</small><button type="button" className="scanner-primary scanner-upload-next-step" onClick={onContinueToOcr}>رفتن به استخراج و بررسی ←</button></div>}
    </form>}
-   {(sectionMode==='all'||sectionMode==='ocr')&&<ScannerOcrQueue rows={todayRows} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated} onReviewApproved={onReviewApproved}/>}
+   {(sectionMode==='all'||sectionMode==='ocr')&&<ScannerOcrQueue rows={todayRows} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated} onReviewApproved={onReviewApproved} onGoArchive={()=>setView('archive')}/>}
   </div>:null}
   {(sectionMode==='all'||sectionMode==='archive')&&view==='archive'?<section className="scanner-panel scanner-archive-panel">
    <div className="scanner-section-heading"><span className="scanner-step">▤</span><div><h2>آرشیو اسکن‌ها</h2><p>سوابق را بر اساس روز انتخاب کن و نتیجه هر تصویر را دوباره ببین.</p></div></div>
@@ -379,7 +379,7 @@ function ScannerWorkspaceView({view,setView,sectionMode='all',archiveDate,setArc
   </section>:null}
  </div>;
 }
-function ScannerOcrQueue({rows,client,reviewerId,onDelete,onScanUpdated,onReviewApproved}:{rows:ScanRow[];client:any;reviewerId:string;onDelete:(row:ScanRow)=>void;onScanUpdated:(row:ScanRow)=>void;onReviewApproved:(id:string)=>void}){
+function ScannerOcrQueue({rows,client,reviewerId,onDelete,onScanUpdated,onReviewApproved,onGoArchive}:{rows:ScanRow[];client:any;reviewerId:string;onDelete:(row:ScanRow)=>void;onScanUpdated:(row:ScanRow)=>void;onReviewApproved:(id:string)=>void;onGoArchive:()=>void}){
  const [reviewedIds,setReviewedIds]=useState<Set<string>>(new Set());
  const [checking,setChecking]=useState(true);
  const [loadError,setLoadError]=useState('');
@@ -415,7 +415,7 @@ function ScannerOcrQueue({rows,client,reviewerId,onDelete,onScanUpdated,onReview
       <ScannerReviewCard key={current.id} row={current} client={client} reviewerId={reviewerId} onDelete={onDelete} onScanUpdated={onScanUpdated} queueMode onReviewApproved={(id)=>{setReviewedIds(prev=>new Set([...prev,id]));onReviewApproved(id);}}/>
       <p className="scanner-report-disclaimer">تصاویر به‌ترتیب رسیدگی می‌شوند؛ پس از تأیید نهایی، تصویر جاری از صف خارج می‌شود و تصویر بعدی نمایش داده خواهد شد.</p>
      </>
-    :<div className="scanner-empty-state"><strong>{rows.length?'همه تصاویر این صف تأیید نهایی شده‌اند':'تصویری برای پردازش یا بازبینی وجود ندارد'}</strong><small>{rows.length?'تصاویر تأییدشده از صف OCR خارج شده‌اند. برای مشاهده آن‌ها به آرشیو تصاویر برو.':'تصویر جدید را از بخش آپلود اضافه کن؛ OCR به‌صورت خودکار اجرا نمی‌شود.'}</small></div>}
+    :<div className="scanner-empty-state"><strong>{rows.length?'همه تصاویر این صف تأیید نهایی شده‌اند':'تصویری برای پردازش یا بازبینی وجود ندارد'}</strong><small>{rows.length?'برای مشاهده دوباره تصاویر، دیدن گزارش هر تصویر یا اصلاح مجدد آن، به آرشیو تصاویر مراجعه کن.':'تصویر جدید را از بخش آپلود اضافه کن؛ OCR به‌صورت خودکار اجرا نمی‌شود.'}</small>{rows.length>0&&<button type="button" className="scanner-primary" onClick={onGoArchive}>رفتن به آرشیو تصاویر ←</button>}</div>}
    </>}
  </section>;
 }
