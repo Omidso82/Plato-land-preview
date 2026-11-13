@@ -272,6 +272,8 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
  const names=new Map(uploads.map(row=>[row.id,row.file_name]));
  const [idsPeriod,setIdsPeriod]=useState<'daily'|'weekly'|'monthly'|'all'>('daily');
  const [selectedIdsPeriodKey,setSelectedIdsPeriodKey]=useState('');
+ const [isPeriodicDetailOpen,setIsPeriodicDetailOpen]=useState(false);
+ useEffect(()=>{if(!isPeriodicDetailOpen)return;const onKeyDown=(event:KeyboardEvent)=>{if(event.key==='Escape')setIsPeriodicDetailOpen(false);};window.addEventListener('keydown',onKeyDown);return()=>window.removeEventListener('keydown',onKeyDown);},[isPeriodicDetailOpen]);
  const periodicIdGroups=useMemo(()=>{
   const dateFmt=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',calendar:'gregory',numberingSystem:'latn',year:'numeric',month:'2-digit',day:'2-digit'});
   const jalaliFmt=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',year:'numeric',month:'long',day:'numeric'});
@@ -367,15 +369,21 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
    </>:visiblePeriodicGroups.length?<>
     <div className="scanner-period-picker">
      <label htmlFor="scanner-period-select">{idsPeriod==='daily'?'انتخاب روز':idsPeriod==='weekly'?'انتخاب هفته':'انتخاب ماه'}</label>
-     <select id="scanner-period-select" value={selectedPeriodicGroup?.key||''} onChange={event=>setSelectedIdsPeriodKey(event.target.value)}>
+     <select id="scanner-period-select" value={selectedPeriodicGroup?.key||''} onChange={event=>{setSelectedIdsPeriodKey(event.target.value);setIsPeriodicDetailOpen(true);}}>
       {visiblePeriodicGroups.map(group=><option key={group.key} value={group.key}>{group.label} — {group.rows.length} تصویر · {group.ids.size} آیدی یکتا</option>)}
      </select>
     </div>
-    {selectedPeriodicGroup&&<div className="scanner-period-detail">
-     <div className="scanner-period-detail-heading"><h3>{selectedPeriodicGroup.label}</h3><small>{selectedPeriodicGroup.rows.length} تصویر تأییدشده · {selectedPeriodicGroup.ids.size} آیدی یکتا در این دوره · {selectedPeriodicGroup.duplicateCount} تکراری دقیق در روزهای این دوره</small></div>
-     <div className="scanner-period-sources">{selectedPeriodicGroup.rows.slice().sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(row=><div key={row.id}><strong>{row.file_name}</strong><small>{new Date(row.created_at).toLocaleString('fa-IR',{timeZone:'Asia/Tehran'})} · نسخه تأییدشده {latestByScan.get(row.id)?.revision}</small></div>)}</div>
-     <div className="scanner-global-id-list" dir="ltr">{[...selectedPeriodicGroup.ids].sort((a,b)=>a.localeCompare(b)).map(id=><span key={id}>{id}</span>)}</div>
-     {selectedPeriodicGroup.duplicateCount>0&&<details className="scanner-review-history"><summary>مشاهده منبع آیدی‌های تکراری این دوره</summary><div className="scanner-report-id-list" dir="ltr">{[...selectedPeriodicGroup.sources.entries()].filter(([,sourceRows])=>{const counts=new Map<string,number>();sourceRows.forEach(source=>counts.set(source.dayKey,(counts.get(source.dayKey)||0)+1));return [...counts.values()].some(count=>count>1);}).map(([id,sourceRows])=><div key={id}><strong>{id}</strong><small>{sourceRows.map(source=>names.get(source.scan_id)||source.scan_id).join(' · ')}</small></div>)}</div></details>}
+    {isPeriodicDetailOpen&&selectedPeriodicGroup&&<div className="scanner-period-modal-backdrop" role="presentation" onClick={()=>setIsPeriodicDetailOpen(false)}>
+     <section className="scanner-period-modal" role="dialog" aria-modal="true" aria-labelledby="scanner-period-modal-title" dir="rtl" onClick={event=>event.stopPropagation()}>
+      <div className="scanner-period-modal-top"><h3 id="scanner-period-modal-title">{selectedPeriodicGroup.label}</h3><button type="button" onClick={()=>setIsPeriodicDetailOpen(false)} aria-label="بستن جزئیات">×</button></div>
+      <div className="scanner-period-detail">
+       <div className="scanner-period-detail-heading"><small>{selectedPeriodicGroup.rows.length} تصویر تأییدشده · {selectedPeriodicGroup.ids.size} آیدی یکتا در این دوره · {selectedPeriodicGroup.duplicateCount} تکراری دقیق در روزهای این دوره</small></div>
+       <div className="scanner-period-sources">{selectedPeriodicGroup.rows.slice().sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(row=><div key={row.id}><strong>{row.file_name}</strong><small>{new Date(row.created_at).toLocaleString('fa-IR',{timeZone:'Asia/Tehran'})} · نسخه تأییدشده {latestByScan.get(row.id)?.revision}</small></div>)}</div>
+       <div className="scanner-global-id-list" dir="ltr">{[...selectedPeriodicGroup.ids].sort((a,b)=>a.localeCompare(b)).map(id=><span key={id}>{id}</span>)}</div>
+       {selectedPeriodicGroup.duplicateCount>0&&<details className="scanner-review-history"><summary>مشاهده منبع آیدی‌های تکراری این دوره</summary><div className="scanner-report-id-list" dir="ltr">{[...selectedPeriodicGroup.sources.entries()].filter(([,sourceRows])=>{const counts=new Map<string,number>();sourceRows.forEach(source=>counts.set(source.dayKey,(counts.get(source.dayKey)||0)+1));return [...counts.values()].some(count=>count>1);}).map(([id,sourceRows])=><div key={id}><strong>{id}</strong><small>{sourceRows.map(source=>names.get(source.scan_id)||source.scan_id).join(' · ')}</small></div>)}</div></details>}
+      </div>
+      <button type="button" className="scanner-period-modal-back" onClick={()=>setIsPeriodicDetailOpen(false)}>بازگشت به فهرست {idsPeriod==='daily'?'روزها':idsPeriod==='weekly'?'هفته‌ها':'ماه‌ها'}</button>
+     </section>
     </div>}
    </>:<div className="scanner-empty-state"><strong>برای این دوره تصویری تأییدشده وجود ندارد</strong><small>پس از تأیید تصاویر، گزارش این دوره به‌صورت خودکار در اینجا ظاهر می‌شود.</small></div>}
   </>}
