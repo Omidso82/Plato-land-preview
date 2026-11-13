@@ -297,3 +297,24 @@
 .scanner-archive-raw-report{display:grid;gap:8px;padding-top:8px;border-top:1px solid #393126}
 .scanner-archive-raw-report>summary{color:#c9b887;font-size:10px;cursor:pointer}
 .scanner-archive-raw-report pre{max-height:360px;overflow:auto;margin:0;padding:10px;border:1px solid #393126;border-radius:8px;background:#080808;color:#d8cfbd;font:10px/1.7 ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap;overflow-wrap:anywhere;text-align:left}
+
+
+/* Period-based final Plato ID archive */
+.scanner-period-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:18px 0 14px}
+.scanner-period-tabs button,.scanner-period-item{border:1px solid rgba(205,160,72,.35);border-radius:13px;background:#1b1915;color:#e9d8ad;padding:12px 9px;font:inherit;cursor:pointer}
+.scanner-period-tabs button.active,.scanner-period-item.active{background:#302719;border-color:#d6ad58;box-shadow:inset 0 0 0 1px rgba(214,173,88,.25)}
+.scanner-period-list{display:grid;gap:9px;margin:12px 0}
+.scanner-period-item{display:flex;flex-direction:column;align-items:flex-start;gap:5px;text-align:right;width:100%}
+.scanner-period-item strong{font-size:14px}
+.scanner-period-item span,.scanner-period-detail small,.scanner-period-sources small{color:#b5a78d;font-size:12px;line-height:1.8}
+.scanner-period-summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px;border:1px solid rgba(205,160,72,.3);border-radius:14px;margin:12px 0}
+.scanner-period-summary strong{font-size:28px;color:#e7c36f}
+.scanner-period-summary span{font-weight:700}
+.scanner-period-summary small{width:100%;color:#b5a78d}
+.scanner-period-detail{border:1px solid rgba(205,160,72,.28);border-radius:15px;padding:14px;margin-top:14px;background:rgba(0,0,0,.12)}
+.scanner-period-detail-heading{display:grid;gap:5px;margin-bottom:12px}
+.scanner-period-detail-heading h3{margin:0;color:#e7c36f;font-size:17px}
+.scanner-period-sources{display:grid;gap:7px;margin:12px 0}
+.scanner-period-sources>div{display:grid;gap:2px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035)}
+.scanner-period-sources strong{font-size:13px;direction:ltr;text-align:left}
+@media(max-width:560px){.scanner-period-tabs{gap:5px}.scanner-period-tabs button{padding:10px 3px;font-size:12px}.scanner-period-item{padding:11px}.scanner-period-detail{padding:10px}}

@@ -270,6 +270,52 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
   return auditScannerBatchDuplicates(scans);
  },[uploads,latestByScan]);
  const names=new Map(uploads.map(row=>[row.id,row.file_name]));
+ const [idsPeriod,setIdsPeriod]=useState<'daily'|'weekly'|'monthly'|'all'>('daily');
+ const [selectedIdsPeriodKey,setSelectedIdsPeriodKey]=useState('');
+ const periodicIdGroups=useMemo(()=>{
+  const dateFmt=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Tehran',calendar:'gregory',numberingSystem:'latn',year:'numeric',month:'2-digit',day:'2-digit'});
+  const jalaliFmt=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',year:'numeric',month:'long',day:'numeric'});
+  const monthFmt=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',year:'numeric',month:'long'});
+  const groups=new Map<string,{key:string;label:string;sort:number;rows:ScanRow[];ids:Set<string>;sources:Map<string,{scan_id:string;dayKey:string}[]>;duplicateCount:number}>();
+  const latestRows=[...uploads].filter(row=>latestByScan.has(row.id));
+  for(const row of latestRows){
+   const instant=new Date(row.created_at);
+   if(!Number.isFinite(instant.getTime()))continue;
+   const parts=Object.fromEntries(dateFmt.formatToParts(instant).filter(p=>p.type!=='literal').map(p=>[p.type,p.value]));
+   const y=Number(parts.year),m=Number(parts.month),d=Number(parts.day);
+   const dayStart=Date.UTC(y,m-1,d);
+   const localDate=new Date(dayStart);
+   const dayKey=jalaliFmt.format(instant).replace(/،/g,' ').trim();
+   const weekday=localDate.getUTCDay(),saturdayOffset=(weekday+1)%7;
+   const weekStart=new Date(dayStart-saturdayOffset*86400000),weekEnd=new Date(weekStart.getTime()+6*86400000);
+   const weekLabel=jalaliFmt.format(new Date(weekStart.getTime()+12*3600000))+' تا '+jalaliFmt.format(new Date(weekEnd.getTime()+12*3600000));
+   const monthKey=monthFmt.format(instant).replace(/،/g,' ').trim();
+   const keys=[['daily',dayKey,dayKey,dayStart],['weekly',weekLabel,weekLabel,weekStart.getTime()],['monthly',monthKey,monthKey,Date.UTC(y,m-1,1)]] as const;
+   const ids=(latestByScan.get(row.id)?.canonical_ids||[]).filter((id:unknown):id is string=>typeof id==='string'&&id.length>0);
+   for(const [kind,key,label,sort] of keys){
+    const mapKey=kind+':'+key;
+    let group=groups.get(mapKey);
+    if(!group){group={key:mapKey,label,sort,rows:[],ids:new Set<string>(),sources:new Map<string,{scan_id:string;dayKey:string}[]>(),duplicateCount:0};groups.set(mapKey,group);}
+    group.rows.push(row);
+    for(const id of new Set<string>(ids)){
+     group.ids.add(id);
+     const sourceList=group.sources.get(id)||[];
+     sourceList.push({scan_id:row.id,dayKey});
+     group.sources.set(id,sourceList);
+    }
+   }
+  }
+  for(const group of groups.values()){
+   group.duplicateCount=[...group.sources.values()].reduce((sum,sourceRows)=>{
+    const perDay=new Map<string,number>();
+    for(const source of sourceRows)perDay.set(source.dayKey,(perDay.get(source.dayKey)||0)+1);
+    return sum+[...perDay.values()].reduce((daySum,count)=>daySum+Math.max(0,count-1),0);
+   },0);
+  }
+  return [...groups.values()].sort((a,b)=>b.sort-a.sort||a.key.localeCompare(b.key));
+ },[uploads,latestByScan]);
+ const visiblePeriodicGroups=idsPeriod==='all'?[]:periodicIdGroups.filter(group=>group.key.startsWith(idsPeriod+':'));
+ const selectedPeriodicGroup=visiblePeriodicGroups.find(group=>group.key===selectedIdsPeriodKey)||visiblePeriodicGroups[0]||null;
  async function loadDeliveryHistory(){
   if(!supabase||historyLoading)return;
   setHistoryLoading(true);
@@ -307,15 +353,27 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
    <div><strong>{audit.duplicate_count}</strong><small>تکراری دقیق</small></div>
    <div><strong>{uploads.filter(x=>x.ocr_result?.outcome==='succeeded'&&!latestByScan.has(x.id)).length}</strong><small>تصویر منتظر بازبینی</small></div>
   </div>
-  {reviewLoading?<div className="scanner-empty-state">در حال بارگذاری آخرین نسخه‌های بازبینی…</div>:audit.accepted_ids.length
-   ? <div className="scanner-global-id-list" dir="ltr">{audit.accepted_ids.map((id,index)=><span key={id+'-'+index}>{id}</span>)}</div>
-   : <div className="scanner-empty-state"><strong>هنوز فهرست تأییدشده‌ای وجود ندارد</strong><small>پس از OCR، شناسه‌ها را با تصویر تطبیق بده و نسخه بازبینی را ثبت کن.</small></div>}
-  {audit.duplicates.length>0&&<details className="scanner-review-history">
-   <summary>مشاهده {audit.duplicates.length} مورد تکراری و منبع آن‌ها</summary>
-   <div className="scanner-report-id-list" dir="ltr">{audit.duplicates.map((item,index)=><div key={item.scan_id+'-'+item.candidate_index+'-'+index}>
-    <strong>{item.raw_value}</strong><small>تصویر تکراری: {names.get(item.scan_id)||item.scan_id} · اولین مورد: {names.get(item.duplicate_of_scan_id)||item.duplicate_of_scan_id}</small>
-   </div>)}</div>
-  </details>}
+  {reviewLoading?<div className="scanner-empty-state">در حال بارگذاری آخرین نسخه‌های بازبینی…</div>:<>
+   <div className="scanner-period-tabs" role="tablist" aria-label="دوره فهرست نهایی آیدی‌ها">
+    <button type="button" className={idsPeriod==='daily'?'active':''} onClick={()=>{setIdsPeriod('daily');setSelectedIdsPeriodKey('');}}>روزانه</button>
+    <button type="button" className={idsPeriod==='weekly'?'active':''} onClick={()=>{setIdsPeriod('weekly');setSelectedIdsPeriodKey('');}}>هفتگی</button>
+    <button type="button" className={idsPeriod==='monthly'?'active':''} onClick={()=>{setIdsPeriod('monthly');setSelectedIdsPeriodKey('');}}>ماهانه</button>
+    <button type="button" className={idsPeriod==='all'?'active':''} onClick={()=>{setIdsPeriod('all');setSelectedIdsPeriodKey('');}}>کل تاریخچه</button>
+   </div>
+   {idsPeriod==='all'?<>
+    <div className="scanner-period-summary"><strong>{audit.unique_count}</strong><span>آیدی یکتای کل تاریخچه</span><small>{audit.total_occurrences} مورد تأییدشده · {audit.duplicate_count} تکراری دقیق</small></div>
+    {audit.accepted_ids.length?<div className="scanner-global-id-list" dir="ltr">{audit.accepted_ids.map((id,index)=><span key={id+'-'+index}>{id}</span>)}</div>:<div className="scanner-empty-state">هنوز فهرست تأییدشده‌ای وجود ندارد.</div>}
+    {audit.duplicates.length>0&&<details className="scanner-review-history"><summary>مشاهده {audit.duplicates.length} مورد تکراری و منبع آن‌ها</summary><div className="scanner-report-id-list" dir="ltr">{audit.duplicates.map((item,index)=><div key={item.scan_id+'-'+item.candidate_index+'-'+index}><strong>{item.raw_value}</strong><small>تصویر تکراری: {names.get(item.scan_id)||item.scan_id} · اولین مورد: {names.get(item.duplicate_of_scan_id)||item.duplicate_of_scan_id}</small></div>)}</div></details>}
+   </>:visiblePeriodicGroups.length?<>
+    <div className="scanner-period-list">{visiblePeriodicGroups.map(group=><button type="button" key={group.key} className={'scanner-period-item'+(selectedPeriodicGroup?.key===group.key?' active':'')} onClick={()=>setSelectedIdsPeriodKey(group.key)}><strong>{group.label}</strong><span>{group.rows.length} تصویر · {group.ids.size} آیدی یکتا · {group.duplicateCount} تکراری در همان روز</span></button>)}</div>
+    {selectedPeriodicGroup&&<div className="scanner-period-detail">
+     <div className="scanner-period-detail-heading"><h3>{selectedPeriodicGroup.label}</h3><small>{selectedPeriodicGroup.rows.length} تصویر تأییدشده · {selectedPeriodicGroup.ids.size} آیدی یکتا در این دوره · {selectedPeriodicGroup.duplicateCount} تکراری دقیق در روزهای این دوره</small></div>
+     <div className="scanner-period-sources">{selectedPeriodicGroup.rows.slice().sort((a,b)=>a.created_at.localeCompare(b.created_at)).map(row=><div key={row.id}><strong>{row.file_name}</strong><small>{new Date(row.created_at).toLocaleString('fa-IR',{timeZone:'Asia/Tehran'})} · نسخه تأییدشده {latestByScan.get(row.id)?.revision}</small></div>)}</div>
+     <div className="scanner-global-id-list" dir="ltr">{[...selectedPeriodicGroup.ids].sort((a,b)=>a.localeCompare(b)).map(id=><span key={id}>{id}</span>)}</div>
+     {selectedPeriodicGroup.duplicateCount>0&&<details className="scanner-review-history"><summary>مشاهده منبع آیدی‌های تکراری این دوره</summary><div className="scanner-report-id-list" dir="ltr">{[...selectedPeriodicGroup.sources.entries()].filter(([,sourceRows])=>{const counts=new Map<string,number>();sourceRows.forEach(source=>counts.set(source.dayKey,(counts.get(source.dayKey)||0)+1));return [...counts.values()].some(count=>count>1);}).map(([id,sourceRows])=><div key={id}><strong>{id}</strong><small>{sourceRows.map(source=>names.get(source.scan_id)||source.scan_id).join(' · ')}</small></div>)}</div></details>}
+    </div>}
+   </>:<div className="scanner-empty-state"><strong>برای این دوره تصویری تأییدشده وجود ندارد</strong><small>پس از تأیید تصاویر، گزارش این دوره به‌صورت خودکار در اینجا ظاهر می‌شود.</small></div>}
+  </>}
   </>:null}
   {mode==='all'||mode==='report'?<>
   <div id="scanner-telegram-report" className="scanner-telegram-report">
