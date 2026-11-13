@@ -371,6 +371,7 @@ function GlobalUniqueIdsPanel({uploads,mode='all'}:{uploads:ScanRow[];mode?:'all
     <div className="scanner-period-picker">
      <label htmlFor="scanner-period-select">{idsPeriod==='daily'?'انتخاب روز':idsPeriod==='weekly'?'انتخاب هفته':'انتخاب ماه'}</label>
      <select id="scanner-period-select" value={selectedPeriodicGroup?.key||''} onChange={event=>{setSelectedIdsPeriodKey(event.target.value);setIsPeriodicDetailOpen(true);}}>
+      <option value="" disabled>برای مشاهده جزئیات، یک {idsPeriod==='daily'?'روز':idsPeriod==='weekly'?'هفته':'ماه'} انتخاب کنید</option>
       {visiblePeriodicGroups.map(group=><option key={group.key} value={group.key}>{group.label} — {group.rows.length} تصویر · {group.ids.size} آیدی یکتا</option>)}
      </select>
     </div>
