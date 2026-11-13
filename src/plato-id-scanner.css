@@ -337,3 +337,9 @@
 .scanner-period-modal .scanner-period-detail-heading{margin-bottom:12px}
 .scanner-period-modal-back{width:100%;min-height:46px;margin-top:16px;padding:10px 14px;border:1px solid rgba(220,178,91,.55);border-radius:11px;background:rgba(205,160,72,.12);color:#f1d48d;font:inherit;font-weight:700;cursor:pointer}
 @media(max-width:560px){.scanner-period-modal-backdrop{align-items:flex-end;padding:10px}.scanner-period-modal{width:100%;max-height:88dvh;padding:14px;border-radius:17px 17px 12px 12px}.scanner-period-modal-top h3{font-size:16px}}
+
+
+/* Shortcut from the final ID list to the existing Excel/Telegram report card */
+.scanner-ids-heading{flex-wrap:wrap}
+.scanner-ids-report-shortcut{flex:0 0 auto;margin-inline-start:auto;white-space:nowrap}
+@media(max-width:560px){.scanner-ids-report-shortcut{width:100%;margin:8px 0 0;white-space:normal}}
