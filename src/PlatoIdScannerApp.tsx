@@ -41,6 +41,44 @@ async function validateImage(file:File){
   }finally{URL.revokeObjectURL(url);}
 }
 
+
+function ScannerJalaliDatePicker({label,value,onChange}:{label:string;value:string;onChange:(value:string)=>void}){
+ const [open,setOpen]=useState(false);
+ const [viewDate,setViewDate]=useState(()=>value?new Date(value+'T12:00:00Z'):new Date());
+ const fmt=new Intl.DateTimeFormat('en-US-u-ca-persian-nu-latn',{timeZone:'UTC',year:'numeric',month:'numeric',day:'numeric'});
+ const parts=(date:Date)=>{const p=fmt.formatToParts(date);return {year:Number(p.find(x=>x.type==='year')?.value),month:Number(p.find(x=>x.type==='month')?.value),day:Number(p.find(x=>x.type==='day')?.value)};};
+ const iso=(date:Date)=>date.toISOString().slice(0,10);
+ const selected=value?new Date(value+'T12:00:00Z'):null;
+ const current=parts(viewDate);
+ const first=new Date(viewDate.getTime());
+ first.setUTCHours(12,0,0,0);
+ for(let i=0;i<32;i++){const p=parts(first);if(p.year===current.year&&p.month===current.month&&p.day===1)break;first.setUTCDate(first.getUTCDate()-1);}
+ const offset=(first.getUTCDay()+1)%7;
+ const days=Array.from({length:42},(_,i)=>{const d=new Date(first.getTime());d.setUTCDate(first.getUTCDate()+i-offset);return d;});
+ const monthLabel=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'UTC',year:'numeric',month:'long'}).format(viewDate);
+ const selectedLabel=selected?new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'UTC',dateStyle:'full'}).format(selected):'تاریخی انتخاب نشده';
+ const weekdays=['ش','ی','د','س','چ','پ','ج'];
+ const fa=(n:number)=>new Intl.NumberFormat('fa-IR').format(n);
+ return <div className="scanner-jalali-picker">
+  <span className="scanner-jalali-picker-label">{label}</span>
+  <button type="button" className="scanner-jalali-picker-trigger" aria-expanded={open} onClick={()=>{if(!open&&value)setViewDate(new Date(value+'T12:00:00Z'));setOpen(!open);}}>
+   <span>{selectedLabel}</span><b>{open?'بستن تقویم':'انتخاب تاریخ شمسی'}</b>
+  </button>
+  {open&&<div className="scanner-jalali-calendar" dir="rtl">
+   <div className="scanner-jalali-calendar-head">
+    <button type="button" aria-label="ماه قبل" onClick={()=>{const d=new Date(viewDate);d.setUTCDate(d.getUTCDate()-35);setViewDate(d);}}>‹</button>
+    <strong>{monthLabel}</strong>
+    <button type="button" aria-label="ماه بعد" onClick={()=>{const d=new Date(viewDate);d.setUTCDate(d.getUTCDate()+35);setViewDate(d);}}>›</button>
+   </div>
+   <div className="scanner-jalali-calendar-grid">
+    {weekdays.map((day,i)=><span className="scanner-jalali-weekday" key={i}>{day}</span>)}
+    {days.map((day,i)=>{const p=parts(day);const inMonth=p.year===current.year&&p.month===current.month;const isSelected=value===iso(day);return <button type="button" key={i} disabled={!inMonth} className={(inMonth?'':'outside ')+(isSelected?'selected':'')} onClick={()=>{onChange(iso(day));setOpen(false);}}>{fa(p.day)}</button>;})}
+   </div>
+   <div className="scanner-jalali-calendar-foot"><button type="button" onClick={()=>{const now=new Date();setViewDate(now);onChange(iso(now));setOpen(false);}}>امروز</button><button type="button" onClick={()=>setOpen(false)}>بستن</button></div>
+  </div>}
+ </div>;
+}
+
 export default function PlatoIdScannerApp({ownerMode=false,embedded=false}:{ownerMode?:boolean;embedded?:boolean}){
  const [user,setUser]=useState<any>(null),[loading,setLoading]=useState(true),[email,setEmail]=useState(''),[password,setPassword]=useState('');
  const [mode,setMode]=useState<'login'|'register'>('login'),[message,setMessage]=useState(''),[busy,setBusy]=useState(false),[confirmed,setConfirmed]=useState(false),[owner,setOwner]=useState(false);
@@ -397,8 +435,8 @@ function GlobalUniqueIdsPanel({uploads,mode='all',onGoReport}:{uploads:ScanRow[]
     <option value="today">امروز</option><option value="yesterday">دیروز</option><option value="last7">هفت روز اخیر (بازه شناور)</option><option value="custom">بازه دلخواه</option>
    </select></label>
    {period==='custom'&&<div className="scanner-report-date-range scanner-jalali-range">
-    <label>از تاریخ<input type="date" lang="fa-IR" value={startDate} onChange={e=>{setStartDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/><small>{startDate?new Intl.DateTimeFormat('fa-IR-u-ca-persian',{dateStyle:'full',timeZone:'UTC'}).format(new Date(startDate+'T12:00:00Z')):'تاریخ شروع بازه'}</small></label>
-    <label>تا تاریخ<input type="date" lang="fa-IR" value={endDate} onChange={e=>{setEndDate(e.target.value);setPreview(null);setDuplicateReviewed(false);}}/><small>{endDate?new Intl.DateTimeFormat('fa-IR-u-ca-persian',{dateStyle:'full',timeZone:'UTC'}).format(new Date(endDate+'T12:00:00Z')):'تاریخ پایان بازه'}</small></label>
+    <ScannerJalaliDatePicker label="از تاریخ" value={startDate} onChange={value=>{setStartDate(value);setPreview(null);setDuplicateReviewed(false);}}/>
+    <ScannerJalaliDatePicker label="تا تاریخ" value={endDate} onChange={value=>{setEndDate(value);setPreview(null);setDuplicateReviewed(false);}}/>
    </div>}
    <label className="scanner-duplicate-confirm"><input type="checkbox" checked={includeExcel} onChange={e=>setIncludeExcel(e.target.checked)}/> پیوست اختیاری فایل Excel (.xlsx) شامل خلاصه و یک برگه جداگانه برای هر روز</label>
    <div className="scanner-actions">
