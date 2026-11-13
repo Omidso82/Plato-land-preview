@@ -428,24 +428,24 @@ function ScannerArchiveCard({row,client,reviewerId,onDelete}:{row:ScanRow;client
  const [editing,setEditing]=useState(false),[draft,setDraft]=useState(''),[note,setNote]=useState(''),[saving,setSaving]=useState(false),[message,setMessage]=useState('');
  const [expanded,setExpanded]=useState(false);
  useEffect(()=>{
+  if(!expanded||history.length||imageUrl)return;
   let alive=true;
   (async()=>{
    setLoading(true);setError('');
    try{
-    const [revisions,signed]=await Promise.all([
-     loadScannerReviewRevisions(client,row.id),
-     client.storage.from(BUCKET).createSignedUrl(row.storage_path,3600),
-    ]);
-    if(signed.error)throw signed.error;
+    const revisions=await loadScannerReviewRevisions(client,row.id);
     if(!alive)return;
     setHistory(revisions);
     setDraft(scannerReviewText(revisions.at(-1)?.canonical_ids??row.ocr_result?.ids??[]));
+    const signed=await client.storage.from(BUCKET).createSignedUrl(row.storage_path,3600);
+    if(!alive)return;
+    if(signed.error)throw signed.error;
     setImageUrl(signed.data?.signedUrl||'');
    }catch(e:any){if(alive)setError(e?.message||'بارگذاری جزئیات تصویر ناموفق بود.');}
    finally{if(alive)setLoading(false);}
   })();
   return()=>{alive=false;};
- },[client,row.id,row.storage_path]);
+ },[client,row.id,row.storage_path,expanded,history.length,imageUrl]);
  const latest=history.at(-1);
  const finalIds=latest?.canonical_ids??[];
  const ocrIds=Array.isArray(row.ocr_result?.ids)?row.ocr_result.ids:[];
