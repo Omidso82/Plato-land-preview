@@ -474,3 +474,15 @@ img,video{max-width:100%}
 .competition-section-cards button span{font-size:.78rem;color:var(--muted,#aaa49a)}
 .competition-section-cards button.active{border-color:var(--gold,#d6b35b);background:linear-gradient(145deg,#2b2417,#191919);box-shadow:0 0 0 1px rgba(214,179,91,.18)}
 @media(max-width:600px){.selected-game-banner{grid-template-columns:88px 1fr;gap:12px}.selected-game-banner>.outline-button{grid-column:1/-1;width:100%}.competition-section-cards{gap:7px}.competition-section-cards button{min-height:104px;padding:12px 5px}.competition-section-cards button strong{font-size:.72rem}}
+
+
+/* Temporary PLATO LAND Series 3 homepage entry — isolated and removable */
+.series3-home-cta{position:relative;display:flex;align-items:center;gap:22px;margin:28px 0 34px;padding:24px 28px;border:1px solid rgba(212,170,78,.48);border-radius:22px;background:radial-gradient(ellipse at 8% 50%,rgba(185,139,43,.18),transparent 48%),linear-gradient(120deg,#17140e 0%,#101010 55%,#1a160d 100%);box-shadow:0 14px 38px rgba(0,0,0,.22);overflow:hidden}
+.series3-home-cta:before{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;background:linear-gradient(105deg,transparent 35%,rgba(255,220,140,.055),transparent 70%)}
+.series3-home-emblem{flex:0 0 66px;width:66px;height:66px;display:grid;place-items:center;border:1px solid rgba(226,185,94,.5);border-radius:18px;color:#e7c16e;background:rgba(218,172,79,.09)}
+.series3-home-copy{position:relative;flex:1;min-width:0}
+.series3-home-copy .section-kicker{color:#d9b45d}
+.series3-home-copy h2{margin:5px 0 7px;color:#f6e8c4;font-size:clamp(19px,2.4vw,27px);font-weight:800}
+.series3-home-copy p{margin:0;color:#c8c0ae;line-height:1.9;font-size:14px}
+.series3-home-link{position:relative;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap;text-decoration:none;min-height:46px;padding:0 18px}
+@media(max-width:640px){.series3-home-cta{display:grid;grid-template-columns:54px 1fr;gap:12px;margin:20px 0 26px;padding:18px 16px;border-radius:18px}.series3-home-emblem{width:54px;height:54px;flex-basis:54px;border-radius:15px}.series3-home-emblem svg{width:28px;height:28px}.series3-home-copy h2{font-size:19px}.series3-home-copy p{font-size:13px;line-height:1.8}.series3-home-link{grid-column:1/-1;width:100%;white-space:normal;min-height:48px}}
