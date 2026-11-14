@@ -3,6 +3,7 @@ import {Crown,ChevronLeft,ChevronRight,CheckCircle2} from 'lucide-react';
 import {supabase} from './supabase';
 
 type Slide={number:number,url:string,updated_at:string};
+const TOTAL_RULE_SLIDES=17;
 const fa=(n:number)=>n.toLocaleString('fa-IR');
 const shell:React.CSSProperties={minHeight:'100vh',background:'radial-gradient(ellipse at top,#2a2112 0%,#101114 48%,#08090b 100%)',color:'#f4ead2',padding:'20px 14px 42px',fontFamily:'inherit'};
 const panel:React.CSSProperties={maxWidth:720,margin:'0 auto',padding:16,border:'1px solid #715a31',borderRadius:16,background:'#151516',boxShadow:'0 16px 48px #0007'};
@@ -27,7 +28,7 @@ export default function Series3Registration(){
    if(!active)return;
    if(error){setLoadError('دریافت تصاویر قوانین ناموفق بود. لطفاً صفحه را دوباره بارگذاری کن.');setLoading(false);return;}
    const items=(data||[]).flatMap(item=>{
-    const match=/^(0[1-9]|1[0-8])$/.exec(item.name);
+    const match=/^(0[1-9]|1[0-7])$/.exec(item.name);
     if(!match)return [];
     const number=Number(match[1]);
     return [{number,url:storage.getPublicUrl('slides/'+item.name).data.publicUrl+'?v='+encodeURIComponent(item.updated_at||item.created_at||''),updated_at:item.updated_at||item.created_at||''}];
@@ -39,10 +40,10 @@ export default function Series3Registration(){
   return ()=>{active=false};
  },[]);
  const current=useMemo(()=>slides.find(x=>x.number===step),[slides,step]);
- const missing=18-slides.length;
+ const missing=TOTAL_RULE_SLIDES-slides.length;
  const validId=/^[A-Za-z0-9_]{2,30}$/.test(platoId.trim());
  async function submit(){
-  if(!supabase||busy||!accepted||!validId||slides.length!==18)return;
+  if(!supabase||busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES)return;
   setBusy(true);setMessage('');
   const {error}=await supabase.from('plato_land_series3_registration_requests').insert({plato_id:platoId.trim(),rules_accepted:true});
   if(error){
@@ -75,15 +76,15 @@ export default function Series3Registration(){
       </div>
     :<>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginBottom:10}}>
-       <strong style={{color:'#f0d99f'}}>قانون و تصویر {fa(step)} از ۱۸</strong>
-       <span style={{fontSize:12,color:'#b7a27b'}}>{fa(Math.round(step/18*100))}٪</span>
+       <strong style={{color:'#f0d99f'}}>قانون و تصویر {fa(step)} از ۱۷</strong>
+       <span style={{fontSize:12,color:'#b7a27b'}}>{fa(Math.round(step/TOTAL_RULE_SLIDES*100))}٪</span>
       </div>
       <div style={{height:7,background:'#35302a',borderRadius:20,overflow:'hidden',marginBottom:14}}>
-       <div style={{height:'100%',width:(step/18*100)+'%',background:'linear-gradient(90deg,#9f7836,#e6ca82)',transition:'width .2s'}}/>
+       <div style={{height:'100%',width:(step/TOTAL_RULE_SLIDES*100)+'%',background:'linear-gradient(90deg,#9f7836,#e6ca82)',transition:'width .2s'}}/>
       </div>
       {current?<img src={current.url} alt={'قانون تصویری '+step+' سری سوم'} style={{display:'block',width:'100%',maxHeight:'68vh',objectFit:'contain',background:'#090a0c',borderRadius:10}}/>:
        <div style={{minHeight:250,display:'grid',placeItems:'center',textAlign:'center',padding:20,border:'1px dashed #8b7040',borderRadius:10,color:'#c6b99f'}}>تصویر {fa(step)} هنوز بارگذاری نشده است.</div>}
-      {step===18&&<div style={{marginTop:16,padding:14,border:'1px solid #8b7040',borderRadius:10,background:'#201b12'}}>
+      {step===TOTAL_RULE_SLIDES&&<div style={{marginTop:16,padding:14,border:'1px solid #8b7040',borderRadius:10,background:'#201b12'}}>
        <label style={{display:'flex',alignItems:'flex-start',gap:10,color:'#f2e6c9',fontSize:14,lineHeight:1.9}}>
         <input type="checkbox" checked={accepted} onChange={e=>setAccepted(e.target.checked)} style={{width:20,height:20,accentColor:'#d5b36c',flex:'0 0 auto',marginTop:3}}/>
         <span>تمامی قوانین و شرایط نمایش‌داده‌شده را مطالعه کردم و می‌پذیرم.</span>
@@ -95,10 +96,10 @@ export default function Series3Registration(){
       </div>}
       <div style={{display:'flex',justifyContent:'space-between',gap:10,marginTop:16}}>
        <button type="button" disabled={step===1||busy} onClick={()=>{setStep(s=>Math.max(1,s-1));setMessage('');}} style={{...gold,background:'#292720',border:'1px solid #6e6044',color:'#f2e6c9',opacity:step===1?.45:1}}><ChevronRight size={16} style={{verticalAlign:'middle'}}/> قبلی</button>
-       {step<18?<button type="button" disabled={busy} onClick={()=>{setStep(s=>Math.min(18,s+1));setMessage('');}} style={gold}>بعدی <ChevronLeft size={16} style={{verticalAlign:'middle'}}/></button>:
-        <button type="button" disabled={busy||!accepted||!validId||slides.length!==18} onClick={()=>void submit()} style={{...gold,opacity:busy||!accepted||!validId||slides.length!==18?.5:1}}>{busy?'در حال ثبت…':'تأیید و ثبت‌نام'}</button>}
+       {step<TOTAL_RULE_SLIDES?<button type="button" disabled={busy} onClick={()=>{setStep(s=>Math.min(TOTAL_RULE_SLIDES,s+1));setMessage('');}} style={gold}>بعدی <ChevronLeft size={16} style={{verticalAlign:'middle'}}/></button>:
+        <button type="button" disabled={busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES} onClick={()=>void submit()} style={{...gold,opacity:busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES?.5:1}}>{busy?'در حال ثبت…':'تأیید و ثبت‌نام'}</button>}
       </div>
-      {step===18&&missing>0&&<p role="status" style={{...muted,color:'#e7bd78'}}>برای فعال‌شدن ثبت‌نام، هنوز {fa(missing)} تصویر از ۱۸ تصویر قوانین باید بارگذاری شود.</p>}
+      {step===TOTAL_RULE_SLIDES&&missing>0&&<p role="status" style={{...muted,color:'#e7bd78'}}>برای فعال‌شدن ثبت‌نام، هنوز {fa(missing)} تصویر از ۱۷ تصویر قوانین باید بارگذاری شود.</p>}
       {message&&<p role="status" style={{...muted,color:'#f1d99e'}}>{message}</p>}
      </>}
    </section>
