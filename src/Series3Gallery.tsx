@@ -38,7 +38,6 @@ export default function Series3Gallery(){
     <div style={{fontSize:12,color:'#b7a27b',marginTop:7}}>بازی، رقابت، قهرمانی</div>
     <div style={{display:'flex',alignItems:'center',gap:12,justifyContent:'center',margin:'18px auto',maxWidth:240,color:'#b58c49'}}><i style={{height:1,background:'#8c6a34',flex:1}}/><Sparkles size={13}/><i style={{height:1,background:'#8c6a34',flex:1}}/></div>
     <h1 style={{fontSize:24,margin:'0 0 8px'}}>سری سوم مسابقات PLATO LAND</h1>
-    <p style={{color:'#c6b99f',fontSize:13,margin:0}}>گالری تصاویر و اطلاع‌رسانی تصویری</p>
    </header>
    {poster&&<section style={{background:'#141416',border:'1px solid #715a31',borderRadius:16,padding:10,marginBottom:16}}><img src={poster} alt="پوستر اصلی سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10}}/></section>}
    <section style={{textAlign:'center',padding:'18px 14px',marginBottom:22,border:'1px solid #8c6a34',borderRadius:14,background:'linear-gradient(145deg,#2a2114,#141416)'}}>
