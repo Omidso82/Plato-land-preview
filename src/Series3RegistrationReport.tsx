@@ -52,7 +52,7 @@ function RegistrationReportContent(){
   if(!value)return '—';
   const date=new Date(value);
   if(Number.isNaN(date.getTime()))return '—';
-  try{return date.toLocaleString('fa-IR',{timeZone:'Asia/Copenhagen'});}catch{return '—';}
+  try{return date.toLocaleString('fa-IR',{timeZone:'Europe/Copenhagen'});}catch{return '—';}
  };
  return <section dir="rtl" style={panel}>
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
