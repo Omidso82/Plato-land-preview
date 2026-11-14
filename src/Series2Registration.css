@@ -375,3 +375,13 @@
   max-height:none !important;
   object-fit:contain !important;
 }
+
+
+/* Temporary Series 3 entry on the actual public homepage; isolated and removable. */
+.s2-series3-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px;margin:14px 0 16px;padding:15px;border:1px solid #b8954f99;border-radius:15px;background:radial-gradient(ellipse at 15% 0%,#49371d 0%,#171512 65%,#101113 100%);box-shadow:0 10px 26px #0007}
+.s2-series3-entry-copy span{display:block;margin-bottom:4px;color:#c4a66a;font-size:9px;font-weight:700;letter-spacing:.6px}
+.s2-series3-entry-copy strong{display:block;color:#f4e6c5;font-size:16px;font-weight:850}
+.s2-series3-entry-copy p{margin:5px 0 0;color:#c6bdad;font-size:10px;line-height:1.8}
+.s2-series3-entry>a{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:9px 12px;border:1px solid #d8b66d;border-radius:10px;background:linear-gradient(110deg,#3a2d19,#211b12);color:#f3dfa9;text-decoration:none;font-size:10px;font-weight:800;white-space:nowrap}
+.s2-series3-entry>a span{font-size:18px;line-height:1}
+@media(max-width:480px){.s2-series3-entry{grid-template-columns:1fr;gap:10px;padding:13px}.s2-series3-entry>a{width:100%;min-height:42px;font-size:11px}}
