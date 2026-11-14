@@ -87,7 +87,11 @@ export function Series3SlidesPanel() {
   const button:React.CSSProperties={background:'#c49b4b',color:'#17120a',border:0,borderRadius:9,padding:'10px 14px',fontWeight:700,cursor:'pointer',width:'100%'};
 
   return <section dir="rtl" style={{marginTop:22,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
-    <h2 style={{color:'#f6e8c5',fontSize:20,margin:'0 0 6px'}}>مدیریت تصاویر سری سوم</h2>
+    <details>
+      <summary style={{color:'#f6e8c5',fontSize:20,fontWeight:700,cursor:'pointer',listStylePosition:'inside',padding:'2px 0'}}>
+        مدیریت تصاویر سری سوم — مشاهده و مدیریت تصاویر
+      </summary>
+      <div style={{marginTop:14}}>
     <p style={{color:'#c8c0b0',fontSize:13,lineHeight:1.8,marginTop:0}}>این بخش کاملاً مستقل از تصاویر سری دوم است. ۱۸ جایگاه تصویر و یک پوستر اصلی دارد؛ فقط مالک می‌تواند تصاویر را بارگذاری یا جایگزین کند.</p>
     <div style={{...card,marginBottom:14}}>
       <h3 style={{color:'#f6e8c5',margin:'0 0 10px'}}>پوستر اصلی سری سوم</h3>
@@ -112,5 +116,7 @@ export function Series3SlidesPanel() {
     </div>
     {message&&<p role="status" style={{color:'#f1d99e',fontSize:13,marginBottom:0}}>{message}</p>}
     <p style={{color:'#9c927f',fontSize:11,lineHeight:1.7,marginBottom:0}}>فرمت مجاز: JPG / PNG / WEBP · حداکثر حجم هر فایل: ۱۰ مگابایت · تصاویر در فضای ذخیره‌سازی مستقل سری سوم قرار می‌گیرند.</p>
+      </div>
+    </details>
   </section>;
 }
