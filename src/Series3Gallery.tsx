@@ -1,5 +1,5 @@
 import React,{useEffect,useState} from 'react';
-import {Crown,Sparkles} from 'lucide-react';
+import {Crown,Sparkles,ArrowLeft} from 'lucide-react';
 import {supabase} from './supabase';
 
 type GalleryItem={number:number,url:string,updated_at:string};
@@ -40,7 +40,12 @@ export default function Series3Gallery(){
     <h1 style={{fontSize:24,margin:'0 0 8px'}}>سری سوم مسابقات PLATO LAND</h1>
     <p style={{color:'#c6b99f',fontSize:13,margin:0}}>گالری تصاویر و اطلاع‌رسانی تصویری</p>
    </header>
-   {poster&&<section style={{background:'#141416',border:'1px solid #715a31',borderRadius:16,padding:10,marginBottom:22}}><img src={poster} alt="پوستر اصلی سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10}}/></section>}
+   {poster&&<section style={{background:'#141416',border:'1px solid #715a31',borderRadius:16,padding:10,marginBottom:16}}><img src={poster} alt="پوستر اصلی سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10}}/></section>}
+   <section style={{textAlign:'center',padding:'18px 14px',marginBottom:22,border:'1px solid #8c6a34',borderRadius:14,background:'linear-gradient(145deg,#2a2114,#141416)'}}>
+    <h2 style={{fontSize:19,color:'#f0d99f',margin:'0 0 7px'}}>آماده‌ای وارد رقابت شوی؟</h2>
+    <p style={{fontSize:13,color:'#c6b99f',lineHeight:1.9,margin:'0 0 13px'}}>برای مشاهده مرحله‌به‌مرحله قوانین و تکمیل ثبت‌نام سری سوم، از اینجا وارد فرایند ثبت‌نام شو.</p>
+    <a href="/series3-registration" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,padding:'12px 22px',borderRadius:10,background:'linear-gradient(120deg,#a98239,#e4c77e)',border:'1px solid #e3c77d',color:'#17130b',fontWeight:900,textDecoration:'none',fontSize:14}}>مشاهده قوانین و ثبت‌نام سری سوم <ArrowLeft size={17}/></a>
+   </section>
    {loading?<p style={{textAlign:'center',color:'#c6b99f'}}>در حال دریافت تصاویر…</p>:error?<p role="alert" style={{textAlign:'center',color:'#e5a5a5'}}>{error}</p>:slides.length===0?<section style={{textAlign:'center',padding:28,border:'1px dashed #715a31',borderRadius:14,color:'#b9ad96'}}>تصاویر سری سوم هنوز بارگذاری نشده‌اند. به‌زودی اطلاعات تصویری این رویداد در همین صفحه قرار می‌گیرد.</section>:
     <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,260px),1fr))',gap:12}}>
      {slides.map(item=><figure key={item.number} style={{margin:0,padding:8,background:'#141416',border:'1px solid #4f4128',borderRadius:12}}>
