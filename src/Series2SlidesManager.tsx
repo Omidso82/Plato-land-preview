@@ -4,6 +4,7 @@ import Series2FinalistPredictionAdmin from './Series2FinalistPredictionAdmin';
 import Series2ResultsManager from './Series2ResultsManager';
 import PlatoIdScannerApp from './PlatoIdScannerApp';
 import { Series3SlidesPanel } from './Series3SlidesPanel';
+import Series3RegistrationReport from './Series3RegistrationReport';
 
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
 
@@ -30,6 +31,7 @@ export default function Series2SlidesManager() {
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
   const [scannerOpen,setScannerOpen] = useState(false);
+  const [managerPage,setManagerPage] = useState<'home'|'series3'|'series2'>('home');
 
   async function verifyOwner() {
     if (!supabase) { setMessage('اتصال به سرویس اصلی برقرار نیست.'); setChecking(false); return; }
@@ -188,11 +190,27 @@ export default function Series2SlidesManager() {
 
   return <main dir="rtl" style={shell}><section style={panel}>
     <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}>
-      <div><h1 style={heading}>پنل مدیریت موقت سری دوم</h1><p style={muted}>در این بخش می‌توانی پوستر مسابقات را تغییر بدهی، نتایج بازی‌ها را ثبت کنی و گزارش پیش‌بینی قهرمان را ببینی.</p></div>
+      <div><h1 style={heading}>پنل مدیریت موقت PLATO LAND</h1><p style={muted}>بخش موردنظر را انتخاب کن تا ابزارهای هر سری جداگانه نمایش داده شوند.</p></div>
       <button style={secondary} onClick={signOut}>خروج از پنل</button>
     </div>
-    <Series3SlidesPanel />
-    <section style={{marginTop:20,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
+    {managerPage==='home'&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))',gap:14,marginTop:18}}>
+      <button type="button" onClick={()=>setManagerPage('series3')} style={{textAlign:'right',padding:20,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#2b2113,#121315)',color:'#f6e8c5',cursor:'pointer'}}>
+        <strong style={{display:'block',fontSize:20,marginBottom:8}}>مدیریت سری سوم تخته‌نرد</strong>
+        <span style={{fontSize:13,lineHeight:1.9,color:'#c9c0ad'}}>مدیریت پوستر و ۱۷ قانون تصویری، به‌همراه گزارش ثبت‌نام‌کنندگان و Plato IDها</span>
+      </button>
+      <button type="button" onClick={()=>setManagerPage('series2')} style={{textAlign:'right',padding:20,border:'1px solid #705b31',borderRadius:14,background:'#151617',color:'#f6e8c5',cursor:'pointer'}}>
+        <strong style={{display:'block',fontSize:20,marginBottom:8}}>مدیریت سری دوم و ابزارهای دیگر</strong>
+        <span style={{fontSize:13,lineHeight:1.9,color:'#c9c0ad'}}>پوستر سری دوم، نتایج، پیش‌بینی‌ها، دسترسی اپراتورها و اسکنر Plato ID</span>
+      </button>
+    </div>}
+    {managerPage==='series3'&&<>
+      <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
+      <h2 style={{...heading,marginTop:18}}>مدیریت سری سوم مسابقات تخته‌نرد</h2>
+      <Series3SlidesPanel />
+      <Series3RegistrationReport />
+    </>}
+    {managerPage==='series2'&&<>
+      <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
       <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}>
         <div><h2 style={{color:'#f6e8c5',fontSize:19,margin:'0 0 6px'}}>پوستر ثابت مسابقات</h2><p style={muted}>این تصویر مستقل از ۱۸ اسلاید است و همیشه زیر لوگوی PLATO LAND و بالای بخش‌های مسابقات نمایش داده می‌شود.</p></div>
         <span style={{color:poster?'#e4c77e':'#a9a08e',fontSize:12}}>{poster?'پوستر ثبت‌شده':'هنوز پوستری بارگذاری نشده'}</span>
@@ -248,6 +266,7 @@ export default function Series2SlidesManager() {
     )}    <Series2ResultsManager />
     <Series2FinalistPredictionAdmin />
     {message&&<p role="status" style={{...muted,marginTop:16}}>{message}</p>}
+    </>}
   </section></main>;
 }
 
