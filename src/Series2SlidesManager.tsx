@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 import Series2FinalistPredictionAdmin from './Series2FinalistPredictionAdmin';
 import Series2ResultsManager from './Series2ResultsManager';
 import PlatoIdScannerApp from './PlatoIdScannerApp';
+import { Series3SlidesPanel } from './Series3SlidesPanel';
 
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
 
@@ -190,6 +191,7 @@ export default function Series2SlidesManager() {
       <div><h1 style={heading}>پنل مدیریت موقت سری دوم</h1><p style={muted}>در این بخش می‌توانی پوستر مسابقات را تغییر بدهی، نتایج بازی‌ها را ثبت کنی و گزارش پیش‌بینی قهرمان را ببینی.</p></div>
       <button style={secondary} onClick={signOut}>خروج از پنل</button>
     </div>
+    <Series3SlidesPanel />
     <section style={{marginTop:20,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
       <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}>
         <div><h2 style={{color:'#f6e8c5',fontSize:19,margin:'0 0 6px'}}>پوستر ثابت مسابقات</h2><p style={muted}>این تصویر مستقل از ۱۸ اسلاید است و همیشه زیر لوگوی PLATO LAND و بالای بخش‌های مسابقات نمایش داده می‌شود.</p></div>
