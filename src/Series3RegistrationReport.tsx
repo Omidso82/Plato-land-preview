@@ -26,6 +26,7 @@ function RegistrationReportContent(){
  const [rows,setRows]=useState<Registration[]>([]);
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
+ const [expanded,setExpanded]=useState(false);
  const load=useCallback(async()=>{
   if(!supabase){setError('اتصال به دیتابیس در دسترس نیست.');setLoading(false);return;}
   setLoading(true);setError('');
@@ -56,21 +57,31 @@ function RegistrationReportContent(){
  };
  return <section dir="rtl" style={panel}>
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-   <div><h2 style={{color:'#f6e8c5',fontSize:20,margin:'0 0 5px'}}>گزارش ثبت‌نام‌کنندگان سری سوم</h2><p style={{...muted,margin:0}}>فهرست Plato IDهایی که ثبت‌نامشان در دیتابیس ثبت شده است.</p></div>
-   <button type="button" style={button} onClick={()=>void load()} disabled={loading}>{loading?'در حال دریافت…':'به‌روزرسانی گزارش'}</button>
+   <div style={{minWidth:0}}><h2 style={{color:'#f6e8c5',fontSize:20,margin:'0 0 5px'}}>گزارش ثبت‌نام‌کنندگان سری سوم</h2><p style={{...muted,margin:0}}>فهرست Plato IDهای ثبت‌شده؛ جزئیات فقط هنگام نیاز باز می‌شود.</p></div>
+   <button type="button" style={button} onClick={()=>setExpanded(v=>!v)} aria-expanded={expanded} aria-controls="series3-registration-report-details">
+    {expanded?'بستن گزارش':'مشاهده گزارش'}
+   </button>
   </div>
-  <div style={{display:'flex',gap:10,flexWrap:'wrap',margin:'16px 0'}}>
-   <div style={{background:'#211b12',border:'1px solid #66512d',borderRadius:10,padding:'12px 18px',minWidth:130}}>
-    <div style={{...muted,fontSize:12}}>تعداد ثبت‌نام‌ها</div><strong style={{fontSize:25,color:'#f1d99e'}}>{loading?'—':fa(rows.length)}</strong>
+  <div style={{display:'flex',gap:10,flexWrap:'wrap',margin:'13px 0 0'}}>
+   <div style={{background:'#211b12',border:'1px solid #66512d',borderRadius:10,padding:'9px 14px',minWidth:125}}>
+    <div style={{...muted,fontSize:12}}>تعداد ثبت‌نام‌ها</div><strong style={{fontSize:23,color:'#f1d99e'}}>{loading?'—':fa(rows.length)}</strong>
+   </div>
+   <div style={{background:'#171513',border:'1px solid #51452d',borderRadius:10,padding:'9px 14px',minWidth:125}}>
+    <div style={{...muted,fontSize:12}}>وضعیت گزارش</div><strong style={{fontSize:14,color:error?'#f0aaaa':'#e4c77e'}}>{loading?'در حال دریافت':error?'خطا در دریافت':'آماده'}</strong>
    </div>
   </div>
-  {error?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{error}</p>:loading?<p style={muted}>در حال دریافت فهرست…</p>:rows.length===0?<p style={muted}>هنوز هیچ ثبت‌نامی برای سری سوم در دیتابیس ثبت نشده است.</p>:
-   <div style={{overflowX:'auto'}}>
-    <table style={{width:'100%',borderCollapse:'collapse',minWidth:420,color:'#f2ead8'}}>
-     <thead><tr style={{color:'#e4c77e',textAlign:'right'}}><th style={{padding:10,borderBottom:'1px solid #66512d'}}>ردیف</th><th style={{padding:10,borderBottom:'1px solid #66512d'}}>Plato ID</th><th style={{padding:10,borderBottom:'1px solid #66512d'}}>تاریخ ثبت</th><th style={{padding:10,borderBottom:'1px solid #66512d'}}>پذیرش قوانین</th></tr></thead>
-     <tbody>{rows.map((row,i)=><tr key={row.id}><td style={{padding:10,borderBottom:'1px solid #39342b'}}>{fa(i+1)}</td><td dir="ltr" style={{padding:10,borderBottom:'1px solid #39342b',textAlign:'right',fontWeight:800}}>{row.plato_id||'—'}</td><td style={{padding:10,borderBottom:'1px solid #39342b',whiteSpace:'nowrap'}}>{formatDate(row.created_at)}</td><td style={{padding:10,borderBottom:'1px solid #39342b'}}>{row.rules_accepted?'بله':'خیر'}</td></tr>)}</tbody>
-    </table>
-   </div>}
+  {expanded&&<div id="series3-registration-report-details" style={{marginTop:14}}>
+   <div style={{display:'flex',justifyContent:'flex-end',marginBottom:10}}>
+    <button type="button" style={button} onClick={()=>void load()} disabled={loading}>{loading?'در حال دریافت…':'به‌روزرسانی گزارش'}</button>
+   </div>
+   {error?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{error}</p>:loading?<p style={muted}>در حال دریافت فهرست…</p>:rows.length===0?<p style={muted}>هنوز هیچ ثبت‌نامی برای سری سوم در دیتابیس ثبت نشده است.</p>:
+    <div style={{overflowX:'auto'}}>
+     <table style={{width:'100%',borderCollapse:'collapse',minWidth:420,color:'#f2ead8'}}>
+      <thead><tr style={{color:'#e4c77e',textAlign:'right'}}><th style={{padding:10,borderBottom:'1px solid #66512d'}}>ردیف</th><th style={{padding:10,borderBottom:'1px solid #66512d'}}>Plato ID</th><th style={{padding:10,borderBottom:'1px solid #66512d'}}>تاریخ ثبت</th><th style={{padding:10,borderBottom:'1px solid #66512d'}}>پذیرش قوانین</th></tr></thead>
+      <tbody>{rows.map((row,i)=><tr key={row.id}><td style={{padding:10,borderBottom:'1px solid #39342b'}}>{fa(i+1)}</td><td dir="ltr" style={{padding:10,borderBottom:'1px solid #39342b',textAlign:'right',fontWeight:800}}>{row.plato_id||'—'}</td><td style={{padding:10,borderBottom:'1px solid #39342b',whiteSpace:'nowrap'}}>{formatDate(row.created_at)}</td><td style={{padding:10,borderBottom:'1px solid #39342b'}}>{row.rules_accepted?'بله':'خیر'}</td></tr>)}</tbody>
+     </table>
+    </div>}
+  </div>}
  </section>;
 }
 
