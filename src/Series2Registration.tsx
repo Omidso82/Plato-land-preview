@@ -250,6 +250,15 @@ export default function Series2Registration() {
           <div className="s2series-label"><Sparkles size={13} /> لیگ تخته‌نرد · سری دوم</div>
         </header>
 
+        <section className="s2-series3-entry" aria-label="ورود به سری سوم لیگ تخته‌نرد">
+          <div className="s2-series3-entry-copy">
+            <span>رقابت تازه در PLATO LAND</span>
+            <strong>سری سوم لیگ تخته‌نرد</strong>
+            <p>برای مشاهده قوانین و ورود به مراحل ثبت‌نام، به صفحه اختصاصی سری سوم برو.</p>
+          </div>
+          <a href="/series3/">ورود به سری سوم و ثبت‌نام <span aria-hidden="true">‹</span></a>
+        </section>
+
         {fixedPosterUrl && (
           <section className="s2fixed-poster" aria-label="پوستر ثابت مسابقات سری دوم">
             <img src={fixedPosterUrl} alt="پوستر جوایز قهرمانی سری دوم PLATO LAND" />
