@@ -4,6 +4,7 @@ import App from './App';
 import Series2Registration from './Series2Registration';
 import Series2SlidesManager from './Series2SlidesManager';
 import Series3Gallery from './Series3Gallery';
+import Series3Registration from './Series3Registration';
 import './styles.css';
 import './Series2Registration.css';
 
@@ -11,13 +12,6 @@ const root=createRoot(document.getElementById('root')!);
 const path=window.location.pathname.replace(/\/+$/,'') || '/';
 const page=new URLSearchParams(window.location.search).get('page');
 
-// Keep only the two approved temporary Series 2 pages:
-// 1) /series2-slides-manager — temporary owner management panel
-// 2) / — public temporary Series 2 tournament page
-//
-// Retired standalone routes are redirected to the public page. Their shared
-// components remain in the codebase because the management panel still uses
-// the results and prediction components internally.
 const retiredPaths = new Set([
   '/series2-results-manager',
   '/prediction-admin',
@@ -28,15 +22,14 @@ const retiredResultsQuery = (path==='/' || path==='/index.html') && page==='seri
 
 if(path==='/series3') {
   root.render(<React.StrictMode><Series3Gallery/></React.StrictMode>);
+} else if(path==='/series3-registration') {
+  root.render(<React.StrictMode><Series3Registration/></React.StrictMode>);
 } else if(path==='/series2-slides-manager') {
   root.render(<React.StrictMode><Series2SlidesManager/></React.StrictMode>);
 } else if(path==='/' || path==='/index.html' || retiredPaths.has(path) || retiredResultsQuery) {
-  if(retiredPaths.has(path) || retiredResultsQuery) {
-    window.history.replaceState(null,'','/');
-  }
+  if(retiredPaths.has(path) || retiredResultsQuery) window.history.replaceState(null,'','/');
   root.render(<React.StrictMode><Series2Registration/></React.StrictMode>);
 } else {
-  // Other platform routes continue to use the main application.
   root.render(<React.StrictMode><App/></React.StrictMode>);
 }
 import './typography-overrides.css';
