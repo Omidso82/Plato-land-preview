@@ -247,7 +247,7 @@ export default function Series2Registration() {
           <div className="s2brand-name">PLATO <span>LAND</span></div>
           <div className="s2brand-tagline">بازی، رقابت، قهرمانی</div>
           <div className="s2brand-rule"><i /><span>✦</span><i /></div>
-          <div className="s2series-label"><Sparkles size={13} /> لیگ تخته‌نرد · سری دوم</div>
+          <div className="s2series-label"><Sparkles size={13} /> لیگ تخصصی تخته‌نرد</div>
         </header>
 
         <section className="s2-series3-entry" aria-label="ورود به سری سوم لیگ تخته‌نرد">
