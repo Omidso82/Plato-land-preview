@@ -97,7 +97,7 @@ export default function Series3Registration(){
       <div style={{display:'flex',justifyContent:'space-between',gap:10,marginTop:16}}>
        <button type="button" disabled={step===1||busy} onClick={()=>{setStep(s=>Math.max(1,s-1));setMessage('');}} style={{...gold,background:'#292720',border:'1px solid #6e6044',color:'#f2e6c9',opacity:step===1?.45:1}}><ChevronRight size={16} style={{verticalAlign:'middle'}}/> قبلی</button>
        {step<TOTAL_RULE_SLIDES?<button type="button" disabled={busy} onClick={()=>{setStep(s=>Math.min(TOTAL_RULE_SLIDES,s+1));setMessage('');}} style={gold}>بعدی <ChevronLeft size={16} style={{verticalAlign:'middle'}}/></button>:
-        <button type="button" disabled={busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES} onClick={()=>void submit()} style={{...gold,opacity:busy||!accepted||!validId||slides.length!==18?.5:1}}>{busy?'در حال ثبت…':'تأیید و ثبت‌نام'}</button>}
+        <button type="button" disabled={busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES} onClick={()=>void submit()} style={{...gold,opacity:busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES?.5:1}}>{busy?'در حال ثبت…':'تأیید و ثبت‌نام'}</button>}
       </div>
       {step===TOTAL_RULE_SLIDES&&missing>0&&<p role="status" style={{...muted,color:'#e7bd78'}}>برای فعال‌شدن ثبت‌نام، هنوز {fa(missing)} تصویر از ۱۷ تصویر قوانین باید بارگذاری شود.</p>}
       {message&&<p role="status" style={{...muted,color:'#f1d99e'}}>{message}</p>}
