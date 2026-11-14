@@ -3,24 +3,21 @@ import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-const series2ManagerStaticEntry = {
-  name: 'series2-manager-static-entry',
+const temporaryStaticEntries = {
+  name: 'temporary-pages-static-entries',
   closeBundle() {
-    // GitHub Pages needs a real directory entry for this temporary SPA route.
-    // Keep the fallback scoped to the approved manager path only.
     const output = resolve(process.cwd(), 'dist');
-    const managerDirectory = resolve(output, 'series2-slides-manager');
-    mkdirSync(managerDirectory, { recursive: true });
-    copyFileSync(resolve(output, 'index.html'), resolve(managerDirectory, 'index.html'));
-    const series3Directory = resolve(output, 'series3');
-    mkdirSync(series3Directory, { recursive: true });
-    copyFileSync(resolve(output, 'index.html'), resolve(series3Directory, 'index.html'));
+    for (const route of ['series2-slides-manager','series3','series3-registration']) {
+      const directory = resolve(output, route);
+      mkdirSync(directory, { recursive: true });
+      copyFileSync(resolve(output, 'index.html'), resolve(directory, 'index.html'));
+    }
   },
 };
 
 export default defineConfig({
   base: '/',
-  plugins: [react(), series2ManagerStaticEntry],
+  plugins: [react(), temporaryStaticEntries],
   envPrefix: ['VITE_', 'REACT_APP_'],
   server: { host: '0.0.0.0' },
 });
