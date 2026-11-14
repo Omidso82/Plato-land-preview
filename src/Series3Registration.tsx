@@ -60,6 +60,11 @@ export default function Series3Registration(){
     <h1 style={{fontSize:22,margin:'18px 0 5px'}}>فرایند ثبت‌نام سری سوم</h1>
     <p style={{...muted,margin:0}}>تصاویر قوانین را به‌ترتیب مطالعه کن و در پایان ثبت‌نامت را تکمیل کن.</p>
    </header>
+   <div style={{maxWidth:720,margin:'0 auto 12px',textAlign:'right'}}>
+    <a href="/series3/" style={{display:'inline-flex',alignItems:'center',gap:7,padding:'9px 13px',border:'1px solid #8c6a34',borderRadius:9,background:'#201b12',color:'#f0d99f',fontSize:13,fontWeight:700,textDecoration:'none'}}>
+     <ChevronRight size={17}/> بازگشت به صفحه سری سوم
+    </a>
+   </div>
    <section style={panel}>
     {loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:done?
       <div style={{textAlign:'center',padding:'28px 8px'}}>
