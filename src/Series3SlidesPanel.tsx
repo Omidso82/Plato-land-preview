@@ -25,7 +25,7 @@ export function Series3SlidesPanel() {
     if(posterResult.error){setMessage('خواندن پوستر سری سوم ناموفق بود: '+posterResult.error.message);return;}
     const next:Record<number,ImageItem>={};
     (slideResult.data||[]).forEach(item=>{
-      const match=/^(0[1-9]|1[0-8])$/.exec(item.name);
+      const match=/^(0[1-9]|1[0-7])$/.exec(item.name);
       if(!match)return;
       const n=Number(match[1]);
       next[n]={url:storage.getPublicUrl('slides/'+item.name).data.publicUrl,updated_at:item.updated_at||item.created_at||''};
@@ -96,7 +96,7 @@ export function Series3SlidesPanel() {
       <button style={button} disabled={!posterSelected||posterBusy} onClick={()=>void uploadPoster()}>{posterBusy?'در حال ذخیره…':poster?'جایگزینی پوستر':'بارگذاری پوستر'}</button>
     </div>
     <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:10}}>
-      {Array.from({length:18},(_,i)=>i+1).map(n=>{
+      {Array.from({length:17},(_,i)=>i+1).map(n=>{
         const item=slides[n];
         return <div key={n} style={card}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
