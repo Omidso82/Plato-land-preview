@@ -173,13 +173,19 @@ begin
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('plato-land-series3-registration', 0));
   select * into v_settings from public.plato_land_series3_registration_settings where singleton=true for update;
 
+  -- Require the owner to configure the real cutoff before any withdrawal can
+  -- change the roster; otherwise a missing setting could strand a vacant slot.
+  if v_settings.replacement_cutoff_at is null then
+    raise exception 'ابتدا زمان دقیق پایان جایگزینی را در پنل مدیریت ثبت کن.' using errcode='P0001';
+  end if;
+
   update public.plato_land_series3_registration_requests
   set registration_status='withdrawn'
   where id=p_request_id and registration_status='main';
   if not found then raise exception 'Active main registration not found'; end if;
 
-  -- Do not promote anyone until the owner has configured the exact replacement cutoff.
-  if v_settings.replacement_cutoff_at is null or now() >= v_settings.replacement_cutoff_at then
+  -- At or after the configured cutoff, record withdrawal but do not promote.
+  if now() >= v_settings.replacement_cutoff_at then
     return null;
   end if;
 
