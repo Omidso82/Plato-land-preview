@@ -110,7 +110,7 @@ const fa = (value: number) => value.toLocaleString('fa-IR');
 const percent = (value: number) =>
   value.toLocaleString('fa-IR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '٪';
 
-export default function Series2Registration({ showSeries3Entry = true, showSeriesLabel = true }: { showSeries3Entry?: boolean; showSeriesLabel?: boolean }) {
+export default function Series2Registration({ showSeries3Entry = true, showSeriesLabel = true, showArchiveHeader = false }: { showSeries3Entry?: boolean; showSeriesLabel?: boolean; showArchiveHeader?: boolean }) {
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -251,6 +251,15 @@ export default function Series2Registration({ showSeries3Entry = true, showSerie
           <div className="s2series-label"><Sparkles size={13} /> لیگ تخصصی تخته‌نرد</div>
           )}
         </header>
+
+        {showArchiveHeader && (
+          <section aria-label="آرشیو رسمی سری دوم" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',margin:'0 0 16px',padding:'10px 4px 14px',borderBottom:'1px solid rgba(140,106,52,.55)'}}>
+            <div style={{display:'flex',alignItems:'center',gap:9,color:'#f2e5c5',textAlign:'right'}}>
+              <strong style={{fontSize:18,fontWeight:900}}>آرشیو رسمی سری دوم</strong>
+            </div>
+            <a href="/" style={{display:'inline-flex',alignItems:'center',gap:7,padding:'8px 12px',border:'1px solid #8c6a34',borderRadius:8,color:'#f0d99f',textDecoration:'none',fontSize:12,fontWeight:800,whiteSpace:'nowrap'}}>بازگشت به صفحه اصلی</a>
+          </section>
+        )}
 
         {showSeries3Entry && (
         <section className="s2-series3-entry" aria-label="ورود به سری سوم لیگ تخته‌نرد">
