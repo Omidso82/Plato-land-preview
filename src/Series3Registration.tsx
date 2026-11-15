@@ -20,8 +20,6 @@ export default function Series3Registration(){
  const [message,setMessage]=useState('');
  const [done,setDone]=useState(false);
  const [registrationOpen,setRegistrationOpen]=useState<boolean|null>(null);
- const [mainCount,setMainCount]=useState(0);
- const [capacity,setCapacity]=useState(32);
  useEffect(()=>{
   let active=true;
   async function load(){
@@ -44,7 +42,7 @@ export default function Series3Registration(){
    const {data,error}=await supabase.rpc('series3_registration_status');
    if(!active||error)return;
    const row=Array.isArray(data)?data[0]:data;
-   if(row){setRegistrationOpen(Boolean(row.registration_open));setMainCount(Number(row.main_count)||0);setCapacity(Number(row.capacity)||32);}
+   if(row)setRegistrationOpen(Boolean(row.registration_open));
   }
   void load();
   void loadStatus();
