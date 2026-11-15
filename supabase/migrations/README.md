@@ -3,8 +3,8 @@
 Last reconciled: 2026-11-15.
 
 - Primary Supabase project: `dfrppbapaaydbjeflozw`.
-- The primary database has **88 applied migrations**.
-- The repository contains **62 SQL files** in `supabase/migrations/`; 61 earlier version/name pairs and the new Series 3 migration match entries in the primary database migration ledger.
+- The primary database has **105 applied migrations**.
+- The repository contains **62 SQL files** in `supabase/migrations/`; the new Series 3 migration matches the primary database migration ledger. The repository does not contain SQL source for 43 applied historical migrations; do not replay or bootstrap from this folder.
 - **20 earlier applied baseline migrations** are not present as SQL files in this repository. Recover or reconstruct their source before treating this directory as a complete bootstrap history.
 - Do not run `supabase db push` or replay historical migrations against the primary database until the missing baseline history is reconciled.
 - Two historical SQL files not present in the primary ledger are archived under `supabase/migrations_reviewed_not_applied/`. Their target effects were already present in the primary database; do not execute them.
