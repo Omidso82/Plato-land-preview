@@ -1,8 +1,9 @@
 import React,{useEffect,useMemo,useState} from 'react';
-import {Crown,ChevronLeft,ChevronRight,CheckCircle2} from 'lucide-react';
+import {Crown,ChevronLeft,ChevronRight,CheckCircle2,Clock} from 'lucide-react';
 import {supabase} from './supabase';
 
 type Slide={number:number,url:string,updated_at:string};
+type RegistrationResult={status:'main'|'waitlist'|'duplicate';queue_position?:number;main_count?:number};
 const TOTAL_RULE_SLIDES=17;
 const fa=(n:number)=>n.toLocaleString('fa-IR');
 const shell:React.CSSProperties={minHeight:'100vh',background:'radial-gradient(ellipse at top,#2a2112 0%,#101114 48%,#08090b 100%)',color:'#f4ead2',padding:'20px 14px 42px',fontFamily:'inherit'};
@@ -19,6 +20,8 @@ export default function Series3Registration(){
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  const [done,setDone]=useState(false);
+ const [resultStatus,setResultStatus]=useState<'main'|'waitlist'|null>(null);
+ const [queuePosition,setQueuePosition]=useState<number|null>(null);
  useEffect(()=>{
   let active=true;
   async function load(){
@@ -45,12 +48,25 @@ export default function Series3Registration(){
  async function submit(){
   if(!supabase||busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES)return;
   setBusy(true);setMessage('');
-  const {error}=await supabase.from('plato_land_series3_registration_requests').insert({plato_id:platoId.trim(),rules_accepted:true});
-  if(error){
-   if(error.code==='23505')setMessage('این Plato ID قبلاً برای ثبت‌نام سری سوم استفاده شده است.');
-   else setMessage('ثبت درخواست انجام نشد. لطفاً دوباره تلاش کن.');
-  }else{setDone(true);setMessage('درخواست ثبت‌نام سری سوم با موفقیت ثبت شد.');}
-  setBusy(false);
+  try{
+   const {data,error}=await supabase.rpc('series3_register_request',{p_plato_id:platoId.trim()});
+   if(error)throw error;
+   const result=(Array.isArray(data)?data[0]:data) as RegistrationResult|null;
+   if(!result||!['main','waitlist','duplicate'].includes(result.status))throw new Error('پاسخ سرویس ثبت‌نام معتبر نیست.');
+   if(result.status==='duplicate'){
+    setMessage('این Plato ID قبلاً برای ثبت‌نام سری سوم استفاده شده است.');
+    return;
+   }
+   setResultStatus(result.status);
+   setQueuePosition(typeof result.queue_position==='number'?result.queue_position:null);
+   setDone(true);
+   setMessage(result.status==='main'
+    ?'درخواست شما با موفقیت در فهرست اصلی ثبت شد.'
+    :'ظرفیت اصلی ثبت‌نام مسابقات سری سوم لیگ تخته‌نرد PLATO LAND (۳۲ نفر) تکمیل شده است. درخواست ثبت‌نام شما با موفقیت دریافت شد و در فهرست انتظار (رزرو) قرار گرفت. در صورت انصراف هر یک از بازیکنان اصلی، جایگزینی بر اساس نوبت ثبت‌نام و ترتیب فهرست انتظار انجام خواهد شد. این امکان تا پیش از شروع مسابقات در روز شنبه ۳۰ آبان برقرار است. از علاقه و همراهی شما با PLATO LAND سپاسگزاریم.');
+  }catch(error){
+   console.error('Series 3 registration failed:',error);
+   setMessage('ثبت درخواست انجام نشد. لطفاً دوباره تلاش کن.');
+  }finally{setBusy(false);}
  }
  return <main dir="rtl" style={shell}>
   <div style={{maxWidth:720,margin:'0 auto'}}>
@@ -69,9 +85,10 @@ export default function Series3Registration(){
    <section style={panel}>
     {loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:done?
       <div style={{textAlign:'center',padding:'28px 8px'}}>
-       <CheckCircle2 size={48} color="#9ed6a3"/>
-       <h2 style={{color:'#f3d995'}}>ثبت‌نام ثبت شد</h2>
+       {resultStatus==='waitlist'?<Clock size={48} color="#e4c77e"/>:<CheckCircle2 size={48} color="#9ed6a3"/>}
+       <h2 style={{color:'#f3d995'}}>{resultStatus==='waitlist'?'ثبت درخواست در فهرست انتظار':'ثبت‌نام در فهرست اصلی'}</h2>
        <p style={muted}>{message}</p>
+       {resultStatus==='waitlist'&&queuePosition!==null&&<p style={{...muted,color:'#f1d99e'}}>جایگاه فعلی در صف انتظار: {fa(queuePosition)}</p>}
        <p style={{...muted,direction:'ltr'}}>{platoId.trim()}</p>
       </div>
     :<>
