@@ -4,6 +4,8 @@ import {supabase} from './supabase';
 
 export default function Series3Gallery(){
  const [poster,setPoster]=useState('');
+ const [registrationOpen,setRegistrationOpen]=useState<boolean|null>(null);
+ const [registrationStatusError,setRegistrationStatusError]=useState('');
  useEffect(()=>{
   let active=true;
   async function loadPoster(){
@@ -18,7 +20,17 @@ export default function Series3Gallery(){
     setPoster(url+(version?'?v='+encodeURIComponent(version):''));
    }
   }
+  async function loadRegistrationStatus(){
+   if(!supabase){setRegistrationStatusError('اتصال به سرویس ثبت‌نام در دسترس نیست.');return;}
+   const {data,error}=await supabase.rpc('series3_registration_status');
+   if(!active)return;
+   if(error){setRegistrationStatusError('وضعیت ثبت‌نام در دسترس نیست. لطفاً بعداً دوباره مراجعه کن.');return;}
+   const row=Array.isArray(data)?data[0]:data;
+   if(row)setRegistrationOpen(Boolean(row.registration_open));
+   else setRegistrationStatusError('تنظیمات ثبت‌نام سری سوم پیدا نشد.');
+  }
   void loadPoster();
+  void loadRegistrationStatus();
   return ()=>{active=false};
  },[]);
  return <main dir="rtl" style={{minHeight:'100vh',background:'radial-gradient(ellipse at top,#2a2112 0%,#101114 48%,#08090b 100%)',color:'#f4ead2',padding:'24px 14px 48px',fontFamily:'inherit'}}>
@@ -33,7 +45,7 @@ export default function Series3Gallery(){
     <img src={poster} alt="پوستر اصلی سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10}}/>
    </section>}
    <section style={{textAlign:'center',padding:'22px 14px',marginBottom:22,border:'1px solid #8c6a34',borderRadius:14,background:'linear-gradient(145deg,#2a2114,#141416)'}}>
-    <a href="/series3-registration" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,padding:'12px 22px',borderRadius:10,background:'linear-gradient(120deg,#a98239,#e4c77e)',border:'1px solid #e3c77d',color:'#17130b',fontWeight:900,textDecoration:'none',fontSize:14}}>مشاهده قوانین و ثبت‌نام سری سوم <ArrowLeft size={17}/></a>
+    {registrationOpen===true?<a href="/series3-registration" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,padding:'12px 22px',borderRadius:10,background:'linear-gradient(120deg,#a98239,#e4c77e)',border:'1px solid #e3c77d',color:'#17130b',fontWeight:900,textDecoration:'none',fontSize:14}}>مشاهده قوانین و ثبت‌نام سری سوم <ArrowLeft size={17}/></a>:<p style={{margin:0,color:'#d8c59b',fontSize:14}}>{registrationOpen===false?'ثبت‌نام سری سوم در حال حاضر بسته است.':registrationStatusError?registrationStatusError:'در حال بررسی وضعیت ثبت‌نام سری سوم…'}</p>}
    </section>
    <div style={{maxWidth:920,margin:'0 auto 12px',textAlign:'center'}}>
     <button type="button" onClick={()=>window.history.back()} style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,padding:'9px 16px',border:'1px solid #8c6a34',borderRadius:9,background:'#201b12',color:'#f0d99f',fontSize:13,fontWeight:700,cursor:'pointer'}}>

@@ -19,6 +19,8 @@ export default function Series3Registration(){
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
  const [done,setDone]=useState(false);
+ const [registrationOpen,setRegistrationOpen]=useState<boolean|null>(null);
+ const [registrationStatusError,setRegistrationStatusError]=useState('');
  useEffect(()=>{
   let active=true;
   async function load(){
@@ -36,7 +38,17 @@ export default function Series3Registration(){
    setSlides(items);
    setLoading(false);
   }
+  async function loadStatus(){
+   if(!supabase){setRegistrationStatusError('اتصال به سرویس ثبت‌نام در دسترس نیست.');return;}
+   const {data,error}=await supabase.rpc('series3_registration_status');
+   if(!active)return;
+   if(error){setRegistrationStatusError('وضعیت ثبت‌نام در دسترس نیست. لطفاً صفحه را تازه‌سازی کن.');return;}
+   const row=Array.isArray(data)?data[0]:data;
+   if(row)setRegistrationOpen(Boolean(row.registration_open));
+   else setRegistrationStatusError('تنظیمات ثبت‌نام سری سوم پیدا نشد.');
+  }
   void load();
+  void loadStatus();
   return ()=>{active=false};
  },[]);
  const current=useMemo(()=>slides.find(x=>x.number===step),[slides,step]);
@@ -45,11 +57,15 @@ export default function Series3Registration(){
  async function submit(){
   if(!supabase||busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES)return;
   setBusy(true);setMessage('');
-  const {error}=await supabase.from('plato_land_series3_registration_requests').insert({plato_id:platoId.trim(),rules_accepted:true});
+  const {data,error}=await supabase.rpc('submit_series3_registration',{p_plato_id:platoId.trim()});
   if(error){
-   if(error.code==='23505')setMessage('این Plato ID قبلاً برای ثبت‌نام سری سوم استفاده شده است.');
-   else setMessage('ثبت درخواست انجام نشد. لطفاً دوباره تلاش کن.');
-  }else{setDone(true);setMessage('درخواست ثبت‌نام سری سوم با موفقیت ثبت شد.');}
+   if(error.code==='23505')setMessage('این Plato ID قبلاً برای سری سوم ثبت شده است.');
+   else setMessage(error.message||'ثبت درخواست انجام نشد. لطفاً دوباره تلاش کن.');
+  }else{
+   const result=Array.isArray(data)?data[0]:data;
+   setDone(true);
+   setMessage(result?.result_status==='waitlist'?'ظرفیت ۳۲ نفر اصلی تکمیل است؛ درخواست شما در صف انتظار ثبت شد.':'درخواست شما در فهرست بازیکنان اصلی سری سوم ثبت شد.');
+  }
   setBusy(false);
  }
  return <main dir="rtl" style={shell}>
@@ -59,7 +75,7 @@ export default function Series3Registration(){
     <div style={{fontSize:25,fontWeight:900,letterSpacing:2,marginTop:6}}>PLATO <span style={{color:'#d6b46d'}}>LAND</span></div>
     <div style={{fontSize:12,color:'#b7a27b',marginTop:5}}>بازی، رقابت، قهرمانی</div>
     <h1 style={{fontSize:22,margin:'18px 0 5px'}}>فرایند ثبت‌نام سری سوم</h1>
-    <p style={{...muted,margin:0}}>تصاویر قوانین را به‌ترتیب مطالعه کن و در پایان ثبت‌نامت را تکمیل کن.</p>
+    <p style={{...muted,margin:0}}>تصاویر قوانین را به‌ترتیب مطالعه کن و در پایان ثبت‌نامت را تکمیل کن. ظرفیت اصلی: ۳۲ نفر؛ پس از تکمیل ظرفیت، درخواست‌ها در صف انتظار ثبت می‌شوند.</p>
    </header>
    <div style={{maxWidth:720,margin:'0 auto 12px',textAlign:'right'}}>
     <button type="button" onClick={()=>window.history.back()} style={{display:'inline-flex',alignItems:'center',gap:7,padding:'9px 13px',border:'1px solid #8c6a34',borderRadius:9,background:'#201b12',color:'#f0d99f',fontSize:13,fontWeight:700,cursor:'pointer'}}>
@@ -67,7 +83,7 @@ export default function Series3Registration(){
     </button>
    </div>
    <section style={panel}>
-    {loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:done?
+    {registrationOpen===false?<div style={{textAlign:'center',padding:'28px 8px'}}><h2 style={{color:'#f3d995'}}>ثبت‌نام سری سوم بسته است</h2><p style={muted}>در حال حاضر امکان ثبت درخواست جدید وجود ندارد.</p></div>:registrationOpen===null?<p role="alert" style={{...muted,color:registrationStatusError?'#f0aaaa':'#c6b99f'}}>{registrationStatusError||'در حال بررسی وضعیت ثبت‌نام…'}</p>:loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:done?
       <div style={{textAlign:'center',padding:'28px 8px'}}>
        <CheckCircle2 size={48} color="#9ed6a3"/>
        <h2 style={{color:'#f3d995'}}>ثبت‌نام ثبت شد</h2>

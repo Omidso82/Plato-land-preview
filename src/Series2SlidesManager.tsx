@@ -5,6 +5,7 @@ import Series2ResultsManager from './Series2ResultsManager';
 import PlatoIdScannerApp from './PlatoIdScannerApp';
 import { Series3SlidesPanel } from './Series3SlidesPanel';
 import Series3RegistrationReport from './Series3RegistrationReport';
+import Series3RegistrationControls from './Series3RegistrationControls';
 import Series3SeedingManager from './Series3SeedingManager';
 
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
@@ -207,8 +208,9 @@ export default function Series2SlidesManager() {
     {managerPage==='series3'&&<>
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
       <h2 style={{...heading,marginTop:18}}>مدیریت سری سوم مسابقات تخته‌نرد</h2>
-      <Series3SlidesPanel />
+      <Series3RegistrationControls />
       <Series3RegistrationReport />
+      <Series3SlidesPanel />
       <Series3SeedingManager />
     </>}
     {managerPage==='series2'&&<>

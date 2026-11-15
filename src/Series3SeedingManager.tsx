@@ -41,7 +41,7 @@ export default function Series3SeedingManager() {
     try {
       const [registrationResult, statsResult] = await Promise.all([
         supabase.from('plato_land_series3_registration_requests')
-          .select('id,plato_id').order('created_at', { ascending: true }),
+          .select('id,plato_id').eq('registration_status','main').order('created_at', { ascending: true }),
         supabase.from('plato_land_series3_player_stats')
           .select('request_id,games_played,games_won'),
       ]);
