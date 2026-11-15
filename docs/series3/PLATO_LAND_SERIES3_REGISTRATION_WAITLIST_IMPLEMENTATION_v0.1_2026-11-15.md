@@ -1,5 +1,5 @@
 # PLATO LAND – Series 3 Registration Capacity & Waitlist
-Version: v0.2 (implementation and source-review update)
+Version: v0.3 (implementation, source-review and audit-history update)
 Date: 2026-11-15
 Project: PLATO LAND – Temporary Projects
 Status: Draft PR #178 open; source changes staged on feature branch; database migration NOT applied; production release NOT approved.
@@ -57,6 +57,7 @@ Current behavior in draft:
 - Owner can open/close registration and configure a separate replacement cutoff.
 - Owner report separates main roster, FIFO waitlist, and withdrawn records.
 - Owner can record withdrawal. If cutoff is configured and not yet passed, the earliest waitlist record is promoted. If cutoff is missing, the RPC rejects the withdrawal operation rather than silently leaving an unfilled main place.
+- An append-only event table records initial allocation, later submissions, withdrawals and promotions. Event rows are retained separately from current status so promotion does not erase earlier waitlist history. Existing registrations receive an initial allocation event using their original created_at timestamp. The event table uses ON DELETE RESTRICT.
 - Seeding stats are restricted to the current main roster.
 - Rule count remains 17; Series 2 legacy content is not changed.
 
@@ -72,12 +73,13 @@ Two material SQL defects were found by comparing the draft against the live sche
 - Owner-only RPCs check auth.uid() against public.user_roles. Existing live role constraint permits 'owner' (and 'tournament_admin'), not the literal 'مالک کل'; the owner check therefore relies on the valid 'owner' value.
 - RPCs use SECURITY DEFINER with empty search_path and fully qualified application/auth objects. PUBLIC execute is revoked and grants are re-applied only to the intended roles. Public status and submission RPCs are intentionally callable by anon/authenticated; owner mutations are authenticated-only and verify the owner role in the function body.
 - The migration still requires independent SQL/runtime review and execution in a genuinely disposable isolated PostgreSQL/Supabase environment before production approval. Neither existing Supabase project is assumed to be disposable.
+- The event history table is owner-readable only; no direct anon/authenticated INSERT, UPDATE or DELETE grants are provided. Writes are performed inside the validated database functions.
 - The current Security Advisor snapshot reports existing findings on unrelated tables/functions and leaked-password protection. These were not changed and are not represented as caused or fixed by this Series 3 branch.
 
 ## Verification status
 - GitHub Actions verify run for commit 36738bbefa724816db89c59d631c514301064a0b completed successfully, including TypeScript, Vite build, existing Deno tests and Edge Function typecheck.
 - A newer verify run for commit 44c0d0cf74849535323cac6e97dc1bcbe00973b8 had TypeScript and Vite build steps complete successfully; Deno setup/tests were still in progress at last inspection. Final conclusion must be refreshed before release.
-- A separate workflow named "Deploy PLATO LAND website" was observed running for the feature-branch commit. Its purpose/target has not been conclusively verified from the available run metadata; no successful deployment is claimed. The project release boundary remains unchanged.
+- The workflow "Deploy PLATO LAND website" was inspected at .github/workflows/deploy-preview.yml. On pull_request it builds and uploads a GitHub Pages artifact; its deploy job has the explicit condition github.ref == 'refs/heads/main', so the PR run does not deploy to platoland.org. The separate Cloudflare Pages check is a branch preview check, not a production release.
 - No SQL runtime tests have been run against a migrated database.
 - No iPhone/Safari QA has been performed against the new registration/waitlist flow.
 - No production migration, main merge, or production release has been performed.
@@ -86,7 +88,7 @@ Two material SQL defects were found by comparing the draft against the live sche
 1. Complete latest CI and establish the exact target/behavior of the workflow named "Deploy PLATO LAND website" before any release action.
 2. Run migration and RPC tests only in an explicitly authorized disposable isolated environment; do not use either existing Supabase project as an assumed test DB.
 3. Validate grants, RLS, SECURITY DEFINER behavior, role checks, duplicate submissions, capacity concurrency, registration closure, FIFO queue, withdrawal and cutoff cases.
-4. Review recovery/rollback strategy and whether an append-only event history is required for status transitions.
+4. Review recovery/rollback strategy and test append-only event-history creation, owner-only reading and retention.
 5. Perform iPhone/Safari visual and functional QA after a safe preview is available.
 6. Present final SQL, exact production impact and test evidence for explicit user approval before applying it to the primary Supabase project.
 7. Merge/deploy only after the required approval and verified checks.
@@ -94,3 +96,4 @@ Two material SQL defects were found by comparing the draft against the live sche
 ## Version history
 - v0.1 — 2026-11-15: Initial implementation draft.
 - v0.2 — 2026-11-15: Adds review against current primary schema and approved source documents; records generated-column and post-cutoff allocation fixes; adds separate main/waitlist/withdrawn owner report and withdrawal control; clarifies remaining security, CI, runtime-test and release blockers.
+- v0.3 — 2026-11-15: Adds append-only registration event history and deletion protection; confirms the GitHub Pages workflow does not deploy PR builds to the production domain; records latest CI as pending for the new SQL/history commit.
