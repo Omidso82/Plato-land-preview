@@ -49,7 +49,7 @@ export default function Series3Registration(){
   if(!supabase||busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES)return;
   setBusy(true);setMessage('');
   try{
-   const {data,error}=await supabase.rpc('series3_register_request',{p_plato_id:platoId.trim()});
+   const {data,error}=await supabase.rpc('series3_register_request',{p_plato_id:platoId.trim(),p_rules_accepted:accepted});
    if(error)throw error;
    const result=(Array.isArray(data)?data[0]:data) as RegistrationResult|null;
    if(!result||!['main','waitlist','duplicate'].includes(result.status))throw new Error('پاسخ سرویس ثبت‌نام معتبر نیست.');
