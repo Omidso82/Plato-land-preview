@@ -21,7 +21,8 @@ export default function Series3Registration(){
  const [message,setMessage]=useState('');
  const [done,setDone]=useState(false);
  const [resultStatus,setResultStatus]=useState<'main'|'waitlist'|null>(null);
- const [queuePosition,setQueuePosition]=useState<number|null>(null);\n const [registrationOpen,setRegistrationOpen]=useState(true);
+ const [queuePosition,setQueuePosition]=useState<number|null>(null);
+ const [registrationOpen,setRegistrationOpen]=useState(true);
  useEffect(()=>{
   let active=true;
   async function load(){
