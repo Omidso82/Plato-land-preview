@@ -1,5 +1,5 @@
 # PLATO LAND – Series 3 Registration Capacity & Waitlist
-Version: v0.3 (implementation, source-review and audit-history update)
+Version: v0.4 (implementation, source-review, audit-history and status-error update)
 Date: 2026-11-15
 Project: PLATO LAND – Temporary Projects
 Status: Draft PR #178 open; source changes staged on feature branch; database migration NOT applied; production release NOT approved.
@@ -53,7 +53,7 @@ Current behavior in draft:
 - Existing rows are classified oldest-first; first 32 main, later rows waitlist. IDs and created_at values are retained.
 - New public submissions use an advisory-lock serialized RPC, validate Plato ID format and duplicates, and assign main/waitlist status.
 - Once the configured replacement cutoff has passed, new requests remain waitlisted even if a main player later withdraws.
-- Public form reflects registration open/closed state; database RPC independently rejects submissions while closed.
+- Public form reflects registration open/closed state; database RPC independently rejects submissions while closed. If the status RPC is unavailable or settings are missing, the public gallery and registration page now show a safe error instead of remaining indefinitely in a loading state; submission remains blocked.
 - Owner can open/close registration and configure a separate replacement cutoff.
 - Owner report separates main roster, FIFO waitlist, and withdrawn records.
 - Owner can record withdrawal. If cutoff is configured and not yet passed, the earliest waitlist record is promoted. If cutoff is missing, the RPC rejects the withdrawal operation rather than silently leaving an unfilled main place.
@@ -96,4 +96,4 @@ Two material SQL defects were found by comparing the draft against the live sche
 ## Version history
 - v0.1 — 2026-11-15: Initial implementation draft.
 - v0.2 — 2026-11-15: Adds review against current primary schema and approved source documents; records generated-column and post-cutoff allocation fixes; adds separate main/waitlist/withdrawn owner report and withdrawal control; clarifies remaining security, CI, runtime-test and release blockers.
-- v0.3 — 2026-11-15: Adds append-only registration event history and deletion protection; confirms the GitHub Pages workflow does not deploy PR builds to the production domain; records latest CI as pending for the new SQL/history commit.
+- v0.3 — 2026-11-15: Adds append-only registration event history and deletion protection; confirms the GitHub Pages workflow does not deploy PR builds to the production domain; records latest CI as pending for the new SQL/history commit.\n- v0.4 — 2026-11-15: Adds explicit public status-RPC failure/missing-settings messages to the Series 3 gallery and registration route; prevents an indefinite loading message when the migration is not yet present or the status endpoint fails.
