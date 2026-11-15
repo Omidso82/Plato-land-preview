@@ -1,5 +1,5 @@
 # PLATO LAND – Series 3 Registration Capacity & Waitlist
-Version: v0.6 (implementation, source-review, audit-history and security-boundary update)
+Version: v0.7 (implementation, source-review, security and CI update)
 Date: 2026-11-15
 Project: PLATO LAND – Temporary Projects
 Status: Draft PR #178 open; source changes staged on feature branch; database migration NOT applied; production release NOT approved.
@@ -77,15 +77,15 @@ Two material SQL defects were found by comparing the draft against the live sche
 - The current Security Advisor snapshot reports existing findings on unrelated tables/functions and leaked-password protection. These were not changed and are not represented as caused or fixed by this Series 3 branch.
 
 ## Verification status
-- GitHub Actions verify run for commit 36738bbefa724816db89c59d631c514301064a0b completed successfully, including TypeScript, Vite build, existing Deno tests and Edge Function typecheck.
-- A newer verify run for commit 44c0d0cf74849535323cac6e97dc1bcbe00973b8 had TypeScript and Vite build steps complete successfully; Deno setup/tests were still in progress at last inspection. Final conclusion must be refreshed before release.
+- GitHub Actions verify run for commit 3d45f781cfbaa4ccfac2671112e9baa681106739 completed successfully: TypeScript, Vite build, all existing Deno tests and Edge Function typecheck passed.
+- The current documentation head is 20e15a700b506e54f11a8ea8fbbad35d91fa3a37. Its GitHub Actions verify, Pages-artifact build and Cloudflare preview checks were still running at last inspection; refresh before release.
 - The workflow "Deploy PLATO LAND website" was inspected at .github/workflows/deploy-preview.yml. On pull_request it builds and uploads a GitHub Pages artifact; its deploy job has the explicit condition github.ref == 'refs/heads/main', so the PR run does not deploy to platoland.org. The separate Cloudflare Pages check is a branch preview check, not a production release.
 - No SQL runtime tests have been run against a migrated database.
 - No iPhone/Safari QA has been performed against the new registration/waitlist flow.
 - No production migration, main merge, or production release has been performed.
 
 ## Remaining blockers
-1. Complete latest CI and establish the exact target/behavior of the workflow named "Deploy PLATO LAND website" before any release action.
+1. Complete latest-head CI and Cloudflare branch preview checks before any release action.
 2. Run migration and RPC tests only in an explicitly authorized disposable isolated environment; do not use either existing Supabase project as an assumed test DB.
 3. Validate grants, RLS, SECURITY DEFINER behavior, role checks, duplicate submissions, capacity concurrency, registration closure, FIFO queue, withdrawal and cutoff cases.
 4. Review recovery/rollback strategy and test append-only event-history creation, owner-only reading and retention.
@@ -96,4 +96,6 @@ Two material SQL defects were found by comparing the draft against the live sche
 ## Version history
 - v0.1 — 2026-11-15: Initial implementation draft.
 - v0.2 — 2026-11-15: Adds review against current primary schema and approved source documents; records generated-column and post-cutoff allocation fixes; adds separate main/waitlist/withdrawn owner report and withdrawal control; clarifies remaining security, CI, runtime-test and release blockers.
-- v0.3 — 2026-11-15: Adds append-only registration event history and deletion protection; confirms the GitHub Pages workflow does not deploy PR builds to the production domain; records latest CI as pending for the new SQL/history commit.\n- v0.4 — 2026-11-15: Adds explicit public status-RPC failure/missing-settings messages to the Series 3 gallery and registration route; prevents an indefinite loading message when the migration is not yet present or the status endpoint fails.\n- v0.5 — 2026-11-15: Prevents an already-configured replacement cutoff from being cleared to NULL, which could otherwise reopen main-roster allocation after the replacement window had been set.\n- v0.6 — 2026-11-15: Moves SECURITY DEFINER implementation functions from exposed public schema into non-exposed private schema; public RPCs become SECURITY INVOKER wrappers with narrow execute grants.
+- v0.3 — 2026-11-15: Adds append-only registration event history and deletion protection; confirms the GitHub Pages workflow does not deploy PR builds to the production domain; records latest CI as pending for the new SQL/history commit.
+- v0.4 — 2026-11-15: Adds explicit public status-RPC failure/missing-settings messages to the Series 3 gallery and registration route; prevents an indefinite loading message when the migration is not yet present or the status endpoint fails.\n- v0.5 — 2026-11-15: Prevents an already-configured replacement cutoff from being cleared to NULL, which could otherwise reopen main-roster allocation after the replacement window had been set.\n- v0.6 — 2026-11-15: Moves SECURITY DEFINER implementation functions from exposed public schema into non-exposed private schema; public RPCs become SECURITY INVOKER wrappers with narrow execute grants.
+- v0.7 — 2026-11-15: Records successful full CI for the private-schema SQL implementation commit and clarifies that checks for the latest documentation head remain in progress.
