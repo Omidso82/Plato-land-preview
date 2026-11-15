@@ -20,6 +20,7 @@ export default function Series3Registration(){
  const [message,setMessage]=useState('');
  const [done,setDone]=useState(false);
  const [registrationOpen,setRegistrationOpen]=useState<boolean|null>(null);
+ const [registrationStatusError,setRegistrationStatusError]=useState('');
  useEffect(()=>{
   let active=true;
   async function load(){
@@ -38,9 +39,10 @@ export default function Series3Registration(){
    setLoading(false);
   }
   async function loadStatus(){
-   if(!supabase)return;
+   if(!supabase){setRegistrationStatusError('اتصال به سرویس ثبت‌نام در دسترس نیست.');return;}
    const {data,error}=await supabase.rpc('series3_registration_status');
-   if(!active||error)return;
+   if(!active)return;
+   if(error){setRegistrationStatusError('وضعیت ثبت‌نام در دسترس نیست. لطفاً صفحه را تازه‌سازی کن.');return;}
    const row=Array.isArray(data)?data[0]:data;
    if(row)setRegistrationOpen(Boolean(row.registration_open));
   }
@@ -80,7 +82,7 @@ export default function Series3Registration(){
     </button>
    </div>
    <section style={panel}>
-    {registrationOpen===false?<div style={{textAlign:'center',padding:'28px 8px'}}><h2 style={{color:'#f3d995'}}>ثبت‌نام سری سوم بسته است</h2><p style={muted}>در حال حاضر امکان ثبت درخواست جدید وجود ندارد.</p></div>:registrationOpen===null?<p style={muted}>در حال بررسی وضعیت ثبت‌نام…</p>:loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:done?
+    {registrationOpen===false?<div style={{textAlign:'center',padding:'28px 8px'}}><h2 style={{color:'#f3d995'}}>ثبت‌نام سری سوم بسته است</h2><p style={muted}>در حال حاضر امکان ثبت درخواست جدید وجود ندارد.</p></div>:registrationOpen===null?<p role="alert" style={{...muted,color:registrationStatusError?'#f0aaaa':'#c6b99f'}}>{registrationStatusError||'در حال بررسی وضعیت ثبت‌نام…'}</p>:loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:done?
       <div style={{textAlign:'center',padding:'28px 8px'}}>
        <CheckCircle2 size={48} color="#9ed6a3"/>
        <h2 style={{color:'#f3d995'}}>ثبت‌نام ثبت شد</h2>
