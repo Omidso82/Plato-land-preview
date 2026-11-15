@@ -27,7 +27,10 @@ export default function Series3Registration(){
   async function load(){
    if(!supabase){setLoadError('اتصال به سرویس ثبت‌نام در دسترس نیست.');setLoading(false);return;}
    const storage=supabase.storage.from('series3-slides');
-   const {data,error}=await storage.list('slides',{limit:60,sortBy:{column:'name',order:'asc'}});
+   const [slideResult,statusResult]=await Promise.all([storage.list('slides',{limit:60,sortBy:{column:'name',order:'asc'}}),supabase.rpc('series3_registration_status')]);
+   const {data,error}=slideResult;
+   if(statusResult.error){setLoadError('دریافت وضعیت ثبت‌نام ناموفق بود. لطفاً صفحه را دوباره بارگذاری کن.');setLoading(false);return;}
+   setRegistrationOpen(statusResult.data===true);
    if(!active)return;
    if(error){setLoadError('دریافت تصاویر قوانین ناموفق بود. لطفاً صفحه را دوباره بارگذاری کن.');setLoading(false);return;}
    const items=(data||[]).flatMap(item=>{
@@ -83,7 +86,7 @@ export default function Series3Registration(){
     </button>
    </div>
    <section style={panel}>
-    {loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:done?
+    {loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:!registrationOpen?<div style={{textAlign:'center',padding:'34px 10px'}}><Clock size={46} color='#e4c77e'/><h2 style={{color:'#f3d995'}}>ثبت‌نام فعلاً بسته است</h2><p style={muted}>زمان بازگشایی ثبت‌نام توسط مدیریت اعلام خواهد شد.</p></div>:done?
       <div style={{textAlign:'center',padding:'28px 8px'}}>
        {resultStatus==='waitlist'?<Clock size={48} color="#e4c77e"/>:<CheckCircle2 size={48} color="#9ed6a3"/>}
        <h2 style={{color:'#f3d995'}}>{resultStatus==='waitlist'?'ثبت درخواست در فهرست انتظار':'ثبت‌نام در فهرست اصلی'}</h2>
