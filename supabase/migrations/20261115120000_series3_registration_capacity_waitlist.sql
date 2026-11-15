@@ -178,7 +178,8 @@ begin
   where id=p_request_id and registration_status='main';
   if not found then raise exception 'Active main registration not found'; end if;
 
-  if v_settings.replacement_cutoff_at is not null and now() >= v_settings.replacement_cutoff_at then
+  -- Do not promote anyone until the owner has configured the exact replacement cutoff.
+  if v_settings.replacement_cutoff_at is null or now() >= v_settings.replacement_cutoff_at then
     return null;
   end if;
 
@@ -201,6 +202,18 @@ $$;
 -- Public users must submit only through the validated, serialized RPC.
 drop policy if exists "Series 3 public registration insert" on public.plato_land_series3_registration_requests;
 revoke insert on public.plato_land_series3_registration_requests from anon, authenticated;
+grant execute on function public.series3_registration_status() to anon, authenticated;
+grant execute on function public.submit_series3_registration(text) to anon, authenticated;
+grant execute on function public.set_series3_registration_open(boolean) to authenticated;
+grant execute on function public.set_series3_replacement_cutoff(timestamptz) to authenticated;
+grant execute on function public.withdraw_series3_main_registration(uuid) to authenticated;
+
+-- Remove default PUBLIC execution. Only the intended roles can call each RPC.
+revoke all on function public.series3_registration_status() from public;
+revoke all on function public.submit_series3_registration(text) from public;
+revoke all on function public.set_series3_registration_open(boolean) from public;
+revoke all on function public.set_series3_replacement_cutoff(timestamptz) from public;
+revoke all on function public.withdraw_series3_main_registration(uuid) from public;
 grant execute on function public.series3_registration_status() to anon, authenticated;
 grant execute on function public.submit_series3_registration(text) to anon, authenticated;
 grant execute on function public.set_series3_registration_open(boolean) to authenticated;
