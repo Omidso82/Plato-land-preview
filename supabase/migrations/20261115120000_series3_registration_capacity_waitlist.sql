@@ -201,11 +201,19 @@ begin
   ) then
     raise exception 'Owner access required' using errcode='42501';
   end if;
+
+  if p_cutoff is null and exists (
+    select 1 from public.plato_land_series3_registration_settings
+    where singleton = true and replacement_cutoff_at is not null
+  ) then
+    raise exception 'مهلت جایگزینی پس از تعیین قابل پاک‌کردن نیست؛ برای تغییر، زمان جدید انتخاب کن.' using errcode='P0001';
+  end if;
+
   update public.plato_land_series3_registration_settings
   set replacement_cutoff_at = p_cutoff, updated_at = now(), updated_by = auth.uid()
   where singleton = true;
 end;
-$$;
+$;
 
 create or replace function public.withdraw_series3_main_registration(p_request_id uuid)
 returns uuid
