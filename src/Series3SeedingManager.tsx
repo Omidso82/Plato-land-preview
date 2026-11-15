@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
 
-type Registration = { id: string; plato_id: string };
+type Registration = { id: string; plato_id: string; registration_status: 'main' | 'waitlist' | 'withdrawn' };
 type Stats = { request_id: string; games_played: number; games_won: number };
 type Player = Registration & { games_played: number | null; games_won: number | null; updated_at?: string };
 
@@ -41,7 +41,7 @@ export default function Series3SeedingManager() {
     try {
       const [registrationResult, statsResult] = await Promise.all([
         supabase.from('plato_land_series3_registration_requests')
-          .select('id,plato_id').order('created_at', { ascending: true }),
+          .select('id,plato_id,registration_status').eq('registration_status', 'main').order('created_at', { ascending: true }),
         supabase.from('plato_land_series3_player_stats')
           .select('request_id,games_played,games_won'),
       ]);
