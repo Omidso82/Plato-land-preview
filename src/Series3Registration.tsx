@@ -18,7 +18,7 @@ export default function Series3Registration(){
  const [platoId,setPlatoId]=useState('');
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
- const [done,setDone]=useState(false);
+ const [done,setDone]=useState(false);\n const [registrationOpen,setRegistrationOpen]=useState<boolean|null>(null);\n const [mainCount,setMainCount]=useState(0);\n const [capacity,setCapacity]=useState(32);
  useEffect(()=>{
   let active=true;
   async function load(){
@@ -59,7 +59,7 @@ export default function Series3Registration(){
     <div style={{fontSize:25,fontWeight:900,letterSpacing:2,marginTop:6}}>PLATO <span style={{color:'#d6b46d'}}>LAND</span></div>
     <div style={{fontSize:12,color:'#b7a27b',marginTop:5}}>بازی، رقابت، قهرمانی</div>
     <h1 style={{fontSize:22,margin:'18px 0 5px'}}>فرایند ثبت‌نام سری سوم</h1>
-    <p style={{...muted,margin:0}}>تصاویر قوانین را به‌ترتیب مطالعه کن و در پایان ثبت‌نامت را تکمیل کن.</p>
+    <p style={{...muted,margin:0}}>تصاویر قوانین را به‌ترتیب مطالعه کن و در پایان ثبت‌نامت را تکمیل کن. ظرفیت اصلی: ۳۲ نفر؛ پس از تکمیل ظرفیت، درخواست‌ها در صف انتظار ثبت می‌شوند.</p>
    </header>
    <div style={{maxWidth:720,margin:'0 auto 12px',textAlign:'right'}}>
     <button type="button" onClick={()=>window.history.back()} style={{display:'inline-flex',alignItems:'center',gap:7,padding:'9px 13px',border:'1px solid #8c6a34',borderRadius:9,background:'#201b12',color:'#f0d99f',fontSize:13,fontWeight:700,cursor:'pointer'}}>
@@ -67,7 +67,7 @@ export default function Series3Registration(){
     </button>
    </div>
    <section style={panel}>
-    {loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:done?
+    {registrationOpen===false?<div style={{textAlign:'center',padding:'28px 8px'}}><h2 style={{color:'#f3d995'}}>ثبت‌نام سری سوم بسته است</h2><p style={muted}>در حال حاضر امکان ثبت درخواست جدید وجود ندارد.</p></div>:registrationOpen===null?<p style={muted}>در حال بررسی وضعیت ثبت‌نام…</p>:loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:done?
       <div style={{textAlign:'center',padding:'28px 8px'}}>
        <CheckCircle2 size={48} color="#9ed6a3"/>
        <h2 style={{color:'#f3d995'}}>ثبت‌نام ثبت شد</h2>
