@@ -21,7 +21,7 @@ const retiredPaths = new Set([
 ]);
 const retiredResultsQuery = (path==='/' || path==='/index.html') && page==='series2-results-manager';
 
-if(path==='/series2-archive') {
+if(path==='/series2-archive' || ((path==='/' || path==='/index.html') && page==='series2-archive')) {
   root.render(<React.StrictMode><Series2Archive/></React.StrictMode>);
 } else if(path==='/series3') {
   root.render(<React.StrictMode><Series3Gallery/></React.StrictMode>);
