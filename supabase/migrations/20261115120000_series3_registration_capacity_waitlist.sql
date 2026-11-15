@@ -97,11 +97,20 @@ begin
   from public.plato_land_series3_registration_requests r
   where r.registration_status='main';
 
-  v_status := case when v_main_count < v_settings.capacity then 'main' else 'waitlist' end;
+  -- Once the configured replacement cutoff has passed, later requests
+  -- remain in the waitlist even if a main player withdrew after the cutoff.
+  v_status := case
+    when v_main_count < v_settings.capacity
+      and (v_settings.replacement_cutoff_at is null or now() < v_settings.replacement_cutoff_at)
+    then 'main'
+    else 'waitlist'
+  end;
 
+  -- plato_id_normalized is a GENERATED ALWAYS column in the live table;
+  -- PostgreSQL computes it from plato_id, so it must not appear in INSERT.
   insert into public.plato_land_series3_registration_requests
-    (plato_id, plato_id_normalized, rules_accepted, registration_status)
-  values (btrim(p_plato_id), v_normalized, true, v_status);
+    (plato_id, rules_accepted, registration_status)
+  values (btrim(p_plato_id), true, v_status);
 
   if v_status='waitlist' then
     select count(*) into v_position
