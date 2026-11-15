@@ -45,6 +45,7 @@ export default function Series3Registration(){
    if(error){setRegistrationStatusError('وضعیت ثبت‌نام در دسترس نیست. لطفاً صفحه را تازه‌سازی کن.');return;}
    const row=Array.isArray(data)?data[0]:data;
    if(row)setRegistrationOpen(Boolean(row.registration_open));
+   else setRegistrationStatusError('تنظیمات ثبت‌نام سری سوم پیدا نشد.');
   }
   void load();
   void loadStatus();
