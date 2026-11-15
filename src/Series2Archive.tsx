@@ -13,6 +13,6 @@ export default function Series2Archive() {
         <a href="/" style={{display:'inline-flex',alignItems:'center',gap:7,padding:'8px 12px',border:'1px solid #8c6a34',borderRadius:8,color:'#f0d99f',textDecoration:'none',fontSize:12,fontWeight:800}}><ArrowRight size={15}/> بازگشت به سری سوم</a>
       </div>
     </header>
-    <Series2Registration />
+    <Series2Registration showSeries3Entry={false} showSeriesLabel={false} />
   </div>;
 }

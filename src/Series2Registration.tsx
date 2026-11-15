@@ -110,7 +110,7 @@ const fa = (value: number) => value.toLocaleString('fa-IR');
 const percent = (value: number) =>
   value.toLocaleString('fa-IR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '٪';
 
-export default function Series2Registration() {
+export default function Series2Registration({ showSeries3Entry = true, showSeriesLabel = true }: { showSeries3Entry?: boolean; showSeriesLabel?: boolean }) {
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -247,9 +247,12 @@ export default function Series2Registration() {
           <div className="s2brand-name">PLATO <span>LAND</span></div>
           <div className="s2brand-tagline">بازی، رقابت، قهرمانی</div>
           <div className="s2brand-rule"><i /><span>✦</span><i /></div>
+          {showSeriesLabel && (
           <div className="s2series-label"><Sparkles size={13} /> لیگ تخصصی تخته‌نرد</div>
+          )}
         </header>
 
+        {showSeries3Entry && (
         <section className="s2-series3-entry" aria-label="ورود به سری سوم لیگ تخته‌نرد">
           <div className="s2-series3-entry-copy">
             <span>رقابت تازه در PLATO LAND</span>
@@ -258,6 +261,7 @@ export default function Series2Registration() {
           </div>
           <a href="/series3/">ورود به سری سوم و ثبت‌نام <span aria-hidden="true">‹</span></a>
         </section>
+        )}
 
         {fixedPosterUrl && (
           <section className="s2fixed-poster" aria-label="پوستر ثابت مسابقات سری دوم">
