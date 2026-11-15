@@ -18,7 +18,10 @@ export default function Series3Registration(){
  const [platoId,setPlatoId]=useState('');
  const [busy,setBusy]=useState(false);
  const [message,setMessage]=useState('');
- const [done,setDone]=useState(false);\n const [registrationOpen,setRegistrationOpen]=useState<boolean|null>(null);\n const [mainCount,setMainCount]=useState(0);\n const [capacity,setCapacity]=useState(32);
+ const [done,setDone]=useState(false);
+ const [registrationOpen,setRegistrationOpen]=useState<boolean|null>(null);
+ const [mainCount,setMainCount]=useState(0);
+ const [capacity,setCapacity]=useState(32);
  useEffect(()=>{
   let active=true;
   async function load(){
@@ -36,7 +39,15 @@ export default function Series3Registration(){
    setSlides(items);
    setLoading(false);
   }
+  async function loadStatus(){
+   if(!supabase)return;
+   const {data,error}=await supabase.rpc('series3_registration_status');
+   if(!active||error)return;
+   const row=Array.isArray(data)?data[0]:data;
+   if(row){setRegistrationOpen(Boolean(row.registration_open));setMainCount(Number(row.main_count)||0);setCapacity(Number(row.capacity)||32);}
+  }
   void load();
+  void loadStatus();
   return ()=>{active=false};
  },[]);
  const current=useMemo(()=>slides.find(x=>x.number===step),[slides,step]);
@@ -45,11 +56,15 @@ export default function Series3Registration(){
  async function submit(){
   if(!supabase||busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES)return;
   setBusy(true);setMessage('');
-  const {error}=await supabase.from('plato_land_series3_registration_requests').insert({plato_id:platoId.trim(),rules_accepted:true});
+  const {data,error}=await supabase.rpc('submit_series3_registration',{p_plato_id:platoId.trim()});
   if(error){
-   if(error.code==='23505')setMessage('این Plato ID قبلاً برای ثبت‌نام سری سوم استفاده شده است.');
-   else setMessage('ثبت درخواست انجام نشد. لطفاً دوباره تلاش کن.');
-  }else{setDone(true);setMessage('درخواست ثبت‌نام سری سوم با موفقیت ثبت شد.');}
+   if(error.code==='23505')setMessage('این Plato ID قبلاً برای سری سوم ثبت شده است.');
+   else setMessage(error.message||'ثبت درخواست انجام نشد. لطفاً دوباره تلاش کن.');
+  }else{
+   const result=Array.isArray(data)?data[0]:data;
+   setDone(true);
+   setMessage(result?.result_status==='waitlist'?'ظرفیت ۳۲ نفر اصلی تکمیل است؛ درخواست شما در صف انتظار ثبت شد.':'درخواست شما در فهرست بازیکنان اصلی سری سوم ثبت شد.');
+  }
   setBusy(false);
  }
  return <main dir="rtl" style={shell}>
