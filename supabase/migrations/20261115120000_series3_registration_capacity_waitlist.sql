@@ -34,6 +34,42 @@ set registration_status = case when ranked.position <= 32 then 'main' else 'wait
 from ranked
 where ranked.id = r.id;
 
+-- Append-only event history: keep initial allocation and later status transitions
+-- without deleting or overwriting the original registration request.
+create table if not exists public.plato_land_series3_registration_events (
+  id uuid primary key default gen_random_uuid(),
+  request_id uuid not null references public.plato_land_series3_registration_requests(id) on delete restrict,
+  event_type text not null check (event_type in (
+    'initial_main','initial_waitlist','submitted_main','submitted_waitlist',
+    'withdrawn','promoted_to_main'
+  )),
+  actor_id uuid references auth.users(id),
+  details jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists idx_series3_registration_events_request_created
+  on public.plato_land_series3_registration_events(request_id, created_at, id);
+
+alter table public.plato_land_series3_registration_events enable row level security;
+revoke all on public.plato_land_series3_registration_events from anon, authenticated;
+grant select on public.plato_land_series3_registration_events to authenticated;
+drop policy if exists "Series 3 owner read registration events" on public.plato_land_series3_registration_events;
+create policy "Series 3 owner read registration events"
+on public.plato_land_series3_registration_events for select to authenticated
+using (exists (
+  select 1 from public.user_roles ur
+  where ur.user_id = (select auth.uid()) and ur.role = 'owner'
+));
+
+-- Record the original allocation for every pre-existing registration.
+insert into public.plato_land_series3_registration_events(request_id, event_type, details, created_at)
+select r.id,
+  case when r.registration_status='main' then 'initial_main' else 'initial_waitlist' end,
+  jsonb_build_object('allocation_rule','created_at_asc_then_id_asc','migration','20261115120000'),
+  r.created_at
+from public.plato_land_series3_registration_requests r;
+
 alter table public.plato_land_series3_registration_settings enable row level security;
 revoke all on public.plato_land_series3_registration_settings from anon, authenticated;
 grant select on public.plato_land_series3_registration_settings to anon, authenticated;
@@ -70,6 +106,7 @@ declare
   v_status text;
   v_position bigint;
   v_main_count bigint;
+  v_request_id uuid;
 begin
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('plato-land-series3-registration', 0));
 
@@ -110,7 +147,15 @@ begin
   -- PostgreSQL computes it from plato_id, so it must not appear in INSERT.
   insert into public.plato_land_series3_registration_requests
     (plato_id, rules_accepted, registration_status)
-  values (btrim(p_plato_id), true, v_status);
+  values (btrim(p_plato_id), true, v_status)
+  returning id into v_request_id;
+
+  insert into public.plato_land_series3_registration_events(request_id,event_type,details)
+  values (
+    v_request_id,
+    case when v_status='main' then 'submitted_main' else 'submitted_waitlist' end,
+    jsonb_build_object('source','public_registration_rpc')
+  );
 
   if v_status='waitlist' then
     select count(*) into v_position
@@ -193,6 +238,10 @@ begin
   where id=p_request_id and registration_status='main';
   if not found then raise exception 'Active main registration not found'; end if;
 
+  insert into public.plato_land_series3_registration_events(request_id,event_type,actor_id,details)
+  values (p_request_id,'withdrawn',auth.uid(),
+    jsonb_build_object('replacement_cutoff_at',v_settings.replacement_cutoff_at));
+
   -- At or after the configured cutoff, record withdrawal but do not promote.
   if now() >= v_settings.replacement_cutoff_at then
     return null;
@@ -209,6 +258,10 @@ begin
     update public.plato_land_series3_registration_requests
     set registration_status='main'
     where id=v_next_id;
+
+    insert into public.plato_land_series3_registration_events(request_id,event_type,actor_id,details)
+    values (v_next_id,'promoted_to_main',auth.uid(),
+      jsonb_build_object('triggered_by_withdrawal',p_request_id,'queue_rule','created_at_asc_then_id_asc'));
   end if;
   return v_next_id;
 end;
