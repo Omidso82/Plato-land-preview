@@ -1,7 +1,6 @@
 import React from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App';
-import Series2Registration from './Series2Registration';
 import Series2SlidesManager from './Series2SlidesManager';
 import Series3Gallery from './Series3Gallery';
 import Series3Registration from './Series3Registration';
