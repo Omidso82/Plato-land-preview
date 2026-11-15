@@ -79,7 +79,11 @@ create policy "Series 3 public settings read"
 on public.plato_land_series3_registration_settings for select to anon, authenticated
 using (singleton);
 
-create or replace function public.series3_registration_status()
+-- Keep SECURITY DEFINER implementations in the non-exposed private schema.
+-- Public RPCs are SECURITY INVOKER wrappers with narrowly scoped EXECUTE grants.
+grant usage on schema private to anon, authenticated;
+
+create or replace function private.series3_registration_status_impl()
 returns table(registration_open boolean, capacity integer, main_count bigint, waitlist_count bigint, replacement_cutoff_at timestamptz)
 language sql
 stable
@@ -94,7 +98,17 @@ as $$
   where s.singleton = true;
 $$;
 
-create or replace function public.submit_series3_registration(p_plato_id text)
+create or replace function public.series3_registration_status()
+returns table(registration_open boolean, capacity integer, main_count bigint, waitlist_count bigint, replacement_cutoff_at timestamptz)
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select * from private.series3_registration_status_impl();
+$$;
+
+create or replace function private.submit_series3_registration_impl(p_plato_id text)
 returns table(result_status text, queue_position bigint, main_count bigint, capacity integer)
 language plpgsql
 security definer
@@ -143,8 +157,7 @@ begin
     else 'waitlist'
   end;
 
-  -- plato_id_normalized is a GENERATED ALWAYS column in the live table;
-  -- PostgreSQL computes it from plato_id, so it must not appear in INSERT.
+  -- plato_id_normalized is a GENERATED ALWAYS column in the live table.
   insert into public.plato_land_series3_registration_requests
     (plato_id, rules_accepted, registration_status)
   values (btrim(p_plato_id), true, v_status)
@@ -169,7 +182,16 @@ begin
 end;
 $$;
 
-create or replace function public.set_series3_registration_open(p_open boolean)
+create or replace function public.submit_series3_registration(p_plato_id text)
+returns table(result_status text, queue_position bigint, main_count bigint, capacity integer)
+language sql
+security invoker
+set search_path = ''
+as $$
+  select * from private.submit_series3_registration_impl(p_plato_id);
+$$;
+
+create or replace function private.set_series3_registration_open_impl(p_open boolean)
 returns void
 language plpgsql
 security definer
@@ -178,7 +200,7 @@ as $$
 begin
   if auth.uid() is null or not exists (
     select 1 from public.user_roles ur
-    where ur.user_id = auth.uid() and ur.role in ('owner','مالک کل')
+    where ur.user_id = auth.uid() and ur.role = 'owner'
   ) then
     raise exception 'Owner access required' using errcode='42501';
   end if;
@@ -188,7 +210,16 @@ begin
 end;
 $$;
 
-create or replace function public.set_series3_replacement_cutoff(p_cutoff timestamptz)
+create or replace function public.set_series3_registration_open(p_open boolean)
+returns void
+language sql
+security invoker
+set search_path = ''
+as $$
+  select private.set_series3_registration_open_impl(p_open);
+$$;
+
+create or replace function private.set_series3_replacement_cutoff_impl(p_cutoff timestamptz)
 returns void
 language plpgsql
 security definer
@@ -197,7 +228,7 @@ as $$
 begin
   if auth.uid() is null or not exists (
     select 1 from public.user_roles ur
-    where ur.user_id = auth.uid() and ur.role in ('owner','مالک کل')
+    where ur.user_id = auth.uid() and ur.role = 'owner'
   ) then
     raise exception 'Owner access required' using errcode='42501';
   end if;
@@ -213,9 +244,18 @@ begin
   set replacement_cutoff_at = p_cutoff, updated_at = now(), updated_by = auth.uid()
   where singleton = true;
 end;
-$;
+$$;
 
-create or replace function public.withdraw_series3_main_registration(p_request_id uuid)
+create or replace function public.set_series3_replacement_cutoff(p_cutoff timestamptz)
+returns void
+language sql
+security invoker
+set search_path = ''
+as $$
+  select private.set_series3_replacement_cutoff_impl(p_cutoff);
+$$;
+
+create or replace function private.withdraw_series3_main_registration_impl(p_request_id uuid)
 returns uuid
 language plpgsql
 security definer
@@ -227,7 +267,7 @@ declare
 begin
   if auth.uid() is null or not exists (
     select 1 from public.user_roles ur
-    where ur.user_id = auth.uid() and ur.role in ('owner','مالک کل')
+    where ur.user_id = auth.uid() and ur.role = 'owner'
   ) then
     raise exception 'Owner access required' using errcode='42501';
   end if;
@@ -235,8 +275,6 @@ begin
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended('plato-land-series3-registration', 0));
   select * into v_settings from public.plato_land_series3_registration_settings where singleton=true for update;
 
-  -- Require the owner to configure the real cutoff before any withdrawal can
-  -- change the roster; otherwise a missing setting could strand a vacant slot.
   if v_settings.replacement_cutoff_at is null then
     raise exception 'ابتدا زمان دقیق پایان جایگزینی را در پنل مدیریت ثبت کن.' using errcode='P0001';
   end if;
@@ -250,7 +288,6 @@ begin
   values (p_request_id,'withdrawn',auth.uid(),
     jsonb_build_object('replacement_cutoff_at',v_settings.replacement_cutoff_at));
 
-  -- At or after the configured cutoff, record withdrawal but do not promote.
   if now() >= v_settings.replacement_cutoff_at then
     return null;
   end if;
@@ -275,16 +312,31 @@ begin
 end;
 $$;
 
+create or replace function public.withdraw_series3_main_registration(p_request_id uuid)
+returns uuid
+language sql
+security invoker
+set search_path = ''
+as $$
+  select private.withdraw_series3_main_registration_impl(p_request_id);
+$$;
+
 -- Public users must submit only through the validated, serialized RPC.
 drop policy if exists "Series 3 public registration insert" on public.plato_land_series3_registration_requests;
 revoke insert on public.plato_land_series3_registration_requests from anon, authenticated;
-grant execute on function public.series3_registration_status() to anon, authenticated;
-grant execute on function public.submit_series3_registration(text) to anon, authenticated;
-grant execute on function public.set_series3_registration_open(boolean) to authenticated;
-grant execute on function public.set_series3_replacement_cutoff(timestamptz) to authenticated;
-grant execute on function public.withdraw_series3_main_registration(uuid) to authenticated;
 
--- Remove default PUBLIC execution. Only the intended roles can call each RPC.
+-- No SECURITY DEFINER implementation remains in the exposed public schema.
+revoke all on function private.series3_registration_status_impl() from public;
+revoke all on function private.submit_series3_registration_impl(text) from public;
+revoke all on function private.set_series3_registration_open_impl(boolean) from public;
+revoke all on function private.set_series3_replacement_cutoff_impl(timestamptz) from public;
+revoke all on function private.withdraw_series3_main_registration_impl(uuid) from public;
+grant execute on function private.series3_registration_status_impl() to anon, authenticated;
+grant execute on function private.submit_series3_registration_impl(text) to anon, authenticated;
+grant execute on function private.set_series3_registration_open_impl(boolean) to authenticated;
+grant execute on function private.set_series3_replacement_cutoff_impl(timestamptz) to authenticated;
+grant execute on function private.withdraw_series3_main_registration_impl(uuid) to authenticated;
+
 revoke all on function public.series3_registration_status() from public;
 revoke all on function public.submit_series3_registration(text) from public;
 revoke all on function public.set_series3_registration_open(boolean) from public;
