@@ -3,6 +3,7 @@ import {supabase} from './supabase';
 
 type Status={registration_open:boolean;capacity:number;main_count:number;waitlist_count:number;replacement_cutoff_at:string|null};
 const fa=(n:number)=>n.toLocaleString('fa-IR');
+const toLocalDateTimeInput=(value:string)=>{const date=new Date(value);if(Number.isNaN(date.getTime()))return '';const local=new Date(date.getTime()-date.getTimezoneOffset()*60000);return local.toISOString().slice(0,16);};
 const panel:React.CSSProperties={marginTop:18,padding:16,border:'1px solid #8c6a34',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)',color:'#f2ead8'};
 const muted:React.CSSProperties={color:'#c9c0b0',fontSize:12,lineHeight:1.9};
 const button:React.CSSProperties={border:'1px solid #e3c77d',borderRadius:9,padding:'10px 14px',fontWeight:800,cursor:'pointer'};
@@ -20,7 +21,7 @@ export default function Series3RegistrationControls(){
   if(error){setError('وضعیت ثبت‌نام قابل دریافت نیست: '+error.message);setStatus(null);}
   else{
    const row=Array.isArray(data)?data[0]:data;
-   if(row){setStatus(row as Status);setCutoff(row.replacement_cutoff_at?new Date(row.replacement_cutoff_at).toISOString().slice(0,16):'');}
+   if(row){setStatus(row as Status);setCutoff(row.replacement_cutoff_at?toLocalDateTimeInput(row.replacement_cutoff_at):'');}
    else setError('تنظیمات ثبت‌نام سری سوم پیدا نشد.');
   }
   setLoading(false);
@@ -37,7 +38,9 @@ export default function Series3RegistrationControls(){
  async function saveCutoff(){
   if(!supabase)return;
   setBusy(true);setError('');setMessage('');
-  const value=cutoff?new Date(cutoff).toISOString():null;
+  const parsed=cutoff?new Date(cutoff):null;
+  if(parsed&&!Number.isFinite(parsed.getTime())){setError('زمان پایان جایگزینی معتبر نیست.');setBusy(false);return;}
+  const value=parsed?parsed.toISOString():null;
   const {error}=await supabase.rpc('set_series3_replacement_cutoff',{p_cutoff:value});
   if(error)setError('ذخیره مهلت جایگزینی انجام نشد: '+error.message);
   else{setMessage('مهلت جایگزینی ذخیره شد.');await load();}
