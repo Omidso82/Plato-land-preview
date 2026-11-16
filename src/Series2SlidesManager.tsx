@@ -6,6 +6,7 @@ import PlatoIdScannerApp from './PlatoIdScannerApp';
 import { Series3SlidesPanel } from './Series3SlidesPanel';
 import Series3RegistrationReport from './Series3RegistrationReport';
 import Series3SeedingManager from './Series3SeedingManager';
+import PredictionCampaignManager from './PredictionCampaignManager';
 
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
 
@@ -32,7 +33,7 @@ export default function Series2SlidesManager() {
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
   const [scannerOpen,setScannerOpen] = useState(false);
-  const [managerPage,setManagerPage] = useState<'home'|'series3'|'series2'>('home');
+  const [managerPage,setManagerPage] = useState<'home'|'series3'|'series2'|'predictions'>('home');
 
   async function verifyOwner() {
     if (!supabase) { setMessage('اتصال به سرویس اصلی برقرار نیست.'); setChecking(false); return; }
@@ -199,11 +200,19 @@ export default function Series2SlidesManager() {
         <strong style={{display:'block',fontSize:20,marginBottom:8}}>مدیریت سری سوم تخته‌نرد</strong>
         <span style={{fontSize:13,lineHeight:1.9,color:'#c9c0ad'}}>مدیریت پوستر و ۱۷ قانون تصویری، به‌همراه گزارش ثبت‌نام‌کنندگان و Plato IDها</span>
       </button>
+      <button type="button" onClick={()=>setManagerPage('predictions')} style={{textAlign:'right',padding:20,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#302313,#121315)',color:'#f6e8c5',cursor:'pointer'}}>
+        <strong style={{display:'block',fontSize:20,marginBottom:8}}>مدیریت پیش‌بینی‌ها</strong>
+        <span style={{fontSize:13,lineHeight:1.9,color:'#c9c0ad'}}>ساخت پیش‌بینی‌های مستقل، تنظیم جایزه و مهلت، انتشار و کنترل باز یا بسته بودن</span>
+      </button>
       <button type="button" onClick={()=>setManagerPage('series2')} style={{textAlign:'right',padding:20,border:'1px solid #705b31',borderRadius:14,background:'#151617',color:'#f6e8c5',cursor:'pointer'}}>
         <strong style={{display:'block',fontSize:20,marginBottom:8}}>مدیریت سری دوم و ابزارهای دیگر</strong>
         <span style={{fontSize:13,lineHeight:1.9,color:'#c9c0ad'}}>پوستر سری دوم، نتایج، پیش‌بینی‌ها، دسترسی اپراتورها و اسکنر Plato ID</span>
       </button>
     </div>}
+    {managerPage==='predictions'&&<>
+      <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
+      <PredictionCampaignManager />
+    </>}
     {managerPage==='series3'&&<>
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
       <h2 style={{...heading,marginTop:18}}>مدیریت سری سوم مسابقات تخته‌نرد</h2>
