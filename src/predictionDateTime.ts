@@ -12,6 +12,7 @@ export function formatTehranJalali(value: string | null): string {
   }).format(date);
 }
 export function jalaliInputToIso(value: string): string | null {
+  const normalized = value.trim().replace(/[۰-۹٠-٩]/g, digit => { const fa = '۰۱۲۳۴۵۶۷۸۹'.indexOf(digit); return String(fa >= 0 ? fa : '٠١٢٣٤٥٦٧٨٩'.indexOf(digit)); });
   const match = /^(\d{4})[\/.-](\d{1,2})[\/.-](\d{1,2})[ T](\d{1,2}):(\d{2})$/.exec(normalized);
   if (!match) throw new Error("تاریخ و ساعت را به شکل ۱۴۰۵/۰۸/۳۰ ۱۸:۰۰ وارد کنید.");
   const [, ys, ms, ds, hs, mins] = match;
