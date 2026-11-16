@@ -12,7 +12,7 @@ export function Series3VideoManager(){
  const [busy,setBusy]=useState(false);
 
  const [message,setMessage]=useState('');
- const [analytics,setAnalytics]=useState<{unique_viewers:number;modal_opens:number;play_starts:number;completed_sessions:number;watched_seconds:number}|null>(null);
+ const [analytics,setAnalytics]=useState<{modal_opens:number}|null>(null);
  const [analyticsError,setAnalyticsError]=useState('');
  async function refreshAnalytics(){
   if(!supabase)return;
@@ -76,18 +76,11 @@ export function Series3VideoManager(){
     <button type="button" disabled={busy} onClick={()=>void refreshAnalytics()} style={{padding:'7px 11px',border:'1px solid #8c6a34',borderRadius:8,background:'#211b12',color:'#f0d99f'}}>به‌روزرسانی آمار</button>
    </div>
    {analyticsError&&<p role="alert" style={{color:'#ff9b91',fontSize:12}}>{analyticsError}</p>}
-   {analytics&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(125px,1fr))',gap:9,marginTop:12}}>
-    {[
-     ['بازدیدکننده منحصربه‌فرد',analytics.unique_viewers],
-     ['بازشدن پنجره ویدیو',analytics.modal_opens],
-     ['شروع پخش',analytics.play_starts],
-     ['تماشای کامل',analytics.completed_sessions],
-     ['مجموع زمان تماشا',Math.floor(analytics.watched_seconds/60)+' دقیقه']
-    ].map(([label,value])=><div key={String(label)} style={{padding:11,border:'1px solid #51452d',borderRadius:9,background:'#101113'}}>
-     <div style={{fontSize:11,color:'#c9c0ad',marginBottom:5}}>{label}</div><strong style={{fontSize:21,color:'#f0d99f'}}>{value}</strong>
-    </div>)}
+   {analytics&&<div style={{marginTop:12,padding:16,border:'1px solid #51452d',borderRadius:9,background:'#101113',textAlign:'center'}}>
+    <div style={{fontSize:12,color:'#c9c0ad',marginBottom:6}}>تعداد دفعات باز شدن ویدیو</div>
+    <strong style={{fontSize:30,color:'#f0d99f'}}>{analytics.modal_opens}</strong>
    </div>}
-   <p style={{fontSize:11,color:'#a9a08e',lineHeight:1.8,marginBottom:0}}>این آمار فقط بازدیدکنندگانی را شامل می‌شود که با ثبت آمار ناشناس موافقت کرده‌اند. شناسه مرورگر به‌تنهایی هویت واقعی افراد را مشخص نمی‌کند.</p>
+   <p style={{fontSize:11,color:'#a9a08e',lineHeight:1.8,marginBottom:0}}>فقط تعداد دفعات باز شدن پنجره ویدیو ثبت می‌شود؛ هیچ شناسه ماندگار یا اطلاعات هویتی بازدیدکنندگان ذخیره نمی‌شود.</p>
   </section>
   {message&&<p role="status" style={{fontSize:13,color:'#f0d99f',marginBottom:0}}>{message}</p>}
  </section>;
