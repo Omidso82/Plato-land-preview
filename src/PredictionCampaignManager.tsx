@@ -31,7 +31,7 @@ export default function PredictionCampaignManager(){
  {field('event_key','شناسه رویداد (مثلاً series3)')}
  <label style={label}>وضعیت انتشار<select style={input} value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value as Campaign['status']}))}><option value="draft">پیش‌نویس</option><option value="published">منتشرشده</option><option value="closed">بسته‌شده</option><option value="archived">آرشیو</option></select></label>
  <label style={label}>وضعیت شرکت<select style={input} value={form.is_open?'open':'closed'} onChange={e=>setForm(p=>({...p,is_open:e.target.value==='open'}))}><option value="closed">بسته</option><option value="open">باز</option></select></label>
- {field('opens_at','شروع (زمان محلی دستگاه)')&&<input type="datetime-local" style={input} value={form.opens_at} onChange={e=>setForm(p=>({...p,opens_at:e.target.value}))}/>}
+ <label style={label}>شروع (زمان محلی دستگاه)<input type="datetime-local" style={input} value={form.opens_at} onChange={e=>setForm(p=>({...p,opens_at:e.target.value}))}/></label>
  <label style={label}>پایان مهلت (زمان محلی دستگاه)<input type="datetime-local" style={input} value={form.closes_at} onChange={e=>setForm(p=>({...p,closes_at:e.target.value}))}/></label>
  {field('questionsText','ساختار سؤال‌ها (JSON)',5)}
  {field('prizeText','جایزه و شرایط (JSON)',3)}
