@@ -1,56 +1,61 @@
 # PLATO LAND – Temporary Projects
-## Prediction Center – Jalali / Tehran Schedule and Series 3 Champion Roster
-**Version:** 1.4.1  
+## Prediction Center – Simple Owner Management
+**Version:** 1.5.0  
 **Date:** 2026-11-16  
-**Status:** Follow-up fixes committed to feature branch; CI and preview verification pending
+**Status:** Simplified owner form committed to feature branch; build and deployment verification pending.
 
-### Scope
-This change extends the reusable Prediction Center inside the existing Temporary Projects management panel. It does not create a separate preview site or modify the Main Website project.
+### Scope and fixed operating rule
+The Prediction Center is managed only inside the existing Temporary Projects admin panel. No separate admin panel or alternate user testing workflow is introduced. The owner checks and operates the feature from that existing panel.
 
-### Approved behavior
-- Campaign start/end entry and display use the Jalali calendar.
-- All campaign schedule calculations use Iran time zone `Asia/Tehran`; persisted timestamps are ISO instants.
-- A published campaign with `is_open=true` and a future `opens_at` is visible on `/predictions` before opening, but the response form stays unavailable until the Tehran start time.
-- The public page refreshes its schedule state every second, so an already-open page changes automatically at start and end boundaries without a manual reload.
-- The Edge Function independently enforces campaign start/end boundaries; client-side timing is not the security control.
-- Campaign start/end ordering is validated before save.
-- Jalali parsing normalizes Persian and Arabic-Indic digits, checks input ranges, and rejects impossible calendar dates rather than accepting an approximate date.
+### Owner workflow
+The management form is simplified for a non-technical owner:
+1. Prediction title.
+2. Description shown to participants.
+3. Prediction type: Series 3 champion, match prediction, or custom prediction.
+4. Candidate selection for Series 3 champion, or simple question and answer options for other prediction types.
+5. Optional prize description.
+6. Jalali start and end date/time using Asia/Tehran.
+7. Publication status and a simple open/closed participation checkbox.
 
-### Series 3 champion candidate source
-The owner campaign manager loads candidates from `public.plato_land_series3_registration_requests` with `registration_status='main'`, ordered by registration time. The owner can select the eligible Plato IDs. The selected IDs are saved into the campaign's champion question options, creating a campaign-specific snapshot; later registration status changes do not silently rewrite that campaign's candidate list.
+Technical fields (internal slug, event key, JSON question schema, prize JSON, scoring JSON, winner JSON, and public display JSON) are generated or retained internally and are not exposed as form fields. Every input has a Persian explanation above it. Custom/match predictions support multiple questions; select options are entered one per line. Text and numeric answer types are also available.
 
-The source table currently contains only `plato_id` and registration metadata, not player display names. Therefore the current selector and public option list show Plato IDs, not player names. No names are inferred or fabricated.
+The campaign list presents plain Persian status and action buttons for edit, participant report, open, close, and archive. Archiving preserves campaign and response data.
 
-Read-only primary database count at implementation time:
-- main: 32
-- waitlist: 4
-- withdrawn: 1
+### Scheduling
+- Start/end entry uses Jalali text input, not the native iOS Gregorian date picker.
+- Accepted input example: ۱۴۰۵/۰۸/۳۰ ۱۸:۰۰.
+- All schedule parsing, display, and enforcement use Asia/Tehran.
+- Invalid/impossible Jalali dates and invalid time ranges are rejected.
+- A published scheduled campaign can be visible before opening; responses remain disabled until the start and stop at the end.
+- The public page refreshes schedule state while open; server-side Edge Function enforcement remains authoritative.
 
-Waitlist and withdrawn registrations are excluded from the candidate roster.
+### Series 3 champion candidates
+Candidates are loaded from public.plato_land_series3_registration_requests with registration_status='main'. Only Plato IDs are shown because the registration table has no player-name field. Selected candidates are saved as a campaign-specific snapshot. Waitlist and withdrawn registrations are excluded.
 
-### Files changed
-- `src/predictionDateTime.ts` – Jalali/Tehran parsing and formatting helpers; stricter digit, range, and real-calendar-date validation.
-- `src/PredictionCampaignManager.tsx` – Jalali date/time entry, time-order validation, active Series 3 roster selector, candidate snapshot, Tehran timestamp display.
-- `src/PublicPredictions.tsx` – public schedule display in Jalali/Tehran time, pre-start visible / non-submittable state, and automatic schedule-boundary refresh.
-- This document – follow-up implementation and QA status.
+Read-only primary DB count at implementation time: 32 main, 4 waitlist, 1 withdrawn.
 
-### Database and protected data
-- No database migration or database write was performed for this feature or follow-up fixes.
-- No campaign or prediction entry was created.
-- Series 3 registration data was read only.
-- No changes to legacy Series 2 prediction tables or features.
-- No change to the separate Main Website project.
-- No new Supabase project or paid service.
+### Data protection and project boundaries
+- No campaign or prediction entry is created by this UI refactor.
+- No DB migration is required for this UI refactor.
+- Series 3 registrations are read only.
+- Legacy Series 2 prediction tables and entries remain untouched.
+- Main Website features outside the existing Temporary Projects admin module remain out of scope.
+- No new database/project or paid service is introduced.
 
-### QA / release
-- Feature branch: `feature/prediction-jalali-tehran-roster`
-- Base: `main` at `024505fd13642720c4505bd8f0dc0b61debe7357`
-- Follow-up fixes: committed; build/typecheck and test runs pending.
-- Cloudflare branch preview must be checked after the new commit is built.
-- Owner iPhone QA remains pending.
-- Production merge and deployment have not been authorized or performed.
+### Files
+- src/PredictionCampaignManager.tsx: simplified Persian owner workflow and hidden technical JSON fields.
+- src/predictionDateTime.ts: Jalali/Tehran parsing and formatting.
+- src/PublicPredictions.tsx: public campaign schedule display and automatic start/end boundary refresh.
+- This document: version 1.5.0.
+
+### Release status
+- Working branch: feature/prediction-jalali-tehran-roster
+- Production/main deployment: not yet verified.
+- Do not ask the owner to use a separate preview URL; acceptance review must happen in the existing Temporary Projects admin panel after the approved deployment path is completed.
+- No claim of successful deployment until the exact commit is built, merged under the user's explicit project scope, and the existing panel is verified.
 
 ### Version history
-- v1.3 (2026-11-16): original Prediction Center implementation, RLS and zero-row verification.
-- v1.4 (2026-11-16): Jalali/Tehran scheduling, pre-start visibility, and owner-controlled Series 3 active-player candidate snapshot.
-- v1.4.1 (2026-11-16): automatic public schedule-boundary refresh and stricter Jalali input/calendar validation.
+- v1.3: initial Prediction Center.
+- v1.4: Jalali/Tehran scheduling and Series 3 champion candidate snapshot.
+- v1.4.1: automatic public schedule-boundary refresh and stricter Jalali input validation.
+- v1.5.0: simplified owner form; technical JSON fields hidden and replaced with clear Persian inputs and instructions.
