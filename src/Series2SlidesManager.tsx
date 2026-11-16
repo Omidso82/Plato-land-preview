@@ -4,6 +4,7 @@ import Series2FinalistPredictionAdmin from './Series2FinalistPredictionAdmin';
 import Series2ResultsManager from './Series2ResultsManager';
 import PlatoIdScannerApp from './PlatoIdScannerApp';
 import { Series3SlidesPanel } from './Series3SlidesPanel';
+import { Series3VideoManager } from './Series3VideoManager';
 import Series3RegistrationReport from './Series3RegistrationReport';
 import Series3SeedingManager from './Series3SeedingManager';
 import PredictionCampaignManager from './PredictionCampaignManager';
@@ -217,6 +218,7 @@ export default function Series2SlidesManager() {
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
       <h2 style={{...heading,marginTop:18}}>مدیریت سری سوم مسابقات تخته‌نرد</h2>
       <Series3SlidesPanel />
+      <Series3VideoManager />
       <Series3RegistrationReport />
       <Series3SeedingManager />
     </>}
