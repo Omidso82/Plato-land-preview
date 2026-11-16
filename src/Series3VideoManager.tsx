@@ -10,7 +10,17 @@ export function Series3VideoManager(){
  const [file,setFile]=useState<File|null>(null);
  const [active,setActive]=useState(false);
  const [busy,setBusy]=useState(false);
+
  const [message,setMessage]=useState('');
+ const [analytics,setAnalytics]=useState<{unique_viewers:number;modal_opens:number;play_starts:number;completed_sessions:number;watched_seconds:number}|null>(null);
+ const [analyticsError,setAnalyticsError]=useState('');
+ async function refreshAnalytics(){
+  if(!supabase)return;
+  const {data,error}=await supabase.from('plato_land_series3_video_analytics').select('*').maybeSingle();
+  if(error){setAnalyticsError('خواندن آمار ناموفق بود: '+error.message);return;}
+  setAnalytics(data as typeof analytics);setAnalyticsError('');
+ }
+
  async function refresh(){
   if(!supabase)return;
   const [{data:settings,error:settingsError},{data:objects,error:listError}]=await Promise.all([
@@ -22,7 +32,7 @@ export function Series3VideoManager(){
   setActive(Boolean(settings?.is_active));
   setCurrent(item?supabase.storage.from(BUCKET).getPublicUrl(PATH).data.publicUrl+'?v='+encodeURIComponent(item.updated_at||item.created_at||''):'');
  }
- useEffect(()=>{void refresh()},[]);
+ useEffect(()=>{void refresh();void refreshAnalytics()},[]);
  async function upload(){
   if(!supabase||!file)return;
   if(file.type!=='video/mp4'||file.size>LIMIT){setMessage('فقط فایل MP4 با حجم حداکثر ۱۰۰ مگابایت مجاز است.');return;}
@@ -59,6 +69,26 @@ export function Series3VideoManager(){
   {file&&<p style={{fontSize:12,color:'#c9c0ad'}}>فایل انتخاب‌شده: {file.name} · {(file.size/1024/1024).toFixed(1)} MB</p>}
   <button type="button" disabled={!file||busy} onClick={()=>void upload()} style={{width:'100%',marginTop:8,padding:11,border:0,borderRadius:9,background:'#c49b4b',color:'#17120a',fontWeight:800,cursor:'pointer'}}>{busy?'در حال انجام…':current?'بارگذاری و جایگزینی ویدیو':'بارگذاری ویدیو'}</button>
   <button type="button" disabled={!current||busy} onClick={()=>void toggle()} style={{width:'100%',marginTop:8,padding:11,border:'1px solid #8c6a34',borderRadius:9,background:'#211b12',color:'#f0d99f',fontWeight:800,cursor:'pointer'}}>{active?'غیرفعال کردن نمایش در صفحه اول':'فعال کردن نمایش در صفحه اول'}</button>
+
+  <section style={{marginTop:18,padding:14,border:'1px solid #8c6a34',borderRadius:11,background:'#151515'}}>
+   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+    <h4 style={{margin:0,color:'#f0d99f',fontSize:16}}>آمار تماشای ویدیو</h4>
+    <button type="button" disabled={busy} onClick={()=>void refreshAnalytics()} style={{padding:'7px 11px',border:'1px solid #8c6a34',borderRadius:8,background:'#211b12',color:'#f0d99f'}}>به‌روزرسانی آمار</button>
+   </div>
+   {analyticsError&&<p role="alert" style={{color:'#ff9b91',fontSize:12}}>{analyticsError}</p>}
+   {analytics&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(125px,1fr))',gap:9,marginTop:12}}>
+    {[
+     ['بازدیدکننده منحصربه‌فرد',analytics.unique_viewers],
+     ['بازشدن پنجره ویدیو',analytics.modal_opens],
+     ['شروع پخش',analytics.play_starts],
+     ['تماشای کامل',analytics.completed_sessions],
+     ['مجموع زمان تماشا',Math.floor(analytics.watched_seconds/60)+' دقیقه']
+    ].map(([label,value])=><div key={String(label)} style={{padding:11,border:'1px solid #51452d',borderRadius:9,background:'#101113'}}>
+     <div style={{fontSize:11,color:'#c9c0ad',marginBottom:5}}>{label}</div><strong style={{fontSize:21,color:'#f0d99f'}}>{value}</strong>
+    </div>)}
+   </div>}
+   <p style={{fontSize:11,color:'#a9a08e',lineHeight:1.8,marginBottom:0}}>این آمار فقط بازدیدکنندگانی را شامل می‌شود که با ثبت آمار ناشناس موافقت کرده‌اند. شناسه مرورگر به‌تنهایی هویت واقعی افراد را مشخص نمی‌کند.</p>
+  </section>
   {message&&<p role="status" style={{fontSize:13,color:'#f0d99f',marginBottom:0}}>{message}</p>}
  </section>;
 }
