@@ -1,8 +1,8 @@
 # PLATO LAND – Temporary Projects
 ## Prediction Center – Simple Owner Management
-**Version:** 1.5.0  
+**Version:** 1.5.1  
 **Date:** 2026-11-16  
-**Status:** Simplified owner form committed to feature branch; build and deployment verification pending.
+**Status:** Merged and deployed to the existing site; owner iPhone acceptance review pending.
 
 ### Scope and fixed operating rule
 The Prediction Center is managed only inside the existing Temporary Projects admin panel. No separate admin panel or alternate user testing workflow is introduced. The owner checks and operates the feature from that existing panel.
@@ -50,7 +50,10 @@ Read-only primary DB count at implementation time: 32 main, 4 waitlist, 1 withdr
 
 ### Release status
 - Working branch: feature/prediction-jalali-tehran-roster
-- Production/main deployment: not yet verified.
+- PR #192 merged into main as 3aeb17b45c9108e2048b00dbd193c950f4c4f3a4.
+- Main build/typecheck and Deno checks passed.
+- Main deployment workflow 43888287056 completed successfully.
+- The deployed feature is part of the existing site and the existing Temporary Projects admin panel; no separate admin panel was created.
 - Do not ask the owner to use a separate preview URL; acceptance review must happen in the existing Temporary Projects admin panel after the approved deployment path is completed.
 - No claim of successful deployment until the exact commit is built, merged under the user's explicit project scope, and the existing panel is verified.
 
@@ -59,3 +62,4 @@ Read-only primary DB count at implementation time: 32 main, 4 waitlist, 1 withdr
 - v1.4: Jalali/Tehran scheduling and Series 3 champion candidate snapshot.
 - v1.4.1: automatic public schedule-boundary refresh and stricter Jalali input validation.
 - v1.5.0: simplified owner form; technical JSON fields hidden and replaced with clear Persian inputs and instructions.
+- v1.5.1: recorded successful merge, main CI, and deployment; owner review in the existing panel remains pending.
