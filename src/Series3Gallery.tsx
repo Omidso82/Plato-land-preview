@@ -20,7 +20,7 @@ export default function Series3Gallery(){
  }
  async function recordVideoEvent(event_type:'modal_open'|'play'|'progress'|'complete',watched_seconds=0){
   if(!supabase||analyticsConsent!=='accepted'||!analyticsSession.current)return;
-  try{await supabase.from('plato_land_series3_video_events').insert({visitor_id:analyticsIdentity(),session_id:analyticsSession.current,event_type,watched_seconds});}
+  try{const {error}=await supabase.from('plato_land_series3_video_events').insert({visitor_id:analyticsIdentity(),session_id:analyticsSession.current,event_type,watched_seconds});if(error)console.warn('Series 3 video analytics event rejected',error.message);}
   catch(error){console.warn('Series 3 video analytics event failed',error);}
  }
  function acceptAnalytics(){localStorage.setItem('plato_series3_video_analytics_consent','accepted');setAnalyticsConsent('accepted');}
@@ -77,10 +77,12 @@ export default function Series3Gallery(){
      <button type="button" onClick={rejectAnalytics} style={{padding:'8px 12px',border:'1px solid #8c6a34',borderRadius:8,background:'#211b12',color:'#f0d99f'}}>موافق نیستم</button>
     </div>
    </section>}
+
+   {video&&analyticsConsent!=='unset'&&<button type="button" onClick={()=>setAnalyticsConsent('unset')} style={{display:'block',margin:'0 auto 8px',background:'transparent',border:0,color:'#a99a7d',fontSize:10,textDecoration:'underline',cursor:'pointer'}}>تغییر انتخاب حریم خصوصی آمار ناشناس</button>}
    {video&&<button type="button" onClick={openRulesVideo} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'16px',marginBottom:18,border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(120deg,#2a2114,#151416)',color:'#f0d99f',fontSize:15,fontWeight:900,cursor:'pointer'}}><PlayCircle size={23}/> قوانین مهم سری سوم</button>}
-   {videoOpen&&<div role="dialog" aria-modal="true" aria-label="قوانین مهم سری سوم" onClick={()=>setVideoOpen(false)} style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,.88)',display:'grid',placeItems:'center',padding:14}}>
+   {videoOpen&&<div role="dialog" aria-modal="true" aria-label="قوانین مهم سری سوم" onClick={closeRulesVideo} style={{position:'fixed'},inset:0,zIndex:9999,background:'rgba(0,0,0,.88)',display:'grid',placeItems:'center',padding:14}}>
     <section onClick={e=>e.stopPropagation()} style={{width:'min(960px,100%)',background:'#111214',border:'1px solid #8c6a34',borderRadius:14,padding:12,boxShadow:'0 20px 80px #000'}}>
-     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,marginBottom:10,color:'#f0d99f',fontWeight:800}}><span>قوانین مهم سری سوم</span><button type="button" aria-label="بستن ویدیو" onClick={()=>setVideoOpen(false)} style={{background:'transparent',border:0,color:'#f0d99f',cursor:'pointer'}}><X size={23}/></button></div>
+     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,marginBottom:10,color:'#f0d99f',fontWeight:800}}><span>قوانین مهم سری سوم</span><button type="button" aria-label="بستن ویدیو" onClick={closeRulesVideo} style={{background:'transparent'},border:0,color:'#f0d99f',cursor:'pointer'}}><X size={23}/></button></div>
      
      <video key={video} src={video} controls playsInline autoPlay
       onPlay={()=>{if(!analyticsPlayed.current){analyticsPlayed.current=true;void recordVideoEvent('play');}}}
