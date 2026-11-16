@@ -13,6 +13,7 @@ export default function Series3Gallery(){
  const analyticsCompleted=useRef(false);
  const lastVideoTime=useRef(0);
  const pendingWatchSeconds=useRef(0);
+ useEffect(()=>{const saved=localStorage.getItem('plato_series3_video_analytics_consent');if(saved==='accepted'||saved==='rejected')setAnalyticsConsent(saved);},[]);
  function analyticsIdentity(){
   let id=localStorage.getItem('plato_series3_video_visitor');
   if(!id){id=crypto.randomUUID();localStorage.setItem('plato_series3_video_visitor',id);}
