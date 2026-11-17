@@ -5,10 +5,11 @@ type Props={label:string;value:string;onChange:(value:string)=>void};
 type JalaliDate={year:number;month:number;day:number};
 const calendarParts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{timeZone:'Asia/Tehran',year:'numeric',month:'numeric',day:'numeric'});
 const monthName=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',month:'long'});
+const yearNumber=new Intl.NumberFormat('fa-IR',{useGrouping:false,maximumFractionDigits:0});
 const weekDays=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'];
 const pad=(n:number)=>String(n).padStart(2,'0');
 const normalizeDigits=(value:string)=>value.replace(/[۰-۹٠-٩]/g,d=>{const p='۰۱۲۳۴۵۶۷۸۹'.indexOf(d);return String(p>=0?p:'٠١٢٣٤٥٦٧٨٩'.indexOf(d));});
-const jalaliText=(value:string)=>isoToJalaliInput(value)||normalizeDigits(value.trim());
+const jalaliText=(value:string)=>{const normalized=normalizeDigits(value.trim());return /^\\d{4}\\/\\d{2}\\/\\d{2} \\d{2}:\\d{2}$/.test(normalized)?normalized:isoToJalaliInput(value)||normalized;};
 
 function jalaliParts(date:Date):JalaliDate{
  const parts=Object.fromEntries(calendarParts.formatToParts(date).map(p=>[p.type,p.value]));
@@ -74,7 +75,7 @@ export default function JalaliDateTimePicker({label,value,onChange}:Props){
   {expanded&&<div style={{display:'grid',gap:12,padding:12,border:'1px solid #66532f',borderRadius:10,background:'#101112'}}>
    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
     <button type="button" onClick={()=>changeMonth(1)} aria-label="ماه بعد" style={{...selectStyle,width:42,cursor:'pointer'}}>‹</button>
-    <strong>{title} {visibleYear.toLocaleString('fa-IR')}</strong>
+    <strong>{title} {yearNumber.format(visibleYear)}</strong>
     <button type="button" onClick={()=>changeMonth(-1)} aria-label="ماه قبل" style={{...selectStyle,width:42,cursor:'pointer'}}>›</button>
    </div>
    <div style={{display:'grid',gridTemplateColumns:'repeat(7,minmax(0,1fr))',gap:3}}>
