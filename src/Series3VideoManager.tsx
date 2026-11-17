@@ -38,7 +38,7 @@ export function Series3VideoManager(){
   if(file.type!=='video/mp4'||file.size>LIMIT){setMessage('فقط فایل MP4 با حجم حداکثر ۱۰۰ مگابایت مجاز است.');return;}
   setBusy(true);setMessage('در حال بارگذاری ویدیو…');
   try{
-   const {error}=await supabase.storage.from(BUCKET).upload(PATH,file,{upsert:true,contentType:'video/mp4',cacheControl:'0'});
+   const {error}=await supabase.storage.from(BUCKET).upload(PATH,file,{upsert:true,contentType:'video/mp4',cacheControl:'31536000'});
    if(error)throw error;
    const {data:{user}}=await supabase.auth.getUser();
    const {error:saveError}=await supabase.from('plato_land_series3_video_settings').upsert({id:1,storage_path:PATH,is_active:active,updated_at:new Date().toISOString(),updated_by:user?.id||null});
