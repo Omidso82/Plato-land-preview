@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Crown, Trophy, Sparkles } from 'lucide-react';
 import { supabase } from './supabase';
+import TemporaryPageHeader from './TemporaryPageHeader';
 import Series2Prediction from './Series2Prediction';
 import Series2FinalistPrediction from './Series2FinalistPrediction';
 
@@ -242,15 +243,19 @@ export default function Series2Registration({ showSeries3Entry = true, showSerie
   return (
     <main className="s2leaderboard" dir="rtl">
       <div className="s2leaderboard-shell">
-        <header className="s2brand-header">
-          <div className="s2brand-emblem" aria-hidden="true"><Crown size={30} strokeWidth={1.6} /></div>
-          <div className="s2brand-name">PLATO <span>LAND</span></div>
-          <div className="s2brand-tagline">بازی، رقابت، قهرمانی</div>
-          <div className="s2brand-rule"><i /><span>✦</span><i /></div>
-          {showSeriesLabel && (
-          <div className="s2series-label"><Sparkles size={13} /> لیگ تخصصی تخته‌نرد</div>
-          )}
-        </header>
+        {showArchiveHeader ? (
+          <TemporaryPageHeader showBack={false} />
+        ) : (
+          <header className="s2brand-header">
+            <div className="s2brand-emblem" aria-hidden="true"><Crown size={30} strokeWidth={1.6} /></div>
+            <div className="s2brand-name">PLATO <span>LAND</span></div>
+            <div className="s2brand-tagline">بازی، رقابت، قهرمانی</div>
+            <div className="s2brand-rule"><i /><span>✦</span><i /></div>
+            {showSeriesLabel && (
+              <div className="s2series-label"><Sparkles size={13} /> لیگ تخصصی تخته‌نرد</div>
+            )}
+          </header>
+        )}
 
         {showArchiveHeader && (
           <section aria-label="آرشیو رسمی سری دوم" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',margin:'0 0 16px',padding:'10px 4px 14px',borderBottom:'1px solid rgba(140,106,52,.55)'}}>
