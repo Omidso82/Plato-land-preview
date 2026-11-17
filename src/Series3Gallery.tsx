@@ -7,7 +7,7 @@ export default function Series3Gallery(){
  const [poster,setPoster]=useState('');
  const [rulesVideo,setRulesVideo]=useState('');
  const [teaserVideo,setTeaserVideo]=useState('');
- const [heroMode,setHeroMode]=useState<'poster'|'video'>('poster');
+ const [heroMode,setHeroMode]=useState<'poster'|'video'|null>(null);
  const [videoOpen,setVideoOpen]=useState(false);
  const [heroVideoFailed,setHeroVideoFailed]=useState(false);
  const [teaserMuted,setTeaserMuted]=useState(true);
@@ -37,15 +37,19 @@ export default function Series3Gallery(){
    }
    const {data:homeSettings,error:homeSettingsError}=await supabase.from('plato_land_series3_home_media_settings').select('media_mode,storage_path').eq('id',1).maybeSingle();
    if(active&&!homeSettingsError&&homeSettings?.media_mode==='video'&&homeSettings.storage_path){
+    setHeroMode('video');
     const {data:items,error:listError}=await supabase.storage.from('series3-video').list('teaser',{limit:10});
     const teaser=(items||[]).find(x=>x.name==='series3-home-teaser.mp4');
     if(!listError&&teaser){
      const url=supabase.storage.from('series3-video').getPublicUrl(homeSettings.storage_path).data.publicUrl;
      setTeaserVideo(url+'?v='+encodeURIComponent(teaser.updated_at||teaser.created_at||''));
-     setHeroMode('video');
     }
+   }else if(active&&!homeSettingsError&&homeSettings?.media_mode==='poster'){
+    setHeroMode('poster');
+   }else if(active){
+    setHeroMode(null);
    }
-   const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
+    const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
    if(active&&!settingsError&&settings?.is_active&&settings.storage_path){
     const {data:objects,error:listError}=await supabase.storage.from('series3-video').list('rules',{limit:20});
     const file=(objects||[]).find(x=>x.name==='series3-important-rules.mp4');
@@ -63,7 +67,7 @@ export default function Series3Gallery(){
  return <main dir="rtl" style={{minHeight:'100vh',background:'radial-gradient(ellipse at top,#2a2112 0%,#101114 48%,#08090b 100%)',color:'#f4ead2',padding:'24px 14px 48px',fontFamily:'inherit'}}>
   <div style={{maxWidth:920,margin:'0 auto'}}>
    <TemporaryPageHeader showBack={false}/>
-   {heroMode==='video'&&teaserVideo&&!heroVideoFailed?<section style={{position:'relative',marginBottom:16}}><video ref={teaserElement} key={teaserVideo} src={teaserVideo} autoPlay muted={teaserMuted} loop playsInline preload="auto" onCanPlay={()=>{if(teaserElement.current){teaserElement.current.muted=true;void teaserElement.current.play().catch(()=>{});}}} onError={()=>setHeroVideoFailed(true)} aria-label="تیزر مسابقات سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',background:'#08090b'}}/><button type="button" onClick={()=>{const nextMuted=!teaserMuted;setTeaserMuted(nextMuted);if(teaserElement.current){teaserElement.current.muted=nextMuted;if(!nextMuted){teaserElement.current.volume=1;void teaserElement.current.play().catch(()=>{});}}}} aria-label={teaserMuted?'فعال‌کردن صدای تیزر':'قطع صدای تیزر'} style={{position:'absolute',bottom:12,right:12,zIndex:2,display:'inline-flex',alignItems:'center',justifyContent:'center',padding:6,border:0,borderRadius:6,background:'rgba(0,0,0,.28)',color:'#f4dfad',cursor:'pointer',boxShadow:'none'}}>{teaserMuted?<Volume2 size={16}/>:<VolumeX size={16}/>}</button></section>:poster&&<section style={{background:'#141416',border:'1px solid #715a31',borderRadius:16,padding:10,marginBottom:16}}><img src={poster} alt="پوستر اصلی سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10}}/></section>}
+   {heroMode==='video'&&teaserVideo&&!heroVideoFailed?<section style={{position:'relative',marginBottom:16}}><video ref={teaserElement} key={teaserVideo} src={teaserVideo} autoPlay muted={teaserMuted} loop playsInline preload="auto" onCanPlay={()=>{if(teaserElement.current){teaserElement.current.muted=true;void teaserElement.current.play().catch(()=>{});}}} onError={()=>setHeroVideoFailed(true)} aria-label="تیزر مسابقات سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',background:'#08090b'}}/><button type="button" onClick={()=>{const nextMuted=!teaserMuted;setTeaserMuted(nextMuted);if(teaserElement.current){teaserElement.current.muted=nextMuted;if(!nextMuted){teaserElement.current.volume=1;void teaserElement.current.play().catch(()=>{});}}}} aria-label={teaserMuted?'فعال‌کردن صدای تیزر':'قطع صدای تیزر'} style={{position:'absolute',bottom:12,right:12,zIndex:2,display:'inline-flex',alignItems:'center',justifyContent:'center',padding:6,border:0,borderRadius:6,background:'rgba(0,0,0,.28)',color:'#f4dfad',cursor:'pointer',boxShadow:'none'}}>{teaserMuted?<Volume2 size={16}/>:<VolumeX size={16}/>}</button></section>:heroMode==='poster'&&poster?<section style={{background:'#141416',border:'1px solid #715a31',borderRadius:16,padding:10,marginBottom:16}}><img src={poster} alt="پوستر اصلی سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10}}/></section>:null}
    <section style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'13px 16px',margin:'0 0 18px',border:'1px solid rgba(140,106,52,.65)',borderRadius:12,background:'linear-gradient(110deg,rgba(42,33,20,.88),rgba(20,20,22,.96))'}}>
     <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}><span style={{width:34,height:34,display:'grid',placeItems:'center',borderRadius:9,background:'rgba(214,180,109,.12)',flexShrink:0}}><Archive size={18} color="#d6b46d"/></span><div><div style={{fontSize:13,fontWeight:800,color:'#f0d99f'}}>آرشیو مسابقات سری دوم</div><div style={{fontSize:11,color:'#b7a27b',marginTop:3}}>مشاهده نتایج و سوابق دوره گذشته</div></div></div>
     <a href="/?page=series2-archive" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,padding:'9px 13px',border:'1px solid #8c6a34',borderRadius:9,color:'#f0d99f',background:'#211b12',textDecoration:'none',fontSize:12,fontWeight:800,whiteSpace:'nowrap'}}>ورود به آرشیو <ChevronRight size={15}/></a>
