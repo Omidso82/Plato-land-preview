@@ -10,7 +10,7 @@ const pad=(n:number)=>String(n).padStart(2,'0');
 const normalizeDigits=(value:string)=>value.replace(/[۰-۹٠-٩]/g,d=>{const p='۰۱۲۳۴۵۶۷۸۹'.indexOf(d);return String(p>=0?p:'٠١٢٣٤٥٦٧٨٩'.indexOf(d));});
 const jalaliText=(value:string)=>{
  const normalized=normalizeDigits(value.trim());
- if(/^\\d{4}\\/\\d{2}\\/\\d{2} \\d{2}:\\d{2}$/.test(normalized))return normalized;
+ if(/^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}$/.test(normalized))return normalized;
  return isoToJalaliInput(value)||normalized;
 };
 
