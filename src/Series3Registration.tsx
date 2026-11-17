@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {Crown,ChevronLeft,ChevronRight,CheckCircle2,Clock} from 'lucide-react';
 import {supabase} from './supabase';
+import TemporaryPageHeader from './TemporaryPageHeader';
 
 type Slide={number:number,url:string,updated_at:string};
 type RegistrationResult={status:'main'|'waitlist'|'duplicate';queue_position?:number;main_count?:number};
@@ -74,18 +75,11 @@ export default function Series3Registration(){
  }
  return <main dir="rtl" style={shell}>
   <div style={{maxWidth:720,margin:'0 auto'}}>
-   <header style={{textAlign:'center',padding:'8px 8px 18px'}}>
-    <Crown size={32} color="#d6b46d" strokeWidth={1.5}/>
-    <div style={{fontSize:25,fontWeight:900,letterSpacing:2,marginTop:6}}>PLATO <span style={{color:'#d6b46d'}}>LAND</span></div>
-    <div style={{fontSize:12,color:'#b7a27b',marginTop:5}}>بازی، رقابت، قهرمانی</div>
-    <h1 style={{fontSize:22,margin:'18px 0 5px'}}>فرایند ثبت‌نام سری سوم</h1>
+   <TemporaryPageHeader backHref="/series3" backLabel="بازگشت به صفحه سری سوم"/>
+   <header dir="rtl" style={{textAlign:'center',padding:'0 8px 18px'}}>
+    <h1 style={{fontSize:22,margin:'0 0 5px'}}>فرایند ثبت‌نام سری سوم</h1>
     <p style={{...muted,margin:0}}>تصاویر قوانین را به‌ترتیب مطالعه کن و در پایان ثبت‌نامت را تکمیل کن.</p>
    </header>
-   <div style={{maxWidth:720,margin:'0 auto 12px',textAlign:'right'}}>
-    <button type="button" onClick={()=>window.history.back()} style={{display:'inline-flex',alignItems:'center',gap:7,padding:'9px 13px',border:'1px solid #8c6a34',borderRadius:9,background:'#201b12',color:'#f0d99f',fontSize:13,fontWeight:700,cursor:'pointer'}}>
-     <ChevronRight size={17}/> بازگشت
-    </button>
-   </div>
    <section style={panel}>
     {loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:!registrationOpen?<div style={{textAlign:'center',padding:'34px 10px'}}><Clock size={46} color='#e4c77e'/><h2 style={{color:'#f3d995'}}>ثبت‌نام فعلاً بسته است</h2><p style={muted}>زمان بازگشایی ثبت‌نام توسط مدیریت اعلام خواهد شد.</p></div>:done?
       <div style={{textAlign:'center',padding:'28px 8px'}}>

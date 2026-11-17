@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {Crown,ArrowLeft,ChevronRight,Archive,PlayCircle,X} from 'lucide-react';
 import {supabase} from './supabase';
+import TemporaryPageHeader from './TemporaryPageHeader';
 
 export default function Series3Gallery(){
  const [poster,setPoster]=useState('');
@@ -47,7 +48,7 @@ export default function Series3Gallery(){
 
  return <main dir="rtl" style={{minHeight:'100vh',background:'radial-gradient(ellipse at top,#2a2112 0%,#101114 48%,#08090b 100%)',color:'#f4ead2',padding:'24px 14px 48px',fontFamily:'inherit'}}>
   <div style={{maxWidth:920,margin:'0 auto'}}>
-   <header style={{textAlign:'center',padding:'18px 8px 22px'}}><Crown size={34} color="#d6b46d" strokeWidth={1.5}/><div style={{fontSize:27,fontWeight:900,letterSpacing:2,marginTop:7}}>PLATO <span style={{color:'#d6b46d'}}>LAND</span></div><div style={{fontSize:12,color:'#b7a27b',marginTop:7}}>بازی، رقابت، قهرمانی</div></header>
+   <TemporaryPageHeader showBack={false}/>
    {poster&&<section style={{background:'#141416',border:'1px solid #715a31',borderRadius:16,padding:10,marginBottom:16}}><img src={poster} alt="پوستر اصلی سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10}}/></section>}
    <section style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'13px 16px',margin:'0 0 18px',border:'1px solid rgba(140,106,52,.65)',borderRadius:12,background:'linear-gradient(110deg,rgba(42,33,20,.88),rgba(20,20,22,.96))'}}>
     <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}><span style={{width:34,height:34,display:'grid',placeItems:'center',borderRadius:9,background:'rgba(214,180,109,.12)',flexShrink:0}}><Archive size={18} color="#d6b46d"/></span><div><div style={{fontSize:13,fontWeight:800,color:'#f0d99f'}}>آرشیو مسابقات سری دوم</div><div style={{fontSize:11,color:'#b7a27b',marginTop:3}}>مشاهده نتایج و سوابق دوره گذشته</div></div></div>
