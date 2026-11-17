@@ -9,7 +9,7 @@ const yearNumber=new Intl.NumberFormat('fa-IR',{useGrouping:false,maximumFractio
 const weekDays=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'];
 const pad=(n:number)=>String(n).padStart(2,'0');
 const normalizeDigits=(value:string)=>value.replace(/[۰-۹٠-٩]/g,d=>{const p='۰۱۲۳۴۵۶۷۸۹'.indexOf(d);return String(p>=0?p:'٠١٢٣٤٥٦٧٨٩'.indexOf(d));});
-const jalaliText=(value:string)=>{const normalized=normalizeDigits(value.trim());return /^\\d{4}\\/\\d{2}\\/\\d{2} \\d{2}:\\d{2}$/.test(normalized)?normalized:isoToJalaliInput(value)||normalized;};
+const jalaliText=(value:string)=>{const normalized=normalizeDigits(value.trim());return /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}$/.test(normalized)?normalized:isoToJalaliInput(value)||normalized;};
 
 function jalaliParts(date:Date):JalaliDate{
  const parts=Object.fromEntries(calendarParts.formatToParts(date).map(p=>[p.type,p.value]));
