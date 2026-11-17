@@ -69,7 +69,7 @@ export default function PublicPredictions(){
        <form onSubmit={e=>{e.preventDefault();void submit(selected)}} style={{display:'grid',gap:12,marginTop:8}}>
         <label style={{display:'grid',gap:6}}>Plato ID<input dir="ltr" autoCapitalize="none" maxLength={80} required style={field} value={(values[selected.id]||{plato_id:'',answers:{}}).plato_id} onChange={e=>update(selected.id,x=>({...x,plato_id:e.target.value}))}/></label>
         {(selected.questions||[]).map(q=><label key={q.id} style={{display:'grid',gap:6}}>{q.label}{q.type==='select'?<select required={q.required!==false} style={field} value={(values[selected.id]?.answers[q.id])||''} onChange={e=>update(selected.id,x=>({...x,answers:{...x.answers,[q.id]:e.target.value}}))}><option value="">انتخاب کن</option>{(q.options||[]).map(o=><option key={o} value={o}>{o}</option>)}</select>:<input required={q.required!==false} type={q.type==='number'?'number':'text'} style={field} value={(values[selected.id]?.answers[q.id])||''} onChange={e=>update(selected.id,x=>({...x,answers:{...x.answers,[q.id]:e.target.value}}))}/>}</label>)}
-        <button type="submit" disabled={busy===selected.id} style={{...button,opacity:busy===selected.id?.65:1}}>{busy===selected.id?'در حال ثبت…':'ثبت پیش‌بینی'}</button>
+        <button type="submit" disabled={busy===selected.id} style={{...button,opacity:busy===selected.id ? 0.65 : 1}}>{busy===selected.id?'در حال ثبت…':'ثبت پیش‌بینی'}</button>
        </form>
        :<section style={{padding:13,border:'1px solid #51452f',borderRadius:9,background:'#101112'}}><strong>ثبت پیش‌بینی در حال حاضر بسته است.</strong><p style={muted}>جزئیات این پیش‌بینی در دسترس است. اگر نتیجه‌ای برای نمایش عمومی منتشر شود، در همین بخش قابل مشاهده خواهد بود.</p></section>}
      </article>
