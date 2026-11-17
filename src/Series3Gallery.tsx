@@ -29,25 +29,29 @@ export default function Series3Gallery(){
   let active=true;
   async function load(){
    if(!supabase)return;
-   const imageStorage=supabase.storage.from('series3-slides');
-   const {data:posterItems,error:posterError}=await imageStorage.list('poster',{limit:10});
-   if(active&&!posterError){
-    const item=(posterItems||[]).find(x=>x.name==='series3-main-poster');
-    if(item){const url=imageStorage.getPublicUrl('poster/series3-main-poster').data.publicUrl;setPoster(url+'?v='+encodeURIComponent(item.updated_at||item.created_at||''));}
-   }
    const {data:homeSettings,error:homeSettingsError}=await supabase.from('plato_land_series3_home_media_settings').select('media_mode,storage_path').eq('id',1).maybeSingle();
-   if(active&&!homeSettingsError&&homeSettings?.media_mode==='video'&&homeSettings.storage_path){
+   if(!active)return;
+   if(homeSettingsError||!homeSettings||!['poster','video'].includes(homeSettings.media_mode)){
+    setHeroMode(null);
+   }else if(homeSettings.media_mode==='video'&&homeSettings.storage_path){
+    // Lock the page to video mode before loading any video asset.
+    // Do not request or preload the poster at all in video mode.
     setHeroMode('video');
     const {data:items,error:listError}=await supabase.storage.from('series3-video').list('teaser',{limit:10});
     const teaser=(items||[]).find(x=>x.name==='series3-home-teaser.mp4');
-    if(!listError&&teaser){
+    if(active&&!listError&&teaser){
      const url=supabase.storage.from('series3-video').getPublicUrl(homeSettings.storage_path).data.publicUrl;
      setTeaserVideo(url+'?v='+encodeURIComponent(teaser.updated_at||teaser.created_at||''));
     }
-   }else if(active&&!homeSettingsError&&homeSettings?.media_mode==='poster'){
+   }else if(homeSettings.media_mode==='poster'){
+    // Only load the poster after the admin has explicitly selected poster mode.
     setHeroMode('poster');
-   }else if(active){
-    setHeroMode(null);
+    const imageStorage=supabase.storage.from('series3-slides');
+    const {data:posterItems,error:posterError}=await imageStorage.list('poster',{limit:10});
+    if(active&&!posterError){
+     const item=(posterItems||[]).find(x=>x.name==='series3-main-poster');
+     if(item){const url=imageStorage.getPublicUrl('poster/series3-main-poster').data.publicUrl;setPoster(url+'?v='+encodeURIComponent(item.updated_at||item.created_at||''));}
+    }
    }
     const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
    if(active&&!settingsError&&settings?.is_active&&settings.storage_path){
