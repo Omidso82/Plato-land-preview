@@ -246,3 +246,27 @@
 - [ ] بررسی و تأیید بخش C؛ هنوز آغاز/پذیرش نشده است.
 
 قاعده: OWNER ACCEPTED فقط وضعیت بازبینی مالک در Preview است. هیچ آزمون فنی اجرا‌نشده‌ای به‌دلیل پذیرش A/B به `PASSED` تبدیل نمی‌شود.
+
+
+---
+
+## الحاقیه QA v1.14 — Staging rebuild و Preview deploy (۴ نوامبر ۲۰۲۶)
+
+### شواهد تکمیل‌شده
+- [x] Staging مستقل `vgezfuztgzxbmvkmaoqn` از نظر schema بازسازی شده است؛ جزئیات در سند PLATO DOC SEAL ثبت شده.
+- [x] شاخه `cloudflare-preview` به URL و publishable key Staging متصل شده است.
+- [x] Cloudflare Pages deploy موفق با شناسه `b8205280-1c76-4284-b195-21a0e965fbdb` و URL اختصاصی `https://b8205280.plato-land-preview.pages.dev`.
+- [x] مالک alias `https://plato-land-preview.pages.dev` را در Safari موبایل باز کرده و رندر صفحه را مشاهده کرده است.
+- [x] بررسی GitHub نشان می‌دهد `main` همچنان در commit فعلی خود است و فایل Production config به Supabase اصلی اشاره دارد.
+- [x] هیچ داده Production به Staging کپی نشده و Production در این کار تغییر نکرده است.
+
+### مواردی که هنوز PASS نیستند
+- [ ] درخواست read-only واقعی از مرورگر Preview به Staging و پاسخ موفق آن.
+- [ ] فعال‌سازی leaked-password protection در Auth Staging.
+- [ ] حساب‌های synthetic و آزمون نقش Owner/Manager/Player.
+- [ ] Deploy و تست هفت Edge Function با secrets مختص Staging.
+- [ ] بازبینی دو SECURITY DEFINER finding.
+- [ ] تکمیل migration source/ledger reconciliation بدون replay migrationهای اجراشده.
+- [ ] QA ماتریسی موبایل/دسکتاپ، Auth، RLS، Storage، E2E و Regression.
+
+**وضعیت QA:** PARTIAL — Staging schema rebuild و deploy صفحه Preview تأیید شده‌اند؛ اتصال واقعی مرورگر به DB و آزمون‌های عملیاتی هنوز انجام/اثبات نشده‌اند. پذیرش مالک A/B طراحی، موارد فنی بالا را PASS نمی‌کند.
