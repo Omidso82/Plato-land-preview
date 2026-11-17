@@ -56,8 +56,8 @@ npm run dev
 - اسناد نسخه‌های قبلی تاریخچه‌اند و حذف یا جایگزین مخرب نشده‌اند.
 - `supabase/migrations/README.md`
 
-
 ## Cloudflare Preview مستقل
+
 - شاخه آزمایشی: `cloudflare-preview`؛ هرگز معادل شاخه انتشار تولید `main` نیست.
 - برای Build ایزوله Preview در Cloudflare، متغیر `VITE_PLATO_PREVIEW=true` را در هر دو scope (Production و Preview) تنظیم کنید.
 - Build command: `npm run build`؛ output directory: `dist`؛ root directory خالی.
@@ -65,27 +65,28 @@ npm run dev
 - Workflow `.github/workflows/cloudflare-preview-check.yml` صرفاً CI است و deploy نمی‌کند.
 - Deploy اولیهٔ Preview انجام و URL pages.dev در مرورگر موبایل مشاهده شده است؛ QA کامل همچنان باز است.
 
-
 ### آخرین نتیجه CI — ۳ نوامبر ۲۰۲۶
+
 - اجرای موفق کنترل Preview: https://github.com/Omidso82/Plato-land-preview/actions/runs/41656110849.
 - TypeScript، Build ایزوله و بررسی محدود artifact موفق شده‌اند.
 - پروژه Cloudflare Preview اکنون Deploy شده است؛ مقدار VITE_PLATO_PREVIEW=true در فرم تنظیمات پیش از Deploy مشاهده شد.
 
-
 ## وضعیت یکپارچه‌سازی مستندات — ۳ نوامبر ۲۰۲۶
+
 - مرجع اصلی مستندات و تصمیم‌ها: همین شاخه `main`.
 - شاخه `cloudflare-preview` فقط محیط مستقل آزمایشی است؛ مستندات تکمیلی آن به main منتقل شده‌اند، اما کد اختصاصی Preview در این انتقال وارد main نشده است.
 - Technical Handover: الحاقیه v3.5؛ Project History: الحاقیه v1.4؛ QA: v1.9؛ Implementation Register: v1.5.
 - محیط نمایشی Cloudflare در `https://plato-land-preview.pages.dev` ساخته و مشاهده شده است؛ این محیط، سایت Production نیست.
 
-
 ## قانون نگهداری مرجع
+
 - مستندات وضعیت، تصمیم‌ها، QA و تحویل فنی فقط در شاخه `main` مرجع هستند.
 - شاخه `cloudflare-preview` برای اجرای محیط آزمایشی است و نباید به‌عنوان مرجع دوم مستندات استفاده شود.
 
-
 ## چرخه رسمی طراحی، آزمایش و انتشار — الحاقیه ۳ نوامبر ۲۰۲۶
+
 سه محیط پروژه باید از هم تفکیک شوند:
+
 1. **Preview:** نمونه فعلی Cloudflare برای تأیید ظاهر و رفتار بصری با داده mock؛ نه برنامه عملیاتی و نه محیط تست Auth/DB.
 2. **Staging:** محیط آینده برای تست امکانات واقعی با Supabase مستقل و داده ساختگی؛ هنوز ایجاد نشده و ایجاد آن منوط به بررسی هزینه و تأیید مالک است.
 3. **Production:** سایت platoland.org و Supabase اصلی؛ محیط آزمایش نیست.
@@ -95,16 +96,16 @@ npm run dev
 مرجع جزئیات: `docs/STAGING_AND_QUALITY_ASSURANCE_PLAN_v1.0_2026-11-03.md`.
 **وضعیت مهم:** Staging هنوز ساخته نشده؛ هیچ دیتابیس آزمایشی یا مهاجرتی در این به‌روزرسانی ایجاد نشده است.
 
-
 ## یادداشت تاریخی پنل محتوای موقت — ۴ نوامبر ۲۰۲۶
+
 - مرجع جامع و جاری توافق‌ها و تصمیم‌های مالک: `docs/PROJECT_DECISION_ADDENDUM_2026-11-04.md`.
 - یادداشت فنی پنل اسلاید در Technical Handover، در نسخه اولیه با شماره v3.6 ثبت شده بود؛ این شماره با الحاقیه v3.6 مورخ ۳ نوامبر تداخل داشت و در بازبینی نهایی به‌عنوان یادداشت تکمیلیِ بدون شماره نسخه مشخص شده است.
 - الحاقیه‌های جاری هنگام ثبت این PR: Technical Handover v3.9، QA Master Checklist v1.13 و Implementation Register v1.10.
 - توافق مالک: پنل `/series2-slides-manager` و قابلیت آپلود آن پس از پایان سری دوم حفظ شود و در آینده برای صفحات/رویدادهای موقت دیگر قابل استفاده مجدد باشد. توسعه نسخه چندمنظوره هنوز انجام‌شده محسوب نمی‌شود.
 - این اسناد در شاخه مستنداتی جدا آماده شده‌اند؛ تا Merge و تأیید مالک، main و Production تغییر نکرده‌اند.
 
-
 ## وضعیت طراحی Preview — وضعیت جاری تا ۴ نوامبر ۲۰۲۶
+
 - بخش A: `OWNER ACCEPTED`؛ گزارش: `docs/UIUX_V10_7_SECTION_A_PREVIEW_OWNER_ACCEPTANCE_2026-11-04.md`.
 - بخش B: `OWNER ACCEPTED`؛ گزارش: `docs/UIUX_V10_7_SECTION_B_PREVIEW_OWNER_ACCEPTANCE_2026-11-04.md`.
 - تصمیم نهایی Header: خانه، مسابقات، اخبار و اطلاعیه‌ها، راهنما، ورود / ثبت‌نام.
@@ -113,6 +114,13 @@ npm run dev
 - بخش C هنوز بررسی/تأیید نشده و باید پیش از پیاده‌سازی از سند UI/UX v10.7 استخراج و به مالک ارائه شود.
 - پذیرش A/B فقط پذیرش مالک در Preview است؛ QA جامع، E2E، Staging، Auth/DB عملیاتی یا مجوز Production محسوب نمی‌شود.
 
-
 ## اصلاحیه مرجع جاری — ۴ نوامبر ۲۰۲۶
+
 این README نقطه ورود اسناد است. وضعیت معتبر طراحی در حال حاضر A و B برابر `OWNER ACCEPTED` در Preview است؛ بخش C باز است. برای جزئیات و حدود پذیرش به دو گزارش مستقل A/B و الحاقیه‌های جاری Project Status، Implementation Register، Technical Handover و QA مراجعه شود. متن‌های قدیمی‌تر در همین README و Snapshotهای تاریخی، وضعیت زمان ثبت خود را توصیف می‌کنند و در صورت تعارض، این اصلاحیه جدیدتر مرجع است.
+
+## ثبت اصلاحات صفحه حساب کاربری — ۵ نوامبر ۲۰۲۶
+
+- تصمیم‌های مالک درباره حذف تیتر تکراری و «فضای شخصی بازیکن»، کوچک‌سازی عنوان حساب و لوگو، کاهش فضای بالایی و یکپارچه‌سازی تایپوگرافی ثبت شد.
+- وضعیت PR #50، شاخه مقصد، commit و مرزهای شواهد Deploy/QA در سند مستقل ثبت شده‌اند.
+- مرجع: `docs/ACCOUNT_PAGE_UI_DECISIONS_AND_PREVIEW_STATUS_2026-11-05.md`.
+- این ثبت به معنی پذیرش نهایی بصری یا مجوز Production نیست.
