@@ -5,7 +5,8 @@ import TemporaryPageHeader from './TemporaryPageHeader';
 
 export default function Series3Gallery(){
  const [poster,setPoster]=useState('');
- const [video,setVideo]=useState('');
+ const [rulesVideo,setRulesVideo]=useState('');
+ const [teaserVideo,setTeaserVideo]=useState('');
  const [heroMode,setHeroMode]=useState<'poster'|'video'>('poster');
  const [videoOpen,setVideoOpen]=useState(false);
  const [heroVideoFailed,setHeroVideoFailed]=useState(false);
@@ -38,7 +39,7 @@ export default function Series3Gallery(){
     const teaser=(items||[]).find(x=>x.name==='series3-home-teaser.mp4');
     if(!listError&&teaser){
      const url=supabase.storage.from('series3-video').getPublicUrl(homeSettings.storage_path).data.publicUrl;
-     setVideo(url+'?v='+encodeURIComponent(teaser.updated_at||teaser.created_at||''));
+     setTeaserVideo(url+'?v='+encodeURIComponent(teaser.updated_at||teaser.created_at||''));
      setHeroMode('video');
     }
    }
@@ -46,7 +47,7 @@ export default function Series3Gallery(){
    if(active&&!settingsError&&settings?.is_active&&settings.storage_path){
     const {data:objects,error:listError}=await supabase.storage.from('series3-video').list('rules',{limit:20});
     const file=(objects||[]).find(x=>x.name==='series3-important-rules.mp4');
-    if(!listError&&file){const url=supabase.storage.from('series3-video').getPublicUrl(settings.storage_path).data.publicUrl;setVideo(url+'?v='+encodeURIComponent(file.updated_at||file.created_at||''));}
+    if(!listError&&file){const url=supabase.storage.from('series3-video').getPublicUrl(settings.storage_path).data.publicUrl;setRulesVideo(url+'?v='+encodeURIComponent(file.updated_at||file.created_at||''));}
    }
   }
   void load();return()=>{active=false};
@@ -60,7 +61,7 @@ export default function Series3Gallery(){
  return <main dir="rtl" style={{minHeight:'100vh',background:'radial-gradient(ellipse at top,#2a2112 0%,#101114 48%,#08090b 100%)',color:'#f4ead2',padding:'24px 14px 48px',fontFamily:'inherit'}}>
   <div style={{maxWidth:920,margin:'0 auto'}}>
    <TemporaryPageHeader showBack={false}/>
-   {heroMode==='video'&&video&&!heroVideoFailed?<section style={{background:'#141416',border:'1px solid #715a31',borderRadius:16,padding:10,marginBottom:16}}><video key={video} src={video} poster={poster||undefined} autoPlay muted loop playsInline preload="metadata" onError={()=>setHeroVideoFailed(true)} aria-label="تیزر مسابقات سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10,background:'#08090b'}}/></section>:poster&&<section style={{background:'#141416',border:'1px solid #715a31',borderRadius:16,padding:10,marginBottom:16}}><img src={poster} alt="پوستر اصلی سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10}}/></section>}
+   {heroMode==='video'&&teaserVideo&&!heroVideoFailed?<section style={{background:'#141416',border:'1px solid #715a31',borderRadius:16,padding:10,marginBottom:16}}><video key={teaserVideo} src={teaserVideo} poster={poster||undefined} autoPlay muted loop playsInline preload="metadata" onError={()=>setHeroVideoFailed(true)} aria-label="تیزر مسابقات سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10,background:'#08090b'}}/></section>:poster&&<section style={{background:'#141416',border:'1px solid #715a31',borderRadius:16,padding:10,marginBottom:16}}><img src={poster} alt="پوستر اصلی سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10}}/></section>}
    <section style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'13px 16px',margin:'0 0 18px',border:'1px solid rgba(140,106,52,.65)',borderRadius:12,background:'linear-gradient(110deg,rgba(42,33,20,.88),rgba(20,20,22,.96))'}}>
     <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}><span style={{width:34,height:34,display:'grid',placeItems:'center',borderRadius:9,background:'rgba(214,180,109,.12)',flexShrink:0}}><Archive size={18} color="#d6b46d"/></span><div><div style={{fontSize:13,fontWeight:800,color:'#f0d99f'}}>آرشیو مسابقات سری دوم</div><div style={{fontSize:11,color:'#b7a27b',marginTop:3}}>مشاهده نتایج و سوابق دوره گذشته</div></div></div>
     <a href="/?page=series2-archive" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,padding:'9px 13px',border:'1px solid #8c6a34',borderRadius:9,color:'#f0d99f',background:'#211b12',textDecoration:'none',fontSize:12,fontWeight:800,whiteSpace:'nowrap'}}>ورود به آرشیو <ChevronRight size={15}/></a>
@@ -68,7 +69,7 @@ export default function Series3Gallery(){
    <section style={{textAlign:'center',padding:'22px 14px',marginBottom:12,border:'1px solid #8c6a34',borderRadius:14,background:'linear-gradient(145deg,#2a2114,#141416)'}}>
     <a href="/series3-registration" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,padding:'12px 22px',borderRadius:10,background:'linear-gradient(120deg,#a98239,#e4c77e)',border:'1px solid #e3c77d',color:'#17130b',fontWeight:900,textDecoration:'none',fontSize:14}}>مشاهده قوانین و ثبت‌نام سری سوم <ArrowLeft size={17}/></a>
    </section>
-   {video&&<button type="button" onClick={openRulesVideo} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'16px',marginBottom:18,border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(120deg,#2a2114,#151416)',color:'#f0d99f',fontSize:15,fontWeight:900,cursor:'pointer'}}><PlayCircle size={23}/> قوانین مهم سری سوم</button>}
+   {rulesVideo&&<button type="button" onClick={openRulesVideo} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'16px',marginBottom:18,border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(120deg,#2a2114,#151416)',color:'#f0d99f',fontSize:15,fontWeight:900,cursor:'pointer'}}><PlayCircle size={23}/> قوانین مهم سری سوم</button>}
    <section style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'15px 16px',margin:'0 0 18px',border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(115deg,rgba(50,39,20,.96),rgba(20,20,22,.98))'}}>
     <div style={{display:'flex',alignItems:'center',gap:11,minWidth:0}}><span style={{width:38,height:38,display:'grid',placeItems:'center',borderRadius:10,background:'rgba(214,180,109,.14)',flexShrink:0}}><Crown size={20} color="#d6b46d"/></span><div><div style={{fontSize:15,fontWeight:900,color:'#f0d99f'}}>پیش‌بینی‌های سری سوم</div><div style={{fontSize:11,color:'#c8b58c',marginTop:4}}></div></div></div>
     <a href="/predictions" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px 15px',border:'1px solid #b18b45',borderRadius:9,color:'#17130b',background:'linear-gradient(120deg,#b48b43,#e4c77e)',textDecoration:'none',fontSize:12,fontWeight:900,whiteSpace:'nowrap'}}>مشاهده پیش‌بینی‌ها <ArrowLeft size={15}/></a>
@@ -76,7 +77,7 @@ export default function Series3Gallery(){
    {videoOpen&&<div role="dialog" aria-modal="true" aria-label="قوانین مهم سری سوم" onClick={closeRulesVideo} style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,.88)',display:'grid',placeItems:'center',padding:14}}>
     <section onClick={e=>e.stopPropagation()} style={{width:'min(960px,100%)',background:'#111214',border:'1px solid #8c6a34',borderRadius:14,padding:12,boxShadow:'0 20px 80px #000'}}>
      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,marginBottom:10,color:'#f0d99f',fontWeight:800}}><span>قوانین مهم سری سوم</span><button type="button" aria-label="بستن ویدیو" onClick={closeRulesVideo} style={{background:'transparent',border:0,color:'#f0d99f',cursor:'pointer'}}><X size={23}/></button></div>
-     <video key={video} src={video} controls playsInline autoPlay style={{display:'block',width:'100%',maxHeight:'75vh',background:'#000',borderRadius:8}}/>
+     <video key={rulesVideo} src={rulesVideo} controls playsInline autoPlay style={{display:'block',width:'100%',maxHeight:'75vh',background:'#000',borderRadius:8}}/>
     </section>
    </div>}
    <footer style={{textAlign:'center',color:'#8f836d',fontSize:11,marginTop:28}}>PLATO LAND · Series 3</footer>
