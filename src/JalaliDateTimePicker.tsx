@@ -1,5 +1,5 @@
 import React,{useEffect,useMemo,useState} from 'react';
-import {isoToJalaliInput,jalaliInputToIso} from './predictionDateTime';
+import {isoToJalaliInput} from './predictionDateTime';
 
 type Props={label:string;value:string;onChange:(value:string)=>void};
 type JalaliDate={year:number;month:number;day:number};
@@ -7,6 +7,8 @@ const calendarParts=new Intl.DateTimeFormat('en-u-ca-persian-nu-latn',{timeZone:
 const monthName=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Tehran',month:'long'});
 const weekDays=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'];
 const pad=(n:number)=>String(n).padStart(2,'0');
+const normalizeDigits=(value:string)=>value.replace(/[۰-۹٠-٩]/g,d=>{const p='۰۱۲۳۴۵۶۷۸۹'.indexOf(d);return String(p>=0?p:'٠١٢٣٤٥٦٧٨٩'.indexOf(d));});
+const jalaliText=(value:string)=>isoToJalaliInput(value)||normalizeDigits(value.trim());
 
 function jalaliParts(date:Date):JalaliDate{
  const parts=Object.fromEntries(calendarParts.formatToParts(date).map(p=>[p.type,p.value]));
@@ -14,7 +16,7 @@ function jalaliParts(date:Date):JalaliDate{
 }
 function parseValue(value:string):{date:JalaliDate|null;hour:string;minute:string}{
  if(!value)return {date:null,hour:'00',minute:'00'};
- const text=isoToJalaliInput(value);
+ const text=jalaliText(value);
  const m=/^(\d{4})\/(\d{2})\/(\d{2}) (\d{2}):(\d{2})$/.exec(text);
  return m?{date:{year:Number(m[1]),month:Number(m[2]),day:Number(m[3])},hour:m[4],minute:m[5]}:{date:null,hour:'00',minute:'00'};
 }
@@ -54,12 +56,11 @@ export default function JalaliDateTimePicker({label,value,onChange}:Props){
   setVisibleYear(y);setVisibleMonth(m);
  }
  function chooseDay(day:number){
-  const iso=jalaliInputToIso(`${visibleYear}/${pad(visibleMonth)}/${pad(day)} ${hour}:${minute}`);
-  onChange(iso);
+  onChange(`${visibleYear}/${pad(visibleMonth)}/${pad(day)} ${hour}:${minute}`);
  }
  function changeTime(nextHour:string,nextMinute:string){
   setHour(nextHour);setMinute(nextMinute);
-  if(currentDate)onChange(jalaliInputToIso(`${currentDate.year}/${pad(currentDate.month)}/${pad(currentDate.day)} ${nextHour}:${nextMinute}`));
+  if(currentDate)onChange(`${currentDate.year}/${pad(currentDate.month)}/${pad(currentDate.day)} ${nextHour}:${nextMinute}`);
  }
  const firstDate=days[0]?.date;
  const title=firstDate?monthName.format(firstDate):'';
@@ -67,7 +68,7 @@ export default function JalaliDateTimePicker({label,value,onChange}:Props){
  return <section style={{display:'grid',gap:8}}>
   <span style={{fontWeight:600,color:'#ead9b7',fontSize:14}}>{label}</span>
   <button type="button" onClick={()=>setExpanded(v=>!v)} aria-expanded={expanded} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,width:'100%',padding:12,border:'1px solid #806637',borderRadius:9,background:'#0c0d0f',color:'#f4e5c5',font:'inherit',textAlign:'right',cursor:'pointer'}}>
-   <span><strong dir="ltr" style={{display:'block',textAlign:'right'}}>{value?isoToJalaliInput(value):selectedLabel}</strong><small style={{display:'block',color:'#bdb19a',marginTop:4}}>تقویم شمسی · ساعت تهران</small></span>
+   <span><strong dir="ltr" style={{display:'block',textAlign:'right'}}>{value?jalaliText(value):selectedLabel}</strong><small style={{display:'block',color:'#bdb19a',marginTop:4}}>تقویم شمسی · ساعت تهران</small></span>
    <span aria-hidden="true">{expanded?'▲':'▼'}</span>
   </button>
   {expanded&&<div style={{display:'grid',gap:12,padding:12,border:'1px solid #66532f',borderRadius:10,background:'#101112'}}>
