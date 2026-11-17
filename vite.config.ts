@@ -7,7 +7,7 @@ const temporaryStaticEntries = {
   name: 'temporary-pages-static-entries',
   closeBundle() {
     const output = resolve(process.cwd(), 'dist');
-    for (const route of ['series2-slides-manager','series3','series3-registration']) {
+    for (const route of ['series2-slides-manager','series3','series3-registration','predictions']) {
       const directory = resolve(output, route);
       mkdirSync(directory, { recursive: true });
       copyFileSync(resolve(output, 'index.html'), resolve(directory, 'index.html'));
