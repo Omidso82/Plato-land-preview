@@ -19,6 +19,7 @@ import OwnerHelpCenter from './OwnerHelpCenter';
 import OwnerBulkOperations from './OwnerBulkOperations';
 import NotificationBell from './NotificationBell';
 import PlayerTournamentHub from './PlayerTournamentHub';
+import PublicPredictions from './PublicPredictions';
 import { supabase, supabaseConfigured } from './supabase';
 import React, { useEffect, useMemo, useState } from 'react';
 import * as Lucide from 'lucide-react';
@@ -61,7 +62,7 @@ function jalaliToIso(value:string){return jalaliDateToIso(value);}
 function isSeriesOne(value:string){const normalized=value.trim().toLowerCase().replace(/[يى]/g,'ی').replace(/‌/g,' ').replace(/\s+/g,' ');return normalized==='سری اول'||normalized==='series 1'||normalized==='series one';}
 function JalaliDateInput({value,onChange,required=false}:{value:string;onChange:(value:string)=>void;required?:boolean}){const parts=jalaliParts(value);const shown=parts?String(parts.year).padStart(4,'0')+'/'+String(parts.month).padStart(2,'0')+'/'+String(parts.day).padStart(2,'0'):'';const [draft,setDraft]=useState(shown);useEffect(()=>setDraft(shown),[shown]);return <input type="text" inputMode="numeric" dir="ltr" className="jalali-date-input" aria-label="تاریخ شمسی" placeholder="۱۴۰۵/۰۸/۱۴" value={draft} required={required} onChange={e=>{const next=e.target.value.replace(/[۰-۹]/g,c=>String('۰۱۲۳۴۵۶۷۸۹'.indexOf(c)));setDraft(next);if(!next){onChange('');return;}const iso=jalaliToIso(next);if(iso)onChange(iso);}} onBlur={()=>{if(draft&&!jalaliToIso(draft))setDraft(shown);}}/>}
 function App(){
- const [tab,setTab]=useState(()=>{const value=new URLSearchParams(window.location.search).get('page');return value&&['home','tournaments','news','guide','about','profile','login','signup','register','admin','admin-users'].includes(value)?value:'home'}),[mobileMenu,setMobileMenu]=useState(false),[search,setSearch]=useState('');
+ const [tab,setTab]=useState(()=>{const value=new URLSearchParams(window.location.search).get('page');return value&&['home','tournaments','news','guide','about','profile','login','signup','register','admin','admin-users','predictions'].includes(value)?value:'home'}),[mobileMenu,setMobileMenu]=useState(false),[search,setSearch]=useState('');
  const [selectedGame,setSelectedGame]=useState('');
  const [competitionSection,setCompetitionSection]=useState<'active'|'upcoming'|'archive'>('active');
  const [archiveYear,setArchiveYear]=useState('all');
@@ -418,6 +419,7 @@ function App(){
     <div className="series3-home-copy"><span className="section-kicker">رقابت تازه در PLATO LAND</span><h2>سری سوم لیگ تخته‌نرد</h2><p>برای آشنایی با مسابقه، مشاهده قوانین و ورود به مراحل ثبت‌نام، به صفحه اختصاصی سری سوم برو.</p></div>
     <a className="gold-button series3-home-link" href="/series3/"><span>ورود به سری سوم و ثبت‌نام</span><ChevronLeft size={18}/></a>
    </section>
+   <section className="predictions-home-cta" aria-label="پیش‌بینی‌های PLATO LAND"><div className="predictions-home-icon"><Lucide.Trophy size={30}/></div><div className="predictions-home-copy"><span className="section-kicker">حدس بزن، رقابت کن</span><h2>پیش‌بینی‌های PLATO LAND</h2><p>پیش‌بینی‌های منتشرشده را ببین، در موارد فعال شرکت کن و نتایج دوره‌های قبلی را دنبال کن.</p></div><button type="button" className="gold-button" onClick={()=>go('predictions')}>مشاهده پیش‌بینی‌ها <ChevronLeft size={18}/></button></section>
    <NewsCenter featuredOnly/>
    {siteAnnouncement?.enabled&&announcementVideoUrl&&<section className="site-announcement-card" aria-label="اطلاعیه ویدیویی PLATO LAND"><div className="site-announcement-copy"><span className="section-kicker">اطلاعیه ویژه</span><h2>{siteAnnouncement.title}</h2><p>برای تماشای تیزر و اطلاع از جزئیات مسابقه، ویدیو را باز کن.</p><button type="button" className="gold-button" onClick={()=>setAnnouncementModalOpen(true)}><Lucide.PlayCircle size={18}/> تماشای ویدیو</button></div><button type="button" className="site-announcement-preview" onClick={()=>setAnnouncementModalOpen(true)} aria-label="پخش ویدیوی اطلاعیه"><video src={announcementVideoUrl} preload="metadata" muted playsInline/><span><Lucide.Play size={30}/></span></button></section>}
    {announcementModalOpen&&announcementVideoUrl&&<div className="announcement-modal-backdrop" role="presentation" onClick={()=>setAnnouncementModalOpen(false)}><section className="announcement-modal" role="dialog" aria-modal="true" aria-label={siteAnnouncement?.title||'ویدیوی اطلاع‌رسانی'} onClick={e=>e.stopPropagation()}><div className="announcement-modal-head"><strong>{siteAnnouncement?.title||'اطلاعیه PLATO LAND'}</strong><button type="button" onClick={()=>setAnnouncementModalOpen(false)} aria-label="بستن ویدیو"><X size={22}/></button></div><video src={announcementVideoUrl} controls autoPlay playsInline preload="metadata"/></section></div>}
@@ -427,6 +429,7 @@ function App(){
    <section className="bottom-cta"><div className="cta-icon"><Crown size={31}/></div><div><span className="section-kicker">نوبت توست</span><h2>به جامعهٔ PLATO LAND بپیوند</h2><p>مسابقه‌ات را پیدا کن، قوانین را بخوان و وارد رقابت شو.</p></div>{invite?<button className="gold-button" onClick={()=>window.open(invite,'_blank','noopener,noreferrer')}>عضویت در گروه PLATO LAND <ChevronLeft size={18}/></button>:canManage&&<button className="gold-button" onClick={()=>go('admin')}>تنظیم لینک گروه <ChevronLeft size={18}/></button>}</section>
    <section className="download-panel panel"><div><Download/><h2>دانلود رسمی Plato</h2><p>اپلیکیشن را از فروشگاه رسمی دستگاهت دریافت کن.</p></div><a className="outline-button" href="https://apps.apple.com/app/plato-games-to-play-together/id1054747306" target="_blank" rel="noreferrer">دانلود برای آیفون <ExternalLink size={15}/></a><a className="outline-button" href="https://play.google.com/store/apps/details?id=com.plato.android" target="_blank" rel="noreferrer">دانلود برای اندروید <ExternalLink size={15}/></a></section>
   </div>}
+  {shownTab==='predictions'&&<div className="page inner-page"><PublicPredictions/></div>}
   {shownTab==='news'&&<div className="page inner-page"><NewsCenter owner={canManage}/></div>}
   {shownTab==='about'&&<SitePages slug="about" owner={canManage}/>}
   {shownTab==='guide'&&<SitePages slug="guide" owner={canManage}/>}
