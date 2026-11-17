@@ -74,7 +74,7 @@ export default function JalaliDateTimePicker({label,value,onChange}:Props){
   {expanded&&<div style={{display:'grid',gap:12,padding:12,border:'1px solid #66532f',borderRadius:10,background:'#101112'}}>
    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
     <button type="button" onClick={()=>changeMonth(1)} aria-label="ماه بعد" style={{...selectStyle,width:42,cursor:'pointer'}}>‹</button>
-    <strong>{title} {visibleYear.toLocaleString('fa-IR')}</strong>
+    <strong>{title} {new Intl.NumberFormat('fa-IR',{useGrouping:false}).format(visibleYear)}</strong>
     <button type="button" onClick={()=>changeMonth(-1)} aria-label="ماه قبل" style={{...selectStyle,width:42,cursor:'pointer'}}>›</button>
    </div>
    <div style={{display:'grid',gridTemplateColumns:'repeat(7,minmax(0,1fr))',gap:3}}>
