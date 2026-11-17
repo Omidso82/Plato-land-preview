@@ -8,7 +8,11 @@ const monthName=new Intl.DateTimeFormat('fa-IR-u-ca-persian',{timeZone:'Asia/Teh
 const weekDays=['شنبه','یکشنبه','دوشنبه','سه‌شنبه','چهارشنبه','پنجشنبه','جمعه'];
 const pad=(n:number)=>String(n).padStart(2,'0');
 const normalizeDigits=(value:string)=>value.replace(/[۰-۹٠-٩]/g,d=>{const p='۰۱۲۳۴۵۶۷۸۹'.indexOf(d);return String(p>=0?p:'٠١٢٣٤٥٦٧٨٩'.indexOf(d));});
-const jalaliText=(value:string)=>isoToJalaliInput(value)||normalizeDigits(value.trim());
+const jalaliText=(value:string)=>{
+ const normalized=normalizeDigits(value.trim());
+ if(/^\\d{4}\\/\\d{2}\\/\\d{2} \\d{2}:\\d{2}$/.test(normalized))return normalized;
+ return isoToJalaliInput(value)||normalized;
+};
 
 function jalaliParts(date:Date):JalaliDate{
  const parts=Object.fromEntries(calendarParts.formatToParts(date).map(p=>[p.type,p.value]));
