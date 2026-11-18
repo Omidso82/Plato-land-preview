@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync } from 'node:fs';
+import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
@@ -12,6 +12,13 @@ const temporaryStaticEntries = {
       mkdirSync(directory, { recursive: true });
       copyFileSync(resolve(output, 'index.html'), resolve(directory, 'index.html'));
     }
+
+    // Keep the preview-only R2 audit endpoint as the sole Pages Function route.
+    // All normal site pages and static assets remain on the static, non-Function path.
+    writeFileSync(
+      resolve(output, '_routes.json'),
+      JSON.stringify({ version: 1, include: ['/__internal/r2-inventory'], exclude: [] }, null, 2),
+    );
   },
 };
 
