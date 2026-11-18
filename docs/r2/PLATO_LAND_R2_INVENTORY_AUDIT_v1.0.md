@@ -5,7 +5,7 @@
 **Date:** 2026-11-18  
 **Scope:** Temporary Projects only  
 **Branch:** `feature/temporary-projects-r2-public-media-phase1`  
-**Status:** Added to PR branch; preview configuration and owner acceptance pending
+**Status:** Preview-only binding and secret configured successfully on 2026-11-19; fresh deployment required to activate them
 
 ### Purpose
 The Cloudflare R2 dashboard did not provide a complete CSV/JSON export of object metadata. A read-only, token-gated inventory endpoint has therefore been added to the existing Pages project branch to obtain a complete listing through an R2 bucket binding.
@@ -21,6 +21,15 @@ The Cloudflare R2 dashboard did not provide a complete CSV/JSON export of object
 - `vite.config.ts`
   - Emits `dist/_routes.json` with only `/__internal/r2-inventory` included.
   - Keeps normal static site pages/assets outside Pages Function invocation, preserving static delivery and avoiding unnecessary Function requests.
+
+### Preview-only Cloudflare configuration — completed 2026-11-19
+
+Verified in Cloudflare Pages project `plato-land-preview` with the Preview environment explicitly selected:
+- Encrypted Preview secret `R2_AUDIT_TOKEN` added.
+- Preview R2 binding `PLATO_MEDIA_BUCKET` added and mapped to existing bucket `plato-land-media`.
+- Existing Preview text variable `VITE_PLATO_PREVIEW=true` preserved.
+- Production variables, secrets, bindings, build settings and general settings were not modified.
+- No manual deployment was triggered during configuration. A new Preview deployment is required before the Function can use the new binding and secret.
 
 ### Required preview-only Cloudflare configuration
 Do not configure Production for this audit.
