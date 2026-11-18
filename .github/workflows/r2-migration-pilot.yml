@@ -1,0 +1,60 @@
+name: R2 media migration pilot (manual only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_bucket:
+        description: Supabase Storage source bucket
+        required: true
+        type: choice
+        options:
+          - series2-slides
+          - series3-slides
+          - series3-video
+          - site-announcements
+          - avatars
+          - public-profile-avatars
+          - registration-evidence
+          - plato-id-scans
+      source_key:
+        description: Exact object key inside the selected bucket (copy from inventory)
+        required: true
+        type: string
+      dry_run:
+        description: Read source and calculate checksum only; do not write to R2
+        required: true
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: plato-r2-migration-pilot
+  cancel-in-progress: false
+
+jobs:
+  copy-one-object:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out this branch
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install migration-only dependencies
+        run: python -m pip install --disable-pip-version-check boto3 requests
+      - name: Read one source object; optionally copy and verify
+        env:
+          SUPABASE_URL: https://dfrppbapaaydbjeflozw.supabase.co
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          R2_ENDPOINT: ${{ secrets.R2_ENDPOINT }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          R2_BUCKET: plato-land-media
+          SOURCE_BUCKET: ${{ inputs.source_bucket }}
+          SOURCE_KEY: ${{ inputs.source_key }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: python scripts/r2-migration/copy_one_object.py
