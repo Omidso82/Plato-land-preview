@@ -4,18 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       source_bucket:
-        description: Supabase Storage source bucket
+        description: Reviewed tournament media source bucket
         required: true
         type: choice
         options:
           - series2-slides
           - series3-slides
           - series3-video
-          - site-announcements
-          - avatars
-          - public-profile-avatars
-          - registration-evidence
-          - plato-id-scans
       source_key:
         description: Exact object key inside the selected bucket (copy from inventory)
         required: true

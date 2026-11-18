@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Controlled, single-object Supabase Storage -> Cloudflare R2 copy.
-Never deletes or modifies the source. Intended for Phase C pilot only.
+
+Only reviewed tournament media buckets are enabled in this pilot. The source
+object is never modified or deleted. Destination paths follow the approved
+PLATO LAND semantic layout rather than exposing Supabase bucket names.
 """
 import hashlib
 import os
@@ -21,18 +24,58 @@ SOURCE_BUCKET = os.environ["SOURCE_BUCKET"].strip()
 SOURCE_KEY = os.environ["SOURCE_KEY"].lstrip("/")
 DRY_RUN = os.environ.get("DRY_RUN", "true").lower() == "true"
 
-ALLOWED_BUCKETS = {
-    "avatars", "plato-id-scans", "public-profile-avatars",
-    "registration-evidence", "series2-slides", "series3-slides",
-    "series3-video", "site-announcements",
-}
+
+def destination_for(source_bucket: str, source_key: str) -> str:
+    """Map only approved tournament media keys to the documented R2 layout."""
+    parts = source_key.split("/")
+    if not source_key or any(part in ("", ".", "..") for part in parts):
+        raise SystemExit("STOP: invalid or empty source object key.")
+
+    if source_bucket == "series2-slides":
+        series_root = "backgammon/series-2"
+        if len(parts) < 2:
+            raise SystemExit("STOP: Series 2 media key must include a media folder.")
+        if parts[0] == "poster":
+            media_root = "posters"
+        elif parts[0] == "slides":
+            media_root = "slides"
+        else:
+            raise SystemExit("STOP: unsupported Series 2 media folder.")
+        remainder = "/".join(parts[1:])
+    elif source_bucket == "series3-slides":
+        series_root = "backgammon/series-3"
+        if len(parts) < 2:
+            raise SystemExit("STOP: Series 3 media key must include a media folder.")
+        if parts[0] == "poster":
+            media_root = "posters"
+        elif parts[0] == "slides":
+            media_root = "slides"
+        else:
+            raise SystemExit("STOP: unsupported Series 3 media folder.")
+        remainder = "/".join(parts[1:])
+    elif source_bucket == "series3-video":
+        series_root = "backgammon/series-3"
+        if len(parts) < 2 or parts[0] not in ("rules", "teaser"):
+            raise SystemExit("STOP: unsupported Series 3 video folder.")
+        media_root = f"videos/{parts[0]}"
+        remainder = "/".join(parts[1:])
+    else:
+        raise SystemExit(
+            "STOP: this pilot is limited to reviewed Series 2/3 tournament media buckets."
+        )
+
+    if not remainder or any(part in ("", ".", "..") for part in remainder.split("/")):
+        raise SystemExit("STOP: invalid media object name.")
+    return f"plato-land/{series_root}/{media_root}/{remainder}"
+
+
+ALLOWED_BUCKETS = {"series2-slides", "series3-slides", "series3-video"}
 if SOURCE_BUCKET not in ALLOWED_BUCKETS:
-    raise SystemExit("STOP: source bucket is not in the reviewed inventory.")
-if not SOURCE_KEY or ".." in SOURCE_KEY.split("/"):
-    raise SystemExit("STOP: invalid or empty source object key.")
+    raise SystemExit("STOP: source bucket is not enabled for this reviewed pilot.")
 if not R2_ENDPOINT.startswith("https://"):
     raise SystemExit("STOP: R2_ENDPOINT must be an HTTPS S3 endpoint.")
 
+destination_key = destination_for(SOURCE_BUCKET, SOURCE_KEY)
 source_url = (
     f"{SUPABASE_URL}/storage/v1/object/authenticated/"
     f"{quote(SOURCE_BUCKET, safe='')}/{quote(SOURCE_KEY, safe='/')}"
@@ -47,7 +90,6 @@ if not body:
 
 sha256 = hashlib.sha256(body).hexdigest()
 content_type = response.headers.get("content-type", "application/octet-stream").split(";")[0]
-destination_key = f"plato-land/{SOURCE_BUCKET}/{SOURCE_KEY}"
 
 print(f"Source: {SOURCE_BUCKET}/{SOURCE_KEY}")
 print(f"Destination: {R2_BUCKET}/{destination_key}")
@@ -74,7 +116,11 @@ s3.put_object(
     Body=body,
     ContentLength=len(body),
     ContentType=content_type,
-    Metadata={"source-bucket": SOURCE_BUCKET, "source-key-sha256": hashlib.sha256(SOURCE_KEY.encode()).hexdigest(), "sha256": sha256},
+    Metadata={
+        "source-bucket": SOURCE_BUCKET,
+        "source-key-sha256": hashlib.sha256(SOURCE_KEY.encode()).hexdigest(),
+        "sha256": sha256,
+    },
 )
 head = s3.head_object(Bucket=R2_BUCKET, Key=destination_key)
 if head.get("ContentLength") != len(body):
