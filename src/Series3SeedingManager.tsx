@@ -40,6 +40,28 @@ const secondaryButton: React.CSSProperties = {
   ...button, background: '#211b12', color: '#e4c77e', border: '1px solid #806638',
 };
 
+
+type KnockoutEntrant = { id: string; plato_id: string; group_name: string };
+type KnockoutPair = [KnockoutEntrant, KnockoutEntrant];
+
+// Randomized perfect matching; same-group opponents are forbidden in Round of 32.
+function createConstrainedRoundOf32(entrants: KnockoutEntrant[]): KnockoutPair[] {
+  if (entrants.length !== 32) throw new Error('قرعه حذفی به دقیقاً ۳۲ بازیکن نیاز دارد.');
+  if (new Set(entrants.map(player => player.id)).size !== 32) throw new Error('شناسه بازیکنان باید یکتا باشد.');
+  const arrange = (remaining: KnockoutEntrant[]): KnockoutPair[] | null => {
+    if (!remaining.length) return [];
+    const [first, ...rest] = remaining;
+    for (const opponent of shuffled(rest.filter(player => player.group_name !== first.group_name))) {
+      const tail = arrange(rest.filter(player => player.id !== opponent.id));
+      if (tail) return [[first, opponent], ...tail];
+    }
+    return null;
+  };
+  const result = arrange(shuffled(entrants));
+  if (!result) throw new Error('با محدودیت هم‌گروهی، ساخت قرعه معتبر ممکن نشد.');
+  return result;
+}
+
 function rankPlayers(items: Player[]): Player[] {
   return [...items].sort((a, b) => {
     const aValid = a.games_played !== null && a.games_won !== null && a.games_played > 0;
@@ -86,6 +108,7 @@ export default function Series3SeedingManager() {
   const [rankingExpanded, setRankingExpanded] = useState(true);
   const [potsExpanded, setPotsExpanded] = useState(false);
   const [drawExpanded, setDrawExpanded] = useState(true);
+  const [knockoutExpanded, setKnockoutExpanded] = useState(true);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [drawLoading, setDrawLoading] = useState(false);
@@ -146,8 +169,6 @@ export default function Series3SeedingManager() {
   useEffect(() => { void load(); }, [load]);
 
   const completed = players.filter(p => p.games_played !== null && p.games_won !== null).length;
-  const mainCount = players.filter(p => p.registration_status === 'main').length;
-  const waitlistCount = players.filter(p => p.registration_status === 'waitlist').length;
   const validPlayers = players.length === 48 && players.every(p =>
     p.games_played !== null && p.games_won !== null && p.games_played > 0 &&
     p.games_won >= 0 && p.games_won <= p.games_played
@@ -262,7 +283,7 @@ export default function Series3SeedingManager() {
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
         <h2 style={{ color: '#f6e8c5', fontSize: 20, margin: '0 0 5px' }}>مدیریت رتبه‌بندی و قرعه‌کشی سری سوم</h2>
-        <p style={{ ...muted, margin: 0 }}>۴۸ بازیکن اصلی و رزرو · رتبه‌بندی درصد برد · چهار سید · دوازده گروه</p>
+        <p style={{ ...muted, margin: 0 }}>۴۸ بازیکن نهایی · رتبه‌بندی درصد برد · چهار سید · دوازده گروه</p>
       </div>
       <button type="button" style={button} onClick={() => void load()} disabled={loading}>
         {loading ? 'در حال دریافت…' : 'تازه‌سازی اطلاعات'}
@@ -271,8 +292,7 @@ export default function Series3SeedingManager() {
 
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 13 }}>
       {[
-        ['بازیکنان اصلی', mainCount],
-        ['بازیکنان رزرو', waitlistCount],
+        ['بازیکنان نهایی', players.length],
         ['آمار معتبر', completed],
         ['در انتظار آمار', Math.max(0, players.length - completed)],
       ].map(([label, value]) => <div key={String(label)} style={{ flex: '1 1 105px', minWidth: 0, padding: '9px 11px', border: '1px solid #66512d', borderRadius: 9, background: '#171513' }}>
@@ -306,7 +326,7 @@ export default function Series3SeedingManager() {
             <strong style={{ color: '#e4c77e' }}>#{fa(index + 1)}</strong>
             <div style={{ minWidth: 0 }}>
               <strong dir="ltr" style={{ color: '#f5f0e6', fontSize: 13, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
-              <div style={muted}>{player.registration_status === 'main' ? 'اصلی' : 'رزرو'} · {fa(player.games_played || 0)} بازی · {fa(player.games_won || 0)} برد</div>
+              <div style={muted}>{fa(player.games_played || 0)} بازی · {fa(player.games_won || 0)} برد</div>
             </div>
             <strong style={{ color: '#e4c77e', whiteSpace: 'nowrap' }}>{pct(player.games_played, player.games_won)}</strong>
           </div>)}
@@ -366,6 +386,46 @@ export default function Series3SeedingManager() {
       </>}
     </div>
 
+
+    <div style={{ ...card, marginTop: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <h3 style={sectionTitle}>۴. مسیر کامل حذفی تا فینال</h3>
+        <button type="button" style={secondaryButton} onClick={() => setKnockoutExpanded(v => !v)}>{knockoutExpanded ? 'بستن' : 'نمایش مسیر'}</button>
+      </div>
+      {knockoutExpanded && <>
+        <p style={muted}>نفرات اول و دوم هر ۱۲ گروه (۲۴ بازیکن) مستقیم صعود می‌کنند؛ ۸ نفر برتر رتبه سوم نیز اضافه می‌شوند. مجموع: ۳۲ بازیکن.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 7 }}>
+          <div style={{ ...card, background: '#101112' }}><strong style={{ color: '#e4c77e' }}>۲۴ صعود مستقیم</strong><p style={{ ...muted, margin: '4px 0 0' }}>رتبه اول و دوم گروه‌های A تا L</p></div>
+          <div style={{ ...card, background: '#101112' }}><strong style={{ color: '#e4c77e' }}>۸ سوم برتر</strong><p style={{ ...muted, margin: '4px 0 0' }}>پس از پایان مرحله گروهی مشخص می‌شوند</p></div>
+        </div>
+        <div style={{ ...card, marginTop: 9, background: '#101112' }}>
+          <strong style={{ color: '#f3dfad' }}>جایگاه‌های سوم برتر</strong>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 6, marginTop: 8 }}>
+            {Array.from({ length: 8 }, (_, i) => <div key={i} style={{ padding: '8px 7px', border: '1px dashed #806638', borderRadius: 7, color: '#e4c77e', textAlign: 'center', fontSize: 12 }}>سوم برتر {fa(i + 1)}</div>)}
+          </div>
+          <p style={{ ...muted, margin: '8px 0 0' }}>معیارها: امتیاز بیشتر، تفاضل ست بهتر، تعداد ست برده بیشتر، سپس نتیجه بازی رودررو.</p>
+        </div>
+        <div style={{ ...card, marginTop: 9, background: '#101112' }}>
+          <strong style={{ color: '#f3dfad' }}>دور ۳۲ · ۱۶ مسابقه</strong>
+          <p style={{ ...muted, margin: '5px 0 0' }}>قرعه کاملاً تصادفی است؛ فقط دو بازیکن از یک گروه در دور اول با هم روبه‌رو نمی‌شوند. جایگاه حریف‌ها تا مشخص‌شدن گروه مبدأ هر ۸ سوم برتر نهایی نخواهد شد.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 6, marginTop: 9 }}>
+            {Array.from({ length: 16 }, (_, i) => <div key={i} style={{ border: '1px solid #4d4029', borderRadius: 7, padding: 8, minWidth: 0 }}><strong style={{ color: '#e4c77e', fontSize: 12 }}>مسابقه {fa(i + 1)}</strong><div style={{ ...muted, marginTop: 4 }}>جایگاه اول · جایگاه دوم</div></div>)}
+          </div>
+        </div>
+        <div style={{ display: 'grid', gap: 8, marginTop: 9 }}>
+          {[
+            ['دور ۳۲', '۱۶ مسابقه', 'برندگان این دور به دور ۱۶ می‌روند'],
+            ['دور ۱۶', '۸ مسابقه', 'برندگان به یک‌چهارم نهایی می‌روند'],
+            ['یک‌چهارم نهایی', '۴ مسابقه', 'برندگان به نیمه‌نهایی می‌روند'],
+            ['نیمه‌نهایی', '۲ مسابقه', 'برندگان راهی فینال می‌شوند'],
+            ['فینال', '۱ مسابقه', 'برندگان دو نیمه‌نهایی برای قهرمانی'],
+            ['رده‌بندی', '۱ مسابقه', 'بازندگان دو نیمه‌نهایی برای مقام سوم'],
+          ].map(([round, count, path]) => <div key={round} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 8, alignItems: 'center', border: '1px solid #59472a', borderRadius: 8, padding: 9, background: '#141414' }}><div><strong style={{ color: '#f3dfad', fontSize: 13 }}>{round}</strong><div style={muted}>{path}</div></div><span style={{ color: '#e4c77e', fontSize: 12, whiteSpace: 'nowrap' }}>{count}</span></div>)}
+        </div>
+        <p style={{ ...muted, marginTop: 9 }}>این کارت فقط ساختار مسیر حذفی را نمایش می‌دهد و برنامه زمان‌بندی یا ثبت نتیجه نیست. چون جدول نتایج گروهی سری سوم هنوز وجود ندارد، محاسبه خودکار سوم برترها فعلاً انجام نمی‌شود. قرعه نهایی پس از مشخص‌شدن ۳۲ صعودکننده در جدول مستقل ذخیره می‌شود.</p>
+      </>}
+    </div>
+
     <div style={{ ...card, marginTop: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
         <h3 style={sectionTitle}>ثبت و اصلاح آمار بازیکنان</h3>
@@ -375,7 +435,7 @@ export default function Series3SeedingManager() {
         <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="جست‌وجوی Plato ID…" aria-label="جست‌وجوی Plato ID" style={{ ...input, flex: '1 1 180px' }} />
         </div>
-        <p style={{ ...muted, margin: '9px 0' }}>فهرست شامل بازیکنان اصلی و رزرو است؛ انصرافی‌ها نمایش داده نمی‌شوند. پس از هر اصلاح آمار، اگر قرعه قبلاً انجام شده باشد، وضعیت مغایرت اعلام می‌شود و نتیجه گروه‌ها خودکار تغییر نمی‌کند.</p>
+        <p style={{ ...muted, margin: '9px 0' }}>فهرست شامل ۴۸ بازیکن نهایی است؛ افراد انصرافی در این بخش حضور ندارند. پس از هر اصلاح آمار، اگر قرعه قبلاً انجام شده باشد، وضعیت مغایرت اعلام می‌شود و نتیجه گروه‌ها خودکار تغییر نمی‌کند.</p>
         {loading ? <p style={muted}>در حال دریافت فهرست بازیکنان…</p> : filtered.length === 0 ? <p style={muted}>بازیکنی با این Plato ID پیدا نشد.</p> :
           <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
             {filtered.map(player => {
@@ -384,7 +444,7 @@ export default function Series3SeedingManager() {
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     <strong dir="ltr" style={{ color: '#f4f0e8', fontSize: 14, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
-                    <span style={{ color: player.registration_status === 'main' ? '#b8dfa9' : '#e4c77e', fontSize: 11, border: '1px solid currentColor', borderRadius: 6, padding: '2px 6px' }}>{player.registration_status === 'main' ? 'اصلی' : 'رزرو'}</span>
+                    
                     <span style={{ color: '#d9bb78', fontSize: 12 }}>{pct(player.games_played, player.games_won)}</span>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginTop: 8 }}>
