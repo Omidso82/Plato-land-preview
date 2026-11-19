@@ -54,9 +54,13 @@ function corsHeaders(origin: string): Headers {
     "Vary": "Origin",
   });
 }
+function isAllowedRequestOrigin(request: Request): boolean {
+  const origin = request.headers.get("Origin");
+  return !origin || origin === new URL(request.url).origin || ALLOWED_ORIGINS.has(origin);
+}
 function withCors(request: Request, response: Response): Response {
   const origin = request.headers.get("Origin");
-  if (!origin || !ALLOWED_ORIGINS.has(origin)) return response;
+  if (!origin || origin === new URL(request.url).origin || !ALLOWED_ORIGINS.has(origin)) return response;
   const headers = new Headers(response.headers);
   corsHeaders(origin).forEach((value, key) => headers.set(key, value));
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
@@ -124,7 +128,7 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
 
   if (request.method === "POST") {
     const origin = request.headers.get("Origin");
-    if (!origin || !ALLOWED_ORIGINS.has(origin)) return json({ error: "Approved site origin required for upload." }, 403);
+    if (!origin || (origin !== url.origin && !ALLOWED_ORIGINS.has(origin))) return json({ error: "Approved site origin required for upload." }, 403);
     const declaredLength = Number(request.headers.get("Content-Length") || "0");
     if (declaredLength > MAX_VIDEO + 1024 * 1024) return json({ error: "Upload request is too large." }, 413);
     if (!(await isOwner(request))) return json({ error: "Owner authorization required." }, 403);
@@ -173,11 +177,11 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
 export async function onRequest(context: Context): Promise<Response> {
   const { request } = context;
   const origin = request.headers.get("Origin");
-  if (origin && !ALLOWED_ORIGINS.has(origin)) {
+  if (!isAllowedRequestOrigin(request)) {
     return json({ error: "Origin is not allowed." }, 403);
   }
   if (request.method === "OPTIONS") {
-    if (!origin || !ALLOWED_ORIGINS.has(origin)) {
+    if (!origin || !isAllowedRequestOrigin(request)) {
       return new Response(null, { status: 403 });
     }
     return new Response(null, { status: 204, headers: corsHeaders(origin) });
