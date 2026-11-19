@@ -283,8 +283,11 @@ export default function Series3SeedingManager() {
       const round32: BracketMatch[] = Array.from({length:16},(_,i)=>({id:'R32-'+(i+1),a:shuffledTokens[i*2],b:shuffledTokens[i*2+1]}));
       const makeRound=(prefix:string,count:number):BracketMatch[]=>Array.from({length:count},(_,i)=>({id:prefix+'-'+(i+1),a:null,b:null}));
       const bracket_snapshot = {tokens:shuffledTokens,round32,round16:makeRound('R16',8),quarterfinals:makeRound('QF',4),semifinals:makeRound('SF',2),final:makeRound('F',1)};
+      const drawSource = JSON.stringify({entrants:shuffledTokens,bracket:bracket_snapshot});
+      const drawDigest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(drawSource));
+      const draw_fingerprint = Array.from(new Uint8Array(drawDigest)).map(byte=>byte.toString(16).padStart(2,'0')).join('');
       const {data,error:insertError}=await supabase.from('plato_land_series3_knockout_draws').insert({
-        event_key:'series3',bracket_snapshot,created_by:userResult.user.id
+        event_key:'series3',entrants_snapshot:shuffledTokens,bracket_snapshot,draw_fingerprint,created_by:userResult.user.id
       }).select('bracket_snapshot,created_at').single();
       if(insertError) {
         if(insertError.code==='23505') throw new Error('قرعه مرحله حذفی قبلاً ثبت شده است؛ صفحه را تازه‌سازی کن.');
