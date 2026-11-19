@@ -19,7 +19,7 @@ const header = (title: string, subtitle: string) => [
 ].filter(Boolean).join("\n");
 const footer = "<i>بازی، رقابت، قهرمانی</i>";
 const plain = (html: string) => html
-  .replace(/<\/?(?:b|i|code)>/g, "")
+  .replace(/<\/?(?:b|i|code|pre)>/g, "")
   .replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&quot;", '"');
 
 type Player = { id?: string; plato_id: string; games_won?: number | null; games_played?: number | null; registration_status?: string };
@@ -41,11 +41,17 @@ function makeMessage(sectionId: string, title: string, subtitle: string, lines: 
   if (text.length > 3900) throw new Error("طول پیام «" + title + "» از حد امن تلگرام بیشتر است.");
   return { section_id: sectionId, title, text, plain_text: plain(text), item_count: count };
 }
+function playerWinRate(player: Player): string {
+  const played = Number(player.games_played ?? 0);
+  const won = Number(player.games_won ?? 0);
+  return played > 0
+    ? (won / played * 100).toLocaleString("fa-IR", { maximumFractionDigits: 2 }) + "٪"
+    : "—";
+}
 function playerStats(player: Player): string {
   const played = Number(player.games_played ?? 0);
   const won = Number(player.games_won ?? 0);
-  const rate = played > 0 ? (won / played * 100).toLocaleString("fa-IR", { maximumFractionDigits: 2 }) + "٪" : "—";
-  return fa(won) + " برد از " + fa(played) + " بازی · " + rate;
+  return fa(won) + " برد از " + fa(played) + " بازی · " + playerWinRate(player);
 }
 function playerName(player: Player): string { return code(player.plato_id); }
 function buildMessages(selected: string[], ranking: Player[], pots: Player[][], groups: Array<{name:string;players:Player[]}>, bracket: Bracket): Message[] {
@@ -55,8 +61,21 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
   for (const id of selected) {
     if (id === "ranking") {
       if (ranking.length !== 48) throw new Error("Snapshot رتبه‌بندی ۴۸ بازیکن کامل نیست.");
-      const lines = ranking.map((p,i) => (fa(i+1)+". "+playerName(p)+"  ·  "+playerStats(p)));
-      result.push(makeMessage(id,"جدول رتبه‌بندی ۴۸ بازیکن","مرتب‌شده بر اساس درصد برد و معیارهای ثبت‌شده",lines,ranking.length));
+      const idHeading = "شناسه PLATO";
+      const rateHeading = "درصد برد";
+      const idWidth = Math.max(idHeading.length, ...ranking.map(p => String(p.plato_id ?? "").length));
+      const rateWidth = rateHeading.length;
+      // Force a left-to-right base direction inside Telegram's preformatted block
+      // so each heading remains directly above its matching data column in RTL chats.
+      const lrm = "\u200E";
+      const rows = [
+        lrm + idHeading.padEnd(idWidth) + "  " + rateHeading + lrm,
+        ...ranking.map(p =>
+          lrm + String(p.plato_id ?? "—").padEnd(idWidth) + "  " + playerWinRate(p).padStart(rateWidth) + lrm
+        ),
+      ];
+      const lines = ["<pre>" + escapeHtml(rows.join("\n")) + "</pre>"];
+      result.push(makeMessage(id,"جدول رتبه‌بندی ۴۸ بازیکن","فقط شناسه و درصد برد · مرتب‌شده بر اساس درصد برد",lines,ranking.length));
       continue;
     }
     if (id.startsWith("pot:")) {
