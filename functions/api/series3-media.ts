@@ -98,6 +98,10 @@ export async function onRequest({ request, env }: Context): Promise<Response> {
   if (!asset) return json({ error: "Unknown Series 3 media slot." }, 404);
 
   if (request.method === "POST") {
+    const origin = request.headers.get("Origin");
+    if (!origin || origin !== url.origin) return json({ error: "Same-origin upload required." }, 403);
+    const declaredLength = Number(request.headers.get("Content-Length") || "0");
+    if (declaredLength > MAX_VIDEO + 1024 * 1024) return json({ error: "Upload request is too large." }, 413);
     if (!(await isOwner(request))) return json({ error: "Owner authorization required." }, 403);
     const form = await request.formData();
     const file = form.get("file");
