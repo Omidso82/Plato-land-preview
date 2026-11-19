@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import { uploadTemporaryMedia } from './series3MediaClient';
 import Series2FinalistPredictionAdmin from './Series2FinalistPredictionAdmin';
 import Series2ResultsManager from './Series2ResultsManager';
 import PlatoIdScannerApp from './PlatoIdScannerApp';
@@ -68,23 +69,13 @@ export default function Series2SlidesManager() {
   }
 
   async function loadSlides() {
-    if (!supabase) return;
-    const {data,error} = await supabase.storage.from(BUCKET).list('slides',{limit:60,sortBy:{column:'name',order:'asc'}});
-    if (error) { setMessage('خواندن فهرست تصاویر ناموفق بود: '+error.message); return; }
-    const rows = (data||[]).filter(x => /^(\d{2})(\.(jpe?g|png|webp))?$/i.test(x.name));
-    setFiles(rows.map(x => ({name:x.name,url:supabase.storage.from(BUCKET).getPublicUrl('slides/'+x.name).data.publicUrl,updated_at:x.updated_at})));
+    const checks=await Promise.all(Array.from({length:18},(_,i)=>fetch('/api/series3-media?asset=series2-slide-'+String(i+1).padStart(2,'0'),{method:'HEAD'})));
+    setFiles(checks.flatMap((response,i)=>response.ok?[{name:String(i+1).padStart(2,'0'),url:'/api/series3-media?asset=series2-slide-'+String(i+1).padStart(2,'0')}]:[]));
   }
 
   async function loadPoster() {
-    if (!supabase) return;
-    const {data,error} = await supabase.storage.from(BUCKET).list('poster',{limit:10});
-    if (error) { setMessage('خواندن پوستر ثابت ناموفق بود: '+error.message); return; }
-    const item = (data||[]).find(x => x.name === 'series2-prize-poster');
-    setPoster(item ? {
-      name:item.name,
-      url:supabase.storage.from(BUCKET).getPublicUrl(POSTER_PATH).data.publicUrl,
-      updated_at:item.updated_at
-    } : null);
+    const response=await fetch('/api/series3-media?asset=series2-poster',{method:'HEAD'});
+    setPoster(response.ok?{name:'main-poster',url:'/api/series3-media?asset=series2-poster'}:null);
   }
 
   useEffect(() => { void verifyOwner(); }, []);
@@ -134,18 +125,7 @@ export default function Series2SlidesManager() {
     setBusySlot(number); setMessage('در حال ذخیره تصویر اسلاید '+number+'…');
     try {
       const key=String(number).padStart(2,'0');
-      // Every slide has one stable storage key, independent of file name, extension or picker order.
-      const {error}=await supabase.storage.from(BUCKET).upload('slides/'+key,file,{
-        upsert:true,contentType:file.type,cacheControl:'0'
-      });
-      if(error) throw new Error('اسلاید '+number+': '+error.message);
-      // Remove legacy numbered files from the previous bulk uploader so they cannot override this slot.
-      const {data:legacy}=await supabase.storage.from(BUCKET).list('slides',{limit:60});
-      const old=(legacy||[]).filter(x=>new RegExp('^'+key+'\\.(jpe?g|png|webp)$','i').test(x.name)).map(x=>'slides/'+x.name);
-      if(old.length) {
-        const {error:removeError}=await supabase.storage.from(BUCKET).remove(old);
-        if(removeError) throw new Error('تصویر ذخیره شد، اما پاک‌سازی نسخه قدیمی اسلاید '+number+' ناموفق بود: '+removeError.message);
-      }
+      await uploadTemporaryMedia('series2-slide-'+key,file);
       setSelected(prev=>{const next={...prev};delete next[number];return next;});
       await loadSlides();
       setMessage('تصویر اسلاید '+number+' با موفقیت ذخیره شد.');
@@ -161,17 +141,9 @@ export default function Series2SlidesManager() {
     }
     setPosterBusy(true); setMessage('در حال ذخیره تصویر صفحهٔ اول مسابقات…');
     try {
-      const storage=supabase.storage.from(BUCKET);
-      // Update the existing stable object directly; use upload only for the first poster.
-      const {data:existing,error:listError}=await storage.list('poster',{limit:10});
-      if(listError) throw new Error('بررسی پوستر فعلی ناموفق بود: '+listError.message);
-      const exists=(existing||[]).some(item=>item.name==='series2-prize-poster');
-      const result=exists
-        ? await storage.update(POSTER_PATH,posterSelected,{contentType:posterSelected.type,cacheControl:'0'})
-        : await storage.upload(POSTER_PATH,posterSelected,{upsert:false,contentType:posterSelected.type,cacheControl:'0'});
-      if(result.error) throw new Error('ذخیره پوستر: '+result.error.message);
-      const freshUrl=storage.getPublicUrl(POSTER_PATH).data.publicUrl;
-      setPoster({name:'series2-prize-poster',url:freshUrl,updated_at:new Date().toISOString()});
+      await uploadTemporaryMedia('series2-poster',posterSelected);
+      const freshUrl='/api/series3-media?asset=series2-poster';
+      setPoster({name:'main-poster',url:freshUrl,updated_at:new Date().toISOString()});
       setPosterSelected(null);
       setMessage('پوستر جدید ذخیره شد. نسخه تازه برای نمایش عمومی آماده است.');
     } catch(e) { setMessage(e instanceof Error?e.message:'بارگذاری پوستر ناموفق بود.'); }
