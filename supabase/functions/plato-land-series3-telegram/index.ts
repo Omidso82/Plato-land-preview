@@ -151,7 +151,9 @@ Deno.serve(async (req: Request) => {
     const chatId = Deno.env.get("TELEGRAM_TEST_CHAT_ID") ?? "";
     if (!botToken || !chatId) return json({ error: "تنظیمات ربات یا گروه آزمایشی در سمت سرور موجود نیست." }, 500);
     const results: Array<{section_id:string;message_id:number}> = [];
-    for (const message of messages) {
+    for (const [index, message] of messages.entries()) {
+      // Telegram group rate limit: keep the batch below 20 messages per minute.
+      if (index > 0) await new Promise(resolve => setTimeout(resolve, 3100));
       const response = await fetch("https://api.telegram.org/bot"+botToken+"/sendMessage", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ chat_id: chatId, text: message.text, parse_mode: "HTML", disable_web_page_preview: true }),
