@@ -2,8 +2,6 @@ import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 import {series3MediaUrl,uploadSeries3Media} from './series3MediaClient';
 
-const BUCKET='series3-video';
-const PATH='rules/series3-important-rules.mp4';
 const LIMIT=100*1024*1024;
 
 export function Series3VideoManager(){
@@ -30,12 +28,7 @@ export function Series3VideoManager(){
   ]);
   if(settingsError){setMessage('خواندن وضعیت ویدیو ناموفق بود: '+settingsError.message);return;}
   setActive(Boolean(settings?.is_active));
-  if(mediaResponse.ok)setCurrent(series3MediaUrl('rules'));
-  else {
-   const {data:objects,error:listError}=await supabase.storage.from(BUCKET).list('rules',{limit:20});
-   const item=(objects||[]).find(x=>x.name==='series3-important-rules.mp4');
-   setCurrent(!listError&&item?supabase.storage.from(BUCKET).getPublicUrl(PATH).data.publicUrl+'?v='+encodeURIComponent(item.updated_at||item.created_at||''):'');
-  }
+  setCurrent(mediaResponse.ok?series3MediaUrl('rules'):'');
  }
  useEffect(()=>{void refresh();void refreshAnalytics()},[]);
  async function upload(){
