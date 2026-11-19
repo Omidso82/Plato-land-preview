@@ -1,16 +1,19 @@
 import { supabase } from './supabase';
 
-export const SERIES3_RULES_VIDEO_KEY =
-  'plato-land/backgammon/series-3/public-media/videos/important-rules.mp4';
+const RULES_VIDEO_PREFIX =
+  'plato-land/backgammon/series-3/public-media/videos/important-rules-';
 
-// This hostname belongs to the existing, separately deployed media-only Pages project.
-// The deployed function already allowlists the fixed "rules" asset and uses PLATO_MEDIA_BUCKET.
 const MEDIA_API =
   'https://plato-land-media-endpoint.pages.dev/api/series3-media?asset=rules';
 
-export const series3RulesVideoUrl = () => MEDIA_API;
+export function isSeries3RulesVideoKey(key: string): boolean {
+  return /^plato-land\/backgammon\/series-3\/public-media\/videos\/important-rules-\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.mp4$/.test(key);
+}
 
-export async function uploadSeries3RulesVideo(file: File): Promise<void> {
+export const series3RulesVideoUrl = (key: string) =>
+  MEDIA_API + '&key=' + encodeURIComponent(key);
+
+export async function uploadSeries3RulesVideo(file: File): Promise<string> {
   if (!supabase) throw new Error('اتصال به حساب مدیریت در دسترس نیست.');
   if (file.type !== 'video/mp4' || file.size <= 0 || file.size > 100 * 1024 * 1024) {
     throw new Error('فقط فایل MP4 غیرخالی با حجم حداکثر ۱۰۰ مگابایت مجاز است.');
@@ -23,8 +26,7 @@ export async function uploadSeries3RulesVideo(file: File): Promise<void> {
 
   const form = new FormData();
   form.set('file', file, file.name);
-  const url = series3RulesVideoUrl();
-  const uploaded = await fetch(url, {
+  const uploaded = await fetch(MEDIA_API, {
     method: 'POST',
     headers: { Authorization: 'Bearer ' + token },
     body: form,
@@ -34,10 +36,17 @@ export async function uploadSeries3RulesVideo(file: File): Promise<void> {
   });
   const result = await uploaded.json().catch(() => ({}));
   if (!uploaded.ok) throw new Error(result.error || 'ذخیره فایل در R2 ناموفق بود.');
-  if (result.asset !== 'rules' || result.size !== file.size) {
-    throw new Error('پاسخ ذخیره‌سازی R2 با فایل انتخاب‌شده مطابقت ندارد.');
+  if (
+    result.asset !== 'rules' ||
+    result.size !== file.size ||
+    typeof result.key !== 'string' ||
+    !isSeries3RulesVideoKey(result.key) ||
+    !result.key.startsWith(RULES_VIDEO_PREFIX)
+  ) {
+    throw new Error('پاسخ ذخیره‌سازی R2 با قرارداد کلید نسخه‌دار مطابقت ندارد.');
   }
 
+  const url = series3RulesVideoUrl(result.key);
   const checked = await fetch(url, {
     method: 'HEAD',
     credentials: 'omit',
@@ -50,4 +59,5 @@ export async function uploadSeries3RulesVideo(file: File): Promise<void> {
   if (storedSize !== file.size || storedType !== 'video/mp4') {
     throw new Error('تأیید نهایی حجم یا نوع فایل در R2 ناموفق بود.');
   }
+  return result.key;
 }
