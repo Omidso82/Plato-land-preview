@@ -62,8 +62,8 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
     if (id === "ranking") {
       if (ranking.length !== 48) throw new Error("Snapshot رتبه‌بندی ۴۸ بازیکن کامل نیست.");
       const rankHeading = "ردیف";
-      const idHeading = "شناسه PLATO";
-      const rateHeading = "درصد برد";
+      const idHeading = "Plato ID";
+      const rateHeading = "میانگین برد";
       const rankWidth = Math.max(rankHeading.length, fa(ranking.length).length);
       const idWidth = Math.max(idHeading.length, ...ranking.map(p => String(p.plato_id ?? "").length));
       const rateWidth = rateHeading.length;
