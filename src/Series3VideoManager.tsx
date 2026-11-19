@@ -46,17 +46,7 @@ export function Series3VideoManager(){
   }catch(e){setMessage('بارگذاری ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
   finally{setBusy(false);}
  }
- async function toggle(){
-  if(!supabase)return;
-  setBusy(true);
-  try{
-   const {data:{user}}=await supabase.auth.getUser();
-   const {error}=await supabase.from('plato_land_series3_video_settings').upsert({id:1,storage_path:PATH,is_active:!active,updated_at:new Date().toISOString(),updated_by:user?.id||null});
-   if(error)throw error;
-   setActive(!active);setMessage(!active?'نمایش ویدیو در صفحه اول فعال شد.':'نمایش ویدیو در صفحه اول غیرفعال شد.');
-  }catch(e){setMessage('تغییر وضعیت ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
-  finally{setBusy(false);}
- }
+
  return <section dir="rtl" style={{marginTop:18,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
   <h3 style={{color:'#f6e8c5',fontSize:18,margin:'0 0 8px'}}>مدیریت ویدیوی «قوانین مهم سری سوم»</h3>
   <p style={{color:'#c9c0ad',fontSize:13,lineHeight:1.9}}>ویدیوی MP4 را اینجا بارگذاری یا جایگزین کن. پس از فعال‌سازی، دکمه «قوانین مهم سری سوم» زیر دکمه ثبت‌نام در صفحه اول نمایش داده می‌شود و ویدیو فقط پس از کلیک کاربر در پنجره پخش خواهد شد.</p>
