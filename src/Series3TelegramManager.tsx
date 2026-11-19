@@ -27,6 +27,7 @@ const muted: React.CSSProperties = { color:'#c9c0b0', fontSize:12, lineHeight:1.
 const fa = (n:number) => n.toLocaleString('fa-IR');
 
 export default function Series3TelegramManager() {
+  const [expanded, setExpanded] = useState(false);
   const [selected, setSelected] = useState<string[]>([]);
   const [preview, setPreview] = useState<PreviewMessage[]>([]);
   const [busy, setBusy] = useState(false);
@@ -108,9 +109,10 @@ export default function Series3TelegramManager() {
         <h2 style={{color:'#f6e8c5',fontSize:20,margin:'0 0 5px'}}>مرکز اطلاع‌رسانی تلگرام · سری سوم</h2>
         <p style={{...muted,margin:0}}>انتخاب بخش‌ها، بررسی متن نهایی و ارسال دستی به گروه آزمایشی PLATO LAND</p>
       </div>
-      <span style={{fontSize:11,color:'#d9bd7d',border:'1px solid #705b31',borderRadius:20,padding:'6px 10px'}}>فقط گروه آزمایشی</span>
+      <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}><span style={{fontSize:11,color:'#d9bd7d',border:'1px solid #705b31',borderRadius:20,padding:'6px 10px'}}>فقط گروه آزمایشی</span><button type="button" style={darkButton} onClick={()=>setExpanded(v=>!v)}>{expanded?'بستن مرکز تلگرام':'ورود به مرکز تلگرام'}</button></div>
     </div>
 
+    {expanded&&<>
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:14}}>
       <button type="button" style={darkButton} onClick={selectAll}>{selectedCount===allIds.length?'لغو انتخاب همه':'انتخاب همه موارد'}</button>
       <span style={{...muted,alignSelf:'center'}}>انتخاب‌شده: {fa(selectedCount)} مورد</span>
@@ -163,5 +165,6 @@ export default function Series3TelegramManager() {
       </article>)}
     </div>}
     <small style={{display:'block',color:'#9e927b',fontSize:10,lineHeight:1.8,marginTop:13}}>ارسال فقط پس از پیش‌نمایش و تأیید نهایی انجام می‌شود. مقصد از Secret سمت سرور خوانده می‌شود و از این پنل قابل تغییر نیست.</small>
+    </>}
   </section>;
 }
