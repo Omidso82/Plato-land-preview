@@ -108,7 +108,7 @@ export default function Series3SeedingManager() {
   const [rankingExpanded, setRankingExpanded] = useState(true);
   const [potsExpanded, setPotsExpanded] = useState(false);
   const [drawExpanded, setDrawExpanded] = useState(true);
-  const [knockoutExpanded, setKnockoutExpanded] = useState(false);
+  const [knockoutExpanded, setKnockoutExpanded] = useState(true);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [drawLoading, setDrawLoading] = useState(false);
