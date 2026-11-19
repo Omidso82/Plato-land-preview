@@ -41,7 +41,7 @@ export default function Series3SeedingManager() {
     try {
       const [registrationResult, statsResult] = await Promise.all([
         supabase.from('plato_land_series3_registration_requests')
-          .select('id,plato_id,registration_status').eq('registration_status', 'main').order('created_at', { ascending: true }),
+          .select('id,plato_id,registration_status').in('registration_status', ['main', 'waitlist']).order('created_at', { ascending: true }),
         supabase.from('plato_land_series3_player_stats')
           .select('request_id,games_played,games_won'),
       ]);
@@ -57,7 +57,7 @@ export default function Series3SeedingManager() {
       const next = (registrationResult.data || []).map((row: any) => {
         const stat = statsById.get(String(row.id));
         return {
-          id: String(row.id), plato_id: String(row.plato_id || ''),
+          id: String(row.id), plato_id: String(row.plato_id || ''), registration_status: row.registration_status,
           games_played: stat ? stat.games_played : null,
           games_won: stat ? stat.games_won : null,
         } as Player;
@@ -90,7 +90,9 @@ export default function Series3SeedingManager() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const completed = players.filter(p => p.games_played !== null).length;
+  const completed = players.filter(p => p.games_played !== null && p.games_won !== null).length;
+  const mainCount = players.filter(p => p.registration_status === 'main').length;
+  const waitlistCount = players.filter(p => p.registration_status === 'waitlist').length;
   const filtered = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
     return players.filter(p => !term || p.plato_id.toLocaleLowerCase().includes(term));
@@ -129,8 +131,8 @@ export default function Series3SeedingManager() {
   return <section dir="rtl" style={panel}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
-        <h2 style={{ color: '#f6e8c5', fontSize: 20, margin: '0 0 5px' }}>آمار بازیکنان و سیدبندی سری سوم</h2>
-        <p style={{ ...muted, margin: 0 }}>ثبت تعداد بازی و برد؛ محاسبه و مرتب‌سازی خودکار بر اساس درصد برد</p>
+        <h2 style={{ color: '#f6e8c5', fontSize: 20, margin: '0 0 5px' }}>آمار ۴۸ بازیکن سری سوم</h2>
+        <p style={{ ...muted, margin: 0 }}>بازیکنان اصلی و رزرو در یک فهرست؛ ثبت بازی و برد برای هر دو گروه و مرتب‌سازی بر اساس درصد برد</p>
       </div>
       <button type="button" style={button} onClick={() => setExpanded(v => !v)} aria-expanded={expanded}>
         {expanded ? 'جمع‌کردن بخش' : 'بازکردن بخش'}
@@ -138,8 +140,9 @@ export default function Series3SeedingManager() {
     </div>
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 13 }}>
       {[
-        ['ثبت‌نام‌کنندگان', players.length],
-        ['آمار واردشده', completed],
+        ['بازیکنان اصلی', mainCount],
+        ['بازیکنان رزرو', waitlistCount],
+        ['آمار ثبت‌شده', completed],
         ['در انتظار آمار', Math.max(0, players.length - completed)],
       ].map(([label, value]) => <div key={String(label)} style={{ flex: '1 1 105px', minWidth: 0, padding: '9px 11px', border: '1px solid #66512d', borderRadius: 9, background: '#171513' }}>
         <div style={muted}>{label}</div><strong style={{ color: '#f1d99e', fontSize: 21 }}>{loading ? '—' : fa(Number(value))}</strong>
@@ -150,10 +153,10 @@ export default function Series3SeedingManager() {
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="جست‌وجوی Plato ID…" aria-label="جست‌وجوی Plato ID" style={{ ...input, flex: '1 1 180px' }} />
         <button type="button" style={button} onClick={() => void load()} disabled={loading}>{loading ? 'در حال دریافت…' : 'تازه‌سازی'}</button>
       </div>
-      <p style={{ ...muted, margin: '9px 0' }}>درصد برد = تعداد برد ÷ تعداد کل بازی × ۱۰۰. بازیکنانی که هنوز آمار معتبر ندارند، پس از بازیکنان دارای درصد برد قرار می‌گیرند.</p>
+      <p style={{ ...muted, margin: '9px 0' }}>فهرست شامل ۳۲ بازیکن اصلی و ۱۶ بازیکن رزرو است؛ انصرافی‌ها نمایش داده نمی‌شوند. درصد برد = تعداد برد ÷ تعداد کل بازی × ۱۰۰. مرتب‌سازی برای هر ۴۸ نفر یکسان انجام می‌شود.</p>
       {error && <p role="alert" style={{ color: '#f0aaaa', fontSize: 12 }}>{error}</p>}
       {message && <p role="status" style={{ color: '#b8dfa9', fontSize: 12 }}>{message}</p>}
-      {loading ? <p style={muted}>در حال دریافت فهرست بازیکنان…</p> : players.length === 0 ? <p style={muted}>هنوز ثبت‌نامی برای سری سوم وجود ندارد.</p> : filtered.length === 0 ? <p style={muted}>بازیکنی با این Plato ID پیدا نشد.</p> :
+      {loading ? <p style={muted}>در حال دریافت فهرست بازیکنان…</p> : players.length === 0 ? <p style={muted}>بازیکن اصلی یا رزروی برای نمایش وجود ندارد.</p> : filtered.length === 0 ? <p style={muted}>بازیکنی با این Plato ID پیدا نشد.</p> :
         <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
           {filtered.map(player => {
             const rank = players.findIndex(p => p.id === player.id) + 1;
@@ -163,6 +166,7 @@ export default function Series3SeedingManager() {
                 <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                   <strong style={{ color: '#e4c77e', fontSize: 12 }}>#{fa(rank)}</strong>
                   <strong dir="ltr" style={{ color: '#f4f0e8', fontSize: 14, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
+                  <span style={{ color: player.registration_status === 'main' ? '#b8dfa9' : '#e4c77e', fontSize: 11, border: '1px solid currentColor', borderRadius: 6, padding: '2px 6px' }}>{player.registration_status === 'main' ? 'اصلی' : 'رزرو'}</span>
                   <span style={{ color: '#d9bb78', fontSize: 12 }}>{pct(player.games_played, player.games_won)}</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginTop: 8 }}>
