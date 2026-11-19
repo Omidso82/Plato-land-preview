@@ -69,14 +69,14 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
       const rateWidth = rateHeading.length;
       // Force a left-to-right base direction inside Telegram's preformatted block
       // so all three headings stay above their matching values in RTL chats.
-      const lrm = "\\u200E";
+      const lrm = "\u200E";
       const rows = [
         lrm + rankHeading.padStart(rankWidth) + "  " + idHeading.padEnd(idWidth) + "  " + rateHeading + lrm,
         ...ranking.map((p, i) =>
           lrm + fa(i + 1).padStart(rankWidth) + "  " + String(p.plato_id ?? "—").padEnd(idWidth) + "  " + playerWinRate(p).padStart(rateWidth) + lrm
         ),
       ];
-      const lines = ["<pre>" + escapeHtml(rows.join("\\n")) + "</pre>"];
+      const lines = ["<pre>" + escapeHtml(rows.join("\n")) + "</pre>"];
       result.push(makeMessage(id,"جدول رتبه‌بندی ۴۸ بازیکن","ردیف ۱ تا ۴۸ · شناسه PLATO · درصد برد",lines,ranking.length));
       continue;
     }
