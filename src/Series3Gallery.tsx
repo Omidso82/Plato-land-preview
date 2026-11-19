@@ -2,7 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {Crown,ArrowLeft,ChevronRight,Archive,PlayCircle,X,Volume2,VolumeX} from 'lucide-react';
 import {supabase} from './supabase';
 import TemporaryPageHeader from './TemporaryPageHeader';
-import {SERIES3_RULES_VIDEO_KEY,series3RulesVideoUrl} from './series3RulesVideoClient';
+import {isSeries3RulesVideoKey,series3RulesVideoUrl} from './series3RulesVideoClient';
 
 export default function Series3Gallery(){
  const [poster,setPoster]=useState('');
@@ -55,9 +55,9 @@ export default function Series3Gallery(){
     }
    }
     const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
-   if(active&&!settingsError&&settings?.is_active&&settings.storage_path===SERIES3_RULES_VIDEO_KEY){
+   if(active&&!settingsError&&settings?.is_active&&typeof settings.storage_path==='string'&&isSeries3RulesVideoKey(settings.storage_path)){
     try{
-     const url=series3RulesVideoUrl();
+     const url=series3RulesVideoUrl(settings.storage_path);
      const response=await fetch(url,{method:'HEAD',mode:'cors',cache:'no-store'});
      const size=Number(response.headers.get('Content-Length')||'0');
      const type=(response.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
