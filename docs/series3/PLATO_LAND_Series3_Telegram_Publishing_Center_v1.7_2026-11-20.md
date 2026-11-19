@@ -3,7 +3,7 @@
 **Version:** 1.7  
 **Date:** 2026-11-20  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** Prepared on feature branch; CI, merge, and deployment pending.
+**Status:** Merged and deployed; verification and production deployment successful.
 
 ## 1. Scope
 
@@ -29,14 +29,18 @@ No player statistics are appended to pot-list lines. Existing pot membership, sa
 - Repository: `Omidso82/Plato-land-preview`
 - Base: `main` at `404e604fbd0ea9e9c8efe697e5f1e6676be26896`
 - Branch: `fix/series3-telegram-pot-id-only`
-- Commit: `fd1e4364589c9bdb03d5b195bdc1c9d628352944`
+- Feature commit: `fd1e4364589c9bdb03d5b195bdc1c9d628352944`
+- PR: [#225](https://github.com/Omidso82/Plato-land-preview/pull/225) — merged.
+- Merge commit: `799aca588fba2637a6c562e84c6bb5c5593127ac`
 - Changed source: `supabase/functions/plato-land-series3-telegram/index.ts`
 - The pot message builder now renders row number plus Plato ID only.
 
 ## 5. Safety and release status
 
 - No database query/write or schema change was performed for this code edit.
-- No Edge Function deployment has been performed for this change.
+- Build/typecheck and Deno verification workflow #1300: SUCCESS ([run](https://github.com/Omidso82/Plato-land-preview/actions/runs/44641949695)).
+- Production website deployment workflow #1050: SUCCESS ([run](https://github.com/Omidso82/Plato-land-preview/actions/runs/44641949796)).
+- Supabase Edge Function `plato-land-series3-telegram`: ACTIVE, version 6, `verify_jwt=true`.
 - No Telegram message was sent.
 - The existing owner authentication, test-group-only destination, manual preview/send flow, and JWT verification must remain unchanged.
 - The separate PLATO LAND – Main Website project is outside scope.
