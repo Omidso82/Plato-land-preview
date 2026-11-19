@@ -4,8 +4,20 @@ import { supabase } from './supabase';
 type Registration = { id: string; plato_id: string; registration_status: 'main' | 'waitlist' | 'withdrawn' };
 type Stats = { request_id: string; games_played: number; games_won: number };
 type Player = Registration & { games_played: number | null; games_won: number | null; updated_at?: string };
+type DrawGroup = { name: string; players: Player[] };
+type SavedDraw = {
+  ranking_snapshot: Player[];
+  pots_snapshot: Player[][];
+  groups_snapshot: DrawGroup[];
+  stats_fingerprint: string;
+  created_at: string;
+};
 
 const fa = (value: number) => value.toLocaleString('fa-IR');
+const rate = (player: Player) =>
+  player.games_played !== null && player.games_won !== null && player.games_played > 0
+    ? (player.games_won / player.games_played) * 100
+    : null;
 const pct = (played: number | null, won: number | null) =>
   played !== null && won !== null && played > 0
     ? ((won / played) * 100).toLocaleString('fa-IR', { maximumFractionDigits: 2 }) + '٪'
@@ -24,14 +36,48 @@ const button: React.CSSProperties = {
   background: 'linear-gradient(120deg,#a98239,#e4c77e)', border: '1px solid #e3c77d',
   borderRadius: 8, color: '#17130b', padding: '9px 12px', fontWeight: 800, cursor: 'pointer',
 };
+const card: React.CSSProperties = {
+  border: '1px solid #5a482a', borderRadius: 11, background: '#151515', padding: 12,
+};
+const sectionTitle: React.CSSProperties = { color: '#f3dfad', fontSize: 16, margin: 0 };
+const secondaryButton: React.CSSProperties = {
+  ...button, background: '#211b12', color: '#e4c77e', border: '1px solid #806638',
+};
+
+async function fingerprint(players: Player[]): Promise<string> {
+  const source = JSON.stringify(players.map(p => ({
+    id: p.id, plato_id: p.plato_id, registration_status: p.registration_status,
+    games_played: p.games_played, games_won: p.games_won,
+  })));
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(source));
+  return Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+function shuffled<T>(items: T[]): T[] {
+  const result = [...items];
+  for (let i = result.length - 1; i > 0; i--) {
+    const random = new Uint32Array(1);
+    crypto.getRandomValues(random);
+    const j = Math.floor((random[0] / 0x100000000) * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
 
 export default function Series3SeedingManager() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [drafts, setDrafts] = useState<Record<string, { played: string; won: string }>>({});
   const [search, setSearch] = useState('');
-  const [expanded, setExpanded] = useState(true);
+  const [statsExpanded, setStatsExpanded] = useState(false);
+  const [rankingExpanded, setRankingExpanded] = useState(true);
+  const [potsExpanded, setPotsExpanded] = useState(false);
+  const [drawExpanded, setDrawExpanded] = useState(true);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [drawLoading, setDrawLoading] = useState(false);
+  const [confirmDraw, setConfirmDraw] = useState(false);
+  const [savedDraw, setSavedDraw] = useState<SavedDraw | null>(null);
+  const [isStale, setIsStale] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
 
@@ -39,14 +85,18 @@ export default function Series3SeedingManager() {
     if (!supabase) { setError('اتصال به دیتابیس اصلی در دسترس نیست.'); setLoading(false); return; }
     setLoading(true); setError('');
     try {
-      const [registrationResult, statsResult] = await Promise.all([
+      const [registrationResult, statsResult, drawResult] = await Promise.all([
         supabase.from('plato_land_series3_registration_requests')
           .select('id,plato_id,registration_status').in('registration_status', ['main', 'waitlist']).order('created_at', { ascending: true }),
-        supabase.from('plato_land_series3_player_stats')
-          .select('request_id,games_played,games_won'),
+        supabase.from('plato_land_series3_player_stats').select('request_id,games_played,games_won'),
+        supabase.from('plato_land_series3_seeding_draws')
+          .select('ranking_snapshot,pots_snapshot,groups_snapshot,stats_fingerprint,created_at')
+          .eq('event_key', 'series3').maybeSingle(),
       ]);
       if (registrationResult.error) throw registrationResult.error;
       if (statsResult.error) throw statsResult.error;
+      if (drawResult.error) throw drawResult.error;
+
       const statsById = new Map<string, Stats>(
         (statsResult.data || []).map((row: any) => [String(row.request_id), {
           request_id: String(row.request_id),
@@ -77,14 +127,19 @@ export default function Series3SeedingManager() {
           return b.games_won - a.games_won;
         return a.plato_id.localeCompare(b.plato_id, 'en', { sensitivity: 'base' });
       });
+
+      const saved = drawResult.data as SavedDraw | null;
+      const currentFingerprint = await fingerprint(next);
       setPlayers(next);
+      setSavedDraw(saved);
+      setIsStale(Boolean(saved && saved.stats_fingerprint !== currentFingerprint));
       setDrafts(Object.fromEntries(next.map(player => [player.id, {
         played: player.games_played === null ? '' : String(player.games_played),
         won: player.games_won === null ? '' : String(player.games_won),
       }])));
     } catch (e) {
-      console.error('Series 3 seeding stats load failed:', e);
-      setError('دریافت آمار سری سوم ناموفق بود: ' + (e instanceof Error ? e.message : 'خطای ناشناخته'));
+      console.error('Series 3 seeding manager load failed:', e);
+      setError('دریافت اطلاعات سری سوم ناموفق بود: ' + (e instanceof Error ? e.message : 'خطای ناشناخته'));
     } finally { setLoading(false); }
   }, []);
 
@@ -93,6 +148,11 @@ export default function Series3SeedingManager() {
   const completed = players.filter(p => p.games_played !== null && p.games_won !== null).length;
   const mainCount = players.filter(p => p.registration_status === 'main').length;
   const waitlistCount = players.filter(p => p.registration_status === 'waitlist').length;
+  const validPlayers = players.length === 48 && players.every(p =>
+    p.games_played !== null && p.games_won !== null && p.games_played > 0 &&
+    p.games_won >= 0 && p.games_won <= p.games_played
+  );
+  const currentPots = useMemo(() => [0, 1, 2, 3].map(i => players.slice(i * 12, (i + 1) * 12)), [players]);
   const filtered = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
     return players.filter(p => !term || p.plato_id.toLocaleLowerCase().includes(term));
@@ -128,62 +188,194 @@ export default function Series3SeedingManager() {
     } finally { setSavingId(null); }
   }
 
+  async function runDraw() {
+    if (!supabase || !validPlayers || savedDraw || drawLoading) return;
+    setDrawLoading(true); setError(''); setMessage('');
+    try {
+      const { data: userResult, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!userResult.user) throw new Error('نشست مالک معتبر نیست؛ دوباره وارد پنل شو.');
+      const pots = currentPots;
+      const shuffledPots = pots.map(pot => shuffled(pot));
+      const groups: DrawGroup[] = Array.from({ length: 12 }, (_, index) => ({
+        name: String.fromCharCode(65 + index),
+        players: shuffledPots.map(pot => pot[index]),
+      }));
+      const currentFingerprint = await fingerprint(players);
+      const { data, error: insertError } = await supabase.from('plato_land_series3_seeding_draws').insert({
+        event_key: 'series3',
+        ranking_snapshot: players,
+        pots_snapshot: pots,
+        groups_snapshot: groups,
+        stats_fingerprint: currentFingerprint,
+        created_by: userResult.user.id,
+      }).select('ranking_snapshot,pots_snapshot,groups_snapshot,stats_fingerprint,created_at').single();
+      if (insertError) {
+        if (insertError.code === '23505') {
+          await load();
+          throw new Error('قرعه‌کشی قبلاً توسط شما یا مدیر دیگری ثبت شده است؛ نتیجه ذخیره‌شده بارگذاری شد.');
+        }
+        throw insertError;
+      }
+      setSavedDraw(data as SavedDraw);
+      setIsStale(false);
+      setConfirmDraw(false);
+      setMessage('قرعه‌کشی با موفقیت در دیتابیس اصلی ذخیره و قفل شد.');
+    } catch (e) {
+      console.error('Series 3 draw save failed:', e);
+      setError(e instanceof Error ? e.message : 'ذخیره قرعه‌کشی ناموفق بود.');
+    } finally { setDrawLoading(false); }
+  }
+
+  const displayedRanking = savedDraw?.ranking_snapshot || players;
+  const displayedPots = savedDraw?.pots_snapshot || currentPots;
+  const displayedGroups = savedDraw?.groups_snapshot || [];
+
   return <section dir="rtl" style={panel}>
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
-        <h2 style={{ color: '#f6e8c5', fontSize: 20, margin: '0 0 5px' }}>آمار ۴۸ بازیکن سری سوم</h2>
-        <p style={{ ...muted, margin: 0 }}>بازیکنان اصلی و رزرو در یک فهرست؛ ثبت بازی و برد برای هر دو گروه و مرتب‌سازی بر اساس درصد برد</p>
+        <h2 style={{ color: '#f6e8c5', fontSize: 20, margin: '0 0 5px' }}>مدیریت رتبه‌بندی و قرعه‌کشی سری سوم</h2>
+        <p style={{ ...muted, margin: 0 }}>۴۸ بازیکن اصلی و رزرو · رتبه‌بندی درصد برد · چهار سید · دوازده گروه</p>
       </div>
-      <button type="button" style={button} onClick={() => setExpanded(v => !v)} aria-expanded={expanded}>
-        {expanded ? 'جمع‌کردن بخش' : 'بازکردن بخش'}
+      <button type="button" style={button} onClick={() => void load()} disabled={loading}>
+        {loading ? 'در حال دریافت…' : 'تازه‌سازی اطلاعات'}
       </button>
     </div>
+
     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 13 }}>
       {[
         ['بازیکنان اصلی', mainCount],
         ['بازیکنان رزرو', waitlistCount],
-        ['آمار ثبت‌شده', completed],
+        ['آمار معتبر', completed],
         ['در انتظار آمار', Math.max(0, players.length - completed)],
       ].map(([label, value]) => <div key={String(label)} style={{ flex: '1 1 105px', minWidth: 0, padding: '9px 11px', border: '1px solid #66512d', borderRadius: 9, background: '#171513' }}>
         <div style={muted}>{label}</div><strong style={{ color: '#f1d99e', fontSize: 21 }}>{loading ? '—' : fa(Number(value))}</strong>
       </div>)}
     </div>
-    {expanded && <>
-      <div style={{ display: 'flex', gap: 8, marginTop: 13, flexWrap: 'wrap' }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="جست‌وجوی Plato ID…" aria-label="جست‌وجوی Plato ID" style={{ ...input, flex: '1 1 180px' }} />
-        <button type="button" style={button} onClick={() => void load()} disabled={loading}>{loading ? 'در حال دریافت…' : 'تازه‌سازی'}</button>
+    {error && <p role="alert" style={{ color: '#f0aaaa', fontSize: 12 }}>{error}</p>}
+    {message && <p role="status" style={{ color: '#b8dfa9', fontSize: 12 }}>{message}</p>}
+    {savedDraw && <div style={{ ...card, marginTop: 12, borderColor: isStale ? '#b77743' : '#628052' }}>
+      <strong style={{ color: isStale ? '#efb27b' : '#b8dfa9' }}>
+        {isStale ? 'توجه: آمار فعلی با آمار زمان قرعه‌کشی متفاوت است.' : 'قرعه‌کشی ثبت‌شده و قفل‌شده است.'}
+      </strong>
+      <p style={{ ...muted, margin: '5px 0 0' }}>
+        زمان ثبت: {new Date(savedDraw.created_at).toLocaleString('fa-IR')} · نتیجه ذخیره‌شده تغییر نمی‌کند.
+        {isStale ? ' سیدها و گروه‌ها همان نسخه زمان قرعه‌کشی هستند؛ تغییر خودکار انجام نشده است.' : ''}
+      </p>
+    </div>}
+
+    <div style={{ ...card, marginTop: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <h3 style={sectionTitle}>۱. رتبه‌بندی ۴۸ بازیکن</h3>
+        <button type="button" style={secondaryButton} onClick={() => setRankingExpanded(v => !v)}>{rankingExpanded ? 'بستن' : 'نمایش'}</button>
       </div>
-      <p style={{ ...muted, margin: '9px 0' }}>فهرست شامل ۳۲ بازیکن اصلی و ۱۶ بازیکن رزرو است؛ انصرافی‌ها نمایش داده نمی‌شوند. درصد برد = تعداد برد ÷ تعداد کل بازی × ۱۰۰. مرتب‌سازی برای هر ۴۸ نفر یکسان انجام می‌شود.</p>
-      {error && <p role="alert" style={{ color: '#f0aaaa', fontSize: 12 }}>{error}</p>}
-      {message && <p role="status" style={{ color: '#b8dfa9', fontSize: 12 }}>{message}</p>}
-      {loading ? <p style={muted}>در حال دریافت فهرست بازیکنان…</p> : players.length === 0 ? <p style={muted}>بازیکن اصلی یا رزروی برای نمایش وجود ندارد.</p> : filtered.length === 0 ? <p style={muted}>بازیکنی با این Plato ID پیدا نشد.</p> :
-        <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
-          {filtered.map(player => {
-            const rank = players.findIndex(p => p.id === player.id) + 1;
-            const draft = drafts[player.id] || { played: '', won: '' };
-            return <article key={player.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 9, alignItems: 'center', padding: 11, border: '1px solid #4e422b', borderRadius: 10, background: '#141516' }}>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <strong style={{ color: '#e4c77e', fontSize: 12 }}>#{fa(rank)}</strong>
-                  <strong dir="ltr" style={{ color: '#f4f0e8', fontSize: 14, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
-                  <span style={{ color: player.registration_status === 'main' ? '#b8dfa9' : '#e4c77e', fontSize: 11, border: '1px solid currentColor', borderRadius: 6, padding: '2px 6px' }}>{player.registration_status === 'main' ? 'اصلی' : 'رزرو'}</span>
-                  <span style={{ color: '#d9bb78', fontSize: 12 }}>{pct(player.games_played, player.games_won)}</span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginTop: 8 }}>
-                  <label style={{ ...muted, minWidth: 0 }}>کل بازی
-                    <input inputMode="numeric" type="number" min="0" step="1" value={draft.played} onChange={e => setDrafts(prev => ({ ...prev, [player.id]: { ...draft, played: e.target.value } }))} style={input} />
-                  </label>
-                  <label style={{ ...muted, minWidth: 0 }}>برد
-                    <input inputMode="numeric" type="number" min="0" step="1" value={draft.won} onChange={e => setDrafts(prev => ({ ...prev, [player.id]: { ...draft, won: e.target.value } }))} style={input} />
-                  </label>
-                </div>
+      {rankingExpanded && <>
+        <p style={muted}>درصد برد، سپس تعداد بازی کمتر، تعداد برد بیشتر و در نهایت Plato ID الفبایی.</p>
+        <div style={{ display: 'grid', gap: 7 }}>
+          {displayedRanking.map((player, index) => <div key={player.id} style={{
+            display: 'grid', gridTemplateColumns: '34px minmax(0,1fr) auto', gap: 8, alignItems: 'center',
+            padding: '9px 10px', border: '1px solid #403725', borderRadius: 8, background: '#101112',
+          }}>
+            <strong style={{ color: '#e4c77e' }}>#{fa(index + 1)}</strong>
+            <div style={{ minWidth: 0 }}>
+              <strong dir="ltr" style={{ color: '#f5f0e6', fontSize: 13, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
+              <div style={muted}>{player.registration_status === 'main' ? 'اصلی' : 'رزرو'} · {fa(player.games_played || 0)} بازی · {fa(player.games_won || 0)} برد</div>
+            </div>
+            <strong style={{ color: '#e4c77e', whiteSpace: 'nowrap' }}>{pct(player.games_played, player.games_won)}</strong>
+          </div>)}
+        </div>
+      </>}
+    </div>
+
+    <div style={{ ...card, marginTop: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <h3 style={sectionTitle}>۲. تقسیم‌بندی سیدها</h3>
+        <button type="button" style={secondaryButton} onClick={() => setPotsExpanded(v => !v)}>{potsExpanded ? 'بستن' : 'نمایش'}</button>
+      </div>
+      {potsExpanded && <>
+        <p style={muted}>تقسیم دقیق بر اساس رتبه؛ هر سید شامل ۱۲ بازیکن است. سید ۱ رتبه‌های ۱ تا ۱۲ و به همین ترتیب تا سید ۴.</p>
+        <div style={{ display: 'grid', gap: 9 }}>
+          {displayedPots.map((pot, index) => <div key={index} style={{ border: '1px solid #59472a', borderRadius: 9, padding: 10, background: '#101112' }}>
+            <strong style={{ color: '#e4c77e' }}>سید {fa(index + 1)} <span style={muted}>· {fa(index * 12 + 1)} تا {fa(index * 12 + 12)}</span></strong>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 6, marginTop: 8 }}>
+              {pot.map((player, i) => <div key={player.id} style={{ padding: '6px 7px', borderRadius: 6, background: '#1c1b18', minWidth: 0 }}>
+                <span style={{ color: '#c6a45e', fontSize: 11 }}>{fa(index * 12 + i + 1)}. </span>
+                <strong dir="ltr" style={{ fontSize: 12, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
+              </div>)}
+            </div>
+          </div>)}
+        </div>
+      </>}
+    </div>
+
+    <div style={{ ...card, marginTop: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <h3 style={sectionTitle}>۳. قرعه‌کشی ۱۲ گروه</h3>
+        <button type="button" style={secondaryButton} onClick={() => setDrawExpanded(v => !v)}>{drawExpanded ? 'بستن' : 'نمایش'}</button>
+      </div>
+      {drawExpanded && <>
+        {!savedDraw ? <>
+          <p style={muted}>برای هر گروه، دقیقاً یک بازیکن از هر سید به‌صورت تصادفی انتخاب می‌شود. پس از ذخیره، نتیجه برای همه ورودهای بعدی ثابت می‌ماند.</p>
+          {!validPlayers && <p style={{ color: '#efb27b', fontSize: 12 }}>قرعه‌کشی تا زمانی که دقیقاً ۴۸ بازیکن با آمار معتبر وجود نداشته باشد فعال نمی‌شود.</p>}
+          {!confirmDraw ? <button type="button" style={button} disabled={!validPlayers || loading} onClick={() => setConfirmDraw(true)}>آماده‌سازی و تأیید قرعه‌کشی</button> :
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button type="button" style={button} disabled={drawLoading} onClick={() => void runDraw()}>{drawLoading ? 'در حال قرعه‌کشی و ذخیره…' : 'تأیید نهایی و اجرای قرعه‌کشی'}</button>
+              <button type="button" style={secondaryButton} disabled={drawLoading} onClick={() => setConfirmDraw(false)}>انصراف</button>
+            </div>}
+        </> : <>
+          <p style={{ ...muted, marginBottom: 10 }}>نتیجه قرعه‌کشی از نسخه ذخیره‌شده دیتابیس خوانده شده است؛ باز و بسته‌کردن این بخش یا Refresh آن را تغییر نمی‌دهد.</p>
+          <div style={{ display: 'grid', gap: 9 }}>
+            {displayedGroups.map(group => <div key={group.name} style={{ border: '1px solid #806638', borderRadius: 9, padding: 10, background: '#101112' }}>
+              <strong style={{ color: '#e4c77e', fontSize: 15 }}>گروه {group.name}</strong>
+              <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
+                {group.players.map((player, index) => <div key={player.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', padding: '7px 8px', borderRadius: 6, background: '#1b1a17' }}>
+                  <strong dir="ltr" style={{ fontSize: 13, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
+                  <span style={{ color: '#c6a45e', fontSize: 11, whiteSpace: 'nowrap' }}>سید {fa(index + 1)}</span>
+                </div>)}
               </div>
-              <button type="button" style={{ ...button, alignSelf: 'end', whiteSpace: 'nowrap' }} disabled={savingId !== null} onClick={() => void save(player)}>
-                {savingId === player.id ? '…' : 'ذخیره'}
-              </button>
-            </article>;
-          })}
-        </div>}
-    </>}
+            </div>)}
+          </div>
+        </>}
+      </>}
+    </div>
+
+    <div style={{ ...card, marginTop: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <h3 style={sectionTitle}>ثبت و اصلاح آمار بازیکنان</h3>
+        <button type="button" style={secondaryButton} onClick={() => setStatsExpanded(v => !v)}>{statsExpanded ? 'بستن' : 'نمایش'}</button>
+      </div>
+      {statsExpanded && <>
+        <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="جست‌وجوی Plato ID…" aria-label="جست‌وجوی Plato ID" style={{ ...input, flex: '1 1 180px' }} />
+        </div>
+        <p style={{ ...muted, margin: '9px 0' }}>فهرست شامل بازیکنان اصلی و رزرو است؛ انصرافی‌ها نمایش داده نمی‌شوند. پس از هر اصلاح آمار، اگر قرعه قبلاً انجام شده باشد، وضعیت مغایرت اعلام می‌شود و نتیجه گروه‌ها خودکار تغییر نمی‌کند.</p>
+        {loading ? <p style={muted}>در حال دریافت فهرست بازیکنان…</p> : filtered.length === 0 ? <p style={muted}>بازیکنی با این Plato ID پیدا نشد.</p> :
+          <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
+            {filtered.map(player => {
+              const draft = drafts[player.id] || { played: '', won: '' };
+              return <article key={player.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 9, alignItems: 'center', padding: 11, border: '1px solid #4e422b', borderRadius: 10, background: '#141516' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <strong dir="ltr" style={{ color: '#f4f0e8', fontSize: 14, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
+                    <span style={{ color: player.registration_status === 'main' ? '#b8dfa9' : '#e4c77e', fontSize: 11, border: '1px solid currentColor', borderRadius: 6, padding: '2px 6px' }}>{player.registration_status === 'main' ? 'اصلی' : 'رزرو'}</span>
+                    <span style={{ color: '#d9bb78', fontSize: 12 }}>{pct(player.games_played, player.games_won)}</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7, marginTop: 8 }}>
+                    <label style={{ ...muted, minWidth: 0 }}>کل بازی
+                      <input inputMode="numeric" type="number" min="0" step="1" value={draft.played} onChange={e => setDrafts(prev => ({ ...prev, [player.id]: { ...draft, played: e.target.value } }))} style={input} />
+                    </label>
+                    <label style={{ ...muted, minWidth: 0 }}>برد
+                      <input inputMode="numeric" type="number" min="0" step="1" value={draft.won} onChange={e => setDrafts(prev => ({ ...prev, [player.id]: { ...draft, won: e.target.value } }))} style={input} />
+                    </label>
+                  </div>
+                </div>
+                <button type="button" style={{ ...button, alignSelf: 'end', whiteSpace: 'nowrap' }} disabled={savingId !== null} onClick={() => void save(player)}>
+                  {savingId === player.id ? '…' : 'ذخیره'}
+                </button>
+              </article>;
+            })}
+          </div>}
+      </>}
+    </div>
   </section>;
 }
