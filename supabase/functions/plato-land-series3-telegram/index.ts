@@ -84,7 +84,7 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
       const index = Number(id.split(":")[1])-1;
       const pot = pots[index];
       if (!Array.isArray(pot) || pot.length !== 12) throw new Error("اطلاعات سید انتخاب‌شده کامل نیست.");
-      const lines = pot.map((p,i)=>(fa(index*12+i+1)+". "+playerName(p)+"  ·  "+playerStats(p)));
+      const lines = pot.map((p,i)=>(fa(index*12+i+1)+". "+playerName(p)));
       result.push(makeMessage(id,"سید "+fa(index+1),"۱۲ بازیکن بر اساس رتبه ثبت‌شده",lines,pot.length));
       continue;
     }
