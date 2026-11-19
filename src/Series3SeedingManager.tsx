@@ -113,7 +113,6 @@ export default function Series3SeedingManager() {
         supabase.from('plato_land_series3_seeding_draws')
           .select('ranking_snapshot,pots_snapshot,groups_snapshot,stats_fingerprint,created_at')
           .eq('event_key', 'series3').maybeSingle(),
-        supabase.from('plato_land_series3_knockout_draws').select('bracket_snapshot,created_at').eq('event_key','series3').maybeSingle(),
       ]);
       if (registrationResult.error) throw registrationResult.error;
       if (statsResult.error) throw statsResult.error;
