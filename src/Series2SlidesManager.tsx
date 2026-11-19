@@ -7,6 +7,7 @@ import { Series3SlidesPanel } from './Series3SlidesPanel';
 import { Series3VideoManager } from './Series3VideoManager';
 import Series3RegistrationReport from './Series3RegistrationReport';
 import Series3SeedingManager from './Series3SeedingManager';
+import Series3TelegramManager from './Series3TelegramManager';
 import PredictionCampaignManager from './PredictionCampaignManager';
 
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
@@ -221,6 +222,7 @@ export default function Series2SlidesManager() {
       <Series3VideoManager />
       <Series3RegistrationReport />
       <Series3SeedingManager />
+      <Series3TelegramManager />
     </>}
     {managerPage==='series2'&&<>
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
