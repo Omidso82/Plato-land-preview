@@ -48,25 +48,11 @@ export default function Series3Gallery(){
     setHeroMode('poster');
     const posterResponse=await fetch(series3MediaUrl('poster'),{method:'HEAD'});
     if(active&&posterResponse.ok)setPoster(series3MediaUrl('poster'));
-    else if(active){
-     const imageStorage=supabase.storage.from('series3-slides');
-     const {data:posterItems,error:posterError}=await imageStorage.list('poster',{limit:10});
-     const item=(posterItems||[]).find(x=>x.name==='series3-main-poster');
-     if(!posterError&&item)setPoster(imageStorage.getPublicUrl('poster/series3-main-poster').data.publicUrl+'?v='+encodeURIComponent(item.updated_at||item.created_at||''));
-    }
    }
     const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
    if(active&&!settingsError&&settings?.is_active&&settings.storage_path){
     const rulesResponse=await fetch(series3MediaUrl('rules'),{method:'HEAD'});
     if(active&&rulesResponse.ok)setRulesVideo(series3MediaUrl('rules'));
-    else if(active){
-     const {data:objects,error:listError}=await supabase.storage.from('series3-video').list('rules',{limit:20});
-     const file=(objects||[]).find(x=>x.name==='series3-important-rules.mp4');
-     if(!listError&&file){
-      const url=supabase.storage.from('series3-video').getPublicUrl(settings.storage_path).data.publicUrl;
-      setRulesVideo(url+'?v='+encodeURIComponent(file.updated_at||file.created_at||''));
-     }
-    }
    }
   }
   void load();return()=>{active=false};
