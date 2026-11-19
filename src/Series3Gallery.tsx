@@ -40,8 +40,8 @@ export default function Series3Gallery(){
     setHeroMode('video');
     // The teaser object is mapped to its verified R2 key; playback is served
     // through the Preview Pages Function with byte-range support.
-    if(active&&homeSettings.storage_path==='teaser/series3-home-teaser.mp4'){
-     setTeaserVideo('/media/series3?asset=teaser');
+    if(active&&(homeSettings.storage_path==='teaser/series3-home-teaser.mp4'||homeSettings.storage_path==='plato-land/backgammon/series-3/videos/168302900751657886.MP4')){
+     setTeaserVideo(series3MediaUrl('teaser'));
     }
    }else if(homeSettings.media_mode==='poster'){
     // Only load the poster after the admin has explicitly selected poster mode.
@@ -50,7 +50,7 @@ export default function Series3Gallery(){
     if(active&&posterResponse.ok)setPoster(series3MediaUrl('poster'));
    }
     const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
-   if(active&&!settingsError&&settings?.is_active&&settings.storage_path){
+   if(false && active&&!settingsError&&settings?.is_active&&settings.storage_path){
     const rulesResponse=await fetch(series3MediaUrl('rules'),{method:'HEAD'});
     if(active&&rulesResponse.ok)setRulesVideo(series3MediaUrl('rules'));
    }
