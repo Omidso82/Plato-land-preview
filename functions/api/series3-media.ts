@@ -24,6 +24,11 @@ const ASSETS: Record<string, { key: string; kind: "image" | "video"; max: number
   teaser: { key: "plato-land/backgammon/series-3/videos/168302900751657886.MP4", kind: "video", max: MAX_VIDEO, types: ["video/mp4"] },
   rules: { key: PREFIX + "videos/important-rules.mp4", kind: "video", max: MAX_VIDEO, types: ["video/mp4"] },
 };
+for (let i = 1; i <= 18; i++) {
+  const slot = String(i).padStart(2, "0");
+  ASSETS["series2-slide-" + slot] = { key: "plato-land/backgammon/series-2/slides/" + slot, kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"] };
+}
+ASSETS["series2-poster"] = { key: "plato-land/backgammon/series-2/posters/main-poster", kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"] };
 for (let i = 1; i <= 17; i++) {
   const slot = String(i).padStart(2, "0");
   ASSETS["slide-" + slot] = {
