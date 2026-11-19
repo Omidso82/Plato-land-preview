@@ -36,13 +36,15 @@ export function Series3VideoManager(){
   if(!supabase||!file)return;
   if(file.type!=='video/mp4'||file.size>LIMIT){setMessage('فقط فایل MP4 با حجم حداکثر ۱۰۰ مگابایت مجاز است.');return;}
   setBusy(true);setMessage('در حال بارگذاری ویدیو…');
+  let r2Saved=false;
   try{
    await uploadSeries3RulesVideo(file);
+   r2Saved=true;
    const {data:{user}}=await supabase.auth.getUser();
    const {error:saveError}=await supabase.from('plato_land_series3_video_settings').upsert({id:1,storage_path:PATH,is_active:active,updated_at:new Date().toISOString(),updated_by:user?.id||null});
    if(saveError)throw saveError;
    setFile(null);await refresh();setMessage('ویدیو در R2 ذخیره و با بررسی HEAD تأیید شد.');
-  }catch(e){setMessage('بارگذاری ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
+  }catch(e){setMessage((r2Saved?'فایل در R2 ذخیره شده، اما ثبت مرجع آن در تنظیمات کامل نشد؛ موفقیت نهایی تأیید نمی‌شود: ':'بارگذاری ناموفق بود: ')+(e instanceof Error?e.message:'خطای ناشناخته'));}
   finally{setBusy(false);}
  }
  async function toggle(){
