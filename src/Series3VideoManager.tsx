@@ -1,8 +1,8 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
+import {series3RulesVideoUrl,uploadSeries3RulesVideo} from './series3RulesVideoClient';
 
-const BUCKET='series3-video';
-const PATH='rules/series3-important-rules.mp4';
+const PATH='plato-land/backgammon/series-3/videos/important-rules.mp4';
 const LIMIT=100*1024*1024;
 
 export function Series3VideoManager(){
@@ -23,14 +23,13 @@ export function Series3VideoManager(){
 
  async function refresh(){
   if(!supabase)return;
-  const [{data:settings,error:settingsError},{data:objects,error:listError}]=await Promise.all([
+  const [{data:settings,error:settingsError},mediaResponse]=await Promise.all([
    supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle(),
-   supabase.storage.from(BUCKET).list('rules',{limit:20})
+   fetch(series3RulesVideoUrl(),{method:'HEAD',cache:'no-store'})
   ]);
-  if(settingsError||listError){setMessage('خواندن وضعیت ویدیو ناموفق بود: '+(settingsError?.message||listError?.message));return;}
-  const item=(objects||[]).find(x=>x.name==='series3-important-rules.mp4');
+  if(settingsError){setMessage('خواندن وضعیت ویدیو ناموفق بود: '+settingsError.message);return;}
   setActive(Boolean(settings?.is_active));
-  setCurrent(item?supabase.storage.from(BUCKET).getPublicUrl(PATH).data.publicUrl+'?v='+encodeURIComponent(item.updated_at||item.created_at||''):'');
+  setCurrent(mediaResponse.ok?series3RulesVideoUrl():'');
  }
  useEffect(()=>{void refresh();void refreshAnalytics()},[]);
  async function upload(){
@@ -38,12 +37,11 @@ export function Series3VideoManager(){
   if(file.type!=='video/mp4'||file.size>LIMIT){setMessage('فقط فایل MP4 با حجم حداکثر ۱۰۰ مگابایت مجاز است.');return;}
   setBusy(true);setMessage('در حال بارگذاری ویدیو…');
   try{
-   const {error}=await supabase.storage.from(BUCKET).upload(PATH,file,{upsert:true,contentType:'video/mp4',cacheControl:'31536000'});
-   if(error)throw error;
+   await uploadSeries3RulesVideo(file);
    const {data:{user}}=await supabase.auth.getUser();
    const {error:saveError}=await supabase.from('plato_land_series3_video_settings').upsert({id:1,storage_path:PATH,is_active:active,updated_at:new Date().toISOString(),updated_by:user?.id||null});
    if(saveError)throw saveError;
-   setFile(null);await refresh();setMessage('ویدیو با موفقیت بارگذاری و جایگزین شد.');
+   setFile(null);await refresh();setMessage('ویدیو در R2 ذخیره و با بررسی HEAD تأیید شد.');
   }catch(e){setMessage('بارگذاری ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
   finally{setBusy(false);}
  }
