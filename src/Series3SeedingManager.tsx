@@ -14,10 +14,6 @@ type SavedDraw = {
 };
 
 const fa = (value: number) => value.toLocaleString('fa-IR');
-const rate = (player: Player) =>
-  player.games_played !== null && player.games_won !== null && player.games_played > 0
-    ? (player.games_won / player.games_played) * 100
-    : null;
 const pct = (played: number | null, won: number | null) =>
   played !== null && won !== null && played > 0
     ? ((won / played) * 100).toLocaleString('fa-IR', { maximumFractionDigits: 2 }) + '٪'
@@ -43,6 +39,24 @@ const sectionTitle: React.CSSProperties = { color: '#f3dfad', fontSize: 16, marg
 const secondaryButton: React.CSSProperties = {
   ...button, background: '#211b12', color: '#e4c77e', border: '1px solid #806638',
 };
+
+function rankPlayers(items: Player[]): Player[] {
+  return [...items].sort((a, b) => {
+    const aValid = a.games_played !== null && a.games_won !== null && a.games_played > 0;
+    const bValid = b.games_played !== null && b.games_won !== null && b.games_played > 0;
+    if (aValid && !bValid) return -1;
+    if (!aValid && bValid) return 1;
+    if (aValid && bValid) {
+      const rateDiff = (b.games_won! / b.games_played!) - (a.games_won! / a.games_played!);
+      if (rateDiff !== 0) return rateDiff;
+    }
+    if (a.games_played !== null && b.games_played !== null && a.games_played !== b.games_played)
+      return a.games_played - b.games_played;
+    if (a.games_won !== null && b.games_won !== null && a.games_won !== b.games_won)
+      return b.games_won - a.games_won;
+    return a.plato_id.localeCompare(b.plato_id, 'en', { sensitivity: 'base' });
+  });
+}
 
 async function fingerprint(players: Player[]): Promise<string> {
   const source = JSON.stringify(players.map(p => ({
@@ -112,28 +126,14 @@ export default function Series3SeedingManager() {
           games_won: stat ? stat.games_won : null,
         } as Player;
       });
-      next.sort((a, b) => {
-        const aValid = a.games_played !== null && a.games_won !== null && a.games_played > 0;
-        const bValid = b.games_played !== null && b.games_won !== null && b.games_played > 0;
-        if (aValid && !bValid) return -1;
-        if (!aValid && bValid) return 1;
-        if (aValid && bValid) {
-          const rateDiff = (b.games_won! / b.games_played!) - (a.games_won! / a.games_played!);
-          if (rateDiff !== 0) return rateDiff;
-        }
-        if (a.games_played !== null && b.games_played !== null && a.games_played !== b.games_played)
-          return a.games_played - b.games_played;
-        if (a.games_won !== null && b.games_won !== null && a.games_won !== b.games_won)
-          return b.games_won - a.games_won;
-        return a.plato_id.localeCompare(b.plato_id, 'en', { sensitivity: 'base' });
-      });
+      const ranked = rankPlayers(next);
 
       const saved = drawResult.data as SavedDraw | null;
-      const currentFingerprint = await fingerprint(next);
-      setPlayers(next);
+      const currentFingerprint = await fingerprint(ranked);
+      setPlayers(ranked);
       setSavedDraw(saved);
       setIsStale(Boolean(saved && saved.stats_fingerprint !== currentFingerprint));
-      setDrafts(Object.fromEntries(next.map(player => [player.id, {
+      setDrafts(Object.fromEntries(ranked.map(player => [player.id, {
         played: player.games_played === null ? '' : String(player.games_played),
         won: player.games_won === null ? '' : String(player.games_won),
       }])));
@@ -195,16 +195,43 @@ export default function Series3SeedingManager() {
       const { data: userResult, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
       if (!userResult.user) throw new Error('نشست مالک معتبر نیست؛ دوباره وارد پنل شو.');
-      const pots = currentPots;
+      const [registrationResult, statsResult] = await Promise.all([
+        supabase.from('plato_land_series3_registration_requests')
+          .select('id,plato_id,registration_status').in('registration_status', ['main', 'waitlist']).order('created_at', { ascending: true }),
+        supabase.from('plato_land_series3_player_stats').select('request_id,games_played,games_won'),
+      ]);
+      if (registrationResult.error) throw registrationResult.error;
+      if (statsResult.error) throw statsResult.error;
+      const freshStats = new Map<string, Stats>((statsResult.data || []).map((row: any) => [String(row.request_id), {
+        request_id: String(row.request_id), games_played: Number(row.games_played), games_won: Number(row.games_won),
+      }]));
+      const freshPlayers = rankPlayers((registrationResult.data || []).map((row: any) => {
+        const stat = freshStats.get(String(row.id));
+        return {
+          id: String(row.id), plato_id: String(row.plato_id || ''), registration_status: row.registration_status,
+          games_played: stat ? stat.games_played : null, games_won: stat ? stat.games_won : null,
+        } as Player;
+      }));
+      const currentFingerprint = await fingerprint(players);
+      const freshFingerprint = await fingerprint(freshPlayers);
+      if (freshFingerprint !== currentFingerprint) {
+        await load();
+        throw new Error('آمار یا فهرست بازیکنان پس از بارگذاری تغییر کرده است؛ اطلاعات تازه شد. دوباره بررسی کن و سپس قرعه‌کشی را اجرا کن.');
+      }
+      if (freshPlayers.length !== 48 || freshPlayers.some(p =>
+        p.games_played === null || p.games_won === null || p.games_played <= 0 ||
+        p.games_won < 0 || p.games_won > p.games_played
+      )) throw new Error('اطلاعات فعلی هر ۴۸ بازیکن معتبر نیست؛ قرعه‌کشی متوقف شد.');
+
+      const pots = [0, 1, 2, 3].map(i => freshPlayers.slice(i * 12, (i + 1) * 12));
       const shuffledPots = pots.map(pot => shuffled(pot));
       const groups: DrawGroup[] = Array.from({ length: 12 }, (_, index) => ({
         name: String.fromCharCode(65 + index),
         players: shuffledPots.map(pot => pot[index]),
       }));
-      const currentFingerprint = await fingerprint(players);
       const { data, error: insertError } = await supabase.from('plato_land_series3_seeding_draws').insert({
         event_key: 'series3',
-        ranking_snapshot: players,
+        ranking_snapshot: freshPlayers,
         pots_snapshot: pots,
         groups_snapshot: groups,
         stats_fingerprint: currentFingerprint,
