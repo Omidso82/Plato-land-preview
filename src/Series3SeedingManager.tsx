@@ -5,6 +5,9 @@ type Registration = { id: string; plato_id: string; registration_status: 'main' 
 type Stats = { request_id: string; games_played: number; games_won: number };
 type Player = Registration & { games_played: number | null; games_won: number | null; updated_at?: string };
 type DrawGroup = { name: string; players: Player[] };
+type BracketToken = { id: string; label: string; source: 'first' | 'second' | 'third'; group?: string };
+type BracketMatch = { id: string; a: BracketToken | null; b: BracketToken | null };
+type SavedBracket = { bracket_snapshot: { tokens: BracketToken[]; round32: BracketMatch[]; round16: BracketMatch[]; quarterfinals: BracketMatch[]; semifinals: BracketMatch[]; final: BracketMatch[] }; created_at: string };
 type SavedDraw = {
   ranking_snapshot: Player[];
   pots_snapshot: Player[][];
@@ -91,6 +94,10 @@ export default function Series3SeedingManager() {
   const [drawLoading, setDrawLoading] = useState(false);
   const [confirmDraw, setConfirmDraw] = useState(false);
   const [savedDraw, setSavedDraw] = useState<SavedDraw | null>(null);
+  const [savedBracket, setSavedBracket] = useState<SavedBracket | null>(null);
+  const [bracketExpanded, setBracketExpanded] = useState(true);
+  const [bracketConfirm, setBracketConfirm] = useState(false);
+  const [bracketLoading, setBracketLoading] = useState(false);
   const [isStale, setIsStale] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -106,10 +113,13 @@ export default function Series3SeedingManager() {
         supabase.from('plato_land_series3_seeding_draws')
           .select('ranking_snapshot,pots_snapshot,groups_snapshot,stats_fingerprint,created_at')
           .eq('event_key', 'series3').maybeSingle(),
+        supabase.from('plato_land_series3_knockout_draws').select('bracket_snapshot,created_at').eq('event_key','series3').maybeSingle(),
       ]);
       if (registrationResult.error) throw registrationResult.error;
       if (statsResult.error) throw statsResult.error;
       if (drawResult.error) throw drawResult.error;
+      const bracketResult = (await supabase.from('plato_land_series3_knockout_draws').select('bracket_snapshot,created_at').eq('event_key','series3').maybeSingle());
+      if (bracketResult.error) throw bracketResult.error;
 
       const statsById = new Map<string, Stats>(
         (statsResult.data || []).map((row: any) => [String(row.request_id), {
@@ -132,6 +142,7 @@ export default function Series3SeedingManager() {
       const currentFingerprint = await fingerprint(ranked);
       setPlayers(ranked);
       setSavedDraw(saved);
+      setSavedBracket(bracketResult.data as SavedBracket | null);
       setIsStale(Boolean(saved && saved.stats_fingerprint !== currentFingerprint));
       setDrafts(Object.fromEntries(ranked.map(player => [player.id, {
         played: player.games_played === null ? '' : String(player.games_played),
@@ -254,6 +265,41 @@ export default function Series3SeedingManager() {
     } finally { setDrawLoading(false); }
   }
 
+
+  async function runBracketDraw() {
+    if (!supabase || !savedDraw || savedBracket || bracketLoading) return;
+    setBracketLoading(true); setError(''); setMessage('');
+    try {
+      const { data: userResult, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+      if (!userResult.user) throw new Error('نشست مالک معتبر نیست؛ دوباره وارد پنل شو.');
+      const groupNames = savedDraw.groups_snapshot.map(g => g.name);
+      if (groupNames.length !== 12) throw new Error('قرعه گروه‌ها باید ابتدا ثبت شده باشد.');
+      const tokens: BracketToken[] = [
+        ...groupNames.map(group => ({ id: '1-' + group, label: 'اول گروه ' + group, source: 'first' as const, group })),
+        ...groupNames.map(group => ({ id: '2-' + group, label: 'دوم گروه ' + group, source: 'second' as const, group })),
+        ...Array.from({length:8},(_,i)=>({id:'3-BEST-'+(i+1),label:'سوم برتر شماره '+fa(i+1),source:'third' as const}))
+      ];
+      const shuffledTokens = shuffled(tokens);
+      const round32: BracketMatch[] = Array.from({length:16},(_,i)=>({id:'R32-'+(i+1),a:shuffledTokens[i*2],b:shuffledTokens[i*2+1]}));
+      const makeRound=(prefix:string,count:number):BracketMatch[]=>Array.from({length:count},(_,i)=>({id:prefix+'-'+(i+1),a:null,b:null}));
+      const bracket_snapshot = {tokens:shuffledTokens,round32,round16:makeRound('R16',8),quarterfinals:makeRound('QF',4),semifinals:makeRound('SF',2),final:makeRound('F',1)};
+      const {data,error:insertError}=await supabase.from('plato_land_series3_knockout_draws').insert({
+        event_key:'series3',bracket_snapshot,created_by:userResult.user.id
+      }).select('bracket_snapshot,created_at').single();
+      if(insertError) {
+        if(insertError.code==='23505') throw new Error('قرعه مرحله حذفی قبلاً ثبت شده است؛ صفحه را تازه‌سازی کن.');
+        throw insertError;
+      }
+      setSavedBracket(data as SavedBracket);
+      setBracketConfirm(false);
+      setMessage('قرعه کامل مسیر حذفی تا فینال در دیتابیس اصلی ذخیره و قفل شد.');
+    } catch(e) {
+      console.error('Series 3 knockout draw failed:',e);
+      setError('قرعه مرحله حذفی ذخیره نشد: '+(e instanceof Error?e.message:'خطای ناشناخته'));
+    } finally {setBracketLoading(false);}
+  }
+
   const displayedRanking = savedDraw?.ranking_snapshot || players;
   const displayedPots = savedDraw?.pots_snapshot || currentPots;
   const displayedGroups = savedDraw?.groups_snapshot || [];
@@ -362,6 +408,36 @@ export default function Series3SeedingManager() {
               </div>
             </div>)}
           </div>
+        </>}
+      </>}
+    </div>
+
+
+    <div style={{ ...card, marginTop: 10 }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+        <h3 style={sectionTitle}>۴. قرعه‌کشی تصادفی مرحله حذفی تا فینال (۳۲ نفر)</h3>
+        <button type="button" style={secondaryButton} onClick={()=>setBracketExpanded(v=>!v)}>{bracketExpanded?'بستن':'نمایش'}</button>
+      </div>
+      {bracketExpanded && <>
+        <p style={muted}>۲۴ جایگاه نفرات اول و دوم گروه‌ها + ۸ جایگاه نفرات سوم برتر. قرعه اکنون انجام می‌شود تا مسیر هر جایگاه از یک‌شانزدهم تا فینال از قبل مشخص باشد. نام واقعی ۸ نفر سوم پس از پایان گروه‌ها در همین جایگاه‌های ثابت قرار می‌گیرد.</p>
+        {!savedDraw && <p style={{color:'#efb27b',fontSize:12}}>ابتدا قرعه‌کشی ۱۲ گروه باید ذخیره شده باشد.</p>}
+        {!savedBracket ? <>
+          {!bracketConfirm ? <button type="button" style={button} disabled={!savedDraw||bracketLoading} onClick={()=>setBracketConfirm(true)}>آماده‌سازی قرعه‌کشی ۳۲ نفره</button> :
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <button type="button" style={button} disabled={bracketLoading} onClick={()=>void runBracketDraw()}>{bracketLoading?'در حال قرعه‌کشی و ذخیره…':'تأیید و اجرای قرعه‌کشی حذفی'}</button>
+              <button type="button" style={secondaryButton} disabled={bracketLoading} onClick={()=>setBracketConfirm(false)}>انصراف</button>
+            </div>}
+        </> : <>
+          <p style={{...muted,color:'#b8dfa9'}}>قرعه ثبت شده و ثابت است · {new Date(savedBracket.created_at).toLocaleString('fa-IR')}</p>
+          <p style={muted}>یک‌شانزدهم نهایی — ۱۶ مسابقه</p>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:8}}>
+            {savedBracket.bracket_snapshot.round32.map((m,i)=><div key={m.id} style={{...card,padding:9}}>
+              <strong style={{color:'#e4c77e'}}>بازی {fa(i+1)}</strong>
+              <div style={{...muted,marginTop:5}}>{m.a?.label}</div>
+              <div style={{...muted,borderTop:'1px solid #51452d',paddingTop:5,marginTop:5}}>{m.b?.label}</div>
+            </div>)}
+          </div>
+          <p style={{...muted,marginTop:12}}>مسیر مراحل بعدی نیز در همین قرعه ذخیره شده است: ۸ بازی یک‌هشتم، ۴ بازی یک‌چهارم، ۲ نیمه‌نهایی و فینال. برنده هر بازی به جایگاه متناظر دور بعد می‌رود؛ قرعه مجدد انجام نمی‌شود.</p>
         </>}
       </>}
     </div>
