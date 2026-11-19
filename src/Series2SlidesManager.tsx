@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { supabase } from './supabase';
 import { uploadTemporaryMedia } from './series3MediaClient';
 import Series2FinalistPredictionAdmin from './Series2FinalistPredictionAdmin';
@@ -34,6 +34,8 @@ export default function Series2SlidesManager() {
   const [message,setMessage] = useState('');
   const [scannerOpen,setScannerOpen] = useState(false);
   const [managerPage,setManagerPage] = useState<'home'|'series3'|'series2'|'predictions'>('home');
+  const slideObjectUrls = useRef<string[]>([]);
+  const posterObjectUrl = useRef<string|null>(null);
 
   async function verifyOwner() {
     if (!supabase) { setMessage('اتصال به سرویس اصلی برقرار نیست.'); setChecking(false); return; }
@@ -67,16 +69,46 @@ export default function Series2SlidesManager() {
   }
 
   async function loadSlides() {
-    const checks=await Promise.all(Array.from({length:18},(_,i)=>fetch('/api/series3-media?asset=series2-slide-'+String(i+1).padStart(2,'0'),{method:'HEAD'})));
-    setFiles(checks.flatMap((response,i)=>response.ok?[{name:String(i+1).padStart(2,'0'),url:'/api/series3-media?asset=series2-slide-'+String(i+1).padStart(2,'0')}]:[]));
+    if (!supabase) return;
+    const {data:{session}}=await supabase.auth.getSession();
+    const token=session?.access_token;
+    if (!token) { setFiles([]); return; }
+    const loaded=await Promise.all(Array.from({length:18},async(_,i)=>{
+      const name=String(i+1).padStart(2,'0');
+      const response=await fetch('/api/series3-media?asset=series2-slide-'+name,{
+        method:'GET',headers:{Authorization:'Bearer '+token},cache:'no-store'
+      });
+      if(!response.ok)return null;
+      const url=URL.createObjectURL(await response.blob());
+      return {name,url};
+    }));
+    slideObjectUrls.current.forEach(url=>URL.revokeObjectURL(url));
+    slideObjectUrls.current=loaded.flatMap(item=>item?[item.url]:[]);
+    setFiles(loaded.filter((item):item is SlideFile=>item!==null));
   }
 
   async function loadPoster() {
-    const response=await fetch('/api/series3-media?asset=series2-poster',{method:'HEAD'});
-    setPoster(response.ok?{name:'main-poster',url:'/api/series3-media?asset=series2-poster'}:null);
+    if (!supabase) return;
+    const {data:{session}}=await supabase.auth.getSession();
+    const token=session?.access_token;
+    if (!token) { setPoster(null); return; }
+    const response=await fetch('/api/series3-media?asset=series2-poster',{
+      method:'GET',headers:{Authorization:'Bearer '+token},cache:'no-store'
+    });
+    if(!response.ok){setPoster(null);return;}
+    const url=URL.createObjectURL(await response.blob());
+    if(posterObjectUrl.current)URL.revokeObjectURL(posterObjectUrl.current);
+    posterObjectUrl.current=url;
+    setPoster({name:'main-poster',url,updated_at:new Date().toISOString()});
   }
 
-  useEffect(() => { void verifyOwner(); }, []);
+  useEffect(() => {
+    void verifyOwner();
+    return () => {
+      slideObjectUrls.current.forEach(url=>URL.revokeObjectURL(url));
+      if(posterObjectUrl.current)URL.revokeObjectURL(posterObjectUrl.current);
+    };
+  }, []);
 
   async function login(e:React.FormEvent) {
     e.preventDefault(); if (!supabase) return;
@@ -140,8 +172,7 @@ export default function Series2SlidesManager() {
     setPosterBusy(true); setMessage('در حال ذخیره تصویر صفحهٔ اول مسابقات…');
     try {
       await uploadTemporaryMedia('series2-poster',posterSelected);
-      const freshUrl='/api/series3-media?asset=series2-poster';
-      setPoster({name:'main-poster',url:freshUrl,updated_at:new Date().toISOString()});
+      await loadPoster();
       setPosterSelected(null);
       setMessage('پوستر جدید ذخیره شد. نسخه تازه برای نمایش عمومی آماده است.');
     } catch(e) { setMessage(e instanceof Error?e.message:'بارگذاری پوستر ناموفق بود.'); }
