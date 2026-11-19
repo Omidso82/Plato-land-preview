@@ -37,11 +37,10 @@ export default function Series3Gallery(){
     // Lock the page to video mode before loading any video asset.
     // Do not request or preload the poster at all in video mode.
     setHeroMode('video');
-    const {data:items,error:listError}=await supabase.storage.from('series3-video').list('teaser',{limit:10});
-    const teaser=(items||[]).find(x=>x.name==='series3-home-teaser.mp4');
-    if(active&&!listError&&teaser){
-     const url=supabase.storage.from('series3-video').getPublicUrl(homeSettings.storage_path).data.publicUrl;
-     setTeaserVideo(url+'?v='+encodeURIComponent(teaser.updated_at||teaser.created_at||''));
+    // The teaser object is mapped to its verified R2 key; playback is served
+    // through the Preview Pages Function with byte-range support.
+    if(active&&homeSettings.storage_path==='teaser/series3-home-teaser.mp4'){
+     setTeaserVideo('/media/series3?asset=teaser');
     }
    }else if(homeSettings.media_mode==='poster'){
     // Only load the poster after the admin has explicitly selected poster mode.
