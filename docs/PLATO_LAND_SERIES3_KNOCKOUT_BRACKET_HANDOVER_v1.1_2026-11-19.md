@@ -80,13 +80,14 @@ Before the future draw is enabled, verify that the new public table is exposed t
 - Read-only roster/draw verification: 48 active, 11 withdrawn, 1 saved group draw, 12 groups, 0 knockout draws.
 - RLS/table privilege readback: SUCCESS.
 - Supabase Security Advisor: the new knockout table was not listed among the findings. Existing unrelated project findings remain; no unrelated security changes were made.
-- GitHub feature branch source commit: `8682ca0267cd37b01620c8c0ef9fbf04599766f5`.
-- CI/build, pull request, production deployment, and iPhone Safari visual QA: pending.
-- No PR has been merged and no production frontend release has been performed.
+- Latest feature branch commit at this handover update: PR #218 head (see live PR for current SHA).
+- Draft PR #218 is open and targets `main`; it is not merged.
+- GitHub Actions checks were not yet returned at the time of this update; build/typecheck are not claimed as passed.
+- No production frontend deployment has been performed; iPhone Safari visual QA remains pending.
 
 ### 10. Next steps
 1. Add the matching migration file and this handover to the feature branch.
-2. Run GitHub verification/build and inspect the diff.
-3. Open a draft PR for review; do not merge or deploy without release approval.
+2. Complete GitHub verification/build and inspect the diff in draft PR #218.
+3. Obtain explicit release approval before merging or deploying to the existing production panel.
 4. After frontend release, owner checks the same existing admin panel on iPhone.
 5. Later, once authoritative group results exist, implement best-third calculation, constrained random draw execution, and one-time persisted bracket snapshot.
