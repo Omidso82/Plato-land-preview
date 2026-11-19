@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import { series3MediaUrl, uploadSeries3Media } from './series3MediaClient';
 
-const BUCKET = 'series3-slides';
-const POSTER_PATH = 'poster/series3-main-poster';
 const TEASER_BUCKET = 'series3-video';
 const TEASER_PATH = 'teaser/series3-home-teaser.mp4';
 type ImageItem = { url:string; updated_at?:string };
