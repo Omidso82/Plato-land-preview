@@ -1,12 +1,12 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
-import {SERIES3_RULES_VIDEO_KEY,series3RulesVideoUrl,uploadSeries3RulesVideo} from './series3RulesVideoClient';
+import {isSeries3RulesVideoKey,series3RulesVideoUrl,uploadSeries3RulesVideo} from './series3RulesVideoClient';
 
-const PATH=SERIES3_RULES_VIDEO_KEY;
 const LIMIT=100*1024*1024;
 
 export function Series3VideoManager(){
  const [current,setCurrent]=useState('');
+ const [currentKey,setCurrentKey]=useState('');
  const [file,setFile]=useState<File|null>(null);
  const [active,setActive]=useState(false);
  const [busy,setBusy]=useState(false);
@@ -26,13 +26,15 @@ export function Series3VideoManager(){
   const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
   if(settingsError){setMessage('خواندن وضعیت ویدیو ناموفق بود: '+settingsError.message);return;}
   setActive(Boolean(settings?.is_active));
-  if(settings?.storage_path!==PATH){setCurrent('');return;}
+  const key=typeof settings?.storage_path==='string'?settings.storage_path:'';
+  if(!isSeries3RulesVideoKey(key)){setCurrent('');setCurrentKey('');return;}
   try{
-   const url=series3RulesVideoUrl();
+   const url=series3RulesVideoUrl(key);
    const mediaResponse=await fetch(url,{method:'HEAD',mode:'cors',cache:'no-store'});
    const storedSize=Number(mediaResponse.headers.get('Content-Length')||'0');
    const storedType=(mediaResponse.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
-   setCurrent(mediaResponse.ok&&storedSize>0&&storedType==='video/mp4'?url:'');
+   const valid=mediaResponse.ok&&storedSize>0&&storedType==='video/mp4';
+   setCurrent(valid?url:'');setCurrentKey(valid?key:'');
   }catch(e){setCurrent('');setMessage(e instanceof Error?e.message:'مسیر سرویس رسانه R2 در دسترس نیست.');}
  }
  useEffect(()=>{void refresh();void refreshAnalytics()},[]);
@@ -42,12 +44,12 @@ export function Series3VideoManager(){
   setBusy(true);setMessage('در حال بارگذاری ویدیو…');
   let r2Saved=false;
   try{
-   await uploadSeries3RulesVideo(file);
+   const uploadedKey=await uploadSeries3RulesVideo(file);
    r2Saved=true;
    const {data:{user}}=await supabase.auth.getUser();
-   const {error:saveError}=await supabase.from('plato_land_series3_video_settings').upsert({id:1,storage_path:PATH,is_active:active,updated_at:new Date().toISOString(),updated_by:user?.id||null});
+   const {error:saveError}=await supabase.from('plato_land_series3_video_settings').upsert({id:1,storage_path:uploadedKey,is_active:active,updated_at:new Date().toISOString(),updated_by:user?.id||null});
    if(saveError)throw saveError;
-   setFile(null);await refresh();setMessage('ویدیو در R2 ذخیره و با بررسی HEAD تأیید شد.');
+   setCurrentKey(uploadedKey);setCurrent(series3RulesVideoUrl(uploadedKey));setFile(null);await refresh();setMessage('ویدیو در R2 ذخیره و با بررسی HEAD تأیید شد.');
   }catch(e){setMessage((r2Saved?'فایل در R2 ذخیره شده، اما ثبت مرجع آن در تنظیمات کامل نشد؛ موفقیت نهایی تأیید نمی‌شود: ':'بارگذاری ناموفق بود: ')+(e instanceof Error?e.message:'خطای ناشناخته'));}
   finally{setBusy(false);}
  }
@@ -55,8 +57,9 @@ export function Series3VideoManager(){
   if(!supabase)return;
   setBusy(true);
   try{
+   if(!isSeries3RulesVideoKey(currentKey))throw new Error('کلید نسخه‌دار ویدیوی معتبر پیدا نشد.');
    const {data:{user}}=await supabase.auth.getUser();
-   const {error}=await supabase.from('plato_land_series3_video_settings').upsert({id:1,storage_path:PATH,is_active:!active,updated_at:new Date().toISOString(),updated_by:user?.id||null});
+   const {error}=await supabase.from('plato_land_series3_video_settings').upsert({id:1,storage_path:currentKey,is_active:!active,updated_at:new Date().toISOString(),updated_by:user?.id||null});
    if(error)throw error;
    setActive(!active);setMessage(!active?'نمایش ویدیو در صفحه اول فعال شد.':'نمایش ویدیو در صفحه اول غیرفعال شد.');
   }catch(e){setMessage('تغییر وضعیت ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
