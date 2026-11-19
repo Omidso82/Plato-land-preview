@@ -5,8 +5,8 @@ type Registration = { id: string; plato_id: string; registration_status: 'main' 
 type Stats = { request_id: string; games_played: number; games_won: number };
 type Player = Registration & { games_played: number | null; games_won: number | null; updated_at?: string };
 type DrawGroup = { name: string; players: Player[] };
-type BracketToken = { id: string; label: string; source: 'first' | 'second' | 'third'; group?: string };
-type BracketMatch = { id: string; a: BracketToken | null; b: BracketToken | null };
+type BracketToken = { id: string; label: string; source: 'first' | 'second' | 'third' | 'winner'; group?: string };
+type BracketMatch = { id: string; a: BracketToken; b: BracketToken };
 type SavedBracket = { bracket_snapshot: { tokens: BracketToken[]; round32: BracketMatch[]; round16: BracketMatch[]; quarterfinals: BracketMatch[]; semifinals: BracketMatch[]; final: BracketMatch[] }; created_at: string };
 type SavedDraw = {
   ranking_snapshot: Player[];
@@ -281,8 +281,16 @@ export default function Series3SeedingManager() {
       ];
       const shuffledTokens = shuffled(tokens);
       const round32: BracketMatch[] = Array.from({length:16},(_,i)=>({id:'R32-'+(i+1),a:shuffledTokens[i*2],b:shuffledTokens[i*2+1]}));
-      const makeRound=(prefix:string,count:number):BracketMatch[]=>Array.from({length:count},(_,i)=>({id:prefix+'-'+(i+1),a:null,b:null}));
-      const bracket_snapshot = {tokens:shuffledTokens,round32,round16:makeRound('R16',8),quarterfinals:makeRound('QF',4),semifinals:makeRound('SF',2),final:makeRound('F',1)};
+      const makeNextRound=(prefix:string,previous:BracketMatch[]):BracketMatch[]=>Array.from({length:previous.length/2},(_,i)=>({
+        id:prefix+'-'+(i+1),
+        a:{id:'W-'+previous[i*2].id,label:'برنده '+previous[i*2].id,source:'winner' as const},
+        b:{id:'W-'+previous[i*2+1].id,label:'برنده '+previous[i*2+1].id,source:'winner' as const}
+      }));
+      const round16=makeNextRound('R16',round32);
+      const quarterfinals=makeNextRound('QF',round16);
+      const semifinals=makeNextRound('SF',quarterfinals);
+      const final=makeNextRound('F',semifinals);
+      const bracket_snapshot = {tokens:shuffledTokens,round32,round16,quarterfinals,semifinals,final};
       const drawSource = JSON.stringify({entrants:shuffledTokens,bracket:bracket_snapshot});
       const drawDigest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(drawSource));
       const draw_fingerprint = Array.from(new Uint8Array(drawDigest)).map(byte=>byte.toString(16).padStart(2,'0')).join('');
@@ -431,15 +439,23 @@ export default function Series3SeedingManager() {
             </div>}
         </> : <>
           <p style={{...muted,color:'#b8dfa9'}}>قرعه ثبت شده و ثابت است · {new Date(savedBracket.created_at).toLocaleString('fa-IR')}</p>
-          <p style={muted}>یک‌شانزدهم نهایی — ۱۶ مسابقه</p>
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(220px,1fr))',gap:8}}>
-            {savedBracket.bracket_snapshot.round32.map((m,i)=><div key={m.id} style={{...card,padding:9}}>
-              <strong style={{color:'#e4c77e'}}>بازی {fa(i+1)}</strong>
-              <div style={{...muted,marginTop:5}}>{m.a?.label}</div>
-              <div style={{...muted,borderTop:'1px solid #51452d',paddingTop:5,marginTop:5}}>{m.b?.label}</div>
-            </div>)}
-          </div>
-          <p style={{...muted,marginTop:12}}>مسیر مراحل بعدی نیز در همین قرعه ذخیره شده است: ۸ بازی یک‌هشتم، ۴ بازی یک‌چهارم، ۲ نیمه‌نهایی و فینال. برنده هر بازی به جایگاه متناظر دور بعد می‌رود؛ قرعه مجدد انجام نمی‌شود.</p>
+          {([
+            ['یک‌شانزدهم نهایی · ۱۶ بازی',savedBracket.bracket_snapshot.round32],
+            ['یک‌هشتم نهایی · ۸ بازی',savedBracket.bracket_snapshot.round16],
+            ['یک‌چهارم نهایی · ۴ بازی',savedBracket.bracket_snapshot.quarterfinals],
+            ['نیمه‌نهایی · ۲ بازی',savedBracket.bracket_snapshot.semifinals],
+            ['فینال',savedBracket.bracket_snapshot.final]
+          ] as [string,BracketMatch[]][]).map(([title,matches])=><section key={title} style={{marginTop:12}}>
+            <strong style={{color:'#e4c77e'}}>{title}</strong>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:8,marginTop:7}}>
+              {matches.map((m,i)=><div key={m.id} style={{...card,padding:9}}>
+                <strong style={{color:'#e4c77e'}}>{title==='فینال'?'مسابقه نهایی':'بازی '+fa(i+1)}</strong>
+                <div style={{...muted,marginTop:5}}>{m.a.label}</div>
+                <div style={{...muted,borderTop:'1px solid #51452d',paddingTop:5,marginTop:5}}>{m.b.label}</div>
+              </div>)}
+            </div>
+          </section>)}
+          <p style={{...muted,marginTop:12}}>مسیر هر برنده از بازی‌های دور اول تا فینال از پیش به‌صورت ثابت مشخص شده است؛ فقط نام بازیکنان واقعیِ نفرات سوم پس از پایان گروه‌ها جایگزین ۸ جایگاه مربوط می‌شود.</p>
         </>}
       </>}
     </div>
