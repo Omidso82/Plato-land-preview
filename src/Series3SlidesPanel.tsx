@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 import { series3MediaUrl, uploadSeries3Media } from './series3MediaClient';
 
 const TEASER_BUCKET = 'series3-video';
-const TEASER_PATH = 'teaser/series3-home-teaser.mp4';
+const TEASER_PATH = 'plato-land/backgammon/series-3/videos/168302900751657886.MP4';
 type ImageItem = { url:string; updated_at?:string };
 
 export function Series3SlidesPanel() {
