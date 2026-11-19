@@ -2,6 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {Crown,ArrowLeft,ChevronRight,Archive,PlayCircle,X,Volume2,VolumeX} from 'lucide-react';
 import {supabase} from './supabase';
 import TemporaryPageHeader from './TemporaryPageHeader';
+import {series3RulesVideoUrl} from './series3RulesVideoClient';
 
 export default function Series3Gallery(){
  const [poster,setPoster]=useState('');
@@ -55,9 +56,7 @@ export default function Series3Gallery(){
    }
     const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
    if(active&&!settingsError&&settings?.is_active&&settings.storage_path){
-    const {data:objects,error:listError}=await supabase.storage.from('series3-video').list('rules',{limit:20});
-    const file=(objects||[]).find(x=>x.name==='series3-important-rules.mp4');
-    if(!listError&&file){const url=supabase.storage.from('series3-video').getPublicUrl(settings.storage_path).data.publicUrl;setRulesVideo(url+'?v='+encodeURIComponent(file.updated_at||file.created_at||''));}
+    try{const response=await fetch(series3RulesVideoUrl(),{method:'HEAD',cache:'no-store'});if(active&&response.ok)setRulesVideo(series3RulesVideoUrl());}catch(error){console.warn('Series 3 rules video is not available from R2 yet.',error);}
    }
   }
   void load();return()=>{active=false};
