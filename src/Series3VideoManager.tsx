@@ -23,13 +23,11 @@ export function Series3VideoManager(){
 
  async function refresh(){
   if(!supabase)return;
-  const [{data:settings,error:settingsError},mediaResponse]=await Promise.all([
-   supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle(),
-   fetch(series3RulesVideoUrl(),{method:'HEAD',cache:'no-store'})
-  ]);
+  const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
   if(settingsError){setMessage('خواندن وضعیت ویدیو ناموفق بود: '+settingsError.message);return;}
   setActive(Boolean(settings?.is_active));
-  setCurrent(mediaResponse.ok?series3RulesVideoUrl():'');
+  try{const url=series3RulesVideoUrl();const mediaResponse=await fetch(url,{method:'HEAD',cache:'no-store'});setCurrent(mediaResponse.ok?url:'');}
+  catch(e){setCurrent('');setMessage(e instanceof Error?e.message:'مسیر سرویس رسانه R2 در دسترس نیست.');}
  }
  useEffect(()=>{void refresh();void refreshAnalytics()},[]);
  async function upload(){
