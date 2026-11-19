@@ -21,7 +21,7 @@ const MAX_VIDEO = 100 * 1024 * 1024;
 
 const ASSETS: Record<string, { key: string; kind: "image" | "video"; max: number; types: string[] }> = {
   poster: { key: PREFIX + "poster/main-poster", kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"] },
-  teaser: { key: PREFIX + "videos/home-teaser.mp4", kind: "video", max: MAX_VIDEO, types: ["video/mp4"] },
+  teaser: { key: "plato-land/backgammon/series-3/videos/168302900751657886.MP4", kind: "video", max: MAX_VIDEO, types: ["video/mp4"] },
   rules: { key: PREFIX + "videos/important-rules.mp4", kind: "video", max: MAX_VIDEO, types: ["video/mp4"] },
 };
 for (let i = 1; i <= 17; i++) {
