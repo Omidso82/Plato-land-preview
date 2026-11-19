@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-const MEDIA_API = 'https://media.platoland.org/api/series3-media';
+const MEDIA_API = 'https://plato-land-media-pages.pages.dev/api/series3-media';
 export const series3MediaUrl = (asset: string) => MEDIA_API + '?asset=' + encodeURIComponent(asset);
 
 async function uploadAndVerify(asset: string, file: File): Promise<void> {
