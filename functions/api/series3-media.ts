@@ -61,10 +61,10 @@ function withCors(request: Request, response: Response): Response {
   corsHeaders(origin).forEach((value, key) => headers.set(key, value));
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
-function mediaHeaders(size: number, type: string, etag?: string): Headers {
+function mediaHeaders(size: number, type: string, etag?: string, ownerOnly = false): Headers {
   const headers = new Headers({
     "Accept-Ranges": "bytes",
-    "Cache-Control": "public, max-age=300, s-maxage=3600",
+    "Cache-Control": ownerOnly ? "private, no-store" : "public, max-age=300, s-maxage=3600",
     "Content-Type": type,
     "Content-Length": String(size),
     "X-Content-Type-Options": "nosniff",
@@ -118,7 +118,7 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
 
   // Series 2 archive assets are owner-only. Never expose them through the
   // public Series 3 media route, even though uploads share this endpoint.
-  if (asset.access === "owner" && !(await isOwner(request))) {
+  if (asset.access === "owner" && request.method !== "POST" && !(await isOwner(request))) {
     return json({ error: "Owner authorization required for this archived media." }, 403);
   }
 
@@ -137,7 +137,10 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
     const bytes = await file.arrayBuffer();
     if (bytes.byteLength !== file.size) return json({ error: "Incomplete upload." }, 400);
     const result = await bucket.put(asset.key, bytes, {
-      httpMetadata: { contentType: file.type, cacheControl: "public, max-age=300" },
+      httpMetadata: {
+        contentType: file.type,
+        cacheControl: asset.access === "owner" ? "private, no-store" : "public, max-age=300",
+      },
     });
     return json({ ok: true, asset: assetName, size: result.size, etag: result.httpEtag || null });
   }
@@ -148,20 +151,20 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
   const head = await bucket.head(asset.key);
   if (!head || head.size <= 0) return new Response("Media not found", { status: 404 });
   const type = asset.kind === "video" ? "video/mp4" : (head.httpMetadata?.contentType || "application/octet-stream");
-  if (request.method === "HEAD") return new Response(null, { status: 200, headers: mediaHeaders(head.size, type, head.httpEtag) });
+  if (request.method === "HEAD") return new Response(null, { status: 200, headers: mediaHeaders(head.size, type, head.httpEtag, asset.access === "owner") });
 
   const rangeHeader = request.headers.get("Range");
   if (!rangeHeader) {
     const object = await bucket.get(asset.key);
     if (!object) return new Response("Media not found", { status: 404 });
-    return new Response(object.body, { status: 200, headers: mediaHeaders(object.size, type, object.httpEtag || head.httpEtag) });
+    return new Response(object.body, { status: 200, headers: mediaHeaders(object.size, type, object.httpEtag || head.httpEtag, asset.access === "owner") });
   }
   const range = parseRange(rangeHeader, head.size);
   if (!range) return new Response(null, { status: 416, headers: { "Content-Range": "bytes */" + head.size } });
   const length = range.end - range.start + 1;
   const object = await bucket.get(asset.key, { range: { offset: range.start, length } });
   if (!object) return new Response("Media not found", { status: 404 });
-  const headers = mediaHeaders(length, type, object.httpEtag || head.httpEtag);
+  const headers = mediaHeaders(length, type, object.httpEtag || head.httpEtag, asset.access === "owner");
   headers.set("Content-Range", "bytes " + range.start + "-" + range.end + "/" + head.size);
   return new Response(object.body, { status: 206, headers });
 }
