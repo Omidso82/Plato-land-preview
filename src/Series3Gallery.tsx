@@ -2,7 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {Crown,ArrowLeft,ChevronRight,Archive,PlayCircle,X,Volume2,VolumeX} from 'lucide-react';
 import {supabase} from './supabase';
 import TemporaryPageHeader from './TemporaryPageHeader';
-import {series3RulesVideoUrl} from './series3RulesVideoClient';
+import {SERIES3_RULES_VIDEO_KEY,series3RulesVideoUrl} from './series3RulesVideoClient';
 
 export default function Series3Gallery(){
  const [poster,setPoster]=useState('');
@@ -55,8 +55,14 @@ export default function Series3Gallery(){
     }
    }
     const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
-   if(active&&!settingsError&&settings?.is_active&&settings.storage_path){
-    try{const response=await fetch(series3RulesVideoUrl(),{method:'HEAD',cache:'no-store'});if(active&&response.ok)setRulesVideo(series3RulesVideoUrl());}catch(error){console.warn('Series 3 rules video is not available from R2 yet.',error);}
+   if(active&&!settingsError&&settings?.is_active&&settings.storage_path===SERIES3_RULES_VIDEO_KEY){
+    try{
+     const url=series3RulesVideoUrl();
+     const response=await fetch(url,{method:'HEAD',mode:'cors',cache:'no-store'});
+     const size=Number(response.headers.get('Content-Length')||'0');
+     const type=(response.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
+     if(active&&response.ok&&size>0&&type==='video/mp4')setRulesVideo(url);
+    }catch(error){console.warn('Series 3 rules video is not available from R2 yet.',error);}
    }
   }
   void load();return()=>{active=false};
@@ -86,7 +92,7 @@ export default function Series3Gallery(){
    {videoOpen&&<div role="dialog" aria-modal="true" aria-label="قوانین مهم سری سوم" onClick={closeRulesVideo} style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,.88)',display:'grid',placeItems:'center',padding:14}}>
     <section onClick={e=>e.stopPropagation()} style={{width:'min(960px,100%)',background:'#111214',border:'1px solid #8c6a34',borderRadius:14,padding:12,boxShadow:'0 20px 80px #000'}}>
      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,marginBottom:10,color:'#f0d99f',fontWeight:800}}><span>قوانین مهم سری سوم</span><button type="button" aria-label="بستن ویدیو" onClick={closeRulesVideo} style={{background:'transparent',border:0,color:'#f0d99f',cursor:'pointer'}}><X size={23}/></button></div>
-     <video key={rulesVideo} src={rulesVideo} controls playsInline autoPlay style={{display:'block',width:'100%',maxHeight:'75vh',background:'#000',borderRadius:8}}/>
+     <video key={rulesVideo} src={rulesVideo} crossOrigin="anonymous" controls playsInline autoPlay style={{display:'block',width:'100%',maxHeight:'75vh',background:'#000',borderRadius:8}}/>
     </section>
    </div>}
    <footer style={{textAlign:'center',color:'#8f836d',fontSize:11,marginTop:28}}>PLATO LAND · Series 3</footer>
