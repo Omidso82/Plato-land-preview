@@ -17,7 +17,7 @@ const temporaryStaticEntries = {
     // All normal site pages and static assets remain on the static, non-Function path.
     writeFileSync(
       resolve(output, '_routes.json'),
-      JSON.stringify({ version: 1, include: ['/__internal/r2-inventory'], exclude: [] }, null, 2),
+      JSON.stringify({ version: 1, include: ['/__internal/r2-inventory', '/media/series3'], exclude: [] }, null, 2),
     );
   },
 };
