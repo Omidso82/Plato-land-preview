@@ -12,8 +12,6 @@ import PredictionCampaignManager from './PredictionCampaignManager';
 
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
 
-const BUCKET = 'series2-slides';
-const POSTER_PATH = 'poster/series2-prize-poster';
 // Temporarily hide the 18-slot editor without deleting its code or stored images.
 const SHOW_SLIDE_EDITOR = false;
 type SlideFile = { name: string; url: string; updated_at?: string };
