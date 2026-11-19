@@ -3,7 +3,7 @@
 **Version:** 1.6  
 **Date:** 2026-11-20  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** Header-label correction prepared; CI, merge, and deployment pending.
+**Status:** Merged and deployed; Build, verification, and production deployment successful.
 
 ## 1. Scope
 
@@ -30,9 +30,13 @@ The previous labels «شناسه PLATO» and «درصد برد» are replaced wi
 ## 4. Release record
 
 - Repository: `Omidso82/Plato-land-preview`
-- Branch: `fix/series3-ranking-header-labels`
-- Source file: `supabase/functions/plato-land-series3-telegram/index.ts`
-- PR and deployment are pending.
+- PR: [#224](https://github.com/Omidso82/Plato-land-preview/pull/224) — merged.
+- Merge commit: `62750104f11b30c034c4b50c57ca45154936375d`.
+- Source file: `supabase/functions/plato-land-series3-telegram/index.ts`.
+- Build and typecheck workflow #1299: SUCCESS.
+- Production deploy workflow #1049: SUCCESS; deployed to `platoland.org`.
+- Supabase Edge Function `plato-land-series3-telegram`: ACTIVE, version 5, `verify_jwt=true`.
+- No database changes and no Telegram messages sent.
 
 ## 5. Version history
 
