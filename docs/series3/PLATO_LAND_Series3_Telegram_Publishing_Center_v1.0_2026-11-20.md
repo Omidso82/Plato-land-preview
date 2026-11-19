@@ -41,7 +41,7 @@ Bracket slots are published exactly as stored. Unresolved qualifiers remain expl
 - Telegram credentials remain server-side.
 - The only configured destination is `TELEGRAM_TEST_CHAT_ID`; no production group/channel ID is accepted from the browser.
 - No automatic or scheduled Telegram sending is enabled.
-- Messages are sent sequentially. If Telegram rejects a later message, the response reports the number already sent; no blind retry is performed.
+- Messages are sent sequentially with a 3.1-second interval to stay below Telegram group rate limits. If Telegram rejects a later message, the response reports the number already sent; no blind retry is performed.
 - No Telegram message is sent during build, deployment, preview generation, or release verification.
 
 ## 5. Daily fixtures/results – reserved follow-up
