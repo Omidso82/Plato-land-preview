@@ -50,7 +50,7 @@ function playerStats(player: Player): string {
 function playerName(player: Player): string { return code(player.plato_id); }
 function buildMessages(selected: string[], ranking: Player[], pots: Player[][], groups: Array<{name:string;players:Player[]}>, bracket: Bracket): Message[] {
   const result: Message[] = [];
-  const allowed = new Set(["ranking", ...[1,2,3,4].map(n=>"pot:"+n), ...groups.map(g=>"group:"+g.name), ...Object.keys(roundConfig).map(k=>"bracket:"+k)]);
+  const allowed = new Set(["ranking", ...[1,2,3,4].map(n=>"pot:"+n), ..."ABCDEFGHIJKL".split("").map(g=>"group:"+g), ...Object.keys(roundConfig).map(k=>"bracket:"+k)]);
   if (selected.length < 1 || selected.length > 24 || selected.some(id => !allowed.has(id))) throw new Error("فهرست انتخاب‌ها معتبر نیست؛ صفحه را تازه‌سازی کن.");
   for (const id of selected) {
     if (id === "ranking") {
@@ -121,19 +121,28 @@ Deno.serve(async (req: Request) => {
     if (action !== "preview" && action !== "send") return json({ error: "عملیات درخواست معتبر نیست." }, 400);
     const selected = Array.isArray(body.sections) ? body.sections.map((x: unknown)=>String(x)) : [];
 
-    const [{data: seeding, error: seedingError}, {data: knockout, error: knockoutError}] = await Promise.all([
-      admin.from("plato_land_series3_seeding_draws").select("ranking_snapshot,pots_snapshot,groups_snapshot").eq("event_key","series3").maybeSingle(),
-      admin.from("plato_land_series3_knockout_draws").select("bracket_snapshot").eq("event_key","series3").maybeSingle(),
+    const wantsBracket = selected.some((id:string)=>id.startsWith("bracket:"));
+    const wantsSeeding = selected.some((id:string)=>!id.startsWith("bracket:"));
+    const [seedingResult, knockoutResult] = await Promise.all([
+      wantsSeeding
+        ? admin.from("plato_land_series3_seeding_draws").select("ranking_snapshot,pots_snapshot,groups_snapshot").eq("event_key","series3").maybeSingle()
+        : Promise.resolve({data:null,error:null}),
+      wantsBracket
+        ? admin.from("plato_land_series3_knockout_draws").select("bracket_snapshot").eq("event_key","series3").maybeSingle()
+        : Promise.resolve({data:null,error:null}),
     ]);
-    if (seedingError) throw seedingError;
-    if (knockoutError) throw knockoutError;
-    if (!seeding || !knockout) return json({ error: "قرعه گروهی یا براکت حذفی سری سوم هنوز در دیتابیس ثبت نشده است." }, 409);
+    if (seedingResult.error) throw seedingResult.error;
+    if (knockoutResult.error) throw knockoutResult.error;
+    const seeding = seedingResult.data;
+    const knockout = knockoutResult.data;
+    if (wantsSeeding && !seeding) return json({ error: "قرعه گروهی سری سوم هنوز در دیتابیس ثبت نشده است." }, 409);
+    if (wantsBracket && !knockout) return json({ error: "براکت حذفی سری سوم هنوز در دیتابیس ثبت نشده است." }, 409);
 
-    const ranking = Array.isArray(seeding.ranking_snapshot) ? seeding.ranking_snapshot as Player[] : [];
-    const pots = Array.isArray(seeding.pots_snapshot) ? seeding.pots_snapshot as Player[][] : [];
-    const groups = Array.isArray(seeding.groups_snapshot) ? seeding.groups_snapshot as Array<{name:string;players:Player[]}> : [];
-    const bracket = (knockout.bracket_snapshot ?? {}) as Bracket;
-    if (groups.length !== 12 || groups.some(g=>!Array.isArray(g.players)||g.players.length!==4)) return json({ error: "Snapshot گروه‌های سری سوم کامل نیست." }, 409);
+    const ranking = Array.isArray(seeding?.ranking_snapshot) ? seeding.ranking_snapshot as Player[] : [];
+    const pots = Array.isArray(seeding?.pots_snapshot) ? seeding.pots_snapshot as Player[][] : [];
+    const groups = Array.isArray(seeding?.groups_snapshot) ? seeding.groups_snapshot as Array<{name:string;players:Player[]}> : [];
+    const bracket = (knockout?.bracket_snapshot ?? {}) as Bracket;
+    if (wantsSeeding && (groups.length !== 12 || groups.some(g=>!Array.isArray(g.players)||g.players.length!==4))) return json({ error: "Snapshot گروه‌های سری سوم کامل نیست." }, 409);
 
     const messages = buildMessages(selected,ranking,pots,groups,bracket);
     if (action === "preview") return json({ ok: true, destination: "test_group", messages });
