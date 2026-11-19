@@ -126,6 +126,14 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
     return json({ error: "Owner authorization required for this archived media." }, 403);
   }
 
+  // The public rules-video slot is immutable/versioned: every upload receives a
+  // server-generated key. Clients cannot choose or overwrite an R2 object key.
+  const requestedRulesKey = assetName === "rules" ? (url.searchParams.get("key") || "") : "";
+  const rulesKeyPattern = /^plato-land\\/backgammon\\/series-3\\/public-media\\/videos\\/important-rules-\\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.mp4$/;
+  if (assetName === "rules" && request.method !== "POST" && !rulesKeyPattern.test(requestedRulesKey)) {
+    return json({ error: "A valid versioned rules-video key is required." }, 400);
+  }
+
   if (request.method === "POST") {
     const origin = request.headers.get("Origin");
     if (!origin || (origin !== url.origin && !ALLOWED_ORIGINS.has(origin))) return json({ error: "Approved site origin required for upload." }, 403);
@@ -140,33 +148,37 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
     }
     const bytes = await file.arrayBuffer();
     if (bytes.byteLength !== file.size) return json({ error: "Incomplete upload." }, 400);
-    const result = await bucket.put(asset.key, bytes, {
+    const objectKey = assetName === "rules"
+      ? PREFIX + "videos/important-rules-" + Date.now() + "-" + crypto.randomUUID() + ".mp4"
+      : asset.key;
+    const result = await bucket.put(objectKey, bytes, {
       httpMetadata: {
         contentType: file.type,
         cacheControl: asset.access === "owner" ? "private, no-store" : "public, max-age=300",
       },
     });
-    return json({ ok: true, asset: assetName, size: result.size, etag: result.httpEtag || null });
+    return json({ ok: true, asset: assetName, key: objectKey, size: result.size, etag: result.httpEtag || null });
   }
 
   if (request.method !== "GET" && request.method !== "HEAD") {
     return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD, POST" } });
   }
-  const head = await bucket.head(asset.key);
+  const objectKey = assetName === "rules" ? requestedRulesKey : asset.key;
+  const head = await bucket.head(objectKey);
   if (!head || head.size <= 0) return new Response("Media not found", { status: 404 });
   const type = asset.kind === "video" ? "video/mp4" : (head.httpMetadata?.contentType || "application/octet-stream");
   if (request.method === "HEAD") return new Response(null, { status: 200, headers: mediaHeaders(head.size, type, head.httpEtag, asset.access === "owner") });
 
   const rangeHeader = request.headers.get("Range");
   if (!rangeHeader) {
-    const object = await bucket.get(asset.key);
+    const object = await bucket.get(objectKey);
     if (!object) return new Response("Media not found", { status: 404 });
     return new Response(object.body, { status: 200, headers: mediaHeaders(object.size, type, object.httpEtag || head.httpEtag, asset.access === "owner") });
   }
   const range = parseRange(rangeHeader, head.size);
   if (!range) return new Response(null, { status: 416, headers: { "Content-Range": "bytes */" + head.size } });
   const length = range.end - range.start + 1;
-  const object = await bucket.get(asset.key, { range: { offset: range.start, length } });
+  const object = await bucket.get(objectKey, { range: { offset: range.start, length } });
   if (!object) return new Response("Media not found", { status: 404 });
   const headers = mediaHeaders(length, type, object.httpEtag || head.httpEtag, asset.access === "owner");
   headers.set("Content-Range", "bytes " + range.start + "-" + range.end + "/" + head.size);
