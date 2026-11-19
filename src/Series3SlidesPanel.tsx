@@ -35,24 +35,11 @@ export function Series3SlidesPanel() {
     if(settingsResult.error){setMessage('تنظیمات رسانه صفحه اول در دیتابیس قابل خواندن نیست.');}
     else if(settingsResult.data?.media_mode==='video'||settingsResult.data?.media_mode==='poster')setMediaMode(settingsResult.data.media_mode);
     const next:Record<number,ImageItem>={};
-    const legacyStorage=supabase.storage.from(BUCKET);
-    const legacySlides=checks.slice(0,17).some(response=>!response.ok)
-      ? await legacyStorage.list('slides',{limit:60,sortBy:{column:'name',order:'asc'}})
-      : {data:[],error:null};
     checks.slice(0,17).forEach((response,i)=>{
       if(response.ok)next[i+1]={url:series3MediaUrl('slide-'+String(i+1).padStart(2,'0'))};
-      else if(!legacySlides.error){
-        const item=(legacySlides.data||[]).find(x=>x.name===String(i+1).padStart(2,'0'));
-        if(item)next[i+1]={url:legacyStorage.getPublicUrl('slides/'+item.name).data.publicUrl,updated_at:item.updated_at||item.created_at||''};
-      }
     });
     setSlides(next);
-    if(checks[17].ok)setPoster({url:series3MediaUrl('poster')});
-    else {
-      const legacyPoster=await legacyStorage.list('poster',{limit:10});
-      const item=(legacyPoster.data||[]).find(x=>x.name==='series3-main-poster');
-      setPoster(item?{url:legacyStorage.getPublicUrl(POSTER_PATH).data.publicUrl,updated_at:item.updated_at||item.created_at||''}:null);
-    }
+    setPoster(checks[17].ok?{url:series3MediaUrl('poster')}:null);
     setTeaserExists(checks[18].ok);
   }
   useEffect(()=>{void refresh();},[]);
