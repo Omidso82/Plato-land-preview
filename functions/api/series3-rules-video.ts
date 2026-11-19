@@ -12,8 +12,10 @@ const OBJECT_KEY = "plato-land/backgammon/series-3/videos/important-rules.mp4";
 const MAX_BYTES = 100 * 1024 * 1024;
 const ALLOWED_ORIGINS = new Set(["https://platoland.org"]);
 
-function json(data: unknown, status = 200): Response {
-  return Response.json(data, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
+function json(data: unknown, status = 200, origin?: string): Response {
+  const headers = new Headers({ "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" });
+  if (origin && ALLOWED_ORIGINS.has(origin)) cors(origin).forEach((value, key) => headers.set(key, value));
+  return Response.json(data, { status, headers });
 }
 function cors(origin: string): Headers {
   return new Headers({
@@ -71,20 +73,20 @@ export async function onRequest({ request, env }: Context): Promise<Response> {
     return new Response(null, { status: 204, headers: cors(origin) });
   }
   const bucket = env.PLATO_MEDIA_BUCKET;
-  if (!bucket) return json({ error: "R2 media binding unavailable." }, 503);
+  if (!bucket) return json({ error: "R2 media binding unavailable." }, 503, origin || undefined);
 
   let response: Response;
   if (request.method === "POST") {
-    if (!origin || (origin !== ownOrigin && !ALLOWED_ORIGINS.has(origin))) return json({ error: "Approved site origin required." }, 403);
-    if (!(await owner(request))) return json({ error: "Owner authorization required." }, 403);
+    if (!origin || (origin !== ownOrigin && !ALLOWED_ORIGINS.has(origin))) return json({ error: "Approved site origin required." }, 403, origin || undefined);
+    if (!(await owner(request))) return json({ error: "Owner authorization required." }, 403, origin || undefined);
     const form = await request.formData();
     const file = form.get("file");
-    if (!(file instanceof File)) return json({ error: "Media file is required." }, 400);
+    if (!(file instanceof File)) return json({ error: "Media file is required." }, 400, origin || undefined);
     if (file.type !== "video/mp4" || file.size <= 0 || file.size > MAX_BYTES || !file.name.toLowerCase().endsWith(".mp4")) {
-      return json({ error: "Only non-empty MP4 files up to 100 MiB are accepted." }, 415);
+      return json({ error: "Only non-empty MP4 files up to 100 MiB are accepted." }, 415, origin || undefined);
     }
     const bytes = await file.arrayBuffer();
-    if (bytes.byteLength !== file.size) return json({ error: "Incomplete upload." }, 400);
+    if (bytes.byteLength !== file.size) return json({ error: "Incomplete upload." }, 400, origin || undefined);
     const saved = await bucket.put(OBJECT_KEY, bytes, {
       httpMetadata: { contentType: "video/mp4", cacheControl: "public, max-age=300" },
     });
