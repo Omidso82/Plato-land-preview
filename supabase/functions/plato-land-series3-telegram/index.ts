@@ -61,21 +61,23 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
   for (const id of selected) {
     if (id === "ranking") {
       if (ranking.length !== 48) throw new Error("Snapshot رتبه‌بندی ۴۸ بازیکن کامل نیست.");
+      const rankHeading = "ردیف";
       const idHeading = "شناسه PLATO";
       const rateHeading = "درصد برد";
+      const rankWidth = Math.max(rankHeading.length, fa(ranking.length).length);
       const idWidth = Math.max(idHeading.length, ...ranking.map(p => String(p.plato_id ?? "").length));
       const rateWidth = rateHeading.length;
       // Force a left-to-right base direction inside Telegram's preformatted block
-      // so each heading remains directly above its matching data column in RTL chats.
+      // so all three headings stay above their matching values in RTL chats.
       const lrm = "\u200E";
       const rows = [
-        lrm + idHeading.padEnd(idWidth) + "  " + rateHeading + lrm,
-        ...ranking.map(p =>
-          lrm + String(p.plato_id ?? "—").padEnd(idWidth) + "  " + playerWinRate(p).padStart(rateWidth) + lrm
+        lrm + rankHeading.padStart(rankWidth) + "  " + idHeading.padEnd(idWidth) + "  " + rateHeading + lrm,
+        ...ranking.map((p, i) =>
+          lrm + fa(i + 1).padStart(rankWidth) + "  " + String(p.plato_id ?? "—").padEnd(idWidth) + "  " + playerWinRate(p).padStart(rateWidth) + lrm
         ),
       ];
       const lines = ["<pre>" + escapeHtml(rows.join("\n")) + "</pre>"];
-      result.push(makeMessage(id,"جدول رتبه‌بندی ۴۸ بازیکن","فقط شناسه و درصد برد · مرتب‌شده بر اساس درصد برد",lines,ranking.length));
+      result.push(makeMessage(id,"جدول رتبه‌بندی ۴۸ بازیکن","ردیف ۱ تا ۴۸ · شناسه PLATO · درصد برد",lines,ranking.length));
       continue;
     }
     if (id.startsWith("pot:")) {
