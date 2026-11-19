@@ -12,6 +12,7 @@ interface Env {
   PLATO_MEDIA_BUCKET?: R2Bucket;
 }
 type Context = { request: Request; env: Env };
+type Asset = { key: string; kind: "image" | "video"; max: number; types: string[]; access?: "public" | "owner" };
 
 const SUPABASE_URL = "https://dfrppbapaaydbjeflozw.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_fuY9xR6e5pGB-6SnoV4-Hg_LNr23RzE";
@@ -19,16 +20,16 @@ const PREFIX = "plato-land/backgammon/series-3/public-media/";
 const MAX_IMAGE = 10 * 1024 * 1024;
 const MAX_VIDEO = 100 * 1024 * 1024;
 
-const ASSETS: Record<string, { key: string; kind: "image" | "video"; max: number; types: string[] }> = {
+const ASSETS: Record<string, Asset> = {
   poster: { key: PREFIX + "poster/main-poster", kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"] },
   teaser: { key: "plato-land/backgammon/series-3/videos/168302900751657886.MP4", kind: "video", max: MAX_VIDEO, types: ["video/mp4"] },
   rules: { key: PREFIX + "videos/important-rules.mp4", kind: "video", max: MAX_VIDEO, types: ["video/mp4"] },
 };
 for (let i = 1; i <= 18; i++) {
   const slot = String(i).padStart(2, "0");
-  ASSETS["series2-slide-" + slot] = { key: "plato-land/backgammon/series-2/slides/" + slot, kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"] };
+  ASSETS["series2-slide-" + slot] = { key: "plato-land/backgammon/series-2/slides/" + slot, kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"], access: "owner" };
 }
-ASSETS["series2-poster"] = { key: "plato-land/backgammon/series-2/posters/main-poster", kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"] };
+ASSETS["series2-poster"] = { key: "plato-land/backgammon/series-2/posters/main-poster", kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"], access: "owner" };
 for (let i = 1; i <= 17; i++) {
   const slot = String(i).padStart(2, "0");
   ASSETS["slide-" + slot] = {
@@ -101,6 +102,12 @@ export async function onRequest({ request, env }: Context): Promise<Response> {
   const assetName = url.searchParams.get("asset") || "";
   const asset = ASSETS[assetName];
   if (!asset) return json({ error: "Unknown Series 3 media slot." }, 404);
+
+  // Series 2 archive assets are owner-only. Never expose them through the
+  // public Series 3 media route, even though uploads share this endpoint.
+  if (asset.access === "owner" && !(await isOwner(request))) {
+    return json({ error: "Owner authorization required for this archived media." }, 403);
+  }
 
   if (request.method === "POST") {
     const origin = request.headers.get("Origin");
