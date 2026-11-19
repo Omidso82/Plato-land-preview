@@ -13,8 +13,18 @@ interface R2ListResult {
   cursor?: string;
 }
 
+interface R2HeadObject {
+  size: number;
+  etag?: string;
+  httpEtag?: string;
+  uploaded?: Date;
+  httpMetadata?: { contentType?: string; cacheControl?: string };
+  checksums?: Record<string, unknown>;
+}
+
 interface R2ReadOnlyBucket {
   list(options: { prefix: string; limit: number; cursor?: string }): Promise<R2ListResult>;
+  head(key: string): Promise<R2HeadObject | null>;
 }
 
 interface AuditEnv {
@@ -142,7 +152,43 @@ export async function onRequest(context: AuditContext): Promise<Response> {
     }
   } while (truncated);
 
+  // Independently verify each listed key with R2 head(). This is read-only and
+  // helps distinguish listing metadata anomalies from actual object metadata.
+  const verifiedObjects = [];
+  for (let offset = 0; offset < objects.length; offset += 20) {
+    const batch = objects.slice(offset, offset + 20);
+    const heads = await Promise.all(batch.map(async (object) => {
+      try {
+        const head = await env.PLATO_MEDIA_BUCKET!.head(object.key);
+        return {
+          key: object.key,
+          listedSize: object.size,
+          listedEtag: object.etag,
+          headFound: Boolean(head),
+          headSize: head?.size ?? null,
+          headEtag: head?.httpEtag ?? head?.etag ?? null,
+          headContentType: head?.httpMetadata?.contentType ?? null,
+          headChecksums: head?.checksums ?? null,
+          sizeMatches: head ? head.size === object.size : false,
+          etagMatches: head ? (head.httpEtag ?? head.etag ?? null) === object.etag : false,
+        };
+      } catch {
+        return {
+          key: object.key,
+          listedSize: object.size,
+          listedEtag: object.etag,
+          headFound: false,
+          headError: true,
+        };
+      }
+    }));
+    verifiedObjects.push(...heads);
+  }
+
   const totalBytes = objects.reduce((sum, object) => sum + object.size, 0);
+  const headNonZeroCount = verifiedObjects.filter((object) => object.headFound && object.headSize && object.headSize > 0).length;
+  const headMissingCount = verifiedObjects.filter((object) => !object.headFound).length;
+  const headMismatchCount = verifiedObjects.filter((object) => object.headFound && (!object.sizeMatches || !object.etagMatches)).length;
   return Response.json({
     bucket: "plato-land-media",
     prefix: PREFIX,
@@ -150,7 +196,15 @@ export async function onRequest(context: AuditContext): Promise<Response> {
     totalBytes,
     totalMiB: Number((totalBytes / (1024 * 1024)).toFixed(2)),
     readOnly: true,
+    verification: {
+      method: "R2 head() for every listed key; no object bodies read",
+      checked: verifiedObjects.length,
+      nonZeroObjectsByHead: headNonZeroCount,
+      missingByHead: headMissingCount,
+      metadataMismatches: headMismatchCount,
+    },
     objects,
+    verifiedObjects,
   }, {
     headers: {
       "Cache-Control": "no-store, max-age=0",
