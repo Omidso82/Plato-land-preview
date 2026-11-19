@@ -1,8 +1,8 @@
 # PLATO LAND – Temporary Projects
 ## Series 3 Knockout Bracket & Draw – Handover
-**Version:** 1.1  
+**Version:** 1.2  
 **Date:** 2026-11-19  
-**Status:** Primary database migration applied; implementation on feature branch; PR/release pending
+**Status:** UI visibility adjustment committed; feature PR remains Draft; release pending
 
 ### 1. Scope
 This handover applies only to Series 3 in PLATO LAND – Temporary Projects. It does not authorize or describe changes to PLATO LAND – Main Website, Series 2, or other events.
@@ -91,3 +91,13 @@ Before the future draw is enabled, verify that the new public table is exposed t
 3. Obtain explicit release approval before merging or deploying to the existing production panel.
 4. After frontend release, owner checks the same existing admin panel on iPhone.
 5. Later, once authoritative group results exist, implement best-third calculation, constrained random draw execution, and one-time persisted bracket snapshot.
+
+
+### 11. Version 1.2 update — 2026-11-19
+- The knockout path card now opens expanded by default so the qualification and full round progression are visible immediately when the existing Series 3 seeding manager is opened.
+- The change is limited to the initial UI expansion state; it does not execute a draw, modify the saved group draw, or add match scheduling/results.
+- Code commit: `5489c41eafad214ca794d2a0f1dce8279cc89ad9`.
+- PR #218 remains Open / Draft / Unmerged. Build and verify workflows for this latest code commit were still running at the time of this document update; no pass is claimed yet.
+- Cloudflare Pages preview check was also still in progress. No production deployment or iPhone Safari visual QA is claimed.
+- The primary database read-only check reconfirmed that `public.plato_land_series3_knockout_draws` exists with RLS enabled and authenticated SELECT/INSERT only; UPDATE/DELETE are not granted. Data API exposure could not be conclusively confirmed from the database setting query and remains a later verification item.
+- No change was made to the separate Main Website project or to the existing group draw.
