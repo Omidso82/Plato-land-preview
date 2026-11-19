@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useState} from 'react';
 import {Crown,ChevronLeft,ChevronRight,CheckCircle2,Clock} from 'lucide-react';
 import {supabase} from './supabase';
 import TemporaryPageHeader from './TemporaryPageHeader';
+import {series3MediaUrl} from './series3MediaClient';
 
 type Slide={number:number,url:string,updated_at:string};
 type RegistrationResult={status:'main'|'waitlist'|'duplicate';queue_position?:number;main_count?:number};
@@ -28,20 +29,21 @@ export default function Series3Registration(){
   let active=true;
   async function load(){
    if(!supabase){setLoadError('اتصال به سرویس ثبت‌نام در دسترس نیست.');setLoading(false);return;}
-   const storage=supabase.storage.from('series3-slides');
-   const [slideResult,statusResult]=await Promise.all([storage.list('slides',{limit:60,sortBy:{column:'name',order:'asc'}}),supabase.rpc('series3_registration_status')]);
-   const {data,error}=slideResult;
+   const [statusResult,slideResponses]=await Promise.all([
+    supabase.rpc('series3_registration_status'),
+    Promise.all(Array.from({length:17},(_,i)=>fetch(series3MediaUrl('slide-'+String(i+1).padStart(2,'0')),{method:'HEAD'})))
+   ]);
    if(statusResult.error){setLoadError('دریافت وضعیت ثبت‌نام ناموفق بود. لطفاً صفحه را دوباره بارگذاری کن.');setLoading(false);return;}
    setRegistrationOpen(statusResult.data===true);
    if(!active)return;
-   if(error){setLoadError('دریافت تصاویر قوانین ناموفق بود. لطفاً صفحه را دوباره بارگذاری کن.');setLoading(false);return;}
-   const items=(data||[]).flatMap(item=>{
-    const match=/^(0[1-9]|1[0-7])$/.exec(item.name);
-    if(!match)return [];
-    const number=Number(match[1]);
-    return [{number,url:storage.getPublicUrl('slides/'+item.name).data.publicUrl+'?v='+encodeURIComponent(item.updated_at||item.created_at||''),updated_at:item.updated_at||item.created_at||''}];
-   }).sort((a,b)=>a.number-b.number);
+   const items=slideResponses.flatMap((response,i)=>{
+    const number=i+1;
+    return response.ok?[{number,url:series3MediaUrl('slide-'+String(number).padStart(2,'0')),updated_at:''}]:[];
+   });
    setSlides(items);
+   if(items.length!==TOTAL_RULE_SLIDES){
+    setLoadError('برخی تصاویر قوانین در فضای رسانه‌ای R2 در دسترس نیستند. لطفاً مدیریت را مطلع کن تا تصاویر از پنل بارگذاری شوند.');
+   }
    setLoading(false);
   }
   void load();

@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import { series3MediaUrl, uploadSeries3Media } from './series3MediaClient';
 
-const BUCKET = 'series3-slides';
-const POSTER_PATH = 'poster/series3-main-poster';
 const TEASER_BUCKET = 'series3-video';
-const TEASER_PATH = 'teaser/series3-home-teaser.mp4';
+const TEASER_PATH = 'plato-land/backgammon/series-3/videos/168302900751657886.MP4';
 type ImageItem = { url:string; updated_at?:string };
 
 export function Series3SlidesPanel() {
@@ -23,28 +22,23 @@ export function Series3SlidesPanel() {
 
   async function refresh() {
     if(!supabase)return;
-    const [slideResult,posterResult,teaserResult,settingsResult]=await Promise.all([
-      supabase.storage.from(BUCKET).list('slides',{limit:60,sortBy:{column:'name',order:'asc'}}),
-      supabase.storage.from(BUCKET).list('poster',{limit:10}),
-      supabase.storage.from(TEASER_BUCKET).list('teaser',{limit:10}),
-      supabase.from('plato_land_series3_home_media_settings').select('media_mode').eq('id',1).maybeSingle()
+    const [settingsResult, checks]=await Promise.all([
+      supabase.from('plato_land_series3_home_media_settings').select('media_mode').eq('id',1).maybeSingle(),
+      Promise.all([
+        ...Array.from({length:17},(_,i)=>fetch(series3MediaUrl('slide-'+String(i+1).padStart(2,'0')),{method:'HEAD'})),
+        fetch(series3MediaUrl('poster'),{method:'HEAD'}),
+        fetch(series3MediaUrl('teaser'),{method:'HEAD'})
+      ])
     ]);
-    if(slideResult.error){setMessage('خواندن تصاویر سری سوم ناموفق بود: '+slideResult.error.message);return;}
-    if(posterResult.error){setMessage('خواندن پوستر سری سوم ناموفق بود: '+posterResult.error.message);return;}
-    if(teaserResult.error){setMessage('خواندن تیزر سری سوم ناموفق بود: '+teaserResult.error.message);return;}
-    if(settingsResult.error){setMessage('تنظیمات رسانه صفحه اول هنوز در دیتابیس فعال نشده است. فایل migration باید جداگانه بررسی و اجرا شود.');}
+    if(settingsResult.error){setMessage('تنظیمات رسانه صفحه اول در دیتابیس قابل خواندن نیست.');}
     else if(settingsResult.data?.media_mode==='video'||settingsResult.data?.media_mode==='poster')setMediaMode(settingsResult.data.media_mode);
     const next:Record<number,ImageItem>={};
-    (slideResult.data||[]).forEach(item=>{
-      const match=/^(0[1-9]|1[0-7])$/.exec(item.name);
-      if(!match)return;
-      const n=Number(match[1]);
-      next[n]={url:supabase.storage.from(BUCKET).getPublicUrl('slides/'+item.name).data.publicUrl,updated_at:item.updated_at||item.created_at||''};
+    checks.slice(0,17).forEach((response,i)=>{
+      if(response.ok)next[i+1]={url:series3MediaUrl('slide-'+String(i+1).padStart(2,'0'))};
     });
     setSlides(next);
-    const posterItem=(posterResult.data||[]).find(item=>item.name==='series3-main-poster');
-    setPoster(posterItem?{url:supabase.storage.from(BUCKET).getPublicUrl(POSTER_PATH).data.publicUrl,updated_at:posterItem.updated_at||posterItem.created_at||''}:null);
-    setTeaserExists((teaserResult.data||[]).some(item=>item.name==='series3-home-teaser.mp4'));
+    setPoster(checks[17].ok?{url:series3MediaUrl('poster')}:null);
+    setTeaserExists(checks[18].ok);
   }
   useEffect(()=>{void refresh();},[]);
 
@@ -56,8 +50,7 @@ export function Series3SlidesPanel() {
     setBusySlot(n);setMessage('در حال ذخیره تصویر اسلاید '+n+'…');
     try{
       const key=String(n).padStart(2,'0');
-      const {error}=await supabase.storage.from(BUCKET).upload('slides/'+key,file,{upsert:true,contentType:file.type,cacheControl:'0'});
-      if(error)throw error;
+      await uploadSeries3Media('slide-'+key,file);
       setSelected(prev=>{const next={...prev};delete next[n];return next;});
       await refresh();setMessage('تصویر اسلاید '+n+' ذخیره شد.');
     }catch(e){setMessage('ذخیره اسلاید '+n+' ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
@@ -68,12 +61,7 @@ export function Series3SlidesPanel() {
     if(!/^image\/(jpeg|png|webp)$/.test(posterSelected.type)||posterSelected.size>10*1024*1024){setMessage('فرمت پوستر باید JPG، PNG یا WEBP و حجم آن حداکثر ۱۰ مگابایت باشد.');return;}
     setPosterBusy(true);setMessage('در حال ذخیره پوستر سری سوم…');
     try{
-      const storage=supabase.storage.from(BUCKET);
-      const {data,error:listError}=await storage.list('poster',{limit:10});
-      if(listError)throw listError;
-      const exists=(data||[]).some(x=>x.name==='series3-main-poster');
-      const result=exists?await storage.update(POSTER_PATH,posterSelected,{contentType:posterSelected.type,cacheControl:'0'}):await storage.upload(POSTER_PATH,posterSelected,{upsert:false,contentType:posterSelected.type,cacheControl:'0'});
-      if(result.error)throw result.error;
+      await uploadSeries3Media('poster',posterSelected);
       setPosterSelected(null);await refresh();setMessage('پوستر سری سوم ذخیره شد.');
     }catch(e){setMessage('ذخیره پوستر ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
     finally{setPosterBusy(false);}
@@ -83,12 +71,7 @@ export function Series3SlidesPanel() {
     if(teaserSelected.type!=='video/mp4'||!teaserSelected.name.toLowerCase().endsWith('.mp4')||teaserSelected.size===0||teaserSelected.size>100*1024*1024){setMessage('فقط فایل MP4 معتبر با حجم بیشتر از صفر و حداکثر ۱۰۰ مگابایت مجاز است.');return;}
     setTeaserBusy(true);setMessage('در حال ذخیره ویدیوی تیزر سری سوم…');
     try{
-      const storage=supabase.storage.from(TEASER_BUCKET);
-      const {data,error:listError}=await storage.list('teaser',{limit:10});
-      if(listError)throw listError;
-      const exists=(data||[]).some(x=>x.name==='series3-home-teaser.mp4');
-      const result=exists?await storage.update(TEASER_PATH,teaserSelected,{contentType:'video/mp4',cacheControl:'0'}):await storage.upload(TEASER_PATH,teaserSelected,{upsert:false,contentType:'video/mp4',cacheControl:'0'});
-      if(result.error)throw result.error;
+      await uploadSeries3Media('teaser',teaserSelected);
       setTeaserSelected(null);await refresh();setMessage('ویدیوی تیزر ذخیره شد. برای نمایش عمومی، حالت «ویدئوی تیزر» را انتخاب کن.');
     }catch(e){setMessage('ذخیره ویدیوی تیزر ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
     finally{setTeaserBusy(false);}
@@ -123,7 +106,7 @@ export function Series3SlidesPanel() {
           </div>
           <div style={{fontSize:12,color:'#c9c0ad',marginBottom:12}}>حالت فعلی: {mediaMode==='video'?'ویدئوی تیزر':'پوستر ثابت'}</div>
           <h4 style={{color:'#f1d99e',margin:'12px 0 8px'}}>پوستر ثابت</h4>
-          {poster?<img src={poster.url+'?v='+encodeURIComponent(poster.updated_at||'')} alt="پوستر سری سوم" style={{display:'block',maxWidth:'100%',maxHeight:200,objectFit:'contain',margin:'0 auto 10px'}}/>:<p style={{color:'#a9a08e',fontSize:13}}>هنوز پوستری بارگذاری نشده است.</p>}
+          {poster?<img src={poster.url+(poster.updated_at?'?v='+encodeURIComponent(poster.updated_at):'')} alt="پوستر سری سوم" style={{display:'block',maxWidth:'100%',maxHeight:200,objectFit:'contain',margin:'0 auto 10px'}}/>:<p style={{color:'#a9a08e',fontSize:13}}>هنوز پوستری بارگذاری نشده است.</p>}
           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setPosterSelected(e.target.files?.[0]||null)} style={{width:'100%',color:'#ddd',fontSize:12,margin:'8px 0'}}/>
           <button style={button} disabled={!posterSelected||posterBusy} onClick={()=>void uploadPoster()}>{posterBusy?'در حال ذخیره…':poster?'جایگزینی پوستر':'بارگذاری پوستر'}</button>
           <div style={{borderTop:'1px solid #51452d',margin:'16px 0'}}/>
@@ -139,7 +122,7 @@ export function Series3SlidesPanel() {
             const item=slides[n];
             return <div key={n} style={card}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><strong style={{color:'#f1d99e'}}>تصویر {n.toLocaleString('fa-IR')}</strong><span style={{fontSize:11,color:item?'#9ed6a3':'#b5a98e'}}>{item?'ثبت‌شده':'خالی'}</span></div>
-              {item?<img src={item.url+'?v='+encodeURIComponent(item.updated_at||'')} alt={'تصویر '+n+' سری سوم'} style={{width:'100%',height:115,objectFit:'contain',background:'#090a0c',borderRadius:7,marginBottom:8}}/>:<div style={{height:115,display:'grid',placeItems:'center',background:'#090a0c',borderRadius:7,color:'#817968',fontSize:12,marginBottom:8}}>تصویری ثبت نشده</div>}
+              {item?<img src={item.url+(item.updated_at?'?v='+encodeURIComponent(item.updated_at):'')} alt={'تصویر '+n+' سری سوم'} style={{width:'100%',height:115,objectFit:'contain',background:'#090a0c',borderRadius:7,marginBottom:8}}/>:<div style={{height:115,display:'grid',placeItems:'center',background:'#090a0c',borderRadius:7,color:'#817968',fontSize:12,marginBottom:8}}>تصویری ثبت نشده</div>}
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0];setSelected(prev=>{const next={...prev};if(file)next[n]=file;else delete next[n];return next;});}} style={{width:'100%',color:'#ddd',fontSize:11,marginBottom:7}}/>
               {selected[n]&&<p style={{fontSize:11,color:'#c8c0b0',overflowWrap:'anywhere'}}>{selected[n].name}</p>}
               <button style={button} disabled={!selected[n]||busySlot!==null} onClick={()=>void uploadSlide(n)}>{busySlot===n?'در حال ذخیره…':item?'جایگزینی تصویر':'ذخیره تصویر'}</button>

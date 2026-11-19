@@ -2,6 +2,7 @@ import React,{useEffect,useRef,useState} from 'react';
 import {Crown,ArrowLeft,ChevronRight,Archive,PlayCircle,X,Volume2,VolumeX} from 'lucide-react';
 import {supabase} from './supabase';
 import TemporaryPageHeader from './TemporaryPageHeader';
+import {series3MediaUrl} from './series3MediaClient';
 
 export default function Series3Gallery(){
  const [poster,setPoster]=useState('');
@@ -37,27 +38,21 @@ export default function Series3Gallery(){
     // Lock the page to video mode before loading any video asset.
     // Do not request or preload the poster at all in video mode.
     setHeroMode('video');
-    const {data:items,error:listError}=await supabase.storage.from('series3-video').list('teaser',{limit:10});
-    const teaser=(items||[]).find(x=>x.name==='series3-home-teaser.mp4');
-    if(active&&!listError&&teaser){
-     const url=supabase.storage.from('series3-video').getPublicUrl(homeSettings.storage_path).data.publicUrl;
-     setTeaserVideo(url+'?v='+encodeURIComponent(teaser.updated_at||teaser.created_at||''));
+    // The teaser object is mapped to its verified R2 key; playback is served
+    // through the Preview Pages Function with byte-range support.
+    if(active&&(homeSettings.storage_path==='teaser/series3-home-teaser.mp4'||homeSettings.storage_path==='plato-land/backgammon/series-3/videos/168302900751657886.MP4')){
+     setTeaserVideo(series3MediaUrl('teaser'));
     }
    }else if(homeSettings.media_mode==='poster'){
     // Only load the poster after the admin has explicitly selected poster mode.
     setHeroMode('poster');
-    const imageStorage=supabase.storage.from('series3-slides');
-    const {data:posterItems,error:posterError}=await imageStorage.list('poster',{limit:10});
-    if(active&&!posterError){
-     const item=(posterItems||[]).find(x=>x.name==='series3-main-poster');
-     if(item){const url=imageStorage.getPublicUrl('poster/series3-main-poster').data.publicUrl;setPoster(url+'?v='+encodeURIComponent(item.updated_at||item.created_at||''));}
-    }
+    const posterResponse=await fetch(series3MediaUrl('poster'),{method:'HEAD'});
+    if(active&&posterResponse.ok)setPoster(series3MediaUrl('poster'));
    }
     const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
-   if(active&&!settingsError&&settings?.is_active&&settings.storage_path){
-    const {data:objects,error:listError}=await supabase.storage.from('series3-video').list('rules',{limit:20});
-    const file=(objects||[]).find(x=>x.name==='series3-important-rules.mp4');
-    if(!listError&&file){const url=supabase.storage.from('series3-video').getPublicUrl(settings.storage_path).data.publicUrl;setRulesVideo(url+'?v='+encodeURIComponent(file.updated_at||file.created_at||''));}
+   if(false && active&&!settingsError&&settings?.is_active&&settings.storage_path){
+    const rulesResponse=await fetch(series3MediaUrl('rules'),{method:'HEAD'});
+    if(active&&rulesResponse.ok)setRulesVideo(series3MediaUrl('rules'));
    }
   }
   void load();return()=>{active=false};
