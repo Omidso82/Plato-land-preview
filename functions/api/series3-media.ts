@@ -129,7 +129,7 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
   // The public rules-video slot is immutable/versioned: every upload receives a
   // server-generated key. Clients cannot choose or overwrite an R2 object key.
   const requestedRulesKey = assetName === "rules" ? (url.searchParams.get("key") || "") : "";
-  const rulesKeyPattern = /^plato-land\\/backgammon\\/series-3\\/public-media\\/videos\\/important-rules-\\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.mp4$/;
+  const rulesKeyPattern = /^plato-land\/backgammon\/series-3\/public-media\/videos\/important-rules-\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.mp4$/;
   if (assetName === "rules" && request.method !== "POST" && !rulesKeyPattern.test(requestedRulesKey)) {
     return json({ error: "A valid versioned rules-video key is required." }, 400);
   }
