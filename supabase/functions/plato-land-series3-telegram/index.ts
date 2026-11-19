@@ -67,7 +67,7 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
       const rateWidth = rateHeading.length;
       // Force a left-to-right base direction inside Telegram's preformatted block
       // so each heading remains directly above its matching data column in RTL chats.
-      const lrm = "\\u200E";
+      const lrm = "\u200E";
       const rows = [
         lrm + idHeading.padEnd(idWidth) + "  " + rateHeading + lrm,
         ...ranking.map(p =>
