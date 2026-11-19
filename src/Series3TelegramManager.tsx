@@ -68,7 +68,10 @@ export default function Series3TelegramManager() {
       cache:'no-store',
     });
     const result=await response.json().catch(()=>({}));
-    if(!response.ok)throw new Error(result.error||'درخواست به سرویس تلگرام ناموفق بود.');
+    if(!response.ok){
+      const partial=result.sent_count>0?' · '+fa(Number(result.sent_count))+' پیام پیش از بروز خطا ارسال شده است.':'';
+      throw new Error((result.error||'درخواست به سرویس تلگرام ناموفق بود.')+partial);
+    }
     return result as ApiResult;
   }
 
