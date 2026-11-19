@@ -36,7 +36,16 @@ export default function Series3Registration(){
    if(statusResult.error){setLoadError('دریافت وضعیت ثبت‌نام ناموفق بود. لطفاً صفحه را دوباره بارگذاری کن.');setLoading(false);return;}
    setRegistrationOpen(statusResult.data===true);
    if(!active)return;
-   const items=slideResponses.flatMap((response,i)=>response.ok?[{number:i+1,url:series3MediaUrl('slide-'+String(i+1).padStart(2,'0')),updated_at:''}]:[]);
+   const legacyStorage=supabase.storage.from('series3-slides');
+   const legacy=slideResponses.some(response=>!response.ok)
+    ? await legacyStorage.list('slides',{limit:60,sortBy:{column:'name',order:'asc'}})
+    : {data:[],error:null};
+   const items=slideResponses.flatMap((response,i)=>{
+    const number=i+1;
+    if(response.ok)return [{number,url:series3MediaUrl('slide-'+String(number).padStart(2,'0')),updated_at:''}];
+    const item=(legacy.data||[]).find(x=>x.name===String(number).padStart(2,'0'));
+    return item?[{number,url:legacyStorage.getPublicUrl('slides/'+item.name).data.publicUrl+'?v='+encodeURIComponent(item.updated_at||item.created_at||''),updated_at:item.updated_at||item.created_at||''}]:[];
+   });
    setSlides(items);
    setLoading(false);
   }
