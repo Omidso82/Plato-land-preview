@@ -1,8 +1,8 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
-import {series3RulesVideoUrl,uploadSeries3RulesVideo} from './series3RulesVideoClient';
+import {SERIES3_RULES_VIDEO_KEY,series3RulesVideoUrl,uploadSeries3RulesVideo} from './series3RulesVideoClient';
 
-const PATH='plato-land/backgammon/series-3/videos/important-rules.mp4';
+const PATH=SERIES3_RULES_VIDEO_KEY;
 const LIMIT=100*1024*1024;
 
 export function Series3VideoManager(){
@@ -26,13 +26,19 @@ export function Series3VideoManager(){
   const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
   if(settingsError){setMessage('خواندن وضعیت ویدیو ناموفق بود: '+settingsError.message);return;}
   setActive(Boolean(settings?.is_active));
-  try{const url=series3RulesVideoUrl();const mediaResponse=await fetch(url,{method:'HEAD',cache:'no-store'});setCurrent(mediaResponse.ok?url:'');}
-  catch(e){setCurrent('');setMessage(e instanceof Error?e.message:'مسیر سرویس رسانه R2 در دسترس نیست.');}
+  if(settings?.storage_path!==PATH){setCurrent('');return;}
+  try{
+   const url=series3RulesVideoUrl();
+   const mediaResponse=await fetch(url,{method:'HEAD',mode:'cors',cache:'no-store'});
+   const storedSize=Number(mediaResponse.headers.get('Content-Length')||'0');
+   const storedType=(mediaResponse.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
+   setCurrent(mediaResponse.ok&&storedSize>0&&storedType==='video/mp4'?url:'');
+  }catch(e){setCurrent('');setMessage(e instanceof Error?e.message:'مسیر سرویس رسانه R2 در دسترس نیست.');}
  }
  useEffect(()=>{void refresh();void refreshAnalytics()},[]);
  async function upload(){
   if(!supabase||!file)return;
-  if(file.type!=='video/mp4'||file.size>LIMIT){setMessage('فقط فایل MP4 با حجم حداکثر ۱۰۰ مگابایت مجاز است.');return;}
+  if(file.type!=='video/mp4'||file.size<=0||file.size>LIMIT){setMessage('فقط فایل MP4 با حجم حداکثر ۱۰۰ مگابایت مجاز است.');return;}
   setBusy(true);setMessage('در حال بارگذاری ویدیو…');
   let r2Saved=false;
   try{
@@ -60,7 +66,7 @@ export function Series3VideoManager(){
   <h3 style={{color:'#f6e8c5',fontSize:18,margin:'0 0 8px'}}>مدیریت ویدیوی «قوانین مهم سری سوم»</h3>
   <p style={{color:'#c9c0ad',fontSize:13,lineHeight:1.9}}>ویدیوی MP4 را اینجا بارگذاری یا جایگزین کن. پس از فعال‌سازی، دکمه «قوانین مهم سری سوم» زیر دکمه ثبت‌نام در صفحه اول نمایش داده می‌شود و ویدیو فقط پس از کلیک کاربر در پنجره پخش خواهد شد.</p>
   <div style={{color:active?'#9ed6a3':'#d1b98b',fontSize:13,marginBottom:10}}>وضعیت نمایش عمومی: {active?'فعال':'غیرفعال'}</div>
-  {current&&<video src={current} controls playsInline style={{width:'100%',maxHeight:260,background:'#000',borderRadius:8,marginBottom:12}}/>}
+  {current&&<video src={current} crossOrigin="anonymous" controls playsInline style={{width:'100%',maxHeight:260,background:'#000',borderRadius:8,marginBottom:12}}/>}
   <label style={{display:'block',color:'#e8dfcd',fontSize:13}}>انتخاب فایل ویدیو (MP4 · حداکثر ۱۰۰ مگابایت)
    <input type="file" accept="video/mp4,.mp4" onChange={e=>setFile(e.target.files?.[0]||null)} style={{display:'block',width:'100%',marginTop:8,color:'#ddd'}}/>
   </label>
