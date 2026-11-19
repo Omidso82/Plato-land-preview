@@ -2,6 +2,8 @@ import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 import {series3MediaUrl,uploadSeries3Media} from './series3MediaClient';
 
+const PATH='rules/series3-important-rules.mp4';
+
 const LIMIT=100*1024*1024;
 
 export function Series3VideoManager(){
