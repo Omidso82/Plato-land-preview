@@ -2,7 +2,7 @@ import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 import {series3MediaUrl,uploadSeries3Media} from './series3MediaClient';
 
-const PATH='rules/series3-important-rules.mp4';
+const PATH='plato-land/backgammon/series-3/public-media/videos/important-rules.mp4';
 
 const LIMIT=100*1024*1024;
 
@@ -40,9 +40,9 @@ export function Series3VideoManager(){
   try{
    await uploadSeries3Media('rules',file);
    const {data:{user}}=await supabase.auth.getUser();
-   const {error:saveError}=await supabase.from('plato_land_series3_video_settings').upsert({id:1,storage_path:PATH,is_active:active,updated_at:new Date().toISOString(),updated_by:user?.id||null});
+   const {error:saveError}=await supabase.from('plato_land_series3_video_settings').upsert({id:1,storage_path:PATH,is_active:false,updated_at:new Date().toISOString(),updated_by:user?.id||null});
    if(saveError)throw saveError;
-   setFile(null);await refresh();setMessage('ویدیو با موفقیت بارگذاری و جایگزین شد.');
+   setFile(null);await refresh();setActive(false);setMessage('فایل در R2 ذخیره شد و برای نمایش عمومی غیرفعال باقی ماند.');
   }catch(e){setMessage('بارگذاری ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
   finally{setBusy(false);}
  }
@@ -67,7 +67,7 @@ export function Series3VideoManager(){
   </label>
   {file&&<p style={{fontSize:12,color:'#c9c0ad'}}>فایل انتخاب‌شده: {file.name} · {(file.size/1024/1024).toFixed(1)} MB</p>}
   <button type="button" disabled={!file||busy} onClick={()=>void upload()} style={{width:'100%',marginTop:8,padding:11,border:0,borderRadius:9,background:'#c49b4b',color:'#17120a',fontWeight:800,cursor:'pointer'}}>{busy?'در حال انجام…':current?'بارگذاری و جایگزینی ویدیو':'بارگذاری ویدیو'}</button>
-  <button type="button" disabled={!current||busy} onClick={()=>void toggle()} style={{width:'100%',marginTop:8,padding:11,border:'1px solid #8c6a34',borderRadius:9,background:'#211b12',color:'#f0d99f',fontWeight:800,cursor:'pointer'}}>{active?'غیرفعال کردن نمایش در صفحه اول':'فعال کردن نمایش در صفحه اول'}</button>
+  <p style={{fontSize:12,color:'#e0c98f',marginTop:8}}>نمایش عمومی این ویدیو فعلاً غیرفعال است؛ آپلود فقط برای آزمایش ذخیره‌سازی R2 انجام می‌شود.</p>
 
   <section style={{marginTop:18,padding:14,border:'1px solid #8c6a34',borderRadius:11,background:'#151515'}}>
    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
