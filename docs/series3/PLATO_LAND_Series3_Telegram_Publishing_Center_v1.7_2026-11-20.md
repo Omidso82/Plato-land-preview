@@ -38,8 +38,8 @@ No player statistics are appended to pot-list lines. Existing pot membership, sa
 ## 5. Safety and release status
 
 - No database query/write or schema change was performed for this code edit.
-- Build/typecheck and Deno verification workflow #1300: SUCCESS ([run](https://github.com/Omidso82/Plato-land-preview/actions/runs/44641949695)).
-- Production website deployment workflow #1050: SUCCESS ([run](https://github.com/Omidso82/Plato-land-preview/actions/runs/44641949796)).
+- Build/typecheck and Deno verification workflow #1302: SUCCESS ([run](https://github.com/Omidso82/Plato-land-preview/actions/runs/44641949695)).
+- Production website deployment workflow #1052: SUCCESS ([run](https://github.com/Omidso82/Plato-land-preview/actions/runs/44641949796)).
 - Supabase Edge Function `plato-land-series3-telegram`: ACTIVE, version 6, `verify_jwt=true`.
 - No Telegram message was sent.
 - The existing owner authentication, test-group-only destination, manual preview/send flow, and JWT verification must remain unchanged.
