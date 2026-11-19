@@ -121,7 +121,7 @@ export function Series3SlidesPanel() {
           </div>
           <div style={{fontSize:12,color:'#c9c0ad',marginBottom:12}}>حالت فعلی: {mediaMode==='video'?'ویدئوی تیزر':'پوستر ثابت'}</div>
           <h4 style={{color:'#f1d99e',margin:'12px 0 8px'}}>پوستر ثابت</h4>
-          {poster?<img src={poster.url+'?v='+encodeURIComponent(poster.updated_at||'')} alt="پوستر سری سوم" style={{display:'block',maxWidth:'100%',maxHeight:200,objectFit:'contain',margin:'0 auto 10px'}}/>:<p style={{color:'#a9a08e',fontSize:13}}>هنوز پوستری بارگذاری نشده است.</p>}
+          {poster?<img src={poster.url+(poster.updated_at?'?v='+encodeURIComponent(poster.updated_at):'')} alt="پوستر سری سوم" style={{display:'block',maxWidth:'100%',maxHeight:200,objectFit:'contain',margin:'0 auto 10px'}}/>:<p style={{color:'#a9a08e',fontSize:13}}>هنوز پوستری بارگذاری نشده است.</p>}
           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setPosterSelected(e.target.files?.[0]||null)} style={{width:'100%',color:'#ddd',fontSize:12,margin:'8px 0'}}/>
           <button style={button} disabled={!posterSelected||posterBusy} onClick={()=>void uploadPoster()}>{posterBusy?'در حال ذخیره…':poster?'جایگزینی پوستر':'بارگذاری پوستر'}</button>
           <div style={{borderTop:'1px solid #51452d',margin:'16px 0'}}/>
@@ -137,7 +137,7 @@ export function Series3SlidesPanel() {
             const item=slides[n];
             return <div key={n} style={card}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><strong style={{color:'#f1d99e'}}>تصویر {n.toLocaleString('fa-IR')}</strong><span style={{fontSize:11,color:item?'#9ed6a3':'#b5a98e'}}>{item?'ثبت‌شده':'خالی'}</span></div>
-              {item?<img src={item.url+'?v='+encodeURIComponent(item.updated_at||'')} alt={'تصویر '+n+' سری سوم'} style={{width:'100%',height:115,objectFit:'contain',background:'#090a0c',borderRadius:7,marginBottom:8}}/>:<div style={{height:115,display:'grid',placeItems:'center',background:'#090a0c',borderRadius:7,color:'#817968',fontSize:12,marginBottom:8}}>تصویری ثبت نشده</div>}
+              {item?<img src={item.url+(item.updated_at?'?v='+encodeURIComponent(item.updated_at):'')} alt={'تصویر '+n+' سری سوم'} style={{width:'100%',height:115,objectFit:'contain',background:'#090a0c',borderRadius:7,marginBottom:8}}/>:<div style={{height:115,display:'grid',placeItems:'center',background:'#090a0c',borderRadius:7,color:'#817968',fontSize:12,marginBottom:8}}>تصویری ثبت نشده</div>}
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0];setSelected(prev=>{const next={...prev};if(file)next[n]=file;else delete next[n];return next;});}} style={{width:'100%',color:'#ddd',fontSize:11,marginBottom:7}}/>
               {selected[n]&&<p style={{fontSize:11,color:'#c8c0b0',overflowWrap:'anywhere'}}>{selected[n].name}</p>}
               <button style={button} disabled={!selected[n]||busySlot!==null} onClick={()=>void uploadSlide(n)}>{busySlot===n?'در حال ذخیره…':item?'جایگزینی تصویر':'ذخیره تصویر'}</button>
