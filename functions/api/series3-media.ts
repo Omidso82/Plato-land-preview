@@ -19,6 +19,7 @@ const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_fuY9xR6e5pGB-6SnoV4-Hg_LNr23RzE
 const PREFIX = "plato-land/backgammon/series-3/public-media/";
 const MAX_IMAGE = 10 * 1024 * 1024;
 const MAX_VIDEO = 100 * 1024 * 1024;
+const ALLOWED_ORIGINS = new Set(["https://platoland.org"]);
 
 const ASSETS: Record<string, Asset> = {
   poster: { key: PREFIX + "poster/main-poster", kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"] },
@@ -43,9 +44,22 @@ for (let i = 1; i <= 17; i++) {
 function json(data: unknown, status = 200): Response {
   return Response.json(data, { status, headers: { "Cache-Control": "no-store", "X-Content-Type-Options": "nosniff" } });
 }
-function isSameOrigin(request: Request): boolean {
+function corsHeaders(origin: string): Headers {
+  return new Headers({
+    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
+    "Access-Control-Allow-Headers": "Authorization, Content-Type, Range",
+    "Access-Control-Expose-Headers": "Content-Length, Content-Range, Accept-Ranges, ETag",
+    "Access-Control-Max-Age": "86400",
+    "Vary": "Origin",
+  });
+}
+function withCors(request: Request, response: Response): Response {
   const origin = request.headers.get("Origin");
-  return !origin || origin === new URL(request.url).origin;
+  if (!origin || !ALLOWED_ORIGINS.has(origin)) return response;
+  const headers = new Headers(response.headers);
+  corsHeaders(origin).forEach((value, key) => headers.set(key, value));
+  return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 function mediaHeaders(size: number, type: string, etag?: string): Headers {
   const headers = new Headers({
@@ -54,7 +68,7 @@ function mediaHeaders(size: number, type: string, etag?: string): Headers {
     "Content-Type": type,
     "Content-Length": String(size),
     "X-Content-Type-Options": "nosniff",
-    "Cross-Origin-Resource-Policy": "same-origin",
+    "Cross-Origin-Resource-Policy": "same-site",
   });
   if (etag) headers.set("ETag", etag);
   return headers;
@@ -94,8 +108,7 @@ function parseRange(value: string, size: number): { start: number; end: number }
   return { start, end: Math.min(end, size - 1) };
 }
 
-export async function onRequest({ request, env }: Context): Promise<Response> {
-  if (!isSameOrigin(request)) return json({ error: "Cross-origin request rejected." }, 403);
+async function handleRequest({ request, env }: Context): Promise<Response> {
   const bucket = env.PLATO_MEDIA_BUCKET;
   if (!bucket) return json({ error: "R2 media binding unavailable." }, 503);
   const url = new URL(request.url);
@@ -111,7 +124,7 @@ export async function onRequest({ request, env }: Context): Promise<Response> {
 
   if (request.method === "POST") {
     const origin = request.headers.get("Origin");
-    if (!origin || origin !== url.origin) return json({ error: "Same-origin upload required." }, 403);
+    if (!origin || !ALLOWED_ORIGINS.has(origin)) return json({ error: "Approved site origin required for upload." }, 403);
     const declaredLength = Number(request.headers.get("Content-Length") || "0");
     if (declaredLength > MAX_VIDEO + 1024 * 1024) return json({ error: "Upload request is too large." }, 413);
     if (!(await isOwner(request))) return json({ error: "Owner authorization required." }, 403);
@@ -151,4 +164,21 @@ export async function onRequest({ request, env }: Context): Promise<Response> {
   const headers = mediaHeaders(length, type, object.httpEtag || head.httpEtag);
   headers.set("Content-Range", "bytes " + range.start + "-" + range.end + "/" + head.size);
   return new Response(object.body, { status: 206, headers });
+}
+
+
+export async function onRequest(context: Context): Promise<Response> {
+  const { request } = context;
+  const origin = request.headers.get("Origin");
+  if (origin && !ALLOWED_ORIGINS.has(origin)) {
+    return json({ error: "Origin is not allowed." }, 403);
+  }
+  if (request.method === "OPTIONS") {
+    if (!origin || !ALLOWED_ORIGINS.has(origin)) {
+      return new Response(null, { status: 403 });
+    }
+    return new Response(null, { status: 204, headers: corsHeaders(origin) });
+  }
+  const response = await handleRequest(context);
+  return withCors(request, response);
 }
