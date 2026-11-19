@@ -19,7 +19,7 @@ const header = (title: string, subtitle: string) => [
 ].filter(Boolean).join("\n");
 const footer = "<i>بازی، رقابت، قهرمانی</i>";
 const plain = (html: string) => html
-  .replace(/<\\/?(?:b|i|code|pre)>/g, "")
+  .replace(/<\/?(?:b|i|code|pre)>/g, "")
   .replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">").replaceAll("&quot;", '"');
 
 type Player = { id?: string; plato_id: string; games_won?: number | null; games_played?: number | null; registration_status?: string };
@@ -71,7 +71,7 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
           String(p.plato_id ?? "—").padEnd(idWidth) + "  " + playerWinRate(p).padStart(rateWidth)
         ),
       ];
-      const lines = ["<pre>" + escapeHtml(rows.join("\\n")) + "</pre>"];
+      const lines = ["<pre>" + escapeHtml(rows.join("\n")) + "</pre>"];
       result.push(makeMessage(id,"جدول رتبه‌بندی ۴۸ بازیکن","فقط شناسه و درصد برد · مرتب‌شده بر اساس درصد برد",lines,ranking.length));
       continue;
     }
