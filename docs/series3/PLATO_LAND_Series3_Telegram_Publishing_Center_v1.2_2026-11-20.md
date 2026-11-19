@@ -35,6 +35,7 @@ No frontend component, database schema, database record, tournament result, draw
 
 - Development branch: `fix/series3-telegram-ranking-layout`
 - The correction is isolated from `main` pending CI and review.
+- A follow-up adjustment adds Unicode direction marks to prevent the two headings from appearing over the wrong data column in RTL Telegram chats.
 - No Telegram message has been sent as part of this change.
 - No Edge Function deployment has been performed as part of this change.
 - The correction is not considered live until the PR is merged, CI succeeds, the Edge Function is deployed, and the preview is checked by the owner.
