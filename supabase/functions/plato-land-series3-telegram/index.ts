@@ -65,10 +65,13 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
       const rateHeading = "درصد برد";
       const idWidth = Math.max(idHeading.length, ...ranking.map(p => String(p.plato_id ?? "").length));
       const rateWidth = rateHeading.length;
+      // Force a left-to-right base direction inside Telegram's preformatted block
+      // so each heading remains directly above its matching data column in RTL chats.
+      const lrm = "\\u200E";
       const rows = [
-        idHeading.padEnd(idWidth) + "  " + rateHeading,
+        lrm + idHeading.padEnd(idWidth) + "  " + rateHeading + lrm,
         ...ranking.map(p =>
-          String(p.plato_id ?? "—").padEnd(idWidth) + "  " + playerWinRate(p).padStart(rateWidth)
+          lrm + String(p.plato_id ?? "—").padEnd(idWidth) + "  " + playerWinRate(p).padStart(rateWidth) + lrm
         ),
       ];
       const lines = ["<pre>" + escapeHtml(rows.join("\n")) + "</pre>"];
