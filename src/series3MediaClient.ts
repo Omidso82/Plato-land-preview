@@ -28,6 +28,7 @@ async function uploadAndVerify(asset: string, file: File): Promise<void> {
   // the same allowlisted slot back from R2 before the panel reports success.
   const verification = await fetch(series3MediaUrl(asset), {
     method: 'HEAD',
+    headers: { Authorization: 'Bearer ' + token },
     credentials: 'same-origin',
     cache: 'no-store',
   });
