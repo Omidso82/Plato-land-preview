@@ -30,7 +30,12 @@ export function Series3VideoManager(){
   ]);
   if(settingsError){setMessage('خواندن وضعیت ویدیو ناموفق بود: '+settingsError.message);return;}
   setActive(Boolean(settings?.is_active));
-  setCurrent(mediaResponse.ok?series3MediaUrl('rules'):'');
+  if(mediaResponse.ok)setCurrent(series3MediaUrl('rules'));
+  else {
+   const {data:objects,error:listError}=await supabase.storage.from(BUCKET).list('rules',{limit:20});
+   const item=(objects||[]).find(x=>x.name==='series3-important-rules.mp4');
+   setCurrent(!listError&&item?supabase.storage.from(BUCKET).getPublicUrl(PATH).data.publicUrl+'?v='+encodeURIComponent(item.updated_at||item.created_at||''):'');
+  }
  }
  useEffect(()=>{void refresh();void refreshAnalytics()},[]);
  async function upload(){
