@@ -21,7 +21,7 @@ create table public.plato_land_series3_group_match_results (
   constraint series3_group_result_distinct_players check (player_a_registration_id <> player_b_registration_id),
   constraint series3_group_result_score_shape check (
     (result_status in ('pending','double_no_show') and score_a is null and score_b is null)
-    or (result_status = 'completed' and score_a between 0 and 5 and score_b between 0 and 5
+    or (result_status = 'completed' and score_a is not null and score_b is not null and score_a between 0 and 5 and score_b between 0 and 5
       and ((score_a = 5 and score_b < 5) or (score_b = 5 and score_a < 5)))
   )
 );
