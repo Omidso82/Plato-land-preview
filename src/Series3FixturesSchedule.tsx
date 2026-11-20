@@ -42,9 +42,11 @@ export default function Series3FixturesSchedule() {
   const day = snapshot?.group_stage.days[dayIndex];
   const matches = useMemo(() => (day?.matches || []).filter(m => group==='ALL' || m.group===group),[day,group]);
 
-  return <section dir="rtl" style={{marginTop:14,padding:14,border:'1px solid #8c6a34',borderRadius:13,background:'linear-gradient(145deg,#211b12,#111214)',color:'#f2ead8'}}>
+  return <details dir="rtl" style={{marginTop:14,padding:14,border:'1px solid #8c6a34',borderRadius:13,background:'linear-gradient(145deg,#211b12,#111214)',color:'#f2ead8'}}>
+    <summary style={{cursor:'pointer',color:'#f3dfad',fontSize:17,fontWeight:800}}>برنامه رسمی مسابقات سری سوم</summary>
+    <div style={{marginTop:10}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-      <div><h3 style={{margin:0,color:'#f3dfad',fontSize:17}}>برنامه رسمی مسابقات سری سوم</h3><p style={{...muted,margin:'4px 0 0'}}>نسخه ذخیره‌شده و ثابت · ساعت ۲۱:۰۰ به وقت تهران</p></div>
+      <div><p style={{...muted,margin:'4px 0 0'}}>نسخه ذخیره‌شده و ثابت · ساعت ۲۱:۰۰ به وقت تهران</p></div>
       {snapshot&&<strong style={{color:'#e4c77e',fontSize:12}}>{fa(snapshot.group_stage.match_count)} مسابقه گروهی</strong>}
     </div>
     {loading?<p style={muted}>در حال دریافت برنامه…</p>:error?<p role="alert" style={{color:'#efaaaa',fontSize:12}}>{error}</p>:snapshot&&<>
@@ -61,27 +63,30 @@ export default function Series3FixturesSchedule() {
           {'ABCDEFGHIJKL'.split('').map(g=><button key={g} type="button" onClick={()=>setGroup(g)} style={filterStyle(group===g)}>گروه {g}</button>)}
         </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,230px),1fr))',gap:8}}>
-          {matches.map(m=><article key={m.id} style={card}>
-            <div style={{display:'flex',justifyContent:'space-between',color:'#d4b46a',fontSize:11}}><strong>گروه {m.group}</strong><span>بازی {fa(m.match_no)} · ۲۱:۰۰</span></div>
+          {matches.map(m=><details key={m.id} style={card}>
+            <summary style={{cursor:'pointer',display:'flex',justifyContent:'space-between',gap:8,color:'#d4b46a',fontSize:11}}><strong>گروه {m.group}</strong><span>بازی {fa(m.match_no)} · ۲۱:۰۰</span></summary>
+            <div style={{marginTop:10}}> 
             <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto minmax(0,1fr)',gap:6,alignItems:'center',marginTop:10}}>
               <strong dir="ltr" style={{fontSize:13,overflowWrap:'anywhere',textAlign:'center'}}>{m.player_a.plato_id}</strong>
               <span style={{color:'#e4c77e',fontWeight:900}}>VS</span>
               <strong dir="ltr" style={{fontSize:13,overflowWrap:'anywhere',textAlign:'center'}}>{m.player_b.plato_id}</strong>
             </div>
-          </article>)}
+            </div>
+          </details>)}
         </div>
       </>}
       <div style={{marginTop:16,borderTop:'1px solid #4d4028',paddingTop:12}}>
         <strong style={{color:'#e4c77e'}}>تقویم مراحل حذفی</strong>
         <div style={{display:'grid',gap:7,marginTop:8}}>
-          {snapshot.knockout.map(k=><div key={k.stage} style={{...card,display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}>
-            <strong style={{fontSize:13}}>{k.title}</strong><span style={muted}>{k.persian_date} · ۲۱:۰۰ · {fa(k.match_count)} مسابقه</span>
-            {k.matches&&<div style={{width:'100%',...muted}}>رده‌بندی: {k.matches[0].label_a} مقابل {k.matches[0].label_b}<br/>فینال: {k.matches[1].label_a} مقابل {k.matches[1].label_b}</div>}
-          </div>)}
+          {snapshot.knockout.map(k=><details key={k.stage} style={card}>
+            <summary style={{cursor:'pointer',display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap'}}><strong style={{fontSize:13}}>{k.title}</strong><span style={muted}>{k.persian_date} · ۲۱:۰۰ · {fa(k.match_count)} مسابقه</span></summary>
+            {k.matches&&<div style={{width:'100%',...muted,marginTop:8}}>رده‌بندی: {k.matches[0].label_a} مقابل {k.matches[0].label_b}<br/>فینال: {k.matches[1].label_a} مقابل {k.matches[1].label_b}</div>}
+          </details>)}
         </div>
       </div>
     </>}
-  </section>;
+    </div>
+  </details>;
 }
 
 function filterStyle(active:boolean): React.CSSProperties {
