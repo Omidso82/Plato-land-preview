@@ -295,7 +295,9 @@ Deno.serve(async (req: Request) => {
           break;
         }
       }
-      const status = failure ? (results.length ? "partial" : "failed") : "sent";
+      const status: "sent" | "partial" | "failed" = failure
+        ? (results.length ? "partial" : "failed")
+        : "sent";
       const attempt = {
         destination, label:destinationLabels[destination], status,
         sent_count:results.length, total_count:messages.length,
