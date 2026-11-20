@@ -1,5 +1,5 @@
 # PLATO LAND – Series 3 Public Dashboard Handover
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 2026-11-20  
 **Scope:** PLATO LAND – Temporary Projects / Series 3 only
 
@@ -74,5 +74,12 @@ Performance advisor returned existing project-wide findings (mostly unindexed fo
 - No changes to the main website project scope or shared header.
 - No deletion of historical or temporary event data.
 
-## 9. Current status
+## 9. Change log — v1.1 (2026-11-20)
+- Removed the top summary statistic card `نتیجه ثبت‌شده` from the public Series 3 dashboard. This statistic was considered administration-oriented and is no longer shown in the public top summary row.
+- The public top row now shows only `کل بازی‌های گروهی` and `در انتظار`.
+- The completed-result count remains available in the separate `وضعیت مسابقات` section within the public overview; this change does not remove result data or alter admin result-entry/reporting tools.
+- Changed file: `src/Series3PublicDashboard.tsx` only. No database, migration, draw, fixture, score, bracket, or admin-panel changes.
+- Implementation commit on working branch: `40c9b047f0526996738ec37e847b548545cb18d0`.
+
+## 10. Current status
 **Implementation is in an open PR and its additive database read model is active on the main Supabase project. The public dashboard is not yet live on the production website.**
