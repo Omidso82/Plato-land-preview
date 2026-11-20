@@ -1,9 +1,9 @@
 # PLATO LAND – Series 3 Telegram Destination Selection & Delivery History
 
-**Version:** 1.6  
+**Version:** 1.7  
 **Date:** 2026-11-20  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** PR #254 was squash-merged into `main` on 2026-11-20 (merge commit `03da7844a78db7b229739a3bd50444ee5078eb02`). Post-merge verification on merge commit `03da7844a78db7b229739a3bd50444ee5078eb02`: `verify` passed; Cloudflare Pages `plato-land-preview` preview deployment succeeded at `https://071e817c.plato-land-preview.pages.dev`; the `build` job was cancelled and its `deploy` job was cancelled; `Workers Builds: plato-land-media-endpoint` failed (same pre-existing failure observed on the base commit). The primary Supabase project is healthy. The required delivery-history migration is not present in remote migration history. The currently deployed `plato-land-series3-telegram` Edge Function is version 12 and does not contain the new destination-selection/history implementation. Production release remains pending.
+**Status:** PR #254 was squash-merged into `main` on 2026-11-20 (merge commit `03da7844a78db7b229739a3bd50444ee5078eb02`). Post-merge verification on merge commit `03da7844a78db7b229739a3bd50444ee5078eb02`: `verify` passed; Cloudflare Pages `plato-land-preview` preview deployment succeeded at `https://071e817c.plato-land-preview.pages.dev`; the `build` job was cancelled and its `deploy` job was cancelled; `Workers Builds: plato-land-media-endpoint` failed (same pre-existing failure observed on the base commit). The primary Supabase project `dfrppbapaaydbjeflozw` is `ACTIVE_HEALTHY` (PostgreSQL 17.11.0.003). Migration `series3_telegram_delivery_history` was applied successfully and verified in remote migration history as version `20261120173859`. The table `public.plato_land_series3_telegram_delivery_history` exists, RLS is enabled, the Owner-only SELECT policy exists, `anon` has no SELECT privilege, and `authenticated` has the table SELECT grant constrained by RLS. The currently deployed `plato-land-series3-telegram` Edge Function remains version 12 and does not contain the new destination-selection/history implementation. Production release remains pending.
 
 ## 1. Approved scope
 Extend the existing Series 3 Telegram publishing center in the existing temporary management panel. No new bot, page, route, or parallel panel is introduced.
@@ -69,7 +69,7 @@ The current assistant tool connection does not expose a supported Supabase secre
 - No legacy operator UI or authorization changed.
 - No Series 3 draw, fixtures, results, registrations or prediction data changed.
 - No existing Telegram message sent.
-- No database migration applied yet.
+- Delivery-history migration applied to the primary database and verified as recorded above.
 - No production secret changed.
 - No function deployed and no production release claimed.
 
@@ -80,4 +80,5 @@ The current assistant tool connection does not expose a supported Supabase secre
 - **v1.3 — 2026-11-20:** Corrects the remaining inferred string type for the delivery status union found by CI. Awaiting the next full CI result; no migration or production release performed.
 - **v1.4 — 2026-11-20:** Clears the send preview after any accepted delivery, and retains retry selection only for destinations where zero messages were delivered and the destination failed completely. This prevents a partial delivery from being resent wholesale through the existing preview.
 - **v1.5 — 2026-11-20:** Records the successful squash-merge of PR #254 into `main` (merge commit `03da7844a78db7b229739a3bd50444ee5078eb02`).
-- **v1.6 — 2026-11-20:** Records post-merge CI/preview results and read-only production checks: verify passed; Pages preview succeeded; build/deploy jobs were cancelled; the media-endpoint Worker check failed as a pre-existing issue. Primary Supabase is healthy, but the delivery-history migration is not applied and deployed Series 3 Telegram Edge Function v12 does not contain the new implementation. No production secret, migration, function deployment or Telegram send was changed.
+- **v1.6 — 2026-11-20:** Records post-merge CI/preview results and read-only production checks: verify passed; Pages preview succeeded; build/deploy jobs were cancelled; the media-endpoint Worker check failed as a pre-existing issue. Primary Supabase was healthy, but the delivery-history migration was not yet applied and deployed Series 3 Telegram Edge Function v12 did not contain the new implementation.
+- **v1.7 — 2026-11-20:** Records successful application of `series3_telegram_delivery_history` to the primary Supabase project, remote migration version `20261120173859`, and read-only verification of table existence, RLS enabled, Owner-only SELECT policy, no `anon` SELECT privilege, and authenticated SELECT constrained by RLS. Secret configuration, Edge Function deployment, production frontend release, and Telegram sends remain pending.
