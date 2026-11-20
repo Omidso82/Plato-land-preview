@@ -21,6 +21,7 @@ export default function Series3FixturesSchedule() {
   const [error,setError] = useState('');
   const [dayIndex,setDayIndex] = useState(0);
   const [group,setGroup] = useState('ALL');
+  const [expanded,setExpanded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -42,11 +43,13 @@ export default function Series3FixturesSchedule() {
   const day = snapshot?.group_stage.days[dayIndex];
   const matches = useMemo(() => (day?.matches || []).filter(m => group==='ALL' || m.group===group),[day,group]);
 
-  return <section dir="rtl" style={{marginTop:14,padding:14,border:'1px solid #8c6a34',borderRadius:13,background:'linear-gradient(145deg,#211b12,#111214)',color:'#f2ead8'}}>
-    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-      <div><h3 style={{margin:0,color:'#f3dfad',fontSize:17}}>برنامه رسمی مسابقات سری سوم</h3><p style={{...muted,margin:'4px 0 0'}}>نسخه ذخیره‌شده و ثابت · ساعت ۲۱:۰۰ به وقت تهران</p></div>
-      {snapshot&&<strong style={{color:'#e4c77e',fontSize:12}}>{fa(snapshot.group_stage.match_count)} مسابقه گروهی</strong>}
-    </div>
+  return <section dir="rtl" style={{marginTop:14,padding:12,border:'1px solid #8c6a34',borderRadius:13,background:'linear-gradient(145deg,#211b12,#111214)',color:'#f2ead8'}}>
+    <button type="button" onClick={()=>setExpanded(value=>!value)} aria-expanded={expanded}
+      style={{width:'100%',display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap',textAlign:'right',background:'transparent',border:0,color:'inherit',padding:4,cursor:'pointer'}}>
+      <span><strong style={{display:'block',margin:0,color:'#f3dfad',fontSize:16}}>برنامه رسمی مسابقات سری سوم</strong><span style={{...muted,display:'block',marginTop:3}}>برای مشاهده یا بستن برنامه لمس کن · ساعت ۲۱:۰۰ تهران</span></span>
+      <span style={{display:'flex',alignItems:'center',gap:8,color:'#e4c77e',fontSize:12,fontWeight:800}}>{snapshot ? fa(snapshot.group_stage.match_count)+' مسابقه' : 'برنامه مسابقات'} <span aria-hidden="true">{expanded?'▲':'▼'}</span></span>
+    </button>
+    {expanded&&<>
     {loading?<p style={muted}>در حال دریافت برنامه…</p>:error?<p role="alert" style={{color:'#efaaaa',fontSize:12}}>{error}</p>:snapshot&&<>
       <div style={{display:'flex',gap:7,flexWrap:'wrap',marginTop:12}}>
         {snapshot.group_stage.days.map((d,i)=><button key={d.date} type="button" onClick={()=>{setDayIndex(i);setGroup('ALL');}} style={{border:'1px solid '+(dayIndex===i?'#e4c77e':'#59472a'),borderRadius:8,padding:'8px 10px',background:dayIndex===i?'#3a2d17':'#171717',color:dayIndex===i?'#f5dfad':'#d8cbb2',cursor:'pointer',fontSize:12}}>{d.persian_date}</button>)}
@@ -80,6 +83,7 @@ export default function Series3FixturesSchedule() {
           </div>)}
         </div>
       </div>
+    </>}
     </>}
   </section>;
 }
