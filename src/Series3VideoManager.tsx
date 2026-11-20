@@ -65,8 +65,9 @@ export function Series3VideoManager(){
   }catch(e){setMessage('تغییر وضعیت ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
   finally{setBusy(false);}
  }
- return <section dir="rtl" style={{marginTop:18,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
-  <h3 style={{color:'#f6e8c5',fontSize:18,margin:'0 0 8px'}}>مدیریت ویدیوی «قوانین مهم سری سوم»</h3>
+ return <details dir="rtl" style={{marginTop:18,padding:0,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)',color:'#f6e8c5'}}>
+  <summary style={{cursor:'pointer',padding:'16px',fontSize:18,fontWeight:800}}>مدیریت ویدیوی «قوانین مهم سری سوم»</summary>
+  <div style={{padding:'0 16px 16px'}}>
   <p style={{color:'#c9c0ad',fontSize:13,lineHeight:1.9}}>ویدیوی MP4 را اینجا بارگذاری یا جایگزین کن. پس از فعال‌سازی، دکمه «قوانین مهم سری سوم» زیر دکمه ثبت‌نام در صفحه اول نمایش داده می‌شود و ویدیو فقط پس از کلیک کاربر در پنجره پخش خواهد شد.</p>
   <div style={{color:active?'#9ed6a3':'#d1b98b',fontSize:13,marginBottom:10}}>وضعیت نمایش عمومی: {active?'فعال':'غیرفعال'}</div>
   {current&&<video src={current} crossOrigin="anonymous" controls playsInline style={{width:'100%',maxHeight:260,background:'#000',borderRadius:8,marginBottom:12}}/>}
@@ -90,5 +91,6 @@ export function Series3VideoManager(){
    <p style={{fontSize:11,color:'#a9a08e',lineHeight:1.8,marginBottom:0}}>فقط تعداد دفعات باز شدن پنجره ویدیو ثبت می‌شود؛ هیچ شناسه ماندگار یا اطلاعات هویتی بازدیدکنندگان ذخیره نمی‌شود.</p>
   </section>
   {message&&<p role="status" style={{fontSize:13,color:'#f0d99f',marginBottom:0}}>{message}</p>}
- </section>;
+  </div>
+ </details>;
 }
