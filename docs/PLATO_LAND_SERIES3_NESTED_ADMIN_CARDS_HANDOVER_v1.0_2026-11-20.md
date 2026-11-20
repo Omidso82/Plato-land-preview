@@ -1,6 +1,6 @@
 # PLATO LAND – Series 3 Nested Admin Cards Handover
 
-- Version: 1.1
+- Version: 1.2
 - Date: 2026-11-20
 - Project: PLATO LAND – Temporary Projects
 - Event: Series 3 Backgammon League
@@ -59,7 +59,8 @@ No Series 2 or PLATO LAND – Main Website feature is in scope. No new database,
 - Feature branch: `feat/series3-nested-admin-cards-collapsible-2026-11-20`
 - PR: https://github.com/Omidso82/Plato-land-preview/pull/233
 - PR status at last check: open, unmerged, mergeable.
-- Corrected feature-branch head at v1.1 update: `727b4a8b93e1405008fbceb880890be2434fb35d` (this documentation update advances the branch head).
+- Corrected nested-card implementation head: `727b4a8b93e1405008fbceb880890be2434fb35d`.
+- Mobile table-overflow correction: `f893f8400c114d02a1c24cd9d2ef09f0be4d0201` (latest source fix at v1.2 update).
 - Compare result before this documentation update: 10 commits ahead, 0 behind main, eight files changed (seven application files and this handover).
 
 ## 5. Verification status and limitations
@@ -81,3 +82,4 @@ This PR is not authorization to merge or deploy. Merge and production release re
 
 - v1.0 — 2026-11-20: records the nested-card collapsible-by-default implementation and initial verification boundary.
 - v1.1 — 2026-11-20: records the JSX correction, successful typecheck/build/Deno verification on the corrected code head, and confirms that the PR's production deploy job was skipped.
+- v1.2 — 2026-11-20: records the owner-reported mobile overflow in expanded group standings and the scoped CSS/layout correction in `Series3GroupResultsManager.tsx`. The group standings container and each disclosure are constrained to the available width; horizontal scrolling is confined to the table wrapper. CI for the new source commit is pending/not yet reported at the time of this update; no production deployment or live iPhone acceptance is claimed.
