@@ -1,12 +1,12 @@
 const MEDIA_API = 'https://plato-land-media-pages.pages.dev/api/series3-media';
 
 export async function deleteR2Media(
-  asset: 'series2-poster' | 'teaser',
+  asset: 'series2-poster' | 'teaser' | 'rules',
   accessToken: string,
   key?: string,
 ): Promise<{ key: string; alreadyMissing?: boolean }> {
   if (!accessToken) throw new Error('نشست معتبر مالک پیدا نشد.');
-  if (asset === 'teaser' && !key) throw new Error('کلید دقیق فایل تیزر مشخص نیست.');
+  if ((asset === 'teaser' || asset === 'rules') && !key) throw new Error('کلید دقیق فایل تیزر مشخص نیست.');
   const url = new URL(MEDIA_API);
   url.searchParams.set('asset', asset);
   if (key) url.searchParams.set('key', key);
