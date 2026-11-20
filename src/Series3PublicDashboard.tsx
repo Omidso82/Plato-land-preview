@@ -68,9 +68,6 @@ export default function Series3PublicDashboard(){
    <div><div style={{fontSize:19,fontWeight:900,color:'#f3dfad'}}>مسیر قهرمانی · سری سوم</div><div style={{...muted,marginTop:3}}>رتبه‌بندی رسمی، گروه‌ها، نتایج و جدول حذفی</div></div>
    <span style={{border:'1px solid #806638',borderRadius:30,padding:'6px 11px',fontSize:11,color:gold}}>۴۸ بازیکن · ۱۲ گروه</span>
   </div>
-  <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:7,marginTop:13}}>
-   {[['کل بازی‌های گروهی',fixtures.length],['در انتظار',pending]].map(([label,value])=><div key={String(label)} style={{...card,padding:9,textAlign:'center'}}><div style={muted}>{label}</div><strong style={{display:'block',fontSize:21,color:gold,marginTop:3}}>{loading?'—':fa(Number(value))}</strong></div>)}
-  </div>
   {noShows>0&&<p style={{...muted,margin:'7px 2px 0'}}>عدم حضور دوطرفه: {fa(noShows)} بازی · بدون امتیاز و برد برای طرفین</p>}
   <nav aria-label="بخش‌های داشبورد" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:5,marginTop:14}}>
    {tabs.map(([key,label])=><button key={key} type="button" onClick={()=>setTab(key)} style={{minWidth:0,padding:'9px 3px',borderRadius:8,border:'1px solid '+(tab===key?'#e4c77e':'#57472d'),background:tab===key?'linear-gradient(120deg,#a98239,#e4c77e)':'#151515',color:tab===key?'#17130b':'#e8d8b6',fontWeight:800,fontSize:11,cursor:'pointer'}}>{label}</button>)}
