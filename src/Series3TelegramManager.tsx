@@ -135,7 +135,8 @@ export default function Series3TelegramManager() {
     try{
       const result=await callApi('send');
       const perDestination=(result?.destination_results||[]).map((item:any)=>item.label+': '+(item.status==='sent'?'موفق':item.status==='partial'?'ناقص':'ناموفق')+' ('+fa(item.sent_count)+' از '+fa(item.total_count)+')').join('؛ ');
-      setNotice(perDestination||'نتیجه ارسال دریافت نشد.');
+      const historyWarning=result?.history_saved===false?' هشدار: نتیجه ارسال در تاریخچه دیتابیس ذخیره نشد.':'';
+      setNotice((perDestination||'نتیجه ارسال دریافت نشد.')+historyWarning);
       await refreshDeliveryHistory();
       if(result?.sent)setPreview([]);
     }catch(e){setError(e instanceof Error?e.message:'ارسال پیام ناموفق بود.');}
