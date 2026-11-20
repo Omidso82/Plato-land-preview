@@ -481,7 +481,12 @@ export default function Series3SeedingManager() {
           <div style={{ display: 'grid', gap: 8, marginTop: 10 }}>
             {filtered.map(player => {
               const draft = drafts[player.id] || { played: '', won: '' };
-              return <article key={player.id} style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto', gap: 9, alignItems: 'center', padding: 11, border: '1px solid #4e422b', borderRadius: 10, background: '#141516' }}>
+              return <details key={player.id} style={{padding:11,border:'1px solid #4e422b',borderRadius:10,background:'#141516'}}>
+                <summary style={{cursor:'pointer',display:'flex',justifyContent:'space-between',gap:8,alignItems:'center'}}>
+                  <strong dir="ltr" style={{color:'#f4f0e8',fontSize:14,overflowWrap:'anywhere'}}>{player.plato_id}</strong>
+                  <span style={{color:'#d9bb78',fontSize:12}}>{pct(player.games_played,player.games_won)}</span>
+                </summary>
+                <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto',gap:9,alignItems:'center',marginTop:9}}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     <strong dir="ltr" style={{ color: '#f4f0e8', fontSize: 14, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
@@ -500,7 +505,8 @@ export default function Series3SeedingManager() {
                 <button type="button" style={{ ...button, alignSelf: 'end', whiteSpace: 'nowrap' }} disabled={savingId !== null} onClick={() => void save(player)}>
                   {savingId === player.id ? '…' : 'ذخیره'}
                 </button>
-              </article>;
+                </div>
+              </details>;
             })}
           </div>}
       </>}
