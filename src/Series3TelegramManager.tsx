@@ -150,7 +150,7 @@ export default function Series3TelegramManager() {
     if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
     if(preview.length===0){setError('قبل از ارسال، ابتدا پیش‌نمایش را تهیه و بررسی کن.');return;}
     const target=destinations.map(id=>id==='test_group'?'گروه آزمایشی':'کانال اصلی').join(' و ');
-    const approved=window.confirm('آیا ارسال '+fa(preview.length)+' پیام به هر مقصد انتخاب‌شده ('+target+') را تأیید می‌کنی؟');
+    const reportSending=Boolean(reportCampaignId&&selectedReportVoters.length>0);\n    const warning=reportSending?' این گزارش‌ها شامل Plato ID و پیش‌بینی هر رأی‌دهنده است و در مقصد انتخاب‌شده برای اعضای آن قابل مشاهده خواهد بود.':'';\n    const approved=window.confirm('آیا ارسال '+fa(preview.length)+' پیام به هر مقصد انتخاب‌شده ('+target+') را تأیید می‌کنی؟'+warning);
     if(!approved)return;
     setSending(true);setError('');setNotice('');
     try{
@@ -227,7 +227,7 @@ export default function Series3TelegramManager() {
 
     <details open style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
       <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>گزارش نتایج پیش‌بینی‌ها · فقط مالک</summary>
-      <p style={{...muted,margin:'8px 0'}}>برای هر رأی‌دهنده یک پیام مستقل ساخته می‌شود. اطلاعات رأی‌دهندگان فقط در این پنل مالک نمایش داده می‌شود و ارسال بدون پیش‌نمایش و تأیید انجام نمی‌شود.</p>
+      <p style={{...muted,margin:'8px 0'}}>برای هر رأی‌دهنده یک پیام مستقل ساخته می‌شود. ارسال به مقصدهای انتخاب‌شده فقط توسط Owner و پس از بررسی پیش‌نمایش و تأیید نهایی انجام می‌شود.</p>
       <label style={{display:'grid',gap:7,color:'#eee5d4',fontSize:12}}>
         انتخاب کمپین
         <select value={reportCampaignId} onChange={e=>void loadReportVoters(e.target.value)} style={{background:'#171717',color:'#f0d99f',border:'1px solid #806638',borderRadius:8,padding:10}}>
@@ -248,7 +248,7 @@ export default function Series3TelegramManager() {
           </label>)}
         </div>
       </>}
-      {reportCampaignId&&<p style={{...muted,marginTop:9}}>وضعیت فعلی نتایج از دیتابیس خوانده می‌شود؛ برای بازی‌های بدون نتیجه قطعی «در انتظار نتیجه» و برای قهرمانی تا ثبت قهرمان رسمی همین وضعیت نمایش داده می‌شود. به‌دلیل محرمانگی، این گزارش فقط در پیش‌نمایش مالک قابل مشاهده است؛ ارسال عمومی مسدود است و ارسال خصوصی تا زمان وجود شناسه خصوصی معتبر هر بازیکن فعال نمی‌شود.</p>}
+      {reportCampaignId&&<p style={{...muted,marginTop:9}}>وضعیت نتایج از دیتابیس خوانده می‌شود. هر گزارش شامل Plato ID و پیش‌بینی همان رأی‌دهنده است و پس از تأیید Owner به مقصد انتخاب‌شده ارسال می‌شود؛ اعضای آن گروه یا کانال می‌توانند محتوای پیام را ببینند.</p>}
     </details>
 
     <details open style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
@@ -297,7 +297,7 @@ export default function Series3TelegramManager() {
 
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:13}}>
       <button type="button" style={goldButton} disabled={busy||sending||(selectedCount===0&&!(reportCampaignId&&selectedReportVoters.length>0))||destinations.length===0} onClick={()=>void makePreview()}>{busy?'در حال آماده‌سازی…':'تهیه پیش‌نمایش پیام‌ها'}</button>
-      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0||destinations.length===0||(reportCampaignId&&selectedReportVoters.length>0)} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':(reportCampaignId&&selectedReportVoters.length>0?'ارسال خصوصی هنوز فعال نیست':'ارسال پیام‌های پیش‌نمایش‌شده')}</button>
+      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0||destinations.length===0} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':'ارسال پیام‌های پیش‌نمایش‌شده'}</button>
       <button type="button" style={darkButton} disabled={busy||sending} onClick={()=>{setPreview([]);setError('');setNotice('');}}>پاک‌کردن پیش‌نمایش</button>
     </div>
 
