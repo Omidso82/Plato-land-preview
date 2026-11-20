@@ -83,7 +83,7 @@ export default function Series3GroupResultsManager() {
     const d=drafts[row.match_id]||emptyDraft(row);
     let scoreA:number|null=null,scoreB:number|null=null;
     if(d.status==='completed'){
-      if(!/^\\d+$/.test(d.scoreA)||!/^\\d+$/.test(d.scoreB)){setError('برای نتیجه عادی، هر دو امتیاز را با عدد صحیح وارد کن.');setMessage('');return;}
+      if(!/^\d+$/.test(d.scoreA)||!/^\d+$/.test(d.scoreB)){setError('برای نتیجه عادی، هر دو امتیاز را با عدد صحیح وارد کن.');setMessage('');return;}
       scoreA=Number(d.scoreA);scoreB=Number(d.scoreB);
       if(!Number.isInteger(scoreA)||!Number.isInteger(scoreB)||scoreA<0||scoreB<0||scoreA>5||scoreB>5||!((scoreA===5&&scoreB<5)||(scoreB===5&&scoreA<5))){
         setError('در بازی پنج‌امتیازی، نتیجه باید ۵ به عددی بین صفر تا ۴ باشد.');setMessage('');return;
