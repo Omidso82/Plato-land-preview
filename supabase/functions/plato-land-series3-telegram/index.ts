@@ -28,7 +28,10 @@ type BracketMatch = { id: string; a: MatchToken; b: MatchToken };
 type Bracket = { round32?: BracketMatch[]; round16?: BracketMatch[]; quarterfinals?: BracketMatch[]; semifinals?: BracketMatch[]; final?: BracketMatch[] };
 type Fixture = { id:string; group:string; round:number; match_no:number; player_a:{plato_id:string}; player_b:{plato_id:string}; time:string };
 type FixtureSnapshot = { group_stage:{days:Array<{round:number;persian_date:string;time:string;matches:Fixture[]}>} };
-type PredictionCampaign = { id:string; title:string; description:string|null; campaign_type:string; status:string; is_open:boolean; opens_at:string|null; closes_at:string|null; questions:Array<{id:string;label:string;type?:string;options?:string[]}>; prize_rules:Record<string,unknown>|null };
+type PredictionQuestion = { id:string; label:string; type?:string; options?:string[]; match?:{matchId?:string;stage?:string;roundNo?:number;matchDate?:string}|null };
+type PredictionCampaign = { id:string; title:string; description:string|null; campaign_type:string; status:string; is_open:boolean; opens_at:string|null; closes_at:string|null; questions:PredictionQuestion[]; prize_rules:Record<string,unknown>|null };
+type PredictionEntry = { id:string; voter_plato_id:string; response:Record<string,unknown>|null; result_status:string|null };
+type MatchResult = { match_id:string; result_status:string; score_a:number|null; score_b:number|null; player_a_plato_id:string; player_b_plato_id:string };
 type Message = { section_id: string; title: string; text: string; plain_text: string; item_count: number };
 
 const roundConfig: Record<string, { title: string; subtitle: string }> = {
@@ -83,6 +86,47 @@ function buildPredictionMessage(campaign: PredictionCampaign): Message {
   lines.push('', '<b>ثبت پیش‌بینی:</b> https://platoland.org/predictions');
   return makeMessage('prediction:'+campaign.id,campaign.title,'پیش‌بینی قهرمان · سری سوم',lines,optionCount||campaign.questions.length);
 }
+function buildVoterReportMessages(campaign: PredictionCampaign, entries: PredictionEntry[], results: MatchResult[]): Message[] {
+  if (campaign.status !== "published") throw new Error("کمپین انتخاب‌شده منتشرشده نیست.");
+  const resultById = new Map(results.map(item => [item.match_id, item]));
+  const questions = campaign.questions || [];
+  return entries.map(entry => {
+    const response = entry.response && typeof entry.response === "object" ? entry.response : {};
+    const lines: string[] = [];
+    if (campaign.campaign_type === "champion") {
+      const picked = response.champion;
+      lines.push("<b>نوع پیش‌بینی:</b> قهرمان سری سوم");
+      lines.push("<b>انتخاب ثبت‌شده:</b> " + code(typeof picked === "string" ? picked : "ثبت نشده"));
+      lines.push("<b>نتیجه ارزیابی:</b> در انتظار نتیجه");
+      lines.push("<i>نتیجه رسمی قهرمان هنوز در منبع قطعی ثبت نشده است.</i>");
+    } else if (campaign.campaign_type === "match_predictions") {
+      let correct = 0, incorrect = 0, pending = 0, unknown = 0;
+      for (const question of questions) {
+        const matchId = question.match?.matchId;
+        const picked = response[question.id];
+        const match = typeof matchId === "string" ? resultById.get(matchId) : undefined;
+        let status = "در انتظار نتیجه", winner = "";
+        if (typeof matchId !== "string" || !matchId) { status = "نامشخص"; unknown++; }
+        else if (!match) { pending++; }
+        else if (match.result_status === "pending" || match.score_a === null || match.score_b === null || match.score_a === match.score_b) {
+          pending++;
+        } else if (Number.isFinite(match.score_a) && Number.isFinite(match.score_b)) {
+          winner = match.score_a! > match.score_b! ? match.player_a_plato_id : match.player_b_plato_id;
+          if (typeof picked !== "string" || !picked) { status = "بدون پاسخ"; unknown++; }
+          else if (picked.toLowerCase() === winner.toLowerCase()) { status = "درست"; correct++; }
+          else { status = "نادرست"; incorrect++; }
+        } else { status = "نامشخص"; unknown++; }
+        lines.push("<b>" + escapeHtml(question.label || matchId || question.id) + "</b>");
+        lines.push("پیش‌بینی: " + code(typeof picked === "string" ? picked : "ثبت نشده") +
+          " · برنده: " + code(winner || (status === "در انتظار نتیجه" ? "ثبت نشده" : "نامشخص")) +
+          " · <b>" + escapeHtml(status) + "</b>");
+      }
+      lines.unshift("<b>خلاصه:</b> درست " + fa(correct) + " · نادرست " + fa(incorrect) + " · در انتظار " + fa(pending) + " · نامشخص " + fa(unknown));
+    } else throw new Error("نوع کمپین برای گزارش نتیجه پشتیبانی نمی‌شود.");
+    return makeMessage("prediction-report:" + campaign.id + ":" + entry.id, "گزارش نتیجه پیش‌بینی · " + entry.voter_plato_id, campaign.title, lines, campaign.campaign_type === "match_predictions" ? questions.length : 1);
+  });
+}
+
 function buildMessages(selected: string[], ranking: Player[], pots: Player[][], groups: Array<{name:string;players:Player[]}>, bracket: Bracket, fixtures: FixtureSnapshot|undefined, predictions: PredictionCampaign[]): Message[] {
   const result: Message[] = [];
   const groupNames = "ABCDEFGHIJKL".split("");
@@ -199,13 +243,17 @@ Deno.serve(async (req: Request) => {
     const action = body.action;
     if (action !== "preview" && action !== "send") return json({ error: "عملیات درخواست معتبر نیست." }, 400);
     const selected = Array.isArray(body.sections) ? body.sections.map((x: unknown)=>String(x)) : [];
+    const reportCampaignId = typeof body.report_campaign_id === "string" ? body.report_campaign_id : "";
+    const reportVoterIds = Array.isArray(body.report_voter_ids) ? [...new Set(body.report_voter_ids.map((x:unknown)=>String(x)))] : [];
+    const reportMode = Boolean(reportCampaignId || reportVoterIds.length);
+    if (reportMode && (!/^[-a-f0-9]{36}$/i.test(reportCampaignId) || reportVoterIds.length < 1 || reportVoterIds.length > 100)) return json({error:"کمپین یا فهرست رأی‌دهندگان برای گزارش معتبر نیست."},400);
 
     const wantsFixtures = selected.some((id:string)=>id.startsWith("fixtures:day:"));
     const wantsBracket = selected.some((id:string)=>id.startsWith("bracket:"));
     const wantsSeeding = selected.some((id:string)=>id==="ranking"||id.startsWith("pot:")||id.startsWith("group:")||id.startsWith("fixtures:day:"));
     const predictionIds=selected.filter((id:string)=>id.startsWith('prediction:')).map((id:string)=>id.slice('prediction:'.length));
     if (predictionIds.some((id:string)=>!/^[-a-f0-9]{36}$/i.test(id))) return json({error:'شناسه پیش‌بینی معتبر نیست.'},400);
-    const [seedingResult, knockoutResult, fixturesResult, predictionsResult] = await Promise.all([
+    const [seedingResult, knockoutResult, fixturesResult, predictionsResult, reportCampaignResult, reportEntriesResult, reportMatchesResult] = await Promise.all([
       wantsSeeding
         ? admin.from("plato_land_series3_seeding_draws").select("ranking_snapshot,pots_snapshot,groups_snapshot").eq("event_key","series3").maybeSingle()
         : Promise.resolve({data:null,error:null}),
@@ -218,11 +266,23 @@ Deno.serve(async (req: Request) => {
       predictionIds.length
         ? admin.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,is_open,opens_at,closes_at,questions,prize_rules').eq('event_key','series3').eq('status','published').in('id',predictionIds)
         : Promise.resolve({data:[],error:null}),
+      reportMode
+        ? admin.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,questions,prize_rules').eq('event_key','series3').eq('id',reportCampaignId).eq('status','published').maybeSingle()
+        : Promise.resolve({data:null,error:null}),
+      reportMode
+        ? admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).in('id',reportVoterIds)
+        : Promise.resolve({data:[],error:null}),
+      reportMode
+        ? admin.from('plato_land_series3_group_match_results').select('match_id,result_status,score_a,score_b,player_a_plato_id,player_b_plato_id').eq('event_key','series3')
+        : Promise.resolve({data:[],error:null}),
     ]);
     if (seedingResult.error) throw seedingResult.error;
     if (fixturesResult.error) throw fixturesResult.error;
     if (knockoutResult.error) throw knockoutResult.error;
     if (predictionsResult.error) throw predictionsResult.error;
+    if (reportCampaignResult.error) throw reportCampaignResult.error;
+    if (reportEntriesResult.error) throw reportEntriesResult.error;
+    if (reportMatchesResult.error) throw reportMatchesResult.error;
     const predictions=(predictionsResult.data||[]) as PredictionCampaign[];
     if (predictions.length!==predictionIds.length) return json({error:'یکی از پیش‌بینی‌های انتخاب‌شده منتشرشده نیست یا تغییر کرده است؛ فهرست را تازه‌سازی کن.'},409);
     const seeding = seedingResult.data;
@@ -238,7 +298,19 @@ Deno.serve(async (req: Request) => {
     if (wantsFixtures && !fixtures) return json({ error: "برنامه مسابقات سری سوم هنوز در دیتابیس ثبت نشده است." }, 409);
     if (wantsSeeding && (groups.length !== 12 || groups.some(g=>!Array.isArray(g.players)||g.players.length!==4))) return json({ error: "Snapshot گروه‌های سری سوم کامل نیست." }, 409);
 
-    const messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures,predictions);
+    let messages: Message[];
+    if (reportMode) {
+      const reportCampaign = reportCampaignResult.data as PredictionCampaign | null;
+      if (!reportCampaign || !["champion","match_predictions"].includes(reportCampaign.campaign_type)) return json({error:"کمپین گزارش پیدا نشد یا نوع آن پشتیبانی نمی‌شود."},404);
+      const reportEntries = (reportEntriesResult.data || []) as PredictionEntry[];
+      if (reportEntries.length !== reportVoterIds.length) return json({error:"فهرست رأی‌دهندگان با داده‌های کمپین مطابقت ندارد؛ فهرست را تازه‌سازی کن."},409);
+      messages = buildVoterReportMessages(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
+      if (messages.length > 100) return json({error:"تعداد پیام‌های گزارش از سقف مجاز بیشتر است."},400);
+    } else {
+      messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures,predictions);
+    }
+    if (reportMode && action === "send") return json({error:"گزارش‌های شخصی به دلیل محرمانگی به گروه یا کانال عمومی ارسال نمی‌شوند؛ ابتدا باید مقصد خصوصی معتبر برای هر رأی‌دهنده تعریف شود."},409);
+
     const allowedDestinations = new Set(["test_group", "main_channel"]);
     const requestedDestinations: string[] = Array.isArray(body.destinations)
       ? [...new Set((body.destinations as unknown[]).map((value) => String(value)))]
