@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 import {isSeries3RulesVideoKey,series3RulesVideoUrl,uploadSeries3RulesVideo} from './series3RulesVideoClient';
+import {deleteR2Media} from './r2MediaDeleteClient';
 
 const LIMIT=100*1024*1024;
 
@@ -10,6 +11,8 @@ export function Series3VideoManager(){
  const [file,setFile]=useState<File|null>(null);
  const [active,setActive]=useState(false);
  const [busy,setBusy]=useState(false);
+ const [deleteConfirm,setDeleteConfirm]=useState(false);
+ const [deleteBusy,setDeleteBusy]=useState(false);
 
  const [message,setMessage]=useState('');
  const [analytics,setAnalytics]=useState<{modal_opens:number}|null>(null);
@@ -53,6 +56,42 @@ export function Series3VideoManager(){
   }catch(e){setMessage((r2Saved?'فایل در R2 ذخیره شده، اما ثبت مرجع آن در تنظیمات کامل نشد؛ موفقیت نهایی تأیید نمی‌شود: ':'بارگذاری ناموفق بود: ')+(e instanceof Error?e.message:'خطای ناشناخته'));}
   finally{setBusy(false);}
  }
+ async function deleteVideo(){
+  if(!supabase||!isSeries3RulesVideoKey(currentKey))return;
+  setDeleteBusy(true);setMessage('در حال آماده‌سازی حذف ویدیو…');
+  let previousKey=currentKey;
+  let previousActive=active;
+  let metadataCleared=false;
+  try{
+   const {data:{user},error:userError}=await supabase.auth.getUser();
+   if(userError)throw userError;
+   if(!user)throw new Error('نشست معتبر مالک پیدا نشد.');
+   const {data:row,error:readError}=await supabase.from('plato_land_series3_video_settings')
+    .select('storage_path,is_active').eq('id',1).maybeSingle();
+   if(readError)throw readError;
+   if(!row||row.storage_path!==currentKey)throw new Error('مرجع ویدیو با فایل انتخاب‌شده یکسان نیست؛ برای جلوگیری از حذف فایل اشتباه عملیات متوقف شد.');
+   previousKey=row.storage_path;previousActive=Boolean(row.is_active);
+   const {error:clearError}=await supabase.from('plato_land_series3_video_settings')
+    .update({storage_path:'',is_active:false,updated_at:new Date().toISOString(),updated_by:user.id}).eq('id',1);
+   if(clearError)throw clearError;
+   metadataCleared=true;
+   const {data:session,error:sessionError}=await supabase.auth.getSession();
+   if(sessionError)throw sessionError;
+   const token=session.session?.access_token;
+   if(!token)throw new Error('نشست معتبر مالک پیدا نشد.');
+   const result=await deleteR2Media('rules',token,currentKey);
+   setCurrent('');setCurrentKey('');setActive(false);setFile(null);setDeleteConfirm(false);
+   setMessage(result.alreadyMissing?'مرجع ویدیو پاک شد؛ فایل در R2 از قبل موجود نبود.':'ویدیوی قوانین از R2 حذف، مرجع آن از Supabase پاک و نبودن فایل تأیید شد.');
+  }catch(e){
+   let rollbackMessage='';
+   if(metadataCleared&&supabase){
+    const {error:rollbackError}=await supabase.from('plato_land_series3_video_settings')
+     .update({storage_path:previousKey,is_active:previousActive,updated_at:new Date().toISOString()}).eq('id',1);
+    if(rollbackError)rollbackMessage=' بازگردانی مرجع قبلی در Supabase هم ناموفق بود: '+rollbackError.message;
+   }
+   setMessage('حذف ویدیو کامل نشد: '+(e instanceof Error?e.message:'خطای ناشناخته')+rollbackMessage);
+  }finally{setDeleteBusy(false);}
+ }
  async function toggle(){
   if(!supabase)return;
   setBusy(true);
@@ -77,6 +116,17 @@ export function Series3VideoManager(){
   {file&&<p style={{fontSize:12,color:'#c9c0ad'}}>فایل انتخاب‌شده: {file.name} · {(file.size/1024/1024).toFixed(1)} MB</p>}
   <button type="button" disabled={!file||busy} onClick={()=>void upload()} style={{width:'100%',marginTop:8,padding:11,border:0,borderRadius:9,background:'#c49b4b',color:'#17120a',fontWeight:800,cursor:'pointer'}}>{busy?'در حال انجام…':current?'بارگذاری و جایگزینی ویدیو':'بارگذاری ویدیو'}</button>
   <button type="button" disabled={!current||busy} onClick={()=>void toggle()} style={{width:'100%',marginTop:8,padding:11,border:'1px solid #8c6a34',borderRadius:9,background:'#211b12',color:'#f0d99f',fontWeight:800,cursor:'pointer'}}>{active?'غیرفعال کردن نمایش در صفحه اول':'فعال کردن نمایش در صفحه اول'}</button>
+  {current&&<div style={{marginTop:9}}>
+   {!deleteConfirm
+    ? <button type="button" disabled={busy||deleteBusy} onClick={()=>setDeleteConfirm(true)} style={{width:'100%',padding:11,border:'1px solid #8d4540',borderRadius:9,background:'#211514',color:'#ffd0c9',fontWeight:800}}>حذف دائمی ویدیو از R2</button>
+    : <div style={{padding:10,border:'1px solid #8d4540',borderRadius:9,background:'#1b1111'}}>
+       <p style={{fontSize:12,lineHeight:1.8,color:'#ffb2a8',margin:'0 0 8px'}}>فایل ویدیوی قوانین از R2 حذف و مرجع آن از Supabase پاک می‌شود؛ نمایش ویدیو نیز غیرفعال خواهد شد. این حذف دائمی است.</p>
+       <div style={{display:'flex',gap:8}}>
+        <button type="button" disabled={deleteBusy} onClick={()=>setDeleteConfirm(false)} style={{flex:1,padding:10,border:'1px solid #555',borderRadius:8,background:'#252525',color:'#ddd'}}>انصراف</button>
+        <button type="button" disabled={deleteBusy} onClick={()=>void deleteVideo()} style={{flex:1,padding:10,border:0,borderRadius:8,background:'#9f3932',color:'#fff',fontWeight:800}}>{deleteBusy?'در حال حذف…':'تأیید حذف دائمی'}</button>
+       </div>
+      </div>}
+  </div>}
 
   <details style={{marginTop:18,padding:12,border:'1px solid #8c6a34',borderRadius:11,background:'#151515'}}>
    <summary style={{cursor:'pointer',color:'#f0d99f',fontSize:16,fontWeight:800}}>آمار تماشای ویدیو</summary>
