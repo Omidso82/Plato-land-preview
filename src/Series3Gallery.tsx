@@ -3,6 +3,7 @@ import {Crown,ArrowLeft,ChevronRight,Archive,PlayCircle,X,Volume2,VolumeX} from 
 import {supabase} from './supabase';
 import TemporaryPageHeader from './TemporaryPageHeader';
 import {isSeries3RulesVideoKey,series3RulesVideoUrl} from './series3RulesVideoClient';
+import {isSeries3TeaserKey,series3TeaserUrl} from './series3TeaserClient';
 
 export default function Series3Gallery(){
  const [poster,setPoster]=useState('');
@@ -36,13 +37,17 @@ export default function Series3Gallery(){
     setHeroMode(null);
    }else if(homeSettings.media_mode==='video'&&homeSettings.storage_path){
     // Lock the page to video mode before loading any video asset.
-    // Do not request or preload the poster at all in video mode.
+    // The exact immutable R2 key is read from Supabase; there is no Storage fallback.
     setHeroMode('video');
-    const {data:items,error:listError}=await supabase.storage.from('series3-video').list('teaser',{limit:10});
-    const teaser=(items||[]).find(x=>x.name==='series3-home-teaser.mp4');
-    if(active&&!listError&&teaser){
-     const url=supabase.storage.from('series3-video').getPublicUrl(homeSettings.storage_path).data.publicUrl;
-     setTeaserVideo(url+'?v='+encodeURIComponent(teaser.updated_at||teaser.created_at||''));
+    const teaserKey=typeof homeSettings.storage_path==='string'?homeSettings.storage_path:'';
+    if(isSeries3TeaserKey(teaserKey)){
+     try{
+      const url=series3TeaserUrl(teaserKey);
+      const response=await fetch(url,{method:'HEAD',mode:'cors',cache:'no-store'});
+      const size=Number(response.headers.get('Content-Length')||'0');
+      const type=(response.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
+      if(active&&response.ok&&size>0&&type==='video/mp4')setTeaserVideo(url);
+     }catch(error){console.warn('Series 3 teaser is not available from R2.',error);}
     }
    }else if(homeSettings.media_mode==='poster'){
     // Only load the poster after the admin has explicitly selected poster mode.
