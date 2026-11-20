@@ -1,9 +1,9 @@
 # PLATO LAND – Series 3 Telegram Destination Selection & Delivery History
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Date:** 2026-11-20  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** Implementation candidate; CI, database migration, secret configuration and production deployment pending.
+**Status:** Review-ready PR; CI running after type and failure-isolation fixes. Database migration, secret configuration and production deployment remain pending.
 
 ## 1. Approved scope
 Extend the existing Series 3 Telegram publishing center in the existing temporary management panel. No new bot, page, route, or parallel panel is introduced.
@@ -29,7 +29,8 @@ The bot token remains in `TELEGRAM_BOT_TOKEN`. No secret values are committed to
 - Edge Function continues to verify the authenticated user and `user_roles.role='owner'` server-side.
 - The server accepts only the two allow-listed destination identifiers. It never accepts a browser-supplied chat ID.
 - Preview is required; a separate browser confirmation is required before sending.
-- Each destination is processed independently. Failure at one destination does not prevent an attempt to the other.
+- Each destination is processed independently. Telegram HTTP/network failure or missing destination Secret is recorded for that destination and does not prevent an attempt to the other.
+- If audit-history insertion fails, the UI explicitly warns the owner that delivery history was not saved.
 - Each destination result reports sent/partial/failed status, sent count, failed section, Telegram message IDs and error details.
 - No message is sent by preview, CI, migration, or deployment.
 
@@ -55,7 +56,7 @@ Keep existing `TELEGRAM_BOT_TOKEN` and `TELEGRAM_TEST_CHAT_ID` unchanged. Do not
 The current assistant tool connection does not expose a supported Supabase secret-write action. Therefore this secret has not been set by this change set.
 
 ## 7. Release gates
-1. Review the draft PR and ensure CI passes.
+1. Review PR #254 and ensure all required CI checks pass.
 2. Apply the included migration to the primary database through the approved release process.
 3. Set `TELEGRAM_MAIN_CHANNEL_ID` in the primary project's Edge Function Secrets.
 4. Deploy the updated Edge Function and verify its active version.
@@ -74,3 +75,4 @@ The current assistant tool connection does not expose a supported Supabase secre
 ## 9. Version history
 - **v1.0 — 2026-11-20:** Initial owner-only Series 3 Telegram publishing center, test-group-only.
 - **v1.1 — 2026-11-20:** Adds selectable destinations, independent delivery outcomes and owner-only delivery history; release gates remain pending.
+- **v1.2 — 2026-11-20:** Fixes Deno destination typing errors, isolates per-destination configuration/network failures, adds a visible warning for unsaved delivery history, and updates the release status. No migration or production release performed.
