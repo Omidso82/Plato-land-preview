@@ -4,7 +4,7 @@ import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabase } from './supabase';
 type SectionOption = { id: string; label: string };
 type PredictionCampaign = { id:string; title:string; description:string; campaign_type:string; status:string; is_open:boolean; opens_at:string|null; closes_at:string|null; questions:Array<{id:string;label:string;type?:string;options?:string[]}>; prize_rules:any };
 type PreviewMessage = { section_id: string; title: string; text: string; plain_text: string; item_count: number };
-type ApiResult = { ok?: boolean; error?: string; messages?: PreviewMessage[]; sent?: boolean; destination?: 'test_group'; results?: Array<{section_id:string;message_id:number}>; sent_count?: number; failed_section?: string };
+type ApiResult = { ok?: boolean; error?: string; messages?: PreviewMessage[]; sent?: boolean; destination?: 'test_group'; results?: Array<{section_id:string;message_id:number}>; sent_count?: number; failed_section?: string; destination_results?: Array<{destination:string;label:string;status:'sent'|'partial'|'failed';sent_count:number;total_count:number;failed_section:string|null;error:string|null;results:Array<{section_id:string;message_id:number}>}>; history_saved?: boolean };
 
 const groups = 'ABCDEFGHIJKL'.split('');
 const sections: { title: string; description: string; items: SectionOption[] }[] = [
@@ -40,10 +40,23 @@ export default function Series3TelegramManager() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [campaigns, setCampaigns] = useState<PredictionCampaign[]>([]);
+  const [destinations, setDestinations] = useState<string[]>(['test_group']);
+  const [deliveryHistory, setDeliveryHistory] = useState<any[]>([]);
+  const [historyError, setHistoryError] = useState('');
   const [predictionLoading, setPredictionLoading] = useState(false);
   const [predictionError, setPredictionError] = useState('');
 
-  useEffect(() => { if (expanded) void refreshCampaigns(); }, [expanded]);
+  useEffect(() => { if (expanded) { void refreshCampaigns(); void refreshDeliveryHistory(); } }, [expanded]);
+
+  async function refreshDeliveryHistory() {
+    if (!supabase) return;
+    setHistoryError('');
+    const {data,error}=await supabase.from('plato_land_series3_telegram_delivery_history')
+      .select('id,destination,status,total_count,sent_count,failed_section,error_message,created_at')
+      .order('created_at',{ascending:false}).limit(20);
+    if (error) { setHistoryError('تاریخچه در دسترس نیست؛ ابتدا مهاجرت دیتابیس باید اعمال شود.'); return; }
+    setDeliveryHistory(data||[]);
+  }
 
   const selectedCount = selected.length;
   const previewCount = useMemo(() => preview.length, [preview]);
@@ -86,11 +99,11 @@ export default function Series3TelegramManager() {
     const response=await fetch(SUPABASE_URL+'/functions/v1/plato-land-series3-telegram',{
       method:'POST',
       headers:{Authorization:'Bearer '+token,apikey:SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',Accept:'application/json'},
-      body:JSON.stringify({action,sections:selected}),
+      body:JSON.stringify({action,sections:selected,destinations}),
       cache:'no-store',
     });
     const result=await response.json().catch(()=>({}));
-    if(!response.ok){
+    if(!response.ok && !Array.isArray(result.destination_results)){
       const partial=result.sent_count>0?' · '+fa(Number(result.sent_count))+' پیام پیش از بروز خطا ارسال شده است.':'';
       throw new Error((result.error||'درخواست به سرویس تلگرام ناموفق بود.')+partial);
     }
@@ -99,29 +112,49 @@ export default function Series3TelegramManager() {
 
   async function makePreview() {
     if(selected.length===0){setError('حداقل یک مورد را برای پیش‌نمایش انتخاب کن.');return;}
+    if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
     setBusy(true);setError('');setNotice('');setPreview([]);
     try{
       const result=await callApi('preview');
       if(!result?.ok||!result.messages?.length)throw new Error(result?.error||'برای انتخاب‌های فعلی پیام قابل تهیه نیست.');
       setPreview(result.messages);
-      const target='گروه آزمایشی PLATO LAND';
-      setNotice('پیش‌نمایش آماده شد. مقصد تعیین‌شده: '+target+'؛ هر مورد یک پیام مستقل است.');
+      const target=destinations.map(id=>id==='test_group'?'گروه آزمایشی':'کانال اصلی').join(' و ');
+      setNotice('پیش‌نمایش آماده شد. مقصدهای انتخاب‌شده: '+target+'؛ هر مورد یک پیام مستقل است.');
     }catch(e){setError(e instanceof Error?e.message:'تهیه پیش‌نمایش ناموفق بود.');}
     finally{setBusy(false);}
   }
 
   async function sendSelected() {
     if(selected.length===0){setError('ابتدا موارد موردنظر را انتخاب کن.');return;}
+    if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
     if(preview.length===0){setError('قبل از ارسال، ابتدا پیش‌نمایش را تهیه و بررسی کن.');return;}
-    const target='گروه آزمایشی PLATO LAND';
-    const approved=window.confirm('آیا ارسال '+fa(preview.length)+' پیام انتخاب‌شده به '+target+' را تأیید می‌کنی؟');
+    const target=destinations.map(id=>id==='test_group'?'گروه آزمایشی':'کانال اصلی').join(' و ');
+    const approved=window.confirm('آیا ارسال '+fa(preview.length)+' پیام به هر مقصد انتخاب‌شده ('+target+') را تأیید می‌کنی؟');
     if(!approved)return;
     setSending(true);setError('');setNotice('');
     try{
       const result=await callApi('send');
-      if(!result?.sent)throw new Error(result?.error||'ارسال تلگرام کامل نشد.');
-      setNotice('ارسال انجام شد: '+fa(result.sent_count||0)+' پیام به '+'گروه آزمایشی PLATO LAND'+'. شناسه پیام‌ها ثبت شد.');
-      setPreview([]);
+      const perDestination=(result?.destination_results||[]).map((item:any)=>item.label+': '+(item.status==='sent'?'موفق':item.status==='partial'?'ناقص':'ناموفق')+' ('+fa(item.sent_count)+' از '+fa(item.total_count)+')').join('؛ ');
+      const historyWarning=result?.history_saved===false?' هشدار: نتیجه ارسال در تاریخچه دیتابیس ذخیره نشد.':'';
+      const destinationResults=result?.destination_results||[];
+      const anyDelivered=destinationResults.some((item:any)=>item.sent_count>0);
+      const retryableDestinations=destinationResults
+        .filter((item:any)=>item.sent_count===0 && item.status==='failed')
+        .map((item:any)=>item.destination);
+      if(anyDelivered){
+        // Never leave a preview armed for destinations that may already contain messages.
+        // A partially delivered destination must not be retried wholesale.
+        setPreview([]);
+        setDestinations(retryableDestinations);
+        const retryNote=retryableDestinations.length
+          ? ' پیش‌نمایش پاک شد؛ فقط مقصدهای کاملاً ناموفق انتخاب شدند. برای تلاش مجدد، پیش‌نمایش تازه تهیه کن.'
+          : ' پیش‌نمایش پاک شد تا پیام‌های ارسال‌شده دوباره فرستاده نشوند. مقصدی برای تلاش مجدد خودکار انتخاب نشده است.';
+        setNotice((perDestination||'نتیجه ارسال دریافت نشد.')+historyWarning+retryNote);
+      }else{
+        // No destination accepted any message, so retry remains safe after reviewing the result.
+        setNotice((perDestination||'هیچ پیامی ارسال نشد؛ پس از رفع علت می‌توانی دوباره تلاش کنی.')+historyWarning);
+      }
+      await refreshDeliveryHistory();
     }catch(e){setError(e instanceof Error?e.message:'ارسال پیام ناموفق بود.');}
     finally{setSending(false);}
   }
@@ -130,9 +163,9 @@ export default function Series3TelegramManager() {
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:12,flexWrap:'wrap'}}>
       <div style={{minWidth:0}}>
         <h2 style={{color:'#f6e8c5',fontSize:20,margin:'0 0 5px'}}>مرکز اطلاع‌رسانی تلگرام · سری سوم</h2>
-        <p style={{...muted,margin:0}}>انتخاب بخش‌ها، بررسی متن نهایی و ارسال دستی به گروه آزمایشی PLATO LAND</p>
+        <p style={{...muted,margin:0}}>انتخاب بخش‌ها، بررسی متن نهایی و ارسال دستی به مقصدهای تلگرام</p>
       </div>
-      <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}><span style={{fontSize:11,color:'#d9bd7d',border:'1px solid #705b31',borderRadius:20,padding:'6px 10px'}}>فقط گروه آزمایشی</span><button type="button" style={darkButton} onClick={()=>setExpanded(v=>!v)}>{expanded?'بستن مرکز تلگرام':'ورود به مرکز تلگرام'}</button></div>
+      <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap'}}><span style={{fontSize:11,color:'#d9bd7d',border:'1px solid #705b31',borderRadius:20,padding:'6px 10px'}}>انتخاب مقصد</span><button type="button" style={darkButton} onClick={()=>setExpanded(v=>!v)}>{expanded?'بستن مرکز تلگرام':'ورود به مرکز تلگرام'}</button></div>
     </div>
 
     {expanded&&<>
@@ -140,6 +173,19 @@ export default function Series3TelegramManager() {
       <button type="button" style={darkButton} onClick={selectAll}>{selectedCount===allIds.length?'لغو انتخاب همه':'انتخاب همه موارد'}</button>
       <span style={{...muted,alignSelf:'center'}}>انتخاب‌شده: {fa(selectedCount)} مورد</span>
     </div>
+
+    <section style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
+      <strong style={{color:'#f0d99f',fontSize:14}}>مقصد ارسال (فقط مالک)</strong>
+      <p style={{...muted,margin:'5px 0 10px'}}>می‌توانی یک مقصد یا هر دو را انتخاب کنی. ارسال همچنان دستی و پس از پیش‌نمایش و تأیید است.</p>
+      {[
+        {id:'test_group',label:'فقط گروه آزمایشی'},
+        {id:'main_channel',label:'فقط کانال اصلی'},
+      ].map(option=><label key={option.id} style={{display:'flex',gap:9,alignItems:'center',padding:'8px 0',color:'#eee5d4',fontSize:13}}>
+        <input type="checkbox" checked={destinations.includes(option.id)} onChange={()=>{setDestinations(current=>current.includes(option.id)?current.filter(x=>x!==option.id):[...current,option.id]);setPreview([]);setNotice('');}} style={{accentColor:'#d6b35f',width:18,height:18}}/>
+        {option.label}
+      </label>)}
+      {destinations.length===0&&<p style={{color:'#ffc8c8',fontSize:12}}>برای پیش‌نمایش و ارسال، حداقل یک مقصد انتخاب کن.</p>}
+    </section>
 
     <div style={{display:'grid',gap:11,marginTop:14}}>
       {sections.map(section=><details key={section.title} style={{border:'1px solid #5a482a',borderRadius:10,padding:12,background:'#151515'}}>
@@ -186,12 +232,25 @@ export default function Series3TelegramManager() {
       </div>
     </details>
 
+    <details style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
+      <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>تاریخچه ارسال‌ها · ۲۰ مورد اخیر</summary>
+      <div style={{display:'flex',justifyContent:'flex-end',marginTop:8}}>
+        <button type="button" style={darkButton} onClick={()=>void refreshDeliveryHistory()}>به‌روزرسانی تاریخچه</button>
+      </div>
+      {historyError?<p style={{...muted,color:'#ffc8c8'}}>{historyError}</p>:deliveryHistory.length===0?<p style={muted}>هنوز سابقه‌ای ثبت نشده است.</p>:
+        <div style={{display:'grid',gap:8,marginTop:9}}>{deliveryHistory.map(item=><div key={item.id} style={{border:'1px solid #4b412e',borderRadius:8,padding:9}}>
+          <strong style={{color:'#f0d99f',fontSize:12}}>{item.destination==='test_group'?'گروه آزمایشی':'کانال اصلی'} · {item.status==='sent'?'موفق':item.status==='partial'?'ناقص':'ناموفق'}</strong>
+          <div style={muted}>{new Date(item.created_at).toLocaleString('fa-IR')} · {fa(item.sent_count)} از {fa(item.total_count)} پیام</div>
+          {item.error_message&&<div style={{color:'#ffc8c8',fontSize:11,marginTop:4}}>{item.error_message}</div>}
+        </div>)}</div>}
+    </details>
+
     {error&&<div role="alert" style={{marginTop:12,padding:10,borderRadius:8,background:'#301819',color:'#ffc8c8',fontSize:12,lineHeight:1.8}}>{error}</div>}
     {notice&&<div role="status" style={{marginTop:12,padding:10,borderRadius:8,background:'#1c2b1c',color:'#b9e0b5',fontSize:12,lineHeight:1.8}}>{notice}</div>}
 
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:13}}>
-      <button type="button" style={goldButton} disabled={busy||sending||selectedCount===0} onClick={()=>void makePreview()}>{busy?'در حال آماده‌سازی…':'تهیه پیش‌نمایش پیام‌ها'}</button>
-      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':'ارسال پیام‌های پیش‌نمایش‌شده'}</button>
+      <button type="button" style={goldButton} disabled={busy||sending||selectedCount===0||destinations.length===0} onClick={()=>void makePreview()}>{busy?'در حال آماده‌سازی…':'تهیه پیش‌نمایش پیام‌ها'}</button>
+      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0||destinations.length===0} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':'ارسال پیام‌های پیش‌نمایش‌شده'}</button>
       <button type="button" style={darkButton} disabled={busy||sending} onClick={()=>{setPreview([]);setError('');setNotice('');}}>پاک‌کردن پیش‌نمایش</button>
     </div>
 
@@ -205,7 +264,7 @@ export default function Series3TelegramManager() {
         <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontFamily:'inherit',fontSize:12,lineHeight:1.9,color:'#eee5d4',margin:'10px 0 0'}}>{message.plain_text}</pre>
       </details>)}
     </div>}
-    <small style={{display:'block',color:'#9e927b',fontSize:10,lineHeight:1.8,marginTop:13}}>ارسال فقط پس از پیش‌نمایش و تأیید نهایی انجام می‌شود. پیام‌های پیش‌بینی، جدول‌ها، گروه‌ها و برنامه مسابقات همگی به گروه آزمایشی PLATO LAND ارسال می‌شوند.</small>
+    <small style={{display:'block',color:'#9e927b',fontSize:10,lineHeight:1.8,marginTop:13}}>ارسال فقط پس از پیش‌نمایش و تأیید نهایی انجام می‌شود. پیام‌ها فقط به مقصدهای انتخاب‌شده ارسال می‌شوند؛ گزارش هر مقصد مستقل ثبت می‌شود.</small>
     </>}
   </section>;
 }

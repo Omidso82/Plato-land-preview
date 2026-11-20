@@ -239,27 +239,90 @@ Deno.serve(async (req: Request) => {
     if (wantsSeeding && (groups.length !== 12 || groups.some(g=>!Array.isArray(g.players)||g.players.length!==4))) return json({ error: "Snapshot گروه‌های سری سوم کامل نیست." }, 409);
 
     const messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures,predictions);
-    if (action === "preview") return json({ ok: true, destination: 'test_group', messages });
+    const allowedDestinations = new Set(["test_group", "main_channel"]);
+    const requestedDestinations: string[] = Array.isArray(body.destinations)
+      ? [...new Set((body.destinations as unknown[]).map((value) => String(value)))]
+      : [];
+    if (requestedDestinations.length < 1 || requestedDestinations.length > 2 ||
+        requestedDestinations.some((value: string) => !allowedDestinations.has(value))) {
+      return json({ error: "حداقل یک مقصد معتبر انتخاب کن؛ مقصدهای مجاز فقط گروه آزمایشی و کانال اصلی هستند." }, 400);
+    }
+    const destinationLabels: Record<string,string> = {
+      test_group: "گروه آزمایشی PLATO LAND",
+      main_channel: "کانال اصلی PLATO LAND",
+    };
+    if (action === "preview") {
+      return json({ ok: true, destinations: requestedDestinations.map((id:string)=>({id,label:destinationLabels[id]})), messages });
+    }
 
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") ?? "";
-    const chatId = Deno.env.get("TELEGRAM_TEST_CHAT_ID") ?? "";
-    const destination = 'test_group';
-    if (!botToken || !chatId) return json({ error: "تنظیمات ربات یا گروه آزمایشی در سمت سرور موجود نیست؛ هیچ پیامی ارسال نشد." }, 500);
-    const results: Array<{section_id:string;message_id:number}> = [];
-    for (const [index, message] of messages.entries()) {
-      // Telegram group rate limit: keep the batch below 20 messages per minute.
-      if (index > 0) await new Promise(resolve => setTimeout(resolve, 3100));
-      const response = await fetch("https://api.telegram.org/bot"+botToken+"/sendMessage", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text: message.text, parse_mode: "HTML", disable_web_page_preview: true }),
-      });
-      const sent = await response.json().catch(()=>null);
-      if (!response.ok || !sent?.ok) {
-        return json({ sent: false, sent_count: results.length, failed_section: message.section_id, results, error: String(sent?.description ?? "Telegram send failed.") }, 502);
+    if (!botToken) return json({ error: "توکن ربات در سمت سرور تنظیم نشده است؛ هیچ پیامی ارسال نشد." }, 500);
+    const chatIds: Record<string,string> = {
+      test_group: Deno.env.get("TELEGRAM_TEST_CHAT_ID") ?? "",
+      main_channel: Deno.env.get("TELEGRAM_MAIN_CHANNEL_ID") ?? "",
+    };
+    let attemptHistorySaved = true;
+    const destinationResults: Array<{
+      destination:string; label:string; status:"sent"|"partial"|"failed";
+      sent_count:number; total_count:number; failed_section:string|null;
+      error:string|null; results:Array<{section_id:string;message_id:number}>
+    }> = [];
+
+    for (const destination of requestedDestinations) {
+      const results: Array<{section_id:string;message_id:number}> = [];
+      let failure: string|null = chatIds[destination]
+        ? null
+        : "شناسه این مقصد در Secretهای سمت سرور تنظیم نشده است.";
+      let failedSection: string|null = failure ? "configuration" : null;
+      for (const [index, message] of messages.entries()) {
+        if (failure) break;
+        if (index > 0) await new Promise(resolve => setTimeout(resolve, 3100));
+        try {
+          const response = await fetch("https://api.telegram.org/bot"+botToken+"/sendMessage", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatIds[destination], text: message.text, parse_mode: "HTML", disable_web_page_preview: true }),
+          });
+          const sent = await response.json().catch(()=>null);
+          if (!response.ok || !sent?.ok) {
+            failure = String(sent?.description ?? "Telegram send failed.");
+            failedSection = message.section_id;
+            break;
+          }
+          results.push({ section_id: message.section_id, message_id: Number(sent.result?.message_id ?? 0) });
+        } catch (sendError) {
+          failure = sendError instanceof Error ? sendError.message : "ارتباط با تلگرام برقرار نشد.";
+          failedSection = message.section_id;
+          break;
+        }
       }
-      results.push({ section_id: message.section_id, message_id: Number(sent.result?.message_id ?? 0) });
+      const status: "sent" | "partial" | "failed" = failure
+        ? (results.length ? "partial" : "failed")
+        : "sent";
+      const attempt = {
+        destination, label:destinationLabels[destination], status,
+        sent_count:results.length, total_count:messages.length,
+        failed_section:failedSection, error:failure, results,
+      };
+      destinationResults.push(attempt);
+      const { error:historyError } = await admin.from("plato_land_series3_telegram_delivery_history").insert({
+        destination, status, total_count:messages.length, sent_count:results.length,
+        failed_section:failedSection, error_message:failure,
+        telegram_results:results, sent_by:authData.user.id,
+      });
+      if (historyError) {
+        console.error("Series 3 Telegram history insert failed:", historyError.message);
+        attemptHistorySaved = false;
+      }
     }
-    return json({ sent: true, sent_count: results.length, destination, results });
+
+    const allSent = destinationResults.every(item=>item.status==="sent");
+    const anySent = destinationResults.some(item=>item.sent_count>0);
+    return json({
+      sent:allSent, partial:anySent&&!allSent, destination_results:destinationResults,
+      sent_count:destinationResults.reduce((sum,item)=>sum+item.sent_count,0),
+      total_count:messages.length*destinationResults.length,
+      history_saved: attemptHistorySaved,
+    }, allSent?200:502);
   } catch (error) {
     console.error("Series 3 Telegram publishing failed:", error);
     return json({ error: error instanceof Error ? error.message : "Unable to process Telegram request." }, 500);
