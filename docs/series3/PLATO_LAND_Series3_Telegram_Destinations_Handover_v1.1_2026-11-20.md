@@ -1,6 +1,6 @@
 # PLATO LAND – Series 3 Telegram Destination Selection & Delivery History
 
-**Version:** 1.7  
+**Version:** 1.8  
 **Date:** 2026-11-20  
 **Project:** PLATO LAND – Temporary Projects  
 **Status:** PR #254 was squash-merged into `main` on 2026-11-20 (merge commit `03da7844a78db7b229739a3bd50444ee5078eb02`). Post-merge verification on merge commit `03da7844a78db7b229739a3bd50444ee5078eb02`: `verify` passed; Cloudflare Pages `plato-land-preview` preview deployment succeeded at `https://071e817c.plato-land-preview.pages.dev`; the `build` job was cancelled and its `deploy` job was cancelled; `Workers Builds: plato-land-media-endpoint` failed (same pre-existing failure observed on the base commit). The primary Supabase project `dfrppbapaaydbjeflozw` is `ACTIVE_HEALTHY` (PostgreSQL 17.11.0.003). Migration `series3_telegram_delivery_history` was applied successfully and verified in remote migration history as version `20261120173859`. The table `public.plato_land_series3_telegram_delivery_history` exists, RLS is enabled, the Owner-only SELECT policy exists, `anon` has no SELECT privilege, and `authenticated` has the table SELECT grant constrained by RLS. The currently deployed `plato-land-series3-telegram` Edge Function remains version 12 and does not contain the new destination-selection/history implementation. Production release remains pending.
@@ -54,15 +54,16 @@ In the Supabase Dashboard for the primary project `dfrppbapaaydbjeflozw`, add th
 
 Keep existing `TELEGRAM_BOT_TOKEN` and `TELEGRAM_TEST_CHAT_ID` unchanged. Do not expose secrets in chat or GitHub.
 
-The current assistant tool connection does not expose a supported Supabase secret-write action. Therefore this secret has not been set by this change set.
+The user confirmed on 2026-11-20 that the Secret was saved in Supabase Dashboard. The assistant tool connection does not expose a read-only Secret listing, so the value cannot be independently verified through the connector. Do not request or expose the Secret value in chat.
 
 ## 7. Release gates
 1. PR #254 is merged. Post-merge `verify` passed and the Pages preview deployment succeeded. The main `build` and `deploy` jobs were cancelled; the unrelated/pre-existing media-endpoint Worker build failed.
 2. Apply the included migration to the primary database through the approved release process.
 3. Set `TELEGRAM_MAIN_CHANNEL_ID` in the primary project's Edge Function Secrets.
-4. Deploy the updated Edge Function and verify its active version.
-5. Publish the frontend after PR merge/deployment.
-6. Run preview-only checks first. Then a user-approved, minimal test send may be performed separately. No real channel message is sent as part of this implementation task.
+4. Deploy the updated Edge Function and verify its active version. **Completed:** version 14 ACTIVE, `verify_jwt=true`, deployed code checks passed.
+5. Publish the frontend after PR merge/deployment. The current `main` contains the Series 3 UI; the latest main workflow run observed for commit `9755f0afd8115feccfe90e15bebb161bd515186d` completed successfully, but this does not by itself prove that the Production frontend currently serves the updated panel. Do not claim Production release without a live verification.
+6. Run preview-only checks first. A browser-based preview attempt was not started because the connected browser automation wallet had insufficient balance (-$0.65). No top-up or paid action was initiated. Static source inspection confirms the panel calls the Edge Function with `action='preview'`, passes selected destinations, and requires a preview before send; its send handler uses a separate browser confirmation. A live Owner-authenticated preview remains pending.
+7. A user-approved, minimal test send may be performed separately only after preview-only checks. No Telegram message has been sent.
 
 ## 8. Explicit non-actions
 - No PLATO ID Scanner files or functions changed.
@@ -71,7 +72,10 @@ The current assistant tool connection does not expose a supported Supabase secre
 - No existing Telegram message sent.
 - Delivery-history migration applied to the primary database and verified as recorded above.
 - No production secret changed.
-- No function deployed and no production release claimed.
+- Edge Function `plato-land-series3-telegram` deployed to primary Supabase as version 14 and verified ACTIVE; `verify_jwt=true` retained.
+- User confirmed the main-channel Secret was saved; connector cannot independently read it.
+- No Telegram message sent.
+- No Production frontend release claimed; live Owner-authenticated Preview test remains pending.
 
 ## 9. Version history
 - **v1.0 — 2026-11-20:** Initial owner-only Series 3 Telegram publishing center, test-group-only.
@@ -82,3 +86,5 @@ The current assistant tool connection does not expose a supported Supabase secre
 - **v1.5 — 2026-11-20:** Records the successful squash-merge of PR #254 into `main` (merge commit `03da7844a78db7b229739a3bd50444ee5078eb02`).
 - **v1.6 — 2026-11-20:** Records post-merge CI/preview results and read-only production checks: verify passed; Pages preview succeeded; build/deploy jobs were cancelled; the media-endpoint Worker check failed as a pre-existing issue. Primary Supabase was healthy, but the delivery-history migration was not yet applied and deployed Series 3 Telegram Edge Function v12 did not contain the new implementation.
 - **v1.7 — 2026-11-20:** Records successful application of `series3_telegram_delivery_history` to the primary Supabase project, remote migration version `20261120173859`, and read-only verification of table existence, RLS enabled, Owner-only SELECT policy, no `anon` SELECT privilege, and authenticated SELECT constrained by RLS. Secret configuration, Edge Function deployment, production frontend release, and Telegram sends remain pending.
+
+- **v1.8 — 2026-11-20:** Records user-confirmed main-channel Secret save, successful deployment and read-back verification of Edge Function version 14 (`ACTIVE`, `verify_jwt=true`, deployed SHA-256 recorded), and static frontend flow review. Live Owner-authenticated preview testing could not start because the browser automation wallet had insufficient balance; no wallet top-up was initiated, no live preview was completed, and no Telegram messages or Production frontend release were performed.
