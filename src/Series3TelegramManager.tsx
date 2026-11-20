@@ -4,6 +4,7 @@ import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabase } from './supabase';
 type SectionOption = { id: string; label: string };
 type PredictionCampaign = { id:string; title:string; description:string; campaign_type:string; status:string; is_open:boolean; opens_at:string|null; closes_at:string|null; questions:Array<{id:string;label:string;type?:string;options?:string[]}>; prize_rules:any };
 type PreviewMessage = { section_id: string; title: string; text: string; plain_text: string; item_count: number };
+type ReportVoter = { id:string; voter_plato_id:string };
 type ApiResult = { ok?: boolean; error?: string; messages?: PreviewMessage[]; sent?: boolean; destination?: 'test_group'; results?: Array<{section_id:string;message_id:number}>; sent_count?: number; failed_section?: string; destination_results?: Array<{destination:string;label:string;status:'sent'|'partial'|'failed';sent_count:number;total_count:number;failed_section:string|null;error:string|null;results:Array<{section_id:string;message_id:number}>}>; history_saved?: boolean };
 
 const groups = 'ABCDEFGHIJKL'.split('');
@@ -45,6 +46,11 @@ export default function Series3TelegramManager() {
   const [historyError, setHistoryError] = useState('');
   const [predictionLoading, setPredictionLoading] = useState(false);
   const [predictionError, setPredictionError] = useState('');
+  const [reportCampaignId, setReportCampaignId] = useState('');
+  const [reportVoters, setReportVoters] = useState<ReportVoter[]>([]);
+  const [selectedReportVoters, setSelectedReportVoters] = useState<string[]>([]);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState('');
 
   useEffect(() => { if (expanded) { void refreshCampaigns(); void refreshDeliveryHistory(); } }, [expanded]);
 
@@ -69,6 +75,21 @@ export default function Series3TelegramManager() {
       setCampaigns((data||[]) as PredictionCampaign[]);
     } catch (e) { setPredictionError('دریافت پیش‌بینی‌های منتشرشده ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص')); }
     finally { setPredictionLoading(false); }
+  }
+
+  async function loadReportVoters(campaignId:string) {
+    setReportCampaignId(campaignId); setReportVoters([]); setSelectedReportVoters([]);
+    setPreview([]); setReportError('');
+    if(!campaignId || !supabase) return;
+    setReportLoading(true);
+    try {
+      const {data,error}=await supabase.from('plato_land_prediction_entries')
+        .select('id,voter_plato_id').eq('campaign_id',campaignId).order('submitted_at',{ascending:true});
+      if(error) throw error;
+      setReportVoters((data||[]) as ReportVoter[]);
+    } catch(e) {
+      setReportError('دریافت فهرست رأی‌دهندگان ممکن نشد: '+(e instanceof Error?e.message:'خطای نامشخص'));
+    } finally { setReportLoading(false); }
   }
 
   function toggle(id:string) {
@@ -99,7 +120,7 @@ export default function Series3TelegramManager() {
     const response=await fetch(SUPABASE_URL+'/functions/v1/plato-land-series3-telegram',{
       method:'POST',
       headers:{Authorization:'Bearer '+token,apikey:SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',Accept:'application/json'},
-      body:JSON.stringify({action,sections:selected,destinations}),
+      body:JSON.stringify({action,sections:selected,destinations,report_campaign_id:reportCampaignId||undefined,report_voter_ids:selectedReportVoters.length?selectedReportVoters:undefined}),
       cache:'no-store',
     });
     const result=await response.json().catch(()=>({}));
@@ -111,7 +132,7 @@ export default function Series3TelegramManager() {
   }
 
   async function makePreview() {
-    if(selected.length===0){setError('حداقل یک مورد را برای پیش‌نمایش انتخاب کن.');return;}
+    if(selected.length===0 && !(reportCampaignId && selectedReportVoters.length)){setError('حداقل یک مورد یا رأی‌دهنده را برای پیش‌نمایش انتخاب کن.');return;}
     if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
     setBusy(true);setError('');setNotice('');setPreview([]);
     try{
@@ -125,7 +146,7 @@ export default function Series3TelegramManager() {
   }
 
   async function sendSelected() {
-    if(selected.length===0){setError('ابتدا موارد موردنظر را انتخاب کن.');return;}
+    if(selected.length===0 && !(reportCampaignId && selectedReportVoters.length)){setError('ابتدا موارد یا رأی‌دهندگان موردنظر را انتخاب کن.');return;}
     if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
     if(preview.length===0){setError('قبل از ارسال، ابتدا پیش‌نمایش را تهیه و بررسی کن.');return;}
     const target=destinations.map(id=>id==='test_group'?'گروه آزمایشی':'کانال اصلی').join(' و ');
@@ -205,6 +226,32 @@ export default function Series3TelegramManager() {
     </div>
 
     <details open style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
+      <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>گزارش نتایج پیش‌بینی‌ها · فقط مالک</summary>
+      <p style={{...muted,margin:'8px 0'}}>برای هر رأی‌دهنده یک پیام مستقل ساخته می‌شود. اطلاعات رأی‌دهندگان فقط در این پنل مالک نمایش داده می‌شود و ارسال بدون پیش‌نمایش و تأیید انجام نمی‌شود.</p>
+      <label style={{display:'grid',gap:7,color:'#eee5d4',fontSize:12}}>
+        انتخاب کمپین
+        <select value={reportCampaignId} onChange={e=>void loadReportVoters(e.target.value)} style={{background:'#171717',color:'#f0d99f',border:'1px solid #806638',borderRadius:8,padding:10}}>
+          <option value="">یک کمپین انتخاب کن</option>
+          {campaigns.filter(c=>c.campaign_type==='champion'||c.campaign_type==='match_predictions').map(c=><option key={c.id} value={c.id}>{c.title} · {c.campaign_type==='champion'?'قهرمانی':'پیش‌بینی بازی‌ها'}</option>)}
+        </select>
+      </label>
+      {reportLoading?<p style={muted}>در حال دریافت رأی‌دهندگان…</p>:reportError?<p role="alert" style={{color:'#ffc8c8',fontSize:12}}>{reportError}</p>:reportCampaignId&&reportVoters.length===0?<p style={muted}>برای این کمپین رأی‌دهنده‌ای ثبت نشده است.</p>:reportVoters.length>0&&<>
+        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',marginTop:10}}>
+          <strong style={{color:'#f0d99f',fontSize:12}}>رأی‌دهندگان: {fa(reportVoters.length)} نفر</strong>
+          <button type="button" style={darkButton} onClick={()=>setSelectedReportVoters(selectedReportVoters.length===reportVoters.length?[]:reportVoters.map(v=>v.id))}>{selectedReportVoters.length===reportVoters.length?'لغو انتخاب همه':'انتخاب همه رأی‌دهندگان'}</button>
+          <span style={muted}>انتخاب‌شده: {fa(selectedReportVoters.length)}</span>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(145px,1fr))',gap:7,marginTop:9}}>
+          {reportVoters.map(v=><label key={v.id} style={{display:'flex',gap:8,alignItems:'center',padding:9,border:'1px solid '+(selectedReportVoters.includes(v.id)?'#b18b45':'#39352d'),borderRadius:8,background:selectedReportVoters.includes(v.id)?'#352a17':'#101112',color:'#eee5d4',fontSize:12}}>
+            <input type="checkbox" checked={selectedReportVoters.includes(v.id)} onChange={()=>setSelectedReportVoters(cur=>cur.includes(v.id)?cur.filter(id=>id!==v.id):[...cur,v.id])} style={{accentColor:'#d6b35f',width:17,height:17}}/>
+            {v.voter_plato_id}
+          </label>)}
+        </div>
+      </>}
+      {reportCampaignId&&<p style={{...muted,marginTop:9}}>وضعیت فعلی نتایج از دیتابیس خوانده می‌شود؛ برای بازی‌های بدون نتیجه قطعی «در انتظار نتیجه» و برای قهرمانی تا ثبت قهرمان رسمی همین وضعیت نمایش داده می‌شود.</p>}
+    </details>
+
+    <details open style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
       <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>پیش‌بینی‌های منتشرشده سری سوم</summary>
       <p style={{...muted,margin:'8px 0'}}>کمپین‌های منتشرشده مستقیماً از دیتابیس اصلی خوانده می‌شوند. هر کمپین را انتخاب کن تا متن کامل و فهرست نامزدها برای تلگرام آماده شود.</p>
       <button type="button" style={darkButton} disabled={predictionLoading} onClick={()=>void refreshCampaigns()}>{predictionLoading?'در حال به‌روزرسانی…':'به‌روزرسانی فهرست پیش‌بینی‌ها'}</button>
@@ -249,7 +296,7 @@ export default function Series3TelegramManager() {
     {notice&&<div role="status" style={{marginTop:12,padding:10,borderRadius:8,background:'#1c2b1c',color:'#b9e0b5',fontSize:12,lineHeight:1.8}}>{notice}</div>}
 
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:13}}>
-      <button type="button" style={goldButton} disabled={busy||sending||selectedCount===0||destinations.length===0} onClick={()=>void makePreview()}>{busy?'در حال آماده‌سازی…':'تهیه پیش‌نمایش پیام‌ها'}</button>
+      <button type="button" style={goldButton} disabled={busy||sending||(selectedCount===0&&!(reportCampaignId&&selectedReportVoters.length>0))||destinations.length===0} onClick={()=>void makePreview()}>{busy?'در حال آماده‌سازی…':'تهیه پیش‌نمایش پیام‌ها'}</button>
       <button type="button" style={darkButton} disabled={busy||sending||previewCount===0||destinations.length===0} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':'ارسال پیام‌های پیش‌نمایش‌شده'}</button>
       <button type="button" style={darkButton} disabled={busy||sending} onClick={()=>{setPreview([]);setError('');setNotice('');}}>پاک‌کردن پیش‌نمایش</button>
     </div>
