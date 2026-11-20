@@ -28,7 +28,7 @@ function standingsFor(group:string,fixtures:Fixture[]):Standing[]{
  });
  return [...map.values()].map(x=>({...x,diff:x.for-x.against})).sort((a,b)=>b.points-a.points||b.diff-a.diff||b.for-a.for||a.plato_id.localeCompare(b.plato_id,'en'));
 }
-const stages:[keyof Bracket,string][]=[['round32','دور ۳۲ نفره'],['round16','یک‌هشتم نهایی'],['quarterfinals','یک‌چهارم نهایی'],['semifinals','نیمه‌نهایی'],['final','فینال']];
+const stages:[keyof Bracket,string][]=[['round32','یک شانزدهم نهایی'],['round16','یک‌هشتم نهایی'],['quarterfinals','یک‌چهارم نهایی'],['semifinals','نیمه‌نهایی'],['final','فینال']];
 export default function Series3PublicDashboard(){
  const [draw,setDraw]=useState<Draw|null>(null);
  const [fixtures,setFixtures]=useState<Fixture[]>([]);
