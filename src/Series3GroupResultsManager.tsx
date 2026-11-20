@@ -145,12 +145,18 @@ export default function Series3GroupResultsManager() {
               <span>{row.match_id} · نسخه {fa(row.version)}</span>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:8,marginTop:9}}>
-              {[['A',row.player_a_plato_id,d.scoreA,(v:string)=>setDrafts(p=>({...p,[row.match_id]:{...d,scoreA:v}}))],['B',row.player_b_plato_id,d.scoreB,(v:string)=>setDrafts(p=>({...p,[row.match_id]:{...d,scoreB:v}}))]].map(([side,id,score,onChange])=><div key={String(side)} style={{minWidth:0}}>
-                <strong dir="ltr" style={{display:'block',fontSize:12,overflowWrap:'anywhere',textAlign:'center',minHeight:32}}>{String(id)}</strong>
+              <div style={{minWidth:0}}>
+                <strong dir="ltr" style={{display:'block',fontSize:12,overflowWrap:'anywhere',textAlign:'center',minHeight:32}}>{row.player_a_plato_id}</strong>
                 <label style={muted}>امتیاز
-                  <input type="number" inputMode="numeric" min="0" max="5" step="1" value={String(score)} onChange={e=>(onChange as (v:string)=>void)(e.target.value)} disabled={d.status!=='completed'} style={input}/>
+                  <input type="number" inputMode="numeric" min="0" max="5" step="1" value={d.scoreA} onChange={e=>setDrafts(p=>({...p,[row.match_id]:{...d,scoreA:e.target.value}}))} disabled={d.status!=='completed'} style={input}/>
                 </label>
-              </div>)}
+              </div>
+              <div style={{minWidth:0}}>
+                <strong dir="ltr" style={{display:'block',fontSize:12,overflowWrap:'anywhere',textAlign:'center',minHeight:32}}>{row.player_b_plato_id}</strong>
+                <label style={muted}>امتیاز
+                  <input type="number" inputMode="numeric" min="0" max="5" step="1" value={d.scoreB} onChange={e=>setDrafts(p=>({...p,[row.match_id]:{...d,scoreB:e.target.value}}))} disabled={d.status!=='completed'} style={input}/>
+                </label>
+              </div>
             </div>
             <label style={{display:'block',...muted,marginTop:8}}>وضعیت بازی
               <select value={d.status} onChange={e=>setDrafts(p=>({...p,[row.match_id]:{...d,status:e.target.value as ResultStatus}}))} style={input}>
