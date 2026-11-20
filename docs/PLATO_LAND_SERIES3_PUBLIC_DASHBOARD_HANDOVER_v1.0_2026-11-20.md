@@ -1,5 +1,5 @@
 # PLATO LAND – Series 3 Public Dashboard Handover
-**Version:** 1.5  
+**Version:** 1.6  
 **Date:** 2026-11-20  
 **Scope:** PLATO LAND – Temporary Projects / Series 3 only
 
@@ -107,5 +107,10 @@ Performance advisor returned existing project-wide findings (mostly unindexed fo
 - Changed file: `src/Series3PublicDashboard.tsx` and this handover document only. No database, fixtures, scores, draw, admin-panel, or Main Website changes.
 - Implementation commit on working branch: `173e28d9d70676992676768522dbe22ad0eda751`.
 
-## 14. Current status
+## 14. Change log — v1.6 (2026-11-20)
+- Removed the retired Series 3 registration promotional card (`series3-home-cta`) from the Main Website home page. This removes only the home-page promotional card; the dedicated Series 3 pages and historical registration data remain unchanged.
+- Reordered the public competition summary so `مسابقه رده‌بندی` appears immediately before `فینال`, leaving the final as the last stage in the summary.
+- Changed files: `src/App.tsx`, `src/Series3PublicDashboard.tsx`, and this handover document. No database, registration records, bracket data, fixtures, scores, admin-panel, or other Main Website features changed.
+
+## 15. Current status
 **Implementation is in an open PR and its additive database read model is active on the main Supabase project. The public dashboard is not yet live on the production website.**
