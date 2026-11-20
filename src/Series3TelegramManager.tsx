@@ -123,9 +123,9 @@ export default function Series3TelegramManager() {
     </div>
 
     <div style={{display:'grid',gap:11,marginTop:14}}>
-      {sections.map(section=><div key={section.title} style={{border:'1px solid #5a482a',borderRadius:10,padding:12,background:'#151515'}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-          <div><strong style={{color:'#f0d99f',fontSize:14}}>{section.title}</strong><div style={muted}>{section.description}</div></div>
+      {sections.map(section=><details key={section.title} style={{border:'1px solid #5a482a',borderRadius:10,padding:12,background:'#151515'}}>
+        <summary style={{cursor:'pointer',color:'#f0d99f',fontSize:14,fontWeight:800}}>{section.title}<div style={muted}>{section.description}</div></summary>
+        <div style={{display:'flex',justifyContent:'flex-end',marginTop:9}}>
           <button type="button" style={darkButton} onClick={()=>toggleCategory(section.items)}>
             {section.items.every(item=>selected.includes(item.id))?'لغو این بخش':'انتخاب این بخش'}
           </button>
@@ -136,10 +136,12 @@ export default function Series3TelegramManager() {
             <span>{item.label}</span>
           </label>)}
         </div>
-      </div>)}
+      </details>)}
     </div>
 
-    <div style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
+    <details style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
+      <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>برنامه و نتایج روزانه سری سوم</summary>
+      <div style={{marginTop:8}}>
       <strong style={{color:'#f0d99f'}}>برنامه و نتایج روزانه سری سوم</strong>
       <p style={{...muted,margin:'5px 0 0'}}>بخش آماده برای اتصال به ثبت برنامه و نتایج سری سوم؛ پس از فعال‌شدن منبع رسمی مسابقات، انتخاب تاریخ شمسی، ارسال کل برنامه روز یا فقط گروه انتخابی و انتشار نتایج همان روز در همین کارت فعال می‌شود. در حال حاضر هیچ داده‌ای از سری دوم خوانده نمی‌شود.</p>
       <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:10}}>
@@ -147,7 +149,8 @@ export default function Series3TelegramManager() {
         <span style={{fontSize:11,color:'#9d927d',border:'1px solid #4a4030',borderRadius:7,padding:'6px 9px'}}>کل روز / گروه A تا L</span>
         <span style={{fontSize:11,color:'#9d927d',border:'1px solid #4a4030',borderRadius:7,padding:'6px 9px'}}>نتایج ثبت‌شده</span>
       </div>
-    </div>
+      </div>
+    </details>
 
     {error&&<div role="alert" style={{marginTop:12,padding:10,borderRadius:8,background:'#301819',color:'#ffc8c8',fontSize:12,lineHeight:1.8}}>{error}</div>}
     {notice&&<div role="status" style={{marginTop:12,padding:10,borderRadius:8,background:'#1c2b1c',color:'#b9e0b5',fontSize:12,lineHeight:1.8}}>{notice}</div>}
@@ -160,13 +163,13 @@ export default function Series3TelegramManager() {
 
     {preview.length>0&&<div style={{display:'grid',gap:10,marginTop:15}}>
       <div style={{color:'#e4c77e',fontWeight:800,fontSize:13}}>پیش‌نمایش · {fa(preview.length)} پیام مستقل</div>
-      {preview.map((message,index)=><article key={message.section_id} style={{border:'1px solid #65512f',borderRadius:9,padding:12,background:'#0d0e10'}}>
-        <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'center',marginBottom:8}}>
+      {preview.map((message,index)=><details key={message.section_id} style={{border:'1px solid #65512f',borderRadius:9,padding:12,background:'#0d0e10'}}>
+        <summary style={{cursor:'pointer',display:'flex',justifyContent:'space-between',gap:8,alignItems:'center'}}>
           <strong style={{color:'#f0d99f',fontSize:12}}>{fa(index+1)}. {message.title}</strong>
           <span style={{color:'#9e927b',fontSize:10}}>{fa(message.item_count)} مورد</span>
-        </div>
-        <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontFamily:'inherit',fontSize:12,lineHeight:1.9,color:'#eee5d4',margin:0}}>{message.plain_text}</pre>
-      </article>)}
+        </summary>
+        <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontFamily:'inherit',fontSize:12,lineHeight:1.9,color:'#eee5d4',margin:'10px 0 0'}}>{message.plain_text}</pre>
+      </details>)}
     </div>}
     <small style={{display:'block',color:'#9e927b',fontSize:10,lineHeight:1.8,marginTop:13}}>ارسال فقط پس از پیش‌نمایش و تأیید نهایی انجام می‌شود. مقصد از Secret سمت سرور خوانده می‌شود و از این پنل قابل تغییر نیست.</small>
     </>}

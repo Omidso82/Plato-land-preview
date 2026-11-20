@@ -151,8 +151,9 @@ export function Series3SlidesPanel() {
       <summary style={{color:'#f6e8c5',fontSize:20,fontWeight:700,cursor:'pointer',listStylePosition:'inside',padding:'2px 0'}}>مدیریت تصاویر و تیزر سری سوم</summary>
       <div style={{marginTop:14}}>
         <p style={{color:'#c8c0b0',fontSize:13,lineHeight:1.8,marginTop:0}}>این بخش فقط رسانه صفحه اول سری سوم را مدیریت می‌کند. پوستر ثابت و ویدیوی تیزر جداگانه نگهداری می‌شوند؛ ویدیوی قوانین مهم سری سوم مستقل و بدون تغییر باقی می‌ماند.</p>
-        <div style={{...card,marginBottom:14}}>
-          <h3 style={{color:'#f6e8c5',margin:'0 0 10px'}}>رسانه اصلی صفحه اول سری سوم</h3>
+        <details style={{...card,marginBottom:14}}>
+          <summary style={{cursor:'pointer',color:'#f6e8c5',fontWeight:800}}>رسانه اصلی صفحه اول سری سوم</summary>
+          <div style={{marginTop:10}}>
           <div style={{display:'flex',gap:8,flexWrap:'wrap',marginBottom:12}}>
             <button type="button" disabled={modeBusy||mediaMode==='poster'} onClick={()=>void changeMediaMode('poster')} style={{...button,width:'auto',flex:1,background:mediaMode==='poster'?'#e4c77e':'#302718'}}>نمایش پوستر ثابت</button>
             <button type="button" disabled={modeBusy||mediaMode==='video'||!teaserExists} onClick={()=>void changeMediaMode('video')} style={{...button,width:'auto',flex:1,background:mediaMode==='video'?'#e4c77e':'#302718'}}>نمایش ویدئوی تیزر</button>
@@ -169,17 +170,20 @@ export function Series3SlidesPanel() {
           {teaserSelected&&<p style={{fontSize:11,color:'#c8c0b0',overflowWrap:'anywhere'}}>{teaserSelected.name} · {(teaserSelected.size/1024/1024).toFixed(1)} MB</p>}
           <button style={button} disabled={!teaserSelected||teaserBusy} onClick={()=>void uploadTeaser()}>{teaserBusy?'در حال ذخیره…':teaserExists?'جایگزینی ویدیوی تیزر':'بارگذاری ویدیوی تیزر'}</button>
           <p style={{fontSize:11,color:'#a9a08e',lineHeight:1.8,marginBottom:0}}>برای نمایش خودکار در صفحه اول، فایل MP4 را بارگذاری و سپس حالت ویدئوی تیزر را فعال کن. با بازگشت به حالت پوستر، فایل ویدئو حذف نمی‌شود.</p>
-        </div>
+          </div>
+        </details>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(210px,1fr))',gap:10}}>
           {Array.from({length:17},(_,i)=>i+1).map(n=>{
             const item=slides[n];
-            return <div key={n} style={card}>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}><strong style={{color:'#f1d99e'}}>تصویر {n.toLocaleString('fa-IR')}</strong><span style={{fontSize:11,color:item?'#9ed6a3':'#b5a98e'}}>{item?'ثبت‌شده':'خالی'}</span></div>
+            return <details key={n} style={card}>
+              <summary style={{cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><strong style={{color:'#f1d99e'}}>تصویر {n.toLocaleString('fa-IR')}</strong><span style={{fontSize:11,color:item?'#9ed6a3':'#b5a98e'}}>{item?'ثبت‌شده':'خالی'}</span></summary>
+              <div style={{marginTop:9}}> 
               {item?<img src={item.url+'?v='+encodeURIComponent(item.updated_at||'')} alt={'تصویر '+n+' سری سوم'} style={{width:'100%',height:115,objectFit:'contain',background:'#090a0c',borderRadius:7,marginBottom:8}}/>:<div style={{height:115,display:'grid',placeItems:'center',background:'#090a0c',borderRadius:7,color:'#817968',fontSize:12,marginBottom:8}}>تصویری ثبت نشده</div>}
               <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>{const file=e.target.files?.[0];setSelected(prev=>{const next={...prev};if(file)next[n]=file;else delete next[n];return next;});}} style={{width:'100%',color:'#ddd',fontSize:11,marginBottom:7}}/>
               {selected[n]&&<p style={{fontSize:11,color:'#c8c0b0',overflowWrap:'anywhere'}}>{selected[n].name}</p>}
               <button style={button} disabled={!selected[n]||busySlot!==null} onClick={()=>void uploadSlide(n)}>{busySlot===n?'در حال ذخیره…':item?'جایگزینی تصویر':'ذخیره تصویر'}</button>
-            </div>;
+              </div>
+            </details>;
           })}
         </div>
         {message&&<p role="status" style={{color:'#f1d99e',fontSize:13,marginBottom:0}}>{message}</p>}

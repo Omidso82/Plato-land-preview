@@ -99,9 +99,11 @@ export default function Series3GroupResultsManager() {
     setMessage('نتیجه '+row.match_id+' ذخیره شد. نسخه '+fa(data.version)+'؛ سابقه اصلاحات حفظ شده است.');
     await load();setSaving(null);
   }
-  return <section dir="rtl" style={panel}>
-    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-      <div><h3 style={{margin:0,color:'#f3dfad',fontSize:17}}>ثبت نتایج و جدول گروهی سری سوم</h3><p style={{...muted,margin:'4px 0 0'}}>متصل به برنامه ثابت ۷۲ بازی · هر برد ۳ امتیاز</p></div>
+  return <details dir="rtl" style={panel}>
+    <summary style={{cursor:'pointer',color:'#f3dfad',fontSize:17,fontWeight:800}}>ثبت نتایج و جدول گروهی سری سوم</summary>
+    <div style={{marginTop:10}}>
+    <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+      <div><p style={{...muted,margin:'4px 0 0'}}>متصل به برنامه ثابت ۷۲ بازی · هر برد ۳ امتیاز</p></div>
       <button type="button" style={secondary} disabled={loading} onClick={()=>void load()}>{loading?'در حال دریافت…':'تازه‌سازی'}</button>
     </div>
     <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:7,marginTop:12}}>
@@ -109,14 +111,14 @@ export default function Series3GroupResultsManager() {
     </div>
     {error&&<p role="alert" style={{color:'#efaaaa',fontSize:12}}>{error}</p>}
     {message&&<p role="status" style={{color:'#b8dfa9',fontSize:12}}>{message}</p>}
-    <div style={{...card,marginTop:12}}>
+    <div style={{...card,marginTop:12,width:'100%',maxWidth:'100%',minWidth:0,boxSizing:'border-box',overflow:'hidden'}}>
       <strong style={{color:'#e4c77e'}}>جدول امتیازات گروه‌ها</strong>
       <p style={muted}>مرتب‌سازی بر اساس امتیاز، تفاضل ست و ست برده‌شده است. اگر این معیارها برابر باشند، رتبه مشترک نمایش داده می‌شود و برنده‌ی تساوی حدس زده نمی‌شود.</p>
-      <div style={{display:'grid',gap:10}}>
-        {standings.map(({group:g,players})=><details key={g} style={{border:'1px solid #55452a',borderRadius:8,padding:8,background:'#141414'}}>
-          <summary style={{cursor:'pointer',color:'#f1d99e',fontWeight:800}}>گروه {g} · {fa(players.length)} بازیکن</summary>
-          <div style={{overflowX:'auto',marginTop:8}}>
-            <table style={{width:'100%',borderCollapse:'collapse',fontSize:11,minWidth:470}}>
+      <div style={{display:'grid',gap:10,width:'100%',maxWidth:'100%',minWidth:0}}>
+        {standings.map(({group:g,players})=><details key={g} style={{border:'1px solid #55452a',borderRadius:8,padding:8,background:'#141414',width:'100%',maxWidth:'100%',minWidth:0,boxSizing:'border-box'}}>
+          <summary style={{cursor:'pointer',color:'#f1d99e',fontWeight:800,overflowWrap:'anywhere'}}>گروه {g} · {fa(players.length)} بازیکن</summary>
+          <div style={{width:'100%',maxWidth:'100%',minWidth:0,boxSizing:'border-box',overflowX:'auto',overscrollBehaviorX:'contain',WebkitOverflowScrolling:'touch',marginTop:8}}>
+            <table style={{width:'max-content',borderCollapse:'collapse',fontSize:11,minWidth:470}}>
               <thead><tr>{['بازیکن','بازی مختومه','برد','باخت','امتیاز','ست زده','ست خورده','تفاضل'].map(h=><th key={h} style={{padding:6,borderBottom:'1px solid #67532f',whiteSpace:'nowrap',textAlign:'center'}}>{h}</th>)}</tr></thead>
               <tbody>{players.map((p,i)=><tr key={p.plato_id}>
                 <td dir="ltr" style={{padding:6,textAlign:'left',whiteSpace:'nowrap'}}>{i>0&&tied(p,players[i-1])?'= ':''}{p.plato_id}</td>
@@ -140,11 +142,12 @@ export default function Series3GroupResultsManager() {
       {loading?<p style={muted}>در حال بارگذاری بازی‌ها…</p>:<div style={{display:'grid',gap:8}}>
         {visible.map(row=>{
           const d=drafts[row.match_id]||emptyDraft(row);
-          return <article key={row.match_id} style={card}>
-            <div style={{display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap',color:'#e4c77e',fontSize:11}}>
+          return <details key={row.match_id} style={card}>
+            <summary style={{cursor:'pointer',display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap',color:'#e4c77e',fontSize:11}}>
               <strong>گروه {row.group_name} · بازی {fa(row.match_no)} · {new Date(row.match_date+'T12:00:00').toLocaleDateString('fa-IR')}</strong>
-              <span>{row.match_id} · نسخه {fa(row.version)}</span>
-            </div>
+              <span>{row.result_status==='completed'?'نتیجه ثبت‌شده':row.result_status==='double_no_show'?'عدم حضور دوطرفه':'در انتظار نتیجه'}</span>
+            </summary>
+            <div style={{marginTop:10}}> 
             <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:8,marginTop:9}}>
               <div style={{minWidth:0}}>
                 <strong dir="ltr" style={{display:'block',fontSize:12,overflowWrap:'anywhere',textAlign:'center',minHeight:32}}>{row.player_a_plato_id}</strong>
@@ -169,10 +172,12 @@ export default function Series3GroupResultsManager() {
               <span style={muted}>{row.result_status==='completed'?'نتیجه ثبت شده':row.result_status==='double_no_show'?'عدم حضور دوطرفه ثبت شده':'هنوز نتیجه‌ای ثبت نشده'}</span>
               <button type="button" style={primary} disabled={saving!==null} onClick={()=>void save(row)}>{saving===row.match_id?'ذخیره…':'ذخیره نتیجه'}</button>
             </div>
-          </article>;
+            </div>
+          </details>;
         })}
       </div>}
     </div>
     <p style={{...muted,marginTop:10}}>هر اصلاح، نسخه قبلی را در تاریخچه نگه می‌دارد. برنامه بازی‌ها و جای بازیکنان قابل تغییر نیست.</p>
-  </section>;
+    </div>
+  </details>;
 }

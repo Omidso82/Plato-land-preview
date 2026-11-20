@@ -78,9 +78,11 @@ export function Series3VideoManager(){
   <button type="button" disabled={!file||busy} onClick={()=>void upload()} style={{width:'100%',marginTop:8,padding:11,border:0,borderRadius:9,background:'#c49b4b',color:'#17120a',fontWeight:800,cursor:'pointer'}}>{busy?'در حال انجام…':current?'بارگذاری و جایگزینی ویدیو':'بارگذاری ویدیو'}</button>
   <button type="button" disabled={!current||busy} onClick={()=>void toggle()} style={{width:'100%',marginTop:8,padding:11,border:'1px solid #8c6a34',borderRadius:9,background:'#211b12',color:'#f0d99f',fontWeight:800,cursor:'pointer'}}>{active?'غیرفعال کردن نمایش در صفحه اول':'فعال کردن نمایش در صفحه اول'}</button>
 
-  <section style={{marginTop:18,padding:14,border:'1px solid #8c6a34',borderRadius:11,background:'#151515'}}>
+  <details style={{marginTop:18,padding:12,border:'1px solid #8c6a34',borderRadius:11,background:'#151515'}}>
+   <summary style={{cursor:'pointer',color:'#f0d99f',fontSize:16,fontWeight:800}}>آمار تماشای ویدیو</summary>
+   <div style={{marginTop:10}}>
    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
-    <h4 style={{margin:0,color:'#f0d99f',fontSize:16}}>آمار تماشای ویدیو</h4>
+
     <button type="button" disabled={busy} onClick={()=>void refreshAnalytics()} style={{padding:'7px 11px',border:'1px solid #8c6a34',borderRadius:8,background:'#211b12',color:'#f0d99f'}}>به‌روزرسانی آمار</button>
    </div>
    {analyticsError&&<p role="alert" style={{color:'#ff9b91',fontSize:12}}>{analyticsError}</p>}
@@ -89,7 +91,8 @@ export function Series3VideoManager(){
     <strong style={{fontSize:30,color:'#f0d99f'}}>{analytics.modal_opens}</strong>
    </div>}
    <p style={{fontSize:11,color:'#a9a08e',lineHeight:1.8,marginBottom:0}}>فقط تعداد دفعات باز شدن پنجره ویدیو ثبت می‌شود؛ هیچ شناسه ماندگار یا اطلاعات هویتی بازدیدکنندگان ذخیره نمی‌شود.</p>
-  </section>
+   </div>
+  </details>
   {message&&<p role="status" style={{fontSize:13,color:'#f0d99f',marginBottom:0}}>{message}</p>}
   </div>
  </details>;
