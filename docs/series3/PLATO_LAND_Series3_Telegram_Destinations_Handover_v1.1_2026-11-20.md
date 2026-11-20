@@ -1,9 +1,9 @@
 # PLATO LAND – Series 3 Telegram Destination Selection & Delivery History
 
-**Version:** 1.3  
+**Version:** 1.4  
 **Date:** 2026-11-20  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** Review-ready PR; final CI rerun pending after a Deno literal-union typing correction. Database migration, secret configuration and production deployment remain pending. Database migration, secret configuration and production deployment remain pending.
+**Status:** PR updated with a UI safeguard against duplicate retries after partial delivery; CI for the new commit is pending. Database migration, secret configuration and production deployment remain pending.
 
 ## 1. Approved scope
 Extend the existing Series 3 Telegram publishing center in the existing temporary management panel. No new bot, page, route, or parallel panel is introduced.
@@ -32,6 +32,7 @@ The bot token remains in `TELEGRAM_BOT_TOKEN`. No secret values are committed to
 - Each destination is processed independently. Telegram HTTP/network failure or missing destination Secret is recorded for that destination and does not prevent an attempt to the other.
 - If audit-history insertion fails, the UI explicitly warns the owner that delivery history was not saved.
 - Each destination result reports sent/partial/failed status, sent count, failed section, Telegram message IDs and error details.
+- After any delivery attempt where at least one message was accepted, the UI clears the preview. Destinations with zero delivered messages and a fully failed status may remain selected for a fresh preview; destinations with partial or successful delivery are removed from the retry selection to avoid resending already accepted messages. A partially delivered destination requires manual reconciliation before any further attempt.
 - No message is sent by preview, CI, migration, or deployment.
 
 ## 4. Delivery history
@@ -77,3 +78,4 @@ The current assistant tool connection does not expose a supported Supabase secre
 - **v1.1 — 2026-11-20:** Adds selectable destinations, independent delivery outcomes and owner-only delivery history; release gates remain pending.
 - **v1.2 — 2026-11-20:** Fixes Deno destination typing errors, isolates per-destination configuration/network failures, adds a visible warning for unsaved delivery history, and updates the release status. No migration or production release performed.
 - **v1.3 — 2026-11-20:** Corrects the remaining inferred string type for the delivery status union found by CI. Awaiting the next full CI result; no migration or production release performed.
+- **v1.4 — 2026-11-20:** Clears the send preview after any accepted delivery, and retains retry selection only for destinations where zero messages were delivered and the destination failed completely. This prevents a partial delivery from being resent wholesale through the existing preview. CI and release remain pending.
