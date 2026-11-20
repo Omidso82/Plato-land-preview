@@ -105,20 +105,21 @@ function buildVoterReportMessages(campaign: PredictionCampaign, entries: Predict
         const matchId = question.match?.matchId;
         const picked = response[question.id];
         const match = typeof matchId === "string" ? resultById.get(matchId) : undefined;
-        let status = "نامشخص", winner = "";
-        if (!match) { unknown++; }
+        let status = "در انتظار نتیجه", winner = "";
+        if (typeof matchId !== "string" || !matchId) { status = "نامشخص"; unknown++; }
+        else if (!match) { pending++; }
         else if (match.result_status === "pending" || match.score_a === null || match.score_b === null || match.score_a === match.score_b) {
-          status = "در انتظار نتیجه"; pending++;
+          pending++;
         } else if (Number.isFinite(match.score_a) && Number.isFinite(match.score_b)) {
           winner = match.score_a! > match.score_b! ? match.player_a_plato_id : match.player_b_plato_id;
           if (typeof picked !== "string" || !picked) { status = "بدون پاسخ"; unknown++; }
           else if (picked.toLowerCase() === winner.toLowerCase()) { status = "درست"; correct++; }
           else { status = "نادرست"; incorrect++; }
-        } else { unknown++; }
+        } else { status = "نامشخص"; unknown++; }
         lines.push("<b>" + escapeHtml(question.label || matchId || question.id) + "</b>");
-        lines.push("پیش‌بینی: " + code(typeof picked === "string" ? picked : "ثبت نشده"));
-        lines.push("برنده واقعی: " + code(winner || (status === "در انتظار نتیجه" ? "هنوز ثبت نشده" : "نامشخص")));
-        lines.push("ارزیابی: <b>" + escapeHtml(status) + "</b>");
+        lines.push("پیش‌بینی: " + code(typeof picked === "string" ? picked : "ثبت نشده") +
+          " · برنده: " + code(winner || (status === "در انتظار نتیجه" ? "ثبت نشده" : "نامشخص")) +
+          " · <b>" + escapeHtml(status) + "</b>");
       }
       lines.unshift("<b>خلاصه:</b> درست " + fa(correct) + " · نادرست " + fa(incorrect) + " · در انتظار " + fa(pending) + " · نامشخص " + fa(unknown));
     } else throw new Error("نوع کمپین برای گزارش نتیجه پشتیبانی نمی‌شود.");
