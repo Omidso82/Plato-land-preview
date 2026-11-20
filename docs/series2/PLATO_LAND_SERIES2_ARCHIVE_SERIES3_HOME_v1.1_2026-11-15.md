@@ -1,5 +1,5 @@
 # PLATO LAND – Series 2 Archive and Series 3 Public Home
-## Change record v1.2 – 2026-11-20
+## Change record v1.3 – 2026-11-20
 
 **Project:** PLATO LAND – Temporary Projects  
 **Supersedes:** v1.1  
@@ -7,7 +7,7 @@
 
 ## 1. Change
 
-The Series 2 archive entry card was previously placed on the Series 3 public gallery. Per the user's request, move this exact card to the bottom of the Series 2 archive page, after the tournament summary content. Remove it from the Series 3 gallery. Keep its title, description, styling, and `/?page=series2-archive` destination unchanged.
+The user clarified that the card must remain on the same Series 3 public page where it currently appears. Move the existing `آرشیو مسابقات سری دوم` card from the top area of `Series3Gallery` to the bottom of that same page, after the Series 3 public dashboard/competition summary. Do not move it into the Series 2 archive page. Preserve its title, subtitle, style, and `/?page=series2-archive` destination.
 Production verification after v1.0 showed the root page correctly rendered Series 3 and the management URL remained accessible, but the direct clean path `/series2-archive/` returned a 404 at the hosting layer.
 
 To provide a reliable public archive entry on the existing static host:
@@ -17,11 +17,11 @@ To provide a reliable public archive entry on the existing static host:
 - Preserve the archive's return link to the Series 3 home.
 
 ## 2. Preserved scope
-The card is rendered only when `Series2Archive` uses `Series2Registration` with `showArchiveHeader=true`. The archive route and all Series 2 records remain unchanged.
+The card remains rendered by `Series3Gallery` and is moved below `Series3PublicDashboard`. `Series2Registration` and the Series 2 archive page are unchanged.
 No tournament records, predictions, results, images, Supabase schema, Edge Functions, or Main Website features are changed.
 
 ## 3. Verification
-After merge and deployment, verify the archive card is absent from the Series 3 gallery and appears at the bottom of the Series 2 archive page, below the summary content.
+After merge and deployment, verify the archive card remains on the Series 3 public page but appears at the bottom, below the tournament dashboard/summary; verify the Series 2 archive page is unchanged.
 
 
 After merge and deployment, verify:
