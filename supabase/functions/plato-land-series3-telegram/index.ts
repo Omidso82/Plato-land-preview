@@ -96,7 +96,6 @@ function buildVoterReportMessages(campaign: PredictionCampaign, entries: Predict
     if (campaign.campaign_type === "champion") {
       const picked = response.champion;
       lines.push("<b>انتخاب:</b> " + code(typeof picked === "string" ? picked : "ثبت نشده"));
-      lines.push("<b>نتیجه:</b> در انتظار نتیجه");
       lines.push("⏳ در انتظار نتیجه رسمی قهرمان");
     } else if (campaign.campaign_type === "match_predictions") {
       let correct = 0, incorrect = 0, pending = 0, unknown = 0;
