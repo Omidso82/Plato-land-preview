@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
 import Series3FixturesSchedule from './Series3FixturesSchedule';
+import Series3GroupResultsManager from './Series3GroupResultsManager';
 
 type Registration = { id: string; plato_id: string; registration_status: 'main' | 'waitlist' | 'withdrawn' };
 type Stats = { request_id: string; games_played: number; games_won: number };
@@ -319,6 +320,7 @@ export default function Series3SeedingManager() {
     <summary style={{cursor:'pointer',padding:16,color:'#f6e8c5',fontSize:20,fontWeight:800}}>مدیریت رتبه‌بندی و قرعه‌کشی سری سوم</summary>
     <div style={{padding:'0 16px 16px'}}>
     <Series3FixturesSchedule />
+    <Series3GroupResultsManager />
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
         <p style={{ ...muted, margin: 0 }}>۴۸ بازیکن اصلی و رزرو · رتبه‌بندی درصد برد · چهار سید · دوازده گروه</p>
