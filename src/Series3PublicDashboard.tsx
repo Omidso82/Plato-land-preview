@@ -68,14 +68,12 @@ export default function Series3PublicDashboard(){
    <div><div style={{fontSize:19,fontWeight:900,color:'#f3dfad'}}>مسیر قهرمانی · سری سوم</div><div style={{...muted,marginTop:3}}>رتبه‌بندی رسمی، گروه‌ها، نتایج و جدول حذفی</div></div>
    <span style={{border:'1px solid #806638',borderRadius:30,padding:'6px 11px',fontSize:11,color:gold}}>۴۸ بازیکن · ۱۲ گروه</span>
   </div>
-  {noShows>0&&<p style={{...muted,margin:'7px 2px 0'}}>عدم حضور دوطرفه: {fa(noShows)} بازی · بدون امتیاز و برد برای طرفین</p>}
   <nav aria-label="بخش‌های داشبورد" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:5,marginTop:14}}>
    {tabs.map(([key,label])=><button key={key} type="button" onClick={()=>setTab(key)} style={{minWidth:0,padding:'9px 3px',borderRadius:8,border:'1px solid '+(tab===key?'#e4c77e':'#57472d'),background:tab===key?'linear-gradient(120deg,#a98239,#e4c77e)':'#151515',color:tab===key?'#17130b':'#e8d8b6',fontWeight:800,fontSize:11,cursor:'pointer'}}>{label}</button>)}
   </nav>
   {loading?<p style={muted}>در حال دریافت اطلاعات رسمی مسابقات…</p>:error?<p role="status" style={{color:'#e9c98a',fontSize:12,lineHeight:1.9}}>{error}</p>:<>
    {tab==='overview'&&<div style={{display:'grid',gap:9,marginTop:12}}>
     <div style={card}><strong style={{color:gold}}>مرحله گروهی</strong><p style={muted}>۴۸ بازیکن در ۱۲ گروه چهار‌نفره · ۷۲ بازی برنامه‌ریزی‌شده · هر برد ۳ امتیاز · بازی پنج‌امتیازی</p><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{groups.map(g=><span key={g} style={{border:'1px solid #5c4a2d',borderRadius:7,padding:'4px 8px',fontSize:11,color:'#ead7ac'}}>گروه {g}</span>)}</div></div>
-    <div style={card}><strong style={{color:gold}}>وضعیت مسابقات</strong><div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:7,marginTop:9}}><div><div style={muted}>ثبت نتیجه</div><b style={{color:'#b7d7a0'}}>{fa(completed)}</b></div><div><div style={muted}>در انتظار</div><b>{fa(pending)}</b></div><div><div style={muted}>عدم حضور دوطرفه</div><b>{fa(noShows)}</b></div></div></div>
     <div style={card}><strong style={{color:gold}}>مراحل حذفی</strong><div style={{display:'grid',gap:7,marginTop:8}}>{stages.map(([key,label])=><div key={key} style={{display:'flex',justifyContent:'space-between',gap:8,borderBottom:'1px solid #30291d',paddingBottom:6}}><span style={{fontSize:12}}>{label}</span><span style={{...muted,color:gold}}>{bracket?.[key]?.length||0} مسابقه</span></div>)}<div style={{display:'flex',justifyContent:'space-between',gap:8,paddingTop:3}}><span style={{fontSize:12}}>مسابقه رده‌بندی</span><span style={{...muted,color:gold}}>بازنده نیمه‌نهایی ۱ × بازنده نیمه‌نهایی ۲</span></div></div></div>
    </div>}
    {tab==='ranking'&&<div style={{display:'grid',gap:12,marginTop:12}}>
