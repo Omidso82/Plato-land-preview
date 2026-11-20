@@ -383,13 +383,14 @@ export default function Series3SeedingManager() {
       {potsExpanded && <>
         <p style={muted}>تقسیم دقیق بر اساس رتبه؛ هر سید شامل ۱۲ بازیکن است. سید ۱ رتبه‌های ۱ تا ۱۲ و به همین ترتیب تا سید ۴.</p>
         <div style={{ display: 'grid', gap: 9 }}>
-          {displayedPots.map((pot, index) => <div key={index} style={{ border: '1px solid #59472a', borderRadius: 9, padding: 10, background: '#101112' }}>
+          {displayedPots.map((pot, index) => <details key={index} style={{ border: '1px solid #59472a', borderRadius: 9, padding: 10, background: '#101112' }}>
+            <summary style={{cursor:'pointer',color:'#e4c77e',fontWeight:800}}>سید {fa(index + 1)} · {fa(index * 12 + 1)} تا {fa(index * 12 + 12)} · {fa(pot.length)} بازیکن</summary>
             <strong style={{ color: '#e4c77e' }}>سید {fa(index + 1)} <span style={muted}>· {fa(index * 12 + 1)} تا {fa(index * 12 + 12)}</span></strong>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 6, marginTop: 8 }}>
               {pot.map((player, i) => <div key={player.id} style={{ padding: '6px 7px', borderRadius: 6, background: '#1c1b18', minWidth: 0 }}>
                 <span style={{ color: '#c6a45e', fontSize: 11 }}>{fa(index * 12 + i + 1)}. </span>
                 <strong dir="ltr" style={{ fontSize: 12, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
-              </div>)}
+              </details>)}
             </div>
           </div>)}
         </div>
@@ -413,13 +414,14 @@ export default function Series3SeedingManager() {
         </> : <>
           <p style={{ ...muted, marginBottom: 10 }}>نتیجه قرعه‌کشی از نسخه ذخیره‌شده دیتابیس خوانده شده است؛ باز و بسته‌کردن این بخش یا Refresh آن را تغییر نمی‌دهد.</p>
           <div style={{ display: 'grid', gap: 9 }}>
-            {displayedGroups.map(group => <div key={group.name} style={{ border: '1px solid #806638', borderRadius: 9, padding: 10, background: '#101112' }}>
+            {displayedGroups.map(group => <details key={group.name} style={{ border: '1px solid #806638', borderRadius: 9, padding: 10, background: '#101112' }}>
+              <summary style={{cursor:'pointer',color:'#e4c77e',fontSize:15,fontWeight:800}}>گروه {group.name} · {fa(group.players.length)} بازیکن</summary>
               <strong style={{ color: '#e4c77e', fontSize: 15 }}>گروه {group.name}</strong>
               <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
                 {group.players.map((player, index) => <div key={player.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', padding: '7px 8px', borderRadius: 6, background: '#1b1a17' }}>
                   <strong dir="ltr" style={{ fontSize: 13, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
                   <span style={{ color: '#c6a45e', fontSize: 11, whiteSpace: 'nowrap' }}>سید {fa(index + 1)}</span>
-                </div>)}
+                </details>)}
               </div>
             </div>)}
           </div>
@@ -450,8 +452,8 @@ export default function Series3SeedingManager() {
             ['یک‌چهارم نهایی · ۴ بازی',savedBracket.bracket_snapshot.quarterfinals],
             ['نیمه‌نهایی · ۲ بازی',savedBracket.bracket_snapshot.semifinals],
             ['فینال',savedBracket.bracket_snapshot.final]
-          ] as [string,BracketMatch[]][]).map(([title,matches])=><section key={title} style={{marginTop:12}}>
-            <strong style={{color:'#e4c77e'}}>{title}</strong>
+          ] as [string,BracketMatch[]][]).map(([title,matches])=><details key={title} style={{marginTop:12,border:'1px solid #59472a',borderRadius:9,padding:10,background:'#101112'}}>
+            <summary style={{cursor:'pointer',color:'#e4c77e',fontWeight:800}}>{title} · {fa(matches.length)} مسابقه</summary>
             <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(190px,1fr))',gap:8,marginTop:7}}>
               {matches.map((m,i)=><div key={m.id} style={{...card,padding:9}}>
                 <strong style={{color:'#e4c77e'}}>{title==='فینال'?'مسابقه نهایی':'بازی '+fa(i+1)}</strong>
@@ -459,7 +461,7 @@ export default function Series3SeedingManager() {
                 <div style={{...muted,borderTop:'1px solid #51452d',paddingTop:5,marginTop:5}}>{m.b.label}</div>
               </div>)}
             </div>
-          </section>)}
+          </details>)}
           <p style={{...muted,marginTop:12}}>مسیر هر برنده از بازی‌های دور اول تا فینال از پیش به‌صورت ثابت مشخص شده است؛ فقط نام بازیکنان واقعیِ نفرات سوم پس از پایان گروه‌ها جایگزین ۸ جایگاه مربوط می‌شود.</p>
         </>}
       </>}
