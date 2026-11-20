@@ -111,14 +111,14 @@ export default function Series3GroupResultsManager() {
     </div>
     {error&&<p role="alert" style={{color:'#efaaaa',fontSize:12}}>{error}</p>}
     {message&&<p role="status" style={{color:'#b8dfa9',fontSize:12}}>{message}</p>}
-    <div style={{...card,marginTop:12}}>
+    <div style={{...card,marginTop:12,width:'100%',maxWidth:'100%',minWidth:0,boxSizing:'border-box',overflow:'hidden'}}>
       <strong style={{color:'#e4c77e'}}>جدول امتیازات گروه‌ها</strong>
       <p style={muted}>مرتب‌سازی بر اساس امتیاز، تفاضل ست و ست برده‌شده است. اگر این معیارها برابر باشند، رتبه مشترک نمایش داده می‌شود و برنده‌ی تساوی حدس زده نمی‌شود.</p>
-      <div style={{display:'grid',gap:10}}>
-        {standings.map(({group:g,players})=><details key={g} style={{border:'1px solid #55452a',borderRadius:8,padding:8,background:'#141414'}}>
-          <summary style={{cursor:'pointer',color:'#f1d99e',fontWeight:800}}>گروه {g} · {fa(players.length)} بازیکن</summary>
-          <div style={{overflowX:'auto',marginTop:8}}>
-            <table style={{width:'100%',borderCollapse:'collapse',fontSize:11,minWidth:470}}>
+      <div style={{display:'grid',gap:10,width:'100%',maxWidth:'100%',minWidth:0}}>
+        {standings.map(({group:g,players})=><details key={g} style={{border:'1px solid #55452a',borderRadius:8,padding:8,background:'#141414',width:'100%',maxWidth:'100%',minWidth:0,boxSizing:'border-box'}}>
+          <summary style={{cursor:'pointer',color:'#f1d99e',fontWeight:800,overflowWrap:'anywhere'}}>گروه {g} · {fa(players.length)} بازیکن</summary>
+          <div style={{width:'100%',maxWidth:'100%',minWidth:0,boxSizing:'border-box',overflowX:'auto',overscrollBehaviorX:'contain',WebkitOverflowScrolling:'touch',marginTop:8}}>
+            <table style={{width:'max-content',borderCollapse:'collapse',fontSize:11,minWidth:470}}>
               <thead><tr>{['بازیکن','بازی مختومه','برد','باخت','امتیاز','ست زده','ست خورده','تفاضل'].map(h=><th key={h} style={{padding:6,borderBottom:'1px solid #67532f',whiteSpace:'nowrap',textAlign:'center'}}>{h}</th>)}</tr></thead>
               <tbody>{players.map((p,i)=><tr key={p.plato_id}>
                 <td dir="ltr" style={{padding:6,textAlign:'left',whiteSpace:'nowrap'}}>{i>0&&tied(p,players[i-1])?'= ':''}{p.plato_id}</td>
