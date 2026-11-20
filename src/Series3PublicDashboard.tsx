@@ -36,7 +36,6 @@ export default function Series3PublicDashboard(){
  const [tab,setTab]=useState<'overview'|'ranking'|'groups'|'bracket'>('overview');
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
- const [updated,setUpdated]=useState('');
  useEffect(()=>{let active=true;(async()=>{
   if(!supabase){setError('اتصال به اطلاعات مسابقات در دسترس نیست.');setLoading(false);return;}
   const [d,f,b]=await Promise.all([
@@ -50,7 +49,6 @@ export default function Series3PublicDashboard(){
   else{
    setDraw(d.data as Draw|null);setFixtures((f.data||[]) as Fixture[]);
    setBracket((b.data?.bracket_snapshot||null) as Bracket|null);
-   setUpdated(b.data?.created_at||'');
    if(!d.data||!b.data)setError('اطلاعات قرعه‌کشی هنوز کامل در دسترس نیست.');
   }
   setLoading(false);
@@ -62,7 +60,6 @@ export default function Series3PublicDashboard(){
  const noShows=fixtures.filter(x=>x.result_status==='double_no_show').length;
  const pending=fixtures.filter(x=>x.result_status==='pending').length;
  const standings=useMemo(()=>groups.map(g=>({group:g,players:standingsFor(g,fixtures)})),[fixtures]);
- const days=useMemo(()=>[...new Set(fixtures.map(x=>x.round_no))].sort((a,b)=>a-b),[fixtures]);
  const tabs:[typeof tab,string][]=[['overview','خلاصه مسابقات'],['ranking','رتبه‌بندی و سیدها'],['groups','گروه‌ها و نتایج'],['bracket','مسیر قهرمانی']];
  const th:React.CSSProperties={padding:'7px 5px',borderBottom:'1px solid #67532f',whiteSpace:'nowrap',textAlign:'center',fontSize:10,color:'#e6d3a7'};
  const td:React.CSSProperties={padding:'7px 5px',borderBottom:'1px solid #30291d',textAlign:'center',fontSize:11,whiteSpace:'nowrap'};
@@ -90,7 +87,7 @@ export default function Series3PublicDashboard(){
    </div>}
    {tab==='groups'&&<div style={{display:'grid',gap:9,marginTop:12}}>
     <p style={muted}>جدول‌ها فقط با نتایج تأییدشده به‌روزرسانی می‌شوند. ترتیب: امتیاز، تفاضل ست، ست برده‌شده؛ در تساوی کامل رتبه مشترک حفظ می‌شود.</p>
-    {standings.map(({group,players})=><details key={group} style={card}><summary style={{cursor:'pointer',color:gold,fontWeight:900}}>گروه {group} · {fa(groupDraw.find(x=>x.name===group)?.players.length||4)} بازیکن</summary><div style={{overflowX:'auto',marginTop:8}}><table style={{width:'100%',borderCollapse:'collapse',minWidth:430}}><thead><tr>{['Plato ID','بازی','برد','باخت','امتیاز','تفاضل ست'].map(x=><th style={th} key={x}>{x}</th>)}</tr></thead><tbody>{players.map((p,i)=><tr key={p.plato_id}><td dir="ltr" style={{...td,textAlign:'left',color:'#f0d99f'}}>{i+1}. {p.plato_id}</td>{[p.played,p.wins,p.losses,p.points,p.diff].map((v,j)=><td style={td} key={j}>{fa(v)}</td>)}</tr>)}</tbody></table></div><div style={{display:'grid',gap:6,marginTop:10}}>{fixtures.filter(x=>x.group_name===group).sort((a,b)=>a.round_no-b.round_no||a.match_no-b.match_no).map(m=><div key={m.match_id} style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto minmax(0,1fr)',gap:5,alignItems:'center',padding:8,borderRadius:8,background:'#171717',border:'1px solid #30291d'}}><span dir="ltr" style={{fontSize:11,overflowWrap:'anywhere',textAlign:'center'}}>{m.player_a_plato_id}</span><strong style={{fontSize:11,color:gold}}>{m.result_status==='completed'?fa(m.score_a??0)+' : '+fa(m.score_b??0):m.result_status==='double_no_show'?'عدم حضور دوطرفه':'VS'}</strong><span dir="ltr" style={{fontSize:11,overflowWrap:'anywhere',textAlign:'center'}}>{m.player_b_plato_id}</span></div>)}</div></details>)}
+    {standings.map(({group,players})=><details key={group} style={card}><summary style={{cursor:'pointer',color:gold,fontWeight:900}}>گروه {group} · {fa(groupDraw.find(x=>x.name===group)?.players.length||4)} بازیکن</summary><div style={{overflowX:'auto',marginTop:8}}><table style={{width:'100%',borderCollapse:'collapse',minWidth:430}}><thead><tr>{['Plato ID','بازی','برد','باخت','امتیاز','تفاضل ست'].map(x=><th style={th} key={x}>{x}</th>)}</tr></thead><tbody>{players.map((p,i)=><tr key={p.plato_id}><td dir="ltr" style={{...td,textAlign:'left',color:'#f0d99f'}}>{i+1}. {p.plato_id}</td>{[p.played,p.wins,p.losses,p.points,p.diff].map((v,j)=><td style={td} key={j}>{fa(v)}</td>)}</tr>)}</tbody></table></div><div style={{display:'grid',gap:6,marginTop:10}}>{fixtures.filter(x=>x.group_name===group).sort((a,b)=>a.round_no-b.round_no||a.match_no-b.match_no).map(m=><div key={m.match_id} style={{padding:8,borderRadius:8,background:'#171717',border:'1px solid #30291d'}}><div style={{...muted,display:'flex',justifyContent:'space-between',gap:6,marginBottom:6}}><span>روز {fa(m.round_no)} · بازی {fa(m.match_no)}</span><span>{new Date(m.match_date+'T12:00:00').toLocaleDateString('fa-IR')}</span></div><div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) auto minmax(0,1fr)',gap:5,alignItems:'center'}}><span dir="ltr" style={{fontSize:11,overflowWrap:'anywhere',textAlign:'center'}}>{m.player_a_plato_id}</span><strong style={{fontSize:11,color:gold}}>{m.result_status==='completed'?fa(m.score_a??0)+' : '+fa(m.score_b??0):m.result_status==='double_no_show'?'عدم حضور دوطرفه':'VS'}</strong><span dir="ltr" style={{fontSize:11,overflowWrap:'anywhere',textAlign:'center'}}>{m.player_b_plato_id}</span></div></div>)}</div></details>)}
    </div>}
    {tab==='bracket'&&<div style={{display:'grid',gap:10,marginTop:12}}>
     <p style={muted}>قرعه حذفی ذخیره‌شده بدون تغییر نمایش داده می‌شود. جایگاه‌های صعودکنندگان سوم برتر تا پایان گروه‌ها به‌صورت جایگاه موقت باقی می‌ماند.</p>
