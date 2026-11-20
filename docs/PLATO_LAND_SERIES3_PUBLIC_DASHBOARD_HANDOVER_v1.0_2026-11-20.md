@@ -1,5 +1,5 @@
 # PLATO LAND – Series 3 Public Dashboard Handover
-**Version:** 1.4  
+**Version:** 1.5  
 **Date:** 2026-11-20  
 **Scope:** PLATO LAND – Temporary Projects / Series 3 only
 
@@ -101,5 +101,11 @@ Performance advisor returned existing project-wide findings (mostly unindexed fo
 - Changed file: `src/Series3PublicDashboard.tsx` and this handover document only. No database, fixtures, scores, draw, admin-panel, or Main Website changes.
 - Implementation commit on working branch: `b88cde5dc6a36e7bd63f388935a9334e64534ec7`.
 
-## 13. Current status
+## 13. Change log — v1.5 (2026-11-20)
+- Renamed the public knockout bracket stage label for the 32-player opening round from `دور ۳۲ نفره` to `یک شانزدهم نهایی`, as requested. This label now matches the Persian tournament-stage terminology.
+- The bracket key/data remains `round32` internally; only the public display label changed. No bracket positions, matches, results, or qualification data changed.
+- Changed file: `src/Series3PublicDashboard.tsx` and this handover document only. No database, fixtures, scores, draw, admin-panel, or Main Website changes.
+- Implementation commit on working branch: `173e28d9d70676992676768522dbe22ad0eda751`.
+
+## 14. Current status
 **Implementation is in an open PR and its additive database read model is active on the main Supabase project. The public dashboard is not yet live on the production website.**
