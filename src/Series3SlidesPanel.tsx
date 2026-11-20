@@ -131,7 +131,14 @@ export function Series3SlidesPanel() {
       const {data:{user},error:userError}=await supabase.auth.getUser();
       if(userError)throw userError;
       if(!user)throw new Error('نشست مالک معتبر نیست.');
-      const {error}=await supabase.from('plato_land_series3_home_media_settings').upsert({id:1,media_mode:next,storage_path:teaserKey||null,updated_at:new Date().toISOString(),updated_by:user.id},{onConflict:'id'});
+      const update:{id:number;media_mode:'poster'|'video';updated_at:string;updated_by:string;storage_path?:string}={
+        id:1,
+        media_mode:next,
+        updated_at:new Date().toISOString(),
+        updated_by:user.id
+      };
+      if(next==='video')update.storage_path=teaserKey;
+      const {error}=await supabase.from('plato_land_series3_home_media_settings').upsert(update,{onConflict:'id'});
       if(error)throw error;
       setMediaMode(next);setMessage(next==='video'?'نمایش ویدئوی تیزر در صفحه اول فعال شد.':'نمایش پوستر ثابت در صفحه اول فعال شد. ویدئو حفظ می‌شود.');
     }catch(e){setMessage('تغییر حالت رسانه ناموفق بود: '+(e instanceof Error?e.message:'تنظیم دیتابیس هنوز اجرا نشده یا دسترسی مالک تأیید نشد.'));}
