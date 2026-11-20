@@ -1,5 +1,5 @@
 # PLATO LAND – Series 3 Public Dashboard Handover
-**Version:** 1.3  
+**Version:** 1.4  
 **Date:** 2026-11-20  
 **Scope:** PLATO LAND – Temporary Projects / Series 3 only
 
@@ -95,5 +95,11 @@ Performance advisor returned existing project-wide findings (mostly unindexed fo
 - Changed file: `src/Series3PublicDashboard.tsx` and this handover document only. No database, migrations, draw, fixture, score, bracket, admin-panel, or Main Website changes.
 - Implementation commit on working branch: `f453dbec44271fd6f6df8cbf94b407a52e15441a`.
 
-## 12. Current status
+## 12. Change log — v1.4 (2026-11-20)
+- Simplified the public group accordion labels to show only `گروه A`, `گروه B`, etc. Removed the appended player-count text from each label.
+- Player tables and all group/player data remain unchanged.
+- Changed file: `src/Series3PublicDashboard.tsx` and this handover document only. No database, fixtures, scores, draw, admin-panel, or Main Website changes.
+- Implementation commit on working branch: `b88cde5dc6a36e7bd63f388935a9334e64534ec7`.
+
+## 13. Current status
 **Implementation is in an open PR and its additive database read model is active on the main Supabase project. The public dashboard is not yet live on the production website.**
