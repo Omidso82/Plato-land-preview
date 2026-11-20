@@ -28,6 +28,7 @@ type BracketMatch = { id: string; a: MatchToken; b: MatchToken };
 type Bracket = { round32?: BracketMatch[]; round16?: BracketMatch[]; quarterfinals?: BracketMatch[]; semifinals?: BracketMatch[]; final?: BracketMatch[] };
 type Fixture = { id:string; group:string; round:number; match_no:number; player_a:{plato_id:string}; player_b:{plato_id:string}; time:string };
 type FixtureSnapshot = { group_stage:{days:Array<{round:number;persian_date:string;time:string;matches:Fixture[]}>} };
+type PredictionCampaign = { id:string; title:string; description:string|null; campaign_type:string; status:string; is_open:boolean; opens_at:string|null; closes_at:string|null; questions:Array<{id:string;label:string;type?:string;options?:string[]}>; prize_rules:Record<string,unknown>|null };
 type Message = { section_id: string; title: string; text: string; plain_text: string; item_count: number };
 
 const roundConfig: Record<string, { title: string; subtitle: string }> = {
@@ -56,13 +57,46 @@ function playerStats(player: Player): string {
   return fa(won) + " برد از " + fa(played) + " بازی · " + playerWinRate(player);
 }
 function playerName(player: Player): string { return code(player.plato_id); }
-function buildMessages(selected: string[], ranking: Player[], pots: Player[][], groups: Array<{name:string;players:Player[]}>, bracket: Bracket, fixtures?: FixtureSnapshot): Message[] {
+function formatTehranDate(value: string|null): string {
+  if (!value) return '';
+  const date=new Date(value);
+  if (!Number.isFinite(date.getTime())) return '';
+  return new Intl.DateTimeFormat('fa-IR',{timeZone:'Asia/Tehran',dateStyle:'long',timeStyle:'short'}).format(date)+' به وقت تهران';
+}
+function buildPredictionMessage(campaign: PredictionCampaign): Message {
+  if (campaign.status!=='published') throw new Error('فقط پیش‌بینی‌های منتشرشده قابل انتشار در تلگرام هستند.');
+  const lines:string[]=[];
+  if (campaign.description?.trim()) lines.push(escapeHtml(campaign.description.trim()));
+  lines.push('<b>وضعیت شرکت:</b> '+(campaign.is_open?'دریافت پیش‌بینی باز است':'دریافت پیش‌بینی بسته است'));
+  if (campaign.opens_at) lines.push('<b>شروع:</b> '+escapeHtml(formatTehranDate(campaign.opens_at)));
+  if (campaign.closes_at) lines.push('<b>پایان:</b> '+escapeHtml(formatTehranDate(campaign.closes_at)));
+  const prize=campaign.prize_rules?.description;
+  if (typeof prize==='string' && prize.trim()) lines.push('<b>جایزه:</b> '+escapeHtml(prize.trim()));
+  let optionCount=0;
+  for (const question of campaign.questions||[]) {
+    lines.push('', '<b>'+escapeHtml(question.label||'گزینه‌های پیش‌بینی')+'</b>');
+    const options=Array.isArray(question.options)?question.options:[];
+    if (options.length) { optionCount+=options.length; lines.push(...options.map((option,index)=>fa(index+1)+'. '+code(option))); }
+    else if (question.type==='text') lines.push('پاسخ متنی');
+    else if (question.type==='number') lines.push('پاسخ عددی');
+  }
+  lines.push('', '<b>ثبت پیش‌بینی:</b> https://platoland.org/predictions');
+  return makeMessage('prediction:'+campaign.id,campaign.title,'پیش‌بینی قهرمان · سری سوم',lines,optionCount||campaign.questions.length);
+}
+function buildMessages(selected: string[], ranking: Player[], pots: Player[][], groups: Array<{name:string;players:Player[]}>, bracket: Bracket, fixtures: FixtureSnapshot|undefined, predictions: PredictionCampaign[]): Message[] {
   const result: Message[] = [];
   const groupNames = "ABCDEFGHIJKL".split("");
   const fixtureIds = [1,2,3].flatMap(day => ["fixtures:day:"+day+":ALL", ...groupNames.map(g=>"fixtures:day:"+day+":"+g)]);
-  const allowed = new Set(["ranking", ...[1,2,3,4].map(n=>"pot:"+n), ...groupNames.map(g=>"group:"+g), ...Object.keys(roundConfig).map(k=>"bracket:"+k), ...fixtureIds]);
-  if (selected.length < 1 || selected.length > 24 || selected.some(id => !allowed.has(id))) throw new Error("فهرست انتخاب‌ها معتبر نیست؛ صفحه را تازه‌سازی کن.");
+  const predictionIds=new Set(predictions.map(c=>'prediction:'+c.id));
+  const allowed = new Set(["ranking", ...[1,2,3,4].map(n=>"pot:"+n), ...groupNames.map(g=>"group:"+g), ...Object.keys(roundConfig).map(k=>"bracket:"+k), ...fixtureIds, ...predictionIds]);
+  if (selected.length < 1 || selected.length > 80 || selected.some(id => !allowed.has(id))) throw new Error("فهرست انتخاب‌ها معتبر نیست؛ صفحه را تازه‌سازی کن.");
   for (const id of selected) {
+    if (id.startsWith('prediction:')) {
+      const campaign=predictions.find(c=>'prediction:'+c.id===id);
+      if (!campaign) throw new Error('پیش‌بینی انتخاب‌شده دیگر منتشرشده نیست؛ فهرست را تازه‌سازی کن.');
+      result.push(buildPredictionMessage(campaign));
+      continue;
+    }
     if (id === "ranking") {
       if (ranking.length !== 48) throw new Error("Snapshot رتبه‌بندی ۴۸ بازیکن کامل نیست.");
       const rankHeading = "ردیف";
@@ -168,8 +202,10 @@ Deno.serve(async (req: Request) => {
 
     const wantsFixtures = selected.some((id:string)=>id.startsWith("fixtures:day:"));
     const wantsBracket = selected.some((id:string)=>id.startsWith("bracket:"));
-    const wantsSeeding = selected.some((id:string)=>!id.startsWith("bracket:"));
-    const [seedingResult, knockoutResult, fixturesResult] = await Promise.all([
+    const wantsSeeding = selected.some((id:string)=>id==="ranking"||id.startsWith("pot:")||id.startsWith("group:")||id.startsWith("fixtures:day:"));
+    const predictionIds=selected.filter((id:string)=>id.startsWith('prediction:')).map((id:string)=>id.slice('prediction:'.length));
+    if (predictionIds.some((id:string)=>!/^[-a-f0-9]{36}$/i.test(id))) return json({error:'شناسه پیش‌بینی معتبر نیست.'},400);
+    const [seedingResult, knockoutResult, fixturesResult, predictionsResult] = await Promise.all([
       wantsSeeding
         ? admin.from("plato_land_series3_seeding_draws").select("ranking_snapshot,pots_snapshot,groups_snapshot").eq("event_key","series3").maybeSingle()
         : Promise.resolve({data:null,error:null}),
@@ -179,10 +215,16 @@ Deno.serve(async (req: Request) => {
       wantsFixtures
         ? admin.from("plato_land_series3_group_fixtures").select("schedule_snapshot").eq("event_key","series3").maybeSingle()
         : Promise.resolve({data:null,error:null}),
+      predictionIds.length
+        ? admin.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,is_open,opens_at,closes_at,questions,prize_rules').eq('event_key','series3').eq('status','published').in('id',predictionIds)
+        : Promise.resolve({data:[],error:null}),
     ]);
     if (seedingResult.error) throw seedingResult.error;
     if (fixturesResult.error) throw fixturesResult.error;
     if (knockoutResult.error) throw knockoutResult.error;
+    if (predictionsResult.error) throw predictionsResult.error;
+    const predictions=(predictionsResult.data||[]) as PredictionCampaign[];
+    if (predictions.length!==predictionIds.length) return json({error:'یکی از پیش‌بینی‌های انتخاب‌شده منتشرشده نیست یا تغییر کرده است؛ فهرست را تازه‌سازی کن.'},409);
     const seeding = seedingResult.data;
     const knockout = knockoutResult.data;
     if (wantsSeeding && !seeding) return json({ error: "قرعه گروهی سری سوم هنوز در دیتابیس ثبت نشده است." }, 409);
@@ -196,12 +238,18 @@ Deno.serve(async (req: Request) => {
     if (wantsFixtures && !fixtures) return json({ error: "برنامه مسابقات سری سوم هنوز در دیتابیس ثبت نشده است." }, 409);
     if (wantsSeeding && (groups.length !== 12 || groups.some(g=>!Array.isArray(g.players)||g.players.length!==4))) return json({ error: "Snapshot گروه‌های سری سوم کامل نیست." }, 409);
 
-    const messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures);
-    if (action === "preview") return json({ ok: true, destination: "test_group", messages });
+    const messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures,predictions);
+    if (action === "preview") return json({ ok: true, destination: selected.some((id:string)=>id.startsWith('prediction:'))?'series3_channel':'test_group', messages });
 
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") ?? "";
-    const chatId = Deno.env.get("TELEGRAM_TEST_CHAT_ID") ?? "";
-    if (!botToken || !chatId) return json({ error: "تنظیمات ربات یا گروه آزمایشی در سمت سرور موجود نیست." }, 500);
+    const hasPredictions=selected.some((id:string)=>id.startsWith('prediction:'));
+    const hasOtherSections=selected.some((id:string)=>!id.startsWith('prediction:'));
+    if (hasPredictions && hasOtherSections) return json({error:'برای جلوگیری از ارسال به مقصد اشتباه، پیش‌بینی‌ها را جدا از جدول‌ها و مسابقات انتخاب و ارسال کن.'},400);
+    const channelChatId=Deno.env.get('TELEGRAM_SERIES3_CHANNEL_ID')??'';
+    const testChatId=Deno.env.get("TELEGRAM_TEST_CHAT_ID") ?? "";
+    const chatId=hasPredictions?channelChatId:testChatId;
+    const destination=hasPredictions?'series3_channel':'test_group';
+    if (!botToken || !chatId) return json({ error: hasPredictions?'مقصد کانال سری سوم هنوز در تنظیمات امن سرور تعریف نشده است؛ هیچ پیامی ارسال نشد.':'تنظیمات ربات یا گروه آزمایشی در سمت سرور موجود نیست.' }, hasPredictions?409:500);
     const results: Array<{section_id:string;message_id:number}> = [];
     for (const [index, message] of messages.entries()) {
       // Telegram group rate limit: keep the batch below 20 messages per minute.
@@ -216,7 +264,7 @@ Deno.serve(async (req: Request) => {
       }
       results.push({ section_id: message.section_id, message_id: Number(sent.result?.message_id ?? 0) });
     }
-    return json({ sent: true, sent_count: results.length, destination: "test_group", results });
+    return json({ sent: true, sent_count: results.length, destination, results });
   } catch (error) {
     console.error("Series 3 Telegram publishing failed:", error);
     return json({ error: error instanceof Error ? error.message : "Unable to process Telegram request." }, 500);
