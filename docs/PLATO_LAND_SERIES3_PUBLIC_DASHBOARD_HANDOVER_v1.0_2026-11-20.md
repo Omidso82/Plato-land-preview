@@ -1,5 +1,5 @@
 # PLATO LAND – Series 3 Public Dashboard Handover
-**Version:** 1.2  
+**Version:** 1.3  
 **Date:** 2026-11-20  
 **Scope:** PLATO LAND – Temporary Projects / Series 3 only
 
@@ -88,5 +88,12 @@ Performance advisor returned existing project-wide findings (mostly unindexed fo
 - Changed file: `src/Series3PublicDashboard.tsx` and this handover document only. No database, migration, draw, fixture, score, bracket, or admin-panel changes.
 - Implementation commit: `15a094ccb41d9676f4f16560019a064f8c136a96`.
 
-## 11. Current status
+## 11. Change log — v1.3 (2026-11-20)
+- Removed the public overview card `وضعیت مسابقات`, including the aggregate counts for recorded results, pending matches, and double no-shows.
+- Removed the duplicate standalone aggregate double-no-show count line near the dashboard heading.
+- Actual match-level results and status remain available in the fixtures/results views; no match data was deleted or changed.
+- Changed file: `src/Series3PublicDashboard.tsx` and this handover document only. No database, migrations, draw, fixture, score, bracket, admin-panel, or Main Website changes.
+- Implementation commit on working branch: `f453dbec44271fd6f6df8cbf94b407a52e15441a`.
+
+## 12. Current status
 **Implementation is in an open PR and its additive database read model is active on the main Supabase project. The public dashboard is not yet live on the production website.**
