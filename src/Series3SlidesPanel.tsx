@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import { isSeries3TeaserKey, series3TeaserUrl, uploadSeries3Teaser } from './series3TeaserClient';
+import { deleteR2Media } from './r2MediaDeleteClient';
 
 const BUCKET = 'series3-slides';
 const POSTER_PATH = 'poster/series3-main-poster';
@@ -18,6 +19,8 @@ export function Series3SlidesPanel() {
   const [busySlot,setBusySlot]=useState<number|null>(null);
   const [posterBusy,setPosterBusy]=useState(false);
   const [teaserBusy,setTeaserBusy]=useState(false);
+  const [teaserDeleteConfirm,setTeaserDeleteConfirm]=useState(false);
+  const [teaserDeleteBusy,setTeaserDeleteBusy]=useState(false);
   const [modeBusy,setModeBusy]=useState(false);
   const [message,setMessage]=useState('');
 
@@ -122,6 +125,47 @@ export function Series3SlidesPanel() {
       setMessage((r2Saved?'فایل در R2 ذخیره شده، اما ثبت مرجع آن در Supabase کامل نشد؛ موفقیت نهایی تأیید نمی‌شود: ':'بارگذاری تیزر ناموفق بود: ')+(e instanceof Error?e.message:'خطای ناشناخته'));
     }finally{setTeaserBusy(false);}
   }
+  async function deleteTeaser() {
+    if(!supabase||!isSeries3TeaserKey(teaserKey))return;
+    setTeaserDeleteBusy(true);setMessage('در حال آماده‌سازی حذف تیزر…');
+    let previousMode: 'poster'|'video' = mediaMode;
+    let previousKey = teaserKey;
+    let metadataCleared = false;
+    try {
+      const {data:{user},error:userError}=await supabase.auth.getUser();
+      if(userError)throw userError;
+      if(!user)throw new Error('نشست معتبر مالک پیدا نشد.');
+      const {data:current,error:readError}=await supabase.from('plato_land_series3_home_media_settings')
+        .select('media_mode,storage_path').eq('id',1).maybeSingle();
+      if(readError)throw readError;
+      if(!current||current.storage_path!==teaserKey)throw new Error('مرجع تیزر در Supabase با فایل انتخاب‌شده یکسان نیست؛ برای جلوگیری از حذف فایل اشتباه، عملیات متوقف شد.');
+      previousMode=current.media_mode==='video'?'video':'poster';
+      previousKey=current.storage_path;
+      const {error:clearError}=await supabase.from('plato_land_series3_home_media_settings')
+        .update({media_mode:'poster',storage_path:'',updated_at:new Date().toISOString(),updated_by:user.id}).eq('id',1);
+      if(clearError)throw clearError;
+      metadataCleared=true;
+      const {data:session,error:sessionError}=await supabase.auth.getSession();
+      if(sessionError)throw sessionError;
+      const token=session.session?.access_token;
+      if(!token)throw new Error('نشست معتبر مالک پیدا نشد.');
+      const result=await deleteR2Media('teaser',token,teaserKey);
+      setTeaserKey('');setTeaserExists(false);setMediaMode('poster');setTeaserSelected(null);setTeaserDeleteConfirm(false);
+      await refresh();
+      setMessage(result.alreadyMissing
+        ? 'مرجع تیزر پاک شد؛ فایل در R2 از قبل موجود نبود.'
+        : 'تیزر از Cloudflare R2 حذف، مرجع آن از Supabase پاک و نبودن فایل تأیید شد. حالت نمایش به پوستر برگشت.');
+    } catch(e) {
+      let rollbackMessage='';
+      if(metadataCleared&&supabase){
+        const {error:rollbackError}=await supabase.from('plato_land_series3_home_media_settings')
+          .update({media_mode:previousMode,storage_path:previousKey,updated_at:new Date().toISOString()}).eq('id',1);
+        if(rollbackError)rollbackMessage=' بازگردانی مرجع قبلی در Supabase هم ناموفق بود: '+rollbackError.message;
+      }
+      setMessage('حذف تیزر کامل نشد: '+(e instanceof Error?e.message:'خطای ناشناخته')+rollbackMessage);
+    } finally {setTeaserDeleteBusy(false);}
+  }
+
   async function changeMediaMode(next:'poster'|'video') {
     if(!supabase)return;
     if(next==='video'&&(!teaserExists||!isSeries3TeaserKey(teaserKey))){setMessage('ابتدا ویدیوی تیزر را در R2 بارگذاری و تأیید کن.');return;}
@@ -170,6 +214,17 @@ export function Series3SlidesPanel() {
           <input type="file" accept="video/mp4,.mp4" onChange={e=>setTeaserSelected(e.target.files?.[0]||null)} style={{width:'100%',color:'#ddd',fontSize:12,margin:'8px 0'}}/>
           {teaserSelected&&<p style={{fontSize:11,color:'#c8c0b0',overflowWrap:'anywhere'}}>{teaserSelected.name} · {(teaserSelected.size/1024/1024).toFixed(1)} MB</p>}
           <button style={button} disabled={!teaserSelected||teaserBusy} onClick={()=>void uploadTeaser()}>{teaserBusy?'در حال ذخیره…':teaserExists?'جایگزینی ویدیوی تیزر':'بارگذاری ویدیوی تیزر'}</button>
+          {teaserExists&&<div style={{marginTop:9}}>
+            {!teaserDeleteConfirm
+              ? <button type="button" disabled={teaserBusy||teaserDeleteBusy} onClick={()=>setTeaserDeleteConfirm(true)} style={{...button,background:'#42201e',color:'#ffd0c9',border:'1px solid #8d4540'}}>حذف تیزر از R2</button>
+              : <div style={{padding:10,border:'1px solid #8d4540',borderRadius:9,background:'#1b1111'}}>
+                  <p style={{fontSize:12,lineHeight:1.8,color:'#ffb2a8',margin:'0 0 8px'}}>فایل ویدیویی اصلی از R2 حذف می‌شود و مرجع آن از Supabase پاک خواهد شد. حالت نمایش صفحه اول به پوستر برمی‌گردد. این حذف دائمی است.</p>
+                  <div style={{display:'flex',gap:8}}>
+                    <button type="button" disabled={teaserDeleteBusy} onClick={()=>setTeaserDeleteConfirm(false)} style={{...button,background:'#302718',color:'#eee',flex:1}}>انصراف</button>
+                    <button type="button" disabled={teaserDeleteBusy} onClick={()=>void deleteTeaser()} style={{...button,background:'#9f3932',color:'#fff',flex:1}}>{teaserDeleteBusy?'در حال حذف…':'تأیید حذف دائمی'}</button>
+                  </div>
+                </div>}
+          </div>}
           <p style={{fontSize:11,color:'#a9a08e',lineHeight:1.8,marginBottom:0}}>برای نمایش خودکار در صفحه اول، فایل MP4 را بارگذاری و سپس حالت ویدئوی تیزر را فعال کن. با بازگشت به حالت پوستر، فایل ویدئو حذف نمی‌شود.</p>
           </div>
         </details>

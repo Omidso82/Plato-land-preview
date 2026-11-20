@@ -4,7 +4,7 @@ const RULES_VIDEO_PREFIX =
   'plato-land/backgammon/series-3/public-media/videos/important-rules-';
 
 const MEDIA_API =
-  'https://plato-land-media-endpoint.pages.dev/api/series3-media?asset=rules';
+  'https://plato-land-media-pages.pages.dev/api/series3-media?asset=rules';
 
 export function isSeries3RulesVideoKey(key: string): boolean {
   return /^plato-land\/backgammon\/series-3\/public-media\/videos\/important-rules-\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.mp4$/.test(key);
