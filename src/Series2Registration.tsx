@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Crown, Trophy, Sparkles } from 'lucide-react';
+import { Archive, ChevronRight, Crown, Trophy, Sparkles } from 'lucide-react';
 import { supabase } from './supabase';
 import TemporaryPageHeader from './TemporaryPageHeader';
 import Series2Prediction from './Series2Prediction';
@@ -426,6 +426,12 @@ export default function Series2Registration({ showSeries3Entry = true, showSerie
             <span>بازی، رقابت، قهرمانی</span>
           </footer>
         </section>
+        {showArchiveHeader && (
+          <section aria-label="آرشیو مسابقات سری دوم" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'13px 16px',margin:'16px 0 0',border:'1px solid rgba(140,106,52,.65)',borderRadius:12,background:'linear-gradient(110deg,rgba(42,33,20,.88),rgba(20,20,22,.96))'}}>
+            <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}><span style={{width:34,height:34,display:'grid',placeItems:'center',borderRadius:9,background:'rgba(214,180,109,.12)',flexShrink:0}}><Archive size={18} color="#d6b46d"/></span><div><div style={{fontSize:13,fontWeight:800,color:'#f0d99f'}}>آرشیو مسابقات سری دوم</div><div style={{fontSize:11,color:'#b7a27b',marginTop:3}}>مشاهده نتایج و سوابق دوره گذشته</div></div></div>
+            <a href="/?page=series2-archive" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,padding:'9px 13px',border:'1px solid #8c6a34',borderRadius:9,color:'#f0d99f',background:'#211b12',textDecoration:'none',fontSize:12,fontWeight:800,whiteSpace:'nowrap'}}>ورود به آرشیو <ChevronRight size={15}/></a>
+          </section>
+        )}
       </div>
     </main>
   );
