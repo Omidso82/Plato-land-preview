@@ -117,7 +117,6 @@ export function Series3SlidesPanel() {
       setTeaserKey(uploadedKey);
       setTeaserExists(true);
       setTeaserSelected(null);
-      await refresh();
       setMessage('تیزر در R2 ذخیره، با HEAD تأیید و مرجع آن در Supabase ثبت شد.');
     }catch(e){
       setMessage((r2Saved?'فایل در R2 ذخیره شده، اما ثبت مرجع آن در Supabase کامل نشد؛ موفقیت نهایی تأیید نمی‌شود: ':'بارگذاری تیزر ناموفق بود: ')+(e instanceof Error?e.message:'خطای ناشناخته'));
