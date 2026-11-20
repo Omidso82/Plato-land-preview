@@ -3,7 +3,7 @@
 **Version:** 1.8  
 **Date:** 2026-11-20  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** Prepared on feature branch; CI, merge, and deployment pending.
+**Status:** Merged and deployed; verification and production function deployment confirmed.
 
 ## 1. Scope
 
@@ -38,9 +38,14 @@ The existing saved ranking order and win-percentage calculation remain unchanged
 - Repository: `Omidso82/Plato-land-preview`
 - Branch: `fix/series3-stats-only-ranking-v2`
 - Feature commit: `5b10ac55e4966f69579790ac31543323102f40dd`
+- PR: [#226](https://github.com/Omidso82/Plato-land-preview/pull/226) — merged.
+- Merge commit: `7c5003fbc244e49d05456b4fd7f760847c664dc5`
 - Source: `supabase/functions/plato-land-series3-telegram/index.ts`
 - Ranking output adds the wins-count column.
 - Group output removes player statistics and retains seed designation.
+- Supabase Edge Function `plato-land-series3-telegram`: ACTIVE, version 7, `verify_jwt=true`.
+- Merged main source rechecked: ranking includes wins and win percentage; pot and group builders contain no player statistics.
+- No Telegram messages were sent.
 
 ## 6. Version history
 
