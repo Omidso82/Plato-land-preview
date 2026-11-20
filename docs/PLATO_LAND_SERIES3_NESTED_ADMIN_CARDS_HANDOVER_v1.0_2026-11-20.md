@@ -1,6 +1,6 @@
 # PLATO LAND – Series 3 Nested Admin Cards Handover
 
-- Version: 1.0
+- Version: 1.1
 - Date: 2026-11-20
 - Project: PLATO LAND – Temporary Projects
 - Event: Series 3 Backgammon League
@@ -59,17 +59,19 @@ No Series 2 or PLATO LAND – Main Website feature is in scope. No new database,
 - Feature branch: `feat/series3-nested-admin-cards-collapsible-2026-11-20`
 - PR: https://github.com/Omidso82/Plato-land-preview/pull/233
 - PR status at last check: open, unmerged, mergeable.
-- Latest reviewed feature-branch head at last check: `7493174bdddd551073d41cd184f61cf4c8461da6` (documentation commit may advance it).
-- Compare result at last check: 9 commits ahead, 0 behind main, seven application files changed.
+- Corrected feature-branch head at v1.1 update: `727b4a8b93e1405008fbceb880890be2434fb35d` (this documentation update advances the branch head).
+- Compare result before this documentation update: 10 commits ahead, 0 behind main, eight files changed (seven application files and this handover).
 
 ## 5. Verification status and limitations
 
-- JSX source structure was reviewed for matching opening/closing `details` and `summary` tags in the modified components.
-- GitHub Actions workflow runs for the checked feature-branch head returned no runs.
-- Commit status checks returned no statuses.
-- Therefore build, TypeScript typecheck, automated tests, Cloudflare Pages preview, production deployment, and live iPhone visual acceptance are **not verified** by this handover.
+- The first CI attempt on the initial nested-card commit failed TypeScript parsing in the seeding and group disclosure JSX. The mismatched closing tags were corrected in commit `727b4a8b93e1405008fbceb880890be2434fb35d`.
+- On that corrected head, GitHub Actions workflow **Build and typecheck** run #1336 completed successfully: `npm install`, `npm run typecheck`, `npm run build`, all listed Deno tests, and both Deno checks passed.
+- The separate PLATO LAND website workflow run #1086 completed its build and upload steps successfully, but its deploy job was **skipped** because this is a pull-request ref, not `main`. This did not publish to `platoland.org`.
+- The Cloudflare Pages check for `plato-land-media-endpoint` was still in progress at the last check and is not evidence of a production website deployment.
+- A previous Cloudflare build failure comment for project `plato-land-preview` referred to older commit `2ab31c7`, not the corrected head; do not treat it as the result for the corrected source.
+- Live iPhone visual acceptance has not been performed.
 - Do not claim that the live website has been updated.
-- Before merge/release, obtain successful build/typecheck and relevant deployment checks, then visually inspect the admin panel on mobile.
+- Before merge/release, inspect the current preview of the actual Series 3 admin page on mobile and obtain the owner's approval.
 
 ## 6. Release gate
 
@@ -77,4 +79,5 @@ This PR is not authorization to merge or deploy. Merge and production release re
 
 ## 7. Version history
 
-- v1.0 — 2026-11-20: records the nested-card collapsible-by-default implementation and its verification boundaries.
+- v1.0 — 2026-11-20: records the nested-card collapsible-by-default implementation and initial verification boundary.
+- v1.1 — 2026-11-20: records the JSX correction, successful typecheck/build/Deno verification on the corrected code head, and confirms that the PR's production deploy job was skipped.
