@@ -10,6 +10,10 @@ const sections: { title: string; description: string; items: SectionOption[] }[]
   { title: 'رتبه‌بندی و آمار ۴۸ بازیکن', description: 'فهرست کامل بر اساس درصد برد و معیارهای ثبت‌شده', items: [{ id: 'ranking', label: 'جدول کامل رتبه‌بندی ۴۸ نفر' }] },
   { title: 'سیدبندی', description: 'هر سید جداگانه قابل انتشار است', items: [1,2,3,4].map(n => ({ id: 'pot:'+n, label: 'سید '+n+' · ۱۲ بازیکن' })) },
   { title: 'گروه‌بندی', description: 'هر گروه A تا L یک پیام مستقل دارد', items: groups.map(g => ({ id: 'group:'+g, label: 'گروه '+g })) },
+  { title: 'برنامه روزانه مرحله گروهی', description: 'پیش‌نمایش و ارسال برنامه کامل هر روز یا فقط برنامه یک گروه', items: [1,2,3].flatMap(day => [
+    { id: 'fixtures:day:'+day+':ALL', label: 'روز '+day+' · همه گروه‌ها (۲۴ بازی)' },
+    ...groups.map(g => ({ id: 'fixtures:day:'+day+':'+g, label: 'روز '+day+' · گروه '+g+' (۲ بازی)' }))
+  ]) },
   { title: 'مراحل حذفی', description: 'هر مرحله جداگانه و بر اساس براکت ذخیره‌شده', items: [
     { id: 'bracket:round32', label: 'مرحله ۳۲ نفره · ۱۶ مسابقه' },
     { id: 'bracket:round16', label: 'مرحله ۱۶ نفره · ۸ مسابقه' },
