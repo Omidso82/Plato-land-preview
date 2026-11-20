@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabase } from './supabase';
 
 type SectionOption = { id: string; label: string };
+type PredictionCampaign = { id:string; title:string; description:string; campaign_type:string; status:string; is_open:boolean; opens_at:string|null; closes_at:string|null; questions:Array<{id:string;label:string;type?:string;options?:string[]}>; prize_rules:any };
 type PreviewMessage = { section_id: string; title: string; text: string; plain_text: string; item_count: number };
 type ApiResult = { ok?: boolean; error?: string; messages?: PreviewMessage[]; sent?: boolean; results?: Array<{section_id:string;message_id:number}>; sent_count?: number; failed_section?: string };
 
@@ -38,6 +39,20 @@ export default function Series3TelegramManager() {
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [campaigns, setCampaigns] = useState<PredictionCampaign[]>([]);
+  const [predictionLoading, setPredictionLoading] = useState(false);
+  const [predictionError, setPredictionError] = useState('');
+
+  useEffect(() => {
+    if (!expanded || !supabase) return;
+    let active = true;
+    setPredictionLoading(true);
+    setPredictionError('');
+    supabase.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,is_open,opens_at,closes_at,questions,prize_rules').eq('event_key','series3').eq('status','published').order('created_at',{ascending:false})
+      .then(({data,error}) => { if (!active) return; if (error) setPredictionError('دریافت پیش‌بینی‌های منتشرشده ناموفق بود: '+error.message); else setCampaigns((data||[]) as PredictionCampaign[]); })
+      .finally(() => { if (active) setPredictionLoading(false); });
+    return () => { active = false; };
+  }, [expanded]);
 
   const selectedCount = selected.length;
   const previewCount = useMemo(() => preview.length, [preview]);
@@ -55,7 +70,8 @@ export default function Series3TelegramManager() {
     setNotice('');
   }
   function selectAll() {
-    setSelected(current=>current.length===allIds.length?[]:allIds);
+    const availableIds=[...allIds,...campaigns.map(c=>'prediction:'+c.id)];
+    setSelected(current=>current.length===availableIds.length?[]:availableIds);
     setPreview([]);
     setNotice('');
   }
@@ -138,6 +154,20 @@ export default function Series3TelegramManager() {
         </div>
       </details>)}
     </div>
+
+    <details open style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
+      <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>پیش‌بینی‌های منتشرشده سری سوم</summary>
+      <p style={{...muted,margin:'8px 0'}}>کمپین‌های منتشرشده مستقیماً از دیتابیس اصلی خوانده می‌شوند. هر کمپین را انتخاب کن تا متن کامل و فهرست نامزدها برای تلگرام آماده شود.</p>
+      {predictionLoading?<p style={muted}>در حال دریافت پیش‌بینی‌ها…</p>:predictionError?<p role="alert" style={{color:'#ffc8c8',fontSize:12}}>{predictionError}</p>:campaigns.length===0?<p style={muted}>در حال حاضر پیش‌بینی منتشرشده‌ای برای سری سوم وجود ندارد.</p>:
+        <div style={{display:'grid',gap:8,marginTop:10}}>{campaigns.map(c=>{
+          const id='prediction:'+c.id; const checked=selected.includes(id);
+          const questionCount=(c.questions||[]).reduce((n,q)=>n+(q.options?.length||0),0);
+          return <label key={c.id} style={{display:'flex',alignItems:'flex-start',gap:9,padding:11,border:'1px solid '+(checked?'#b18b45':'#39352d'),borderRadius:8,background:checked?'#352a17':'#101112',cursor:'pointer'}}>
+            <input type="checkbox" checked={checked} onChange={()=>toggle(id)} style={{accentColor:'#d6b35f',width:18,height:18,marginTop:2,flexShrink:0}}/>
+            <span style={{minWidth:0}}><strong style={{display:'block',color:'#f0d99f',fontSize:13}}>{c.title}</strong><small style={{display:'block',...muted}}>{c.is_open?'دریافت پاسخ باز است':'دریافت پاسخ بسته است'} · {fa(questionCount)} گزینه</small></span>
+          </label>;
+        })}</div>}
+    </details>
 
     <details style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
       <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>برنامه و نتایج روزانه سری سوم</summary>
