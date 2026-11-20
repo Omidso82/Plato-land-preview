@@ -69,7 +69,7 @@ export default function Series3PublicDashboard(){
    <span style={{border:'1px solid #806638',borderRadius:30,padding:'6px 11px',fontSize:11,color:gold}}>۴۸ بازیکن · ۱۲ گروه</span>
   </div>
   <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:7,marginTop:13}}>
-   {[['کل بازی‌های گروهی',fixtures.length],['نتیجه ثبت‌شده',completed],['در انتظار',pending]].map(([label,value])=><div key={String(label)} style={{...card,padding:9,textAlign:'center'}}><div style={muted}>{label}</div><strong style={{display:'block',fontSize:21,color:gold,marginTop:3}}>{loading?'—':fa(Number(value))}</strong></div>)}
+   {[['کل بازی‌های گروهی',fixtures.length],['در انتظار',pending]].map(([label,value])=><div key={String(label)} style={{...card,padding:9,textAlign:'center'}}><div style={muted}>{label}</div><strong style={{display:'block',fontSize:21,color:gold,marginTop:3}}>{loading?'—':fa(Number(value))}</strong></div>)}
   </div>
   {noShows>0&&<p style={{...muted,margin:'7px 2px 0'}}>عدم حضور دوطرفه: {fa(noShows)} بازی · بدون امتیاز و برد برای طرفین</p>}
   <nav aria-label="بخش‌های داشبورد" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:5,marginTop:14}}>
