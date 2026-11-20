@@ -269,7 +269,7 @@ Deno.serve(async (req: Request) => {
         ? admin.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,questions,prize_rules').eq('event_key','series3').eq('id',reportCampaignId).eq('status','published').maybeSingle()
         : Promise.resolve({data:null,error:null}),
       reportMode
-        ? admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).in('voter_plato_id',reportVoterIds)
+        ? admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).in('id',reportVoterIds)
         : Promise.resolve({data:[],error:null}),
       reportMode
         ? admin.from('plato_land_series3_group_match_results').select('match_id,result_status,score_a,score_b,player_a_plato_id,player_b_plato_id').eq('event_key','series3')
