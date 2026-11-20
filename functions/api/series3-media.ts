@@ -49,7 +49,7 @@ function json(data: unknown, status = 200): Response {
 function corsHeaders(origin: string): Headers {
   return new Headers({
     "Access-Control-Allow-Origin": origin,
-    "Access-Control-Allow-Methods": "GET, HEAD, POST, OPTIONS",
+    "Access-Control-Allow-Methods": "GET, HEAD, POST, DELETE, OPTIONS",
     "Access-Control-Allow-Headers": "Authorization, Content-Type, Range",
     "Access-Control-Expose-Headers": "Content-Length, Content-Range, Accept-Ranges, ETag",
     "Access-Control-Max-Age": "86400",
