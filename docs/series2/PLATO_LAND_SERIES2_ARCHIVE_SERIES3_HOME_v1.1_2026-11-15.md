@@ -1,5 +1,5 @@
 # PLATO LAND – Series 2 Archive and Series 3 Public Home
-## Change record v1.3 – 2026-11-20
+## Change record v1.4 – 2026-11-20
 
 **Project:** PLATO LAND – Temporary Projects  
 **Supersedes:** v1.1  
@@ -22,6 +22,8 @@ No tournament records, predictions, results, images, Supabase schema, Edge Funct
 
 ## 3. Verification
 After merge and deployment, verify the archive card remains on the Series 3 public page but appears at the bottom, below the tournament dashboard/summary; verify the Series 2 archive page is unchanged.
+
+Deployment reliability note: the production Pages workflow used a single global concurrency group (`pages`) for both `main` and pull-request runs. A concurrent PR deployment run could cancel the production deployment. The workflow now scopes concurrency by `github.ref`, so PR runs cannot cancel the `main` deployment. Same-ref superseded runs are still cancelled.
 
 
 After merge and deployment, verify:
