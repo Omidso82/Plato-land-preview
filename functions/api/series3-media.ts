@@ -130,8 +130,8 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
   // Public rules and teaser videos are immutable/versioned. The server creates every new key;
   // clients can only read a key that matches the exact asset-specific allowlist.
   const requestedKey = (assetName === "rules" || assetName === "teaser") ? (url.searchParams.get("key") || "") : "";
-  const rulesKeyPattern = /^plato-land\\/backgammon\\/series-3\\/public-media\\/videos\\/important-rules-\\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.mp4$/;
-  const teaserKeyPattern = /^plato-land\\/backgammon\\/series-3\\/public-media\\/videos\\/teaser-\\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.mp4$/;
+  const rulesKeyPattern = /^plato-land\/backgammon\/series-3\/public-media\/videos\/important-rules-\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.mp4$/;
+  const teaserKeyPattern = /^plato-land\/backgammon\/series-3\/public-media\/videos\/teaser-\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.mp4$/;
   if (request.method !== "POST" && assetName === "rules" && !rulesKeyPattern.test(requestedKey)) {
     return json({ error: "A valid versioned rules-video key is required." }, 400);
   }
