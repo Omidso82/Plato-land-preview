@@ -95,38 +95,48 @@ function buildVoterReportMessages(campaign: PredictionCampaign, entries: Predict
     const lines: string[] = [];
     if (campaign.campaign_type === "champion") {
       const picked = response.champion;
-      lines.push("<b>نوع پیش‌بینی:</b> قهرمان سری سوم");
-      lines.push("<b>انتخاب ثبت‌شده:</b> " + code(typeof picked === "string" ? picked : "ثبت نشده"));
-      lines.push("<b>نتیجه ارزیابی:</b> در انتظار نتیجه");
-      lines.push("<i>نتیجه رسمی قهرمان هنوز در منبع قطعی ثبت نشده است.</i>");
+      lines.push("<b>انتخاب:</b> " + code(typeof picked === "string" ? picked : "ثبت نشده"));
+      lines.push("<b>نتیجه:</b> در انتظار نتیجه");
+      lines.push("⏳ در انتظار نتیجه رسمی قهرمان");
     } else if (campaign.campaign_type === "match_predictions") {
       let correct = 0, incorrect = 0, pending = 0, unknown = 0;
       for (const question of questions) {
         const matchId = question.match?.matchId;
         const picked = response[question.id];
         const match = typeof matchId === "string" ? resultById.get(matchId) : undefined;
-        let status = "در انتظار نتیجه", winner = "";
-        if (typeof matchId !== "string" || !matchId) { status = "نامشخص"; unknown++; }
-        else if (!match) { pending++; }
-        else if (match.result_status === "pending" || match.score_a === null || match.score_b === null || match.score_a === match.score_b) {
+        let status = "در انتظار نتیجه";
+        let winner = "";
+        let playerA = match?.player_a_plato_id || "";
+        let playerB = match?.player_b_plato_id || "";
+
+        if (typeof matchId !== "string" || !matchId) {
+          status = "نامشخص";
+          unknown++;
+        } else if (!match) {
+          pending++;
+        } else if (match.result_status === "pending" || match.score_a === null || match.score_b === null || match.score_a === match.score_b) {
           pending++;
         } else if (Number.isFinite(match.score_a) && Number.isFinite(match.score_b)) {
           winner = match.score_a! > match.score_b! ? match.player_a_plato_id : match.player_b_plato_id;
           if (typeof picked !== "string" || !picked) { status = "بدون پاسخ"; unknown++; }
           else if (picked.toLowerCase() === winner.toLowerCase()) { status = "درست"; correct++; }
           else { status = "نادرست"; incorrect++; }
-        } else { status = "نامشخص"; unknown++; }
-        lines.push("<b>" + escapeHtml(question.label || matchId || question.id) + "</b>");
-        lines.push("پیش‌بینی: " + code(typeof picked === "string" ? picked : "ثبت نشده") +
-          " · برنده: " + code(winner || (status === "در انتظار نتیجه" ? "ثبت نشده" : "نامشخص")) +
-          " · <b>" + escapeHtml(status) + "</b>");
+        } else {
+          status = "نامشخص";
+          unknown++;
+        }
+
+        lines.push("<b>" + code(playerA || "بازیکن اول") + " مقابل " + code(playerB || "بازیکن دوم") + "</b>");
+        lines.push("پیش‌بینی: " + code(typeof picked === "string" ? picked : "ثبت نشده"));
+        lines.push("نتیجه: " + (winner ? code(winner) : (status === "در انتظار نتیجه" ? "در انتظار نتیجه" : "نامشخص")));
+        const marker = status === "درست" ? "✓ درست" : status === "نادرست" ? "✕ نادرست" : status === "در انتظار نتیجه" ? "⏳ در انتظار نتیجه" : status === "بدون پاسخ" ? "— بدون پاسخ" : "؟ نامشخص";
+        lines.push("<b>" + marker + "</b>", "");
       }
-      lines.unshift("<b>خلاصه:</b> درست " + fa(correct) + " · نادرست " + fa(incorrect) + " · در انتظار " + fa(pending) + " · نامشخص " + fa(unknown));
+      lines.unshift("<b>خلاصه:</b> ✓ " + fa(correct) + " · ✕ " + fa(incorrect) + " · ⏳ " + fa(pending) + (unknown ? " · نامشخص " + fa(unknown) : ""));
     } else throw new Error("نوع کمپین برای گزارش نتیجه پشتیبانی نمی‌شود.");
-    return makeMessage("prediction-report:" + campaign.id + ":" + entry.id, "گزارش نتیجه پیش‌بینی · " + entry.voter_plato_id, campaign.title, lines, campaign.campaign_type === "match_predictions" ? questions.length : 1);
+    return makeMessage("prediction-report:" + campaign.id + ":" + entry.id, "گزارش پیش‌بینی · " + entry.voter_plato_id, "", lines, campaign.campaign_type === "match_predictions" ? questions.length : 1);
   });
 }
-
 function buildMessages(selected: string[], ranking: Player[], pots: Player[][], groups: Array<{name:string;players:Player[]}>, bracket: Bracket, fixtures: FixtureSnapshot|undefined, predictions: PredictionCampaign[]): Message[] {
   const result: Message[] = [];
   const groupNames = "ABCDEFGHIJKL".split("");
