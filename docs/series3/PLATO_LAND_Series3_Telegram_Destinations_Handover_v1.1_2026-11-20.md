@@ -1,9 +1,9 @@
 # PLATO LAND – Series 3 Telegram Destination Selection & Delivery History
 
-**Version:** 1.4  
+**Version:** 1.5  
 **Date:** 2026-11-20  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** PR updated with a UI safeguard against duplicate retries after partial delivery; CI for the new commit is pending. Database migration, secret configuration and production deployment remain pending.
+**Status:** PR #254 was squash-merged into `main` on 2026-11-20 (merge commit `03da7844a78db7b229739a3bd50444ee5078eb02`). Post-merge GitHub Actions checks were queued and Cloudflare Pages build was in progress at the time of this update. Database migration, secret configuration, Edge Function deployment and production frontend publication remain pending.
 
 ## 1. Approved scope
 Extend the existing Series 3 Telegram publishing center in the existing temporary management panel. No new bot, page, route, or parallel panel is introduced.
@@ -57,7 +57,7 @@ Keep existing `TELEGRAM_BOT_TOKEN` and `TELEGRAM_TEST_CHAT_ID` unchanged. Do not
 The current assistant tool connection does not expose a supported Supabase secret-write action. Therefore this secret has not been set by this change set.
 
 ## 7. Release gates
-1. Review PR #254 and ensure all required CI checks pass.
+1. PR #254 has been merged. Verify post-merge CI and deployment checks on the merge commit before proceeding.
 2. Apply the included migration to the primary database through the approved release process.
 3. Set `TELEGRAM_MAIN_CHANNEL_ID` in the primary project's Edge Function Secrets.
 4. Deploy the updated Edge Function and verify its active version.
@@ -78,4 +78,5 @@ The current assistant tool connection does not expose a supported Supabase secre
 - **v1.1 — 2026-11-20:** Adds selectable destinations, independent delivery outcomes and owner-only delivery history; release gates remain pending.
 - **v1.2 — 2026-11-20:** Fixes Deno destination typing errors, isolates per-destination configuration/network failures, adds a visible warning for unsaved delivery history, and updates the release status. No migration or production release performed.
 - **v1.3 — 2026-11-20:** Corrects the remaining inferred string type for the delivery status union found by CI. Awaiting the next full CI result; no migration or production release performed.
-- **v1.4 — 2026-11-20:** Clears the send preview after any accepted delivery, and retains retry selection only for destinations where zero messages were delivered and the destination failed completely. This prevents a partial delivery from being resent wholesale through the existing preview. CI and release remain pending.
+- **v1.4 — 2026-11-20:** Clears the send preview after any accepted delivery, and retains retry selection only for destinations where zero messages were delivered and the destination failed completely. This prevents a partial delivery from being resent wholesale through the existing preview.
+- **v1.5 — 2026-11-20:** Records the successful squash-merge of PR #254 into `main` (merge commit `03da7844a78db7b229739a3bd50444ee5078eb02`). Post-merge checks were still running at documentation time. No database migration, production secret change, Edge Function deployment, frontend production publication or Telegram send was performed.
