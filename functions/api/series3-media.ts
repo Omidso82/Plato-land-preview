@@ -155,7 +155,7 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
         : rulesKeyPattern;
       if (!pattern.test(requestedDeleteKey)) return json({ error: "A valid versioned media key is required for deletion." }, 400);
       objectKey = requestedDeleteKey;
-    } else if (assetName !== "series2-poster" && assetName !== "poster" && !/^series2-slide-\\d{2}$/.test(assetName) && !/^slide-\\d{2}$/.test(assetName)) {
+    } else if (assetName !== "series2-poster" && assetName !== "poster" && !/^series2-slide-\d{2}$/.test(assetName) && !/^slide-\d{2}$/.test(assetName)) {
       return json({ error: "Deletion is not enabled for this media slot." }, 403);
     }
 
