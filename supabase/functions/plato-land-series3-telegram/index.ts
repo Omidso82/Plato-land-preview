@@ -63,21 +63,23 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
       if (ranking.length !== 48) throw new Error("Snapshot رتبه‌بندی ۴۸ بازیکن کامل نیست.");
       const rankHeading = "ردیف";
       const idHeading = "Plato ID";
+      const winsHeading = "تعداد برد";
       const rateHeading = "میانگین برد";
       const rankWidth = Math.max(rankHeading.length, fa(ranking.length).length);
       const idWidth = Math.max(idHeading.length, ...ranking.map(p => String(p.plato_id ?? "").length));
+      const winsWidth = Math.max(winsHeading.length, ...ranking.map(p => fa(Number(p.games_won ?? 0)).length));
       const rateWidth = rateHeading.length;
       // Force a left-to-right base direction inside Telegram's preformatted block
-      // so all three headings stay above their matching values in RTL chats.
+      // so all four headings stay above their matching values in RTL chats.
       const lrm = "\u200E";
       const rows = [
-        lrm + rankHeading.padStart(rankWidth) + "  " + idHeading.padEnd(idWidth) + "  " + rateHeading + lrm,
+        lrm + rankHeading.padStart(rankWidth) + "  " + idHeading.padEnd(idWidth) + "  " + winsHeading.padStart(winsWidth) + "  " + rateHeading + lrm,
         ...ranking.map((p, i) =>
-          lrm + fa(i + 1).padStart(rankWidth) + "  " + String(p.plato_id ?? "—").padEnd(idWidth) + "  " + playerWinRate(p).padStart(rateWidth) + lrm
+          lrm + fa(i + 1).padStart(rankWidth) + "  " + String(p.plato_id ?? "—").padEnd(idWidth) + "  " + fa(Number(p.games_won ?? 0)).padStart(winsWidth) + "  " + playerWinRate(p).padStart(rateWidth) + lrm
         ),
       ];
       const lines = ["<pre>" + escapeHtml(rows.join("\n")) + "</pre>"];
-      result.push(makeMessage(id,"جدول رتبه‌بندی ۴۸ بازیکن","ردیف ۱ تا ۴۸ · شناسه PLATO · درصد برد",lines,ranking.length));
+      result.push(makeMessage(id,"جدول رتبه‌بندی ۴۸ بازیکن","ردیف ۱ تا ۴۸ · Plato ID · تعداد برد · میانگین برد",lines,ranking.length));
       continue;
     }
     if (id.startsWith("pot:")) {
@@ -92,7 +94,7 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
       const name = id.split(":")[1];
       const group = groups.find(g=>g.name===name);
       if (!group || group.players.length !== 4) throw new Error("اطلاعات گروه "+name+" کامل نیست.");
-      const lines = group.players.map((p,i)=>(fa(i+1)+". "+playerName(p)+"  ·  سید "+fa(i+1)+"  ·  "+playerStats(p)));
+      const lines = group.players.map((p,i)=>(fa(i+1)+". "+playerName(p)+"  ·  سید "+fa(i+1)));
       result.push(makeMessage(id,"معرفی گروه "+name,"ترکیب چهار نفره گروه",lines,group.players.length));
       continue;
     }
