@@ -26,6 +26,8 @@ type Player = { id?: string; plato_id: string; games_won?: number | null; games_
 type MatchToken = { id?: string; label?: string; source?: string; group?: string };
 type BracketMatch = { id: string; a: MatchToken; b: MatchToken };
 type Bracket = { round32?: BracketMatch[]; round16?: BracketMatch[]; quarterfinals?: BracketMatch[]; semifinals?: BracketMatch[]; final?: BracketMatch[] };
+type Fixture = { id:string; group:string; round:number; match_no:number; player_a:{plato_id:string}; player_b:{plato_id:string}; time:string };
+type FixtureSnapshot = { group_stage:{days:Array<{round:number;persian_date:string;time:string;matches:Fixture[]}>} };
 type Message = { section_id: string; title: string; text: string; plain_text: string; item_count: number };
 
 const roundConfig: Record<string, { title: string; subtitle: string }> = {
@@ -54,9 +56,11 @@ function playerStats(player: Player): string {
   return fa(won) + " برد از " + fa(played) + " بازی · " + playerWinRate(player);
 }
 function playerName(player: Player): string { return code(player.plato_id); }
-function buildMessages(selected: string[], ranking: Player[], pots: Player[][], groups: Array<{name:string;players:Player[]}>, bracket: Bracket): Message[] {
+function buildMessages(selected: string[], ranking: Player[], pots: Player[][], groups: Array<{name:string;players:Player[]}>, bracket: Bracket, fixtures?: FixtureSnapshot): Message[] {
   const result: Message[] = [];
-  const allowed = new Set(["ranking", ...[1,2,3,4].map(n=>"pot:"+n), ..."ABCDEFGHIJKL".split("").map(g=>"group:"+g), ...Object.keys(roundConfig).map(k=>"bracket:"+k)]);
+  const groupNames = "ABCDEFGHIJKL".split("");
+  const fixtureIds = [1,2,3].flatMap(day => ["fixtures:day:"+day+":ALL", ...groupNames.map(g=>"fixtures:day:"+day+":"+g)]);
+  const allowed = new Set(["ranking", ...[1,2,3,4].map(n=>"pot:"+n), ...groupNames.map(g=>"group:"+g), ...Object.keys(roundConfig).map(k=>"bracket:"+k), ...fixtureIds]);
   if (selected.length < 1 || selected.length > 24 || selected.some(id => !allowed.has(id))) throw new Error("فهرست انتخاب‌ها معتبر نیست؛ صفحه را تازه‌سازی کن.");
   for (const id of selected) {
     if (id === "ranking") {
@@ -96,6 +100,24 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
       if (!group || group.players.length !== 4) throw new Error("اطلاعات گروه "+name+" کامل نیست.");
       const lines = group.players.map((p,i)=>(fa(i+1)+". "+playerName(p)+"  ·  سید "+fa(i+1)));
       result.push(makeMessage(id,"معرفی گروه "+name,"ترکیب چهار نفره گروه",lines,group.players.length));
+      continue;
+    }
+    if (id.startsWith("fixtures:day:")) {
+      if (!fixtures?.group_stage?.days) throw new Error("برنامه مسابقات گروهی در دیتابیس ثبت نشده است.");
+      const parts = id.split(":");
+      const dayNo = Number(parts[2]);
+      const groupFilter = parts[3];
+      const day = fixtures.group_stage.days.find(d=>d.round===dayNo);
+      if (!day) throw new Error("روز انتخاب‌شده در برنامه مسابقات پیدا نشد.");
+      const matches = day.matches.filter(m=>groupFilter==="ALL" || m.group===groupFilter);
+      const expected = groupFilter==="ALL"?24:2;
+      if (matches.length!==expected) throw new Error("تعداد مسابقات برنامه با ساختار مصوب مطابقت ندارد.");
+      const lines = matches.map(m=>[
+        "<b>گروه "+escapeHtml(m.group)+" · بازی "+fa(m.match_no)+"</b>",
+        code(m.player_a.plato_id)+"  <b>مقابل</b>  "+code(m.player_b.plato_id)+"  ·  "+escapeHtml(m.time)
+      ].join("\n"));
+      const scopeTitle = groupFilter==="ALL" ? "همه گروه‌ها" : "گروه "+groupFilter;
+      result.push(makeMessage(id,"برنامه روز "+fa(dayNo)+" · "+scopeTitle,day.persian_date+" · ساعت ۲۱:۰۰ تهران",lines,matches.length));
       continue;
     }
     if (id.startsWith("bracket:")) {
@@ -144,17 +166,22 @@ Deno.serve(async (req: Request) => {
     if (action !== "preview" && action !== "send") return json({ error: "عملیات درخواست معتبر نیست." }, 400);
     const selected = Array.isArray(body.sections) ? body.sections.map((x: unknown)=>String(x)) : [];
 
+    const wantsFixtures = selected.some((id:string)=>id.startsWith("fixtures:day:"));
     const wantsBracket = selected.some((id:string)=>id.startsWith("bracket:"));
     const wantsSeeding = selected.some((id:string)=>!id.startsWith("bracket:"));
-    const [seedingResult, knockoutResult] = await Promise.all([
+    const [seedingResult, knockoutResult, fixturesResult] = await Promise.all([
       wantsSeeding
         ? admin.from("plato_land_series3_seeding_draws").select("ranking_snapshot,pots_snapshot,groups_snapshot").eq("event_key","series3").maybeSingle()
         : Promise.resolve({data:null,error:null}),
       wantsBracket
         ? admin.from("plato_land_series3_knockout_draws").select("bracket_snapshot").eq("event_key","series3").maybeSingle()
         : Promise.resolve({data:null,error:null}),
+      wantsFixtures
+        ? admin.from("plato_land_series3_group_fixtures").select("schedule_snapshot").eq("event_key","series3").maybeSingle()
+        : Promise.resolve({data:null,error:null}),
     ]);
     if (seedingResult.error) throw seedingResult.error;
+    if (fixturesResult.error) throw fixturesResult.error;
     if (knockoutResult.error) throw knockoutResult.error;
     const seeding = seedingResult.data;
     const knockout = knockoutResult.data;
@@ -165,9 +192,11 @@ Deno.serve(async (req: Request) => {
     const pots = Array.isArray(seeding?.pots_snapshot) ? seeding.pots_snapshot as Player[][] : [];
     const groups = Array.isArray(seeding?.groups_snapshot) ? seeding.groups_snapshot as Array<{name:string;players:Player[]}> : [];
     const bracket = (knockout?.bracket_snapshot ?? {}) as Bracket;
+    const fixtures = (fixturesResult.data?.schedule_snapshot ?? undefined) as FixtureSnapshot | undefined;
+    if (wantsFixtures && !fixtures) return json({ error: "برنامه مسابقات سری سوم هنوز در دیتابیس ثبت نشده است." }, 409);
     if (wantsSeeding && (groups.length !== 12 || groups.some(g=>!Array.isArray(g.players)||g.players.length!==4))) return json({ error: "Snapshot گروه‌های سری سوم کامل نیست." }, 409);
 
-    const messages = buildMessages(selected,ranking,pots,groups,bracket);
+    const messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures);
     if (action === "preview") return json({ ok: true, destination: "test_group", messages });
 
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") ?? "";

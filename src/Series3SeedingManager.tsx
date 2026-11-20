@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
+import Series3FixturesSchedule from './Series3FixturesSchedule';
 
 type Registration = { id: string; plato_id: string; registration_status: 'main' | 'waitlist' | 'withdrawn' };
 type Stats = { request_id: string; games_played: number; games_won: number };
@@ -315,6 +316,7 @@ export default function Series3SeedingManager() {
   const displayedGroups = savedDraw?.groups_snapshot || [];
 
   return <section dir="rtl" style={panel}>
+    <Series3FixturesSchedule />
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
         <h2 style={{ color: '#f6e8c5', fontSize: 20, margin: '0 0 5px' }}>مدیریت رتبه‌بندی و قرعه‌کشی سری سوم</h2>
