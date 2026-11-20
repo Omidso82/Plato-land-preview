@@ -31,7 +31,7 @@ for (let i = 1; i <= 18; i++) {
   const slot = String(i).padStart(2, "0");
   ASSETS["series2-slide-" + slot] = { key: "plato-land/backgammon/series-2/slides/" + slot, kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"], access: "owner" };
 }
-ASSETS["series2-poster"] = { key: "plato-land/backgammon/series-2/posters/main-poster", kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"], access: "owner" };
+ASSETS["series2-poster"] = { key: "plato-land/backgammon/series-2/posters/main-poster", kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"] };
 for (let i = 1; i <= 17; i++) {
   const slot = String(i).padStart(2, "0");
   ASSETS["slide-" + slot] = {
