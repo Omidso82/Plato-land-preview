@@ -103,7 +103,7 @@ export default function Series3TelegramManager() {
       cache:'no-store',
     });
     const result=await response.json().catch(()=>({}));
-    if(!response.ok){
+    if(!response.ok && !Array.isArray(result.destination_results)){
       const partial=result.sent_count>0?' · '+fa(Number(result.sent_count))+' پیام پیش از بروز خطا ارسال شده است.':'';
       throw new Error((result.error||'درخواست به سرویس تلگرام ناموفق بود.')+partial);
     }
@@ -112,6 +112,7 @@ export default function Series3TelegramManager() {
 
   async function makePreview() {
     if(selected.length===0){setError('حداقل یک مورد را برای پیش‌نمایش انتخاب کن.');return;}
+    if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
     setBusy(true);setError('');setNotice('');setPreview([]);
     try{
       const result=await callApi('preview');
@@ -125,6 +126,7 @@ export default function Series3TelegramManager() {
 
   async function sendSelected() {
     if(selected.length===0){setError('ابتدا موارد موردنظر را انتخاب کن.');return;}
+    if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
     if(preview.length===0){setError('قبل از ارسال، ابتدا پیش‌نمایش را تهیه و بررسی کن.');return;}
     const target=destinations.map(id=>id==='test_group'?'گروه آزمایشی':'کانال اصلی').join(' و ');
     const approved=window.confirm('آیا ارسال '+fa(preview.length)+' پیام به هر مقصد انتخاب‌شده ('+target+') را تأیید می‌کنی؟');
@@ -230,8 +232,8 @@ export default function Series3TelegramManager() {
     {notice&&<div role="status" style={{marginTop:12,padding:10,borderRadius:8,background:'#1c2b1c',color:'#b9e0b5',fontSize:12,lineHeight:1.8}}>{notice}</div>}
 
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:13}}>
-      <button type="button" style={goldButton} disabled={busy||sending||selectedCount===0} onClick={()=>void makePreview()}>{busy?'در حال آماده‌سازی…':'تهیه پیش‌نمایش پیام‌ها'}</button>
-      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':'ارسال پیام‌های پیش‌نمایش‌شده'}</button>
+      <button type="button" style={goldButton} disabled={busy||sending||selectedCount===0||destinations.length===0} onClick={()=>void makePreview()}>{busy?'در حال آماده‌سازی…':'تهیه پیش‌نمایش پیام‌ها'}</button>
+      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0||destinations.length===0} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':'ارسال پیام‌های پیش‌نمایش‌شده'}</button>
       <button type="button" style={darkButton} disabled={busy||sending} onClick={()=>{setPreview([]);setError('');setNotice('');}}>پاک‌کردن پیش‌نمایش</button>
     </div>
 
