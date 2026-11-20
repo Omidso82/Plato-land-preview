@@ -52,7 +52,7 @@ function tied(a:Standing,b:Standing) {
 export default function Series3GroupResultsManager() {
   const [rows,setRows]=useState<MatchResult[]>([]);
   const [drafts,setDrafts]=useState<Record<string,Draft>>({});
-  const [day,setDay]=useState('ALL');
+  const [day,setDay]=useState('');
   const [group,setGroup]=useState('ALL');
   const [loading,setLoading]=useState(true);
   const [saving,setSaving]=useState<string|null>(null);
@@ -67,6 +67,7 @@ export default function Series3GroupResultsManager() {
     if(readError){setError('دریافت نتایج سری سوم ناموفق بود: '+readError.message);setLoading(false);return;}
     const next=(data||[]) as MatchResult[];
     setRows(next);
+    setDay(current=>current || next[0]?.match_date || 'ALL');
     setDrafts(Object.fromEntries(next.map(r=>[r.match_id,emptyDraft(r)])));
     setLoading(false);
   },[]);
