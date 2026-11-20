@@ -1,0 +1,37 @@
+name: Temporary Player Bank validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/TemporaryPlayerBank.tsx'
+      - 'src/Series2SlidesManager.tsx'
+      - 'src/supabase.ts'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'tsconfig.json'
+      - '.github/workflows/temporary-player-bank-validation.yml'
+      - 'supabase/migrations/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Typecheck and production build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: TypeScript typecheck
+        run: npm run typecheck
+      - name: Vite production build
+        run: npm run build
