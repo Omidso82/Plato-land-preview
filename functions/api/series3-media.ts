@@ -23,7 +23,8 @@ const ALLOWED_ORIGINS = new Set(["https://platoland.org"]);
 
 const ASSETS: Record<string, Asset> = {
   poster: { key: PREFIX + "poster/main-poster", kind: "image", max: MAX_IMAGE, types: ["image/jpeg", "image/png", "image/webp"] },
-  teaser: { key: "plato-land/backgammon/series-3/videos/168302900751657886.MP4", kind: "video", max: MAX_VIDEO, types: ["video/mp4"] },
+  // New teaser uploads use immutable, server-generated R2 keys; legacy fixed-key objects are not read or changed.
+  teaser: { key: "", kind: "video", max: MAX_VIDEO, types: ["video/mp4"] },
   rules: { key: PREFIX + "videos/important-rules.mp4", kind: "video", max: MAX_VIDEO, types: ["video/mp4"] },
 };
 for (let i = 1; i <= 18; i++) {
@@ -126,12 +127,16 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
     return json({ error: "Owner authorization required for this archived media." }, 403);
   }
 
-  // The public rules-video slot is immutable/versioned: every upload receives a
-  // server-generated key. Clients cannot choose or overwrite an R2 object key.
-  const requestedRulesKey = assetName === "rules" ? (url.searchParams.get("key") || "") : "";
+  // Public rules and teaser videos are immutable/versioned. The server creates every new key;
+  // clients can only read a key that matches the exact asset-specific allowlist.
+  const requestedKey = (assetName === "rules" || assetName === "teaser") ? (url.searchParams.get("key") || "") : "";
   const rulesKeyPattern = /^plato-land\/backgammon\/series-3\/public-media\/videos\/important-rules-\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.mp4$/;
-  if (assetName === "rules" && request.method !== "POST" && !rulesKeyPattern.test(requestedRulesKey)) {
+  const teaserKeyPattern = /^plato-land\/backgammon\/series-3\/public-media\/videos\/teaser-\d{13}-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.mp4$/;
+  if (request.method !== "POST" && assetName === "rules" && !rulesKeyPattern.test(requestedKey)) {
     return json({ error: "A valid versioned rules-video key is required." }, 400);
+  }
+  if (request.method !== "POST" && assetName === "teaser" && !teaserKeyPattern.test(requestedKey)) {
+    return json({ error: "A valid versioned teaser key is required." }, 400);
   }
 
   if (request.method === "POST") {
@@ -150,7 +155,9 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
     if (bytes.byteLength !== file.size) return json({ error: "Incomplete upload." }, 400);
     const objectKey = assetName === "rules"
       ? PREFIX + "videos/important-rules-" + Date.now() + "-" + crypto.randomUUID() + ".mp4"
-      : asset.key;
+      : assetName === "teaser"
+        ? PREFIX + "videos/teaser-" + Date.now() + "-" + crypto.randomUUID() + ".mp4"
+        : asset.key;
     const result = await bucket.put(objectKey, bytes, {
       httpMetadata: {
         contentType: file.type,
@@ -163,7 +170,7 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD, POST" } });
   }
-  const objectKey = assetName === "rules" ? requestedRulesKey : asset.key;
+  const objectKey = (assetName === "rules" || assetName === "teaser") ? requestedKey : asset.key;
   const head = await bucket.head(objectKey);
   if (!head || head.size <= 0) return new Response("Media not found", { status: 404 });
   const type = asset.kind === "video" ? "video/mp4" : (head.httpMetadata?.contentType || "application/octet-stream");
