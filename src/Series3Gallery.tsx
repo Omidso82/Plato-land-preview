@@ -4,6 +4,7 @@ import {supabase} from './supabase';
 import TemporaryPageHeader from './TemporaryPageHeader';
 import {isSeries3RulesVideoKey,series3RulesVideoUrl} from './series3RulesVideoClient';
 import {isSeries3TeaserKey,series3TeaserUrl} from './series3TeaserClient';
+import Series3PublicDashboard from './Series3PublicDashboard';
 
 export default function Series3Gallery(){
  const [poster,setPoster]=useState('');
@@ -94,6 +95,7 @@ export default function Series3Gallery(){
     <div style={{display:'flex',alignItems:'center',gap:11,minWidth:0}}><span style={{width:38,height:38,display:'grid',placeItems:'center',borderRadius:10,background:'rgba(214,180,109,.14)',flexShrink:0}}><Crown size={20} color="#d6b46d"/></span><div><div style={{fontSize:15,fontWeight:900,color:'#f0d99f'}}>پیش‌بینی‌های سری سوم</div><div style={{fontSize:11,color:'#c8b58c',marginTop:4}}></div></div></div>
     <a href="/predictions" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px 15px',border:'1px solid #b18b45',borderRadius:9,color:'#17130b',background:'linear-gradient(120deg,#b48b43,#e4c77e)',textDecoration:'none',fontSize:12,fontWeight:900,whiteSpace:'nowrap'}}>مشاهده پیش‌بینی‌ها <ArrowLeft size={15}/></a>
    </section>
+   <Series3PublicDashboard />
    {videoOpen&&<div role="dialog" aria-modal="true" aria-label="قوانین مهم سری سوم" onClick={closeRulesVideo} style={{position:'fixed',inset:0,zIndex:9999,background:'rgba(0,0,0,.88)',display:'grid',placeItems:'center',padding:14}}>
     <section onClick={e=>e.stopPropagation()} style={{width:'min(960px,100%)',background:'#111214',border:'1px solid #8c6a34',borderRadius:14,padding:12,boxShadow:'0 20px 80px #000'}}>
      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,marginBottom:10,color:'#f0d99f',fontWeight:800}}><span>قوانین مهم سری سوم</span><button type="button" aria-label="بستن ویدیو" onClick={closeRulesVideo} style={{background:'transparent',border:0,color:'#f0d99f',cursor:'pointer'}}><X size={23}/></button></div>
