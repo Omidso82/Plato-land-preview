@@ -267,6 +267,7 @@ Deno.serve(async (req: Request) => {
       missing_destinations: missing,
     }, 500);
 
+    let attemptHistorySaved = true;
     const destinationResults: Array<{
       destination:string; label:string; status:"sent"|"partial"|"failed";
       sent_count:number; total_count:number; failed_section:string|null;
@@ -303,7 +304,10 @@ Deno.serve(async (req: Request) => {
         failed_section:failedSection, error_message:failure,
         telegram_results:results, sent_by:authData.user.id,
       });
-      if (historyError) console.error("Series 3 Telegram history insert failed:", historyError.message);
+      if (historyError) {
+        console.error("Series 3 Telegram history insert failed:", historyError.message);
+        attemptHistorySaved = false;
+      }
     }
 
     const allSent = destinationResults.every(item=>item.status==="sent");
@@ -312,7 +316,7 @@ Deno.serve(async (req: Request) => {
       sent:allSent, partial:anySent&&!allSent, destination_results:destinationResults,
       sent_count:destinationResults.reduce((sum,item)=>sum+item.sent_count,0),
       total_count:messages.length*destinationResults.length,
-      history_saved: true,
+      history_saved: attemptHistorySaved,
     }, allSent?200:502);
   } catch (error) {
     console.error("Series 3 Telegram publishing failed:", error);
