@@ -76,8 +76,8 @@ export default function Series3RegistrationReport(){
  const withdrawn=rows.filter(r=>r.registration_status==='withdrawn');
  const date=(v:string)=>{const d=new Date(v);return Number.isNaN(d.getTime())?'—':d.toLocaleString('fa-IR',{timeZone:'Europe/Copenhagen'});};
  const label=(s:Registration['registration_status'])=>s==='main'?'فهرست اصلی':s==='waitlist'?'فهرست انتظار':'خارج‌شده از فهرست';
- const roster=(items:Registration[],kind:'main'|'waitlist'|'withdrawn')=><div style={{marginTop:16}}>
-  <h3 style={{color:'#e4c77e',fontSize:16}}>{kind==='main'?'بازیکنان اصلی':kind==='waitlist'?'صف انتظار / رزرو':'سوابق خارج‌شده'}</h3>
+ const roster=(items:Registration[],kind:'main'|'waitlist'|'withdrawn')=><details style={{marginTop:12,border:'1px solid #66512d',borderRadius:10,padding:10,background:'#151515'}}>
+  <summary style={{cursor:'pointer',color:'#e4c77e',fontSize:16,fontWeight:800}}> {kind==='main'?'بازیکنان اصلی':kind==='waitlist'?'صف انتظار / رزرو':'سوابق خارج‌شده'} · {fa(items.length)} نفر</summary>
   {items.length===0?<p style={muted}>موردی وجود ندارد.</p>:<div style={{overflowX:'auto'}}>
    <table style={{width:'100%',minWidth:560,borderCollapse:'collapse',color:'#f2ead8'}}>
     <thead><tr style={{color:'#e4c77e',textAlign:'right'}}><th style={{padding:9}}>ردیف</th><th style={{padding:9}}>Plato ID</th><th style={{padding:9}}>زمان ثبت</th><th style={{padding:9}}>عملیات مالک</th></tr></thead>
@@ -93,7 +93,7 @@ export default function Series3RegistrationReport(){
     </tr>)}</tbody>
    </table>
   </div>}
- </div>;
+ </details>;
 
  return <details dir="rtl" style={{...panel,padding:0}}>
   <summary style={{cursor:'pointer',padding:16,color:'#f6e8c5',fontSize:20,fontWeight:800}}>مدیریت ثبت‌نام سری سوم</summary>
