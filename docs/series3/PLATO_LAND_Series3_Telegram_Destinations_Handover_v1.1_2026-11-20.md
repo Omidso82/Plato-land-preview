@@ -1,9 +1,9 @@
 # PLATO LAND – Series 3 Telegram Destination Selection & Delivery History
 
-**Version:** 1.2  
+**Version:** 1.3  
 **Date:** 2026-11-20  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** Review-ready PR; CI running after type and failure-isolation fixes. Database migration, secret configuration and production deployment remain pending.
+**Status:** Review-ready PR; final CI rerun pending after a Deno literal-union typing correction. Database migration, secret configuration and production deployment remain pending. Database migration, secret configuration and production deployment remain pending.
 
 ## 1. Approved scope
 Extend the existing Series 3 Telegram publishing center in the existing temporary management panel. No new bot, page, route, or parallel panel is introduced.
@@ -76,3 +76,4 @@ The current assistant tool connection does not expose a supported Supabase secre
 - **v1.0 — 2026-11-20:** Initial owner-only Series 3 Telegram publishing center, test-group-only.
 - **v1.1 — 2026-11-20:** Adds selectable destinations, independent delivery outcomes and owner-only delivery history; release gates remain pending.
 - **v1.2 — 2026-11-20:** Fixes Deno destination typing errors, isolates per-destination configuration/network failures, adds a visible warning for unsaved delivery history, and updates the release status. No migration or production release performed.
+- **v1.3 — 2026-11-20:** Corrects the remaining inferred string type for the delivery status union found by CI. Awaiting the next full CI result; no migration or production release performed.
