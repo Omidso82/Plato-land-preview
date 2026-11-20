@@ -115,7 +115,7 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
       const lines = matches.map(m=>[
         "<b>گروه "+escapeHtml(m.group)+" · بازی "+fa(m.match_no)+"</b>",
         code(m.player_a.plato_id)+"  <b>مقابل</b>  "+code(m.player_b.plato_id)+"  ·  "+escapeHtml(m.time)
-      ].join("\\n"));
+      ].join("\n"));
       const scopeTitle = groupFilter==="ALL" ? "همه گروه‌ها" : "گروه "+groupFilter;
       result.push(makeMessage(id,"برنامه روز "+fa(dayNo)+" · "+scopeTitle,day.persian_date+" · ساعت ۲۱:۰۰ تهران",lines,matches.length));
       continue;
