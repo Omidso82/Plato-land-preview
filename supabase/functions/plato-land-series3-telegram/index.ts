@@ -240,8 +240,8 @@ Deno.serve(async (req: Request) => {
 
     const messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures,predictions);
     const allowedDestinations = new Set(["test_group", "main_channel"]);
-    const requestedDestinations = Array.isArray(body.destinations)
-      ? [...new Set(body.destinations.map((value: unknown) => String(value)))]
+    const requestedDestinations: string[] = Array.isArray(body.destinations)
+      ? [...new Set((body.destinations as unknown[]).map((value) => String(value)))]
       : [];
     if (requestedDestinations.length < 1 || requestedDestinations.length > 2 ||
         requestedDestinations.some((value: string) => !allowedDestinations.has(value))) {
@@ -261,12 +261,6 @@ Deno.serve(async (req: Request) => {
       test_group: Deno.env.get("TELEGRAM_TEST_CHAT_ID") ?? "",
       main_channel: Deno.env.get("TELEGRAM_MAIN_CHANNEL_ID") ?? "",
     };
-    const missing = requestedDestinations.filter((id:string)=>!chatIds[id]);
-    if (missing.length) return json({
-      error: "شناسه مقصد انتخاب‌شده در Secretهای سمت سرور تنظیم نشده است؛ هیچ پیامی ارسال نشد.",
-      missing_destinations: missing,
-    }, 500);
-
     let attemptHistorySaved = true;
     const destinationResults: Array<{
       destination:string; label:string; status:"sent"|"partial"|"failed";
@@ -276,21 +270,30 @@ Deno.serve(async (req: Request) => {
 
     for (const destination of requestedDestinations) {
       const results: Array<{section_id:string;message_id:number}> = [];
-      let failure: string|null = null;
-      let failedSection: string|null = null;
+      let failure: string|null = chatIds[destination]
+        ? null
+        : "شناسه این مقصد در Secretهای سمت سرور تنظیم نشده است.";
+      let failedSection: string|null = failure ? "configuration" : null;
       for (const [index, message] of messages.entries()) {
+        if (failure) break;
         if (index > 0) await new Promise(resolve => setTimeout(resolve, 3100));
-        const response = await fetch("https://api.telegram.org/bot"+botToken+"/sendMessage", {
-          method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: chatIds[destination], text: message.text, parse_mode: "HTML", disable_web_page_preview: true }),
-        });
-        const sent = await response.json().catch(()=>null);
-        if (!response.ok || !sent?.ok) {
-          failure = String(sent?.description ?? "Telegram send failed.");
+        try {
+          const response = await fetch("https://api.telegram.org/bot"+botToken+"/sendMessage", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: chatIds[destination], text: message.text, parse_mode: "HTML", disable_web_page_preview: true }),
+          });
+          const sent = await response.json().catch(()=>null);
+          if (!response.ok || !sent?.ok) {
+            failure = String(sent?.description ?? "Telegram send failed.");
+            failedSection = message.section_id;
+            break;
+          }
+          results.push({ section_id: message.section_id, message_id: Number(sent.result?.message_id ?? 0) });
+        } catch (sendError) {
+          failure = sendError instanceof Error ? sendError.message : "ارتباط با تلگرام برقرار نشد.";
           failedSection = message.section_id;
           break;
         }
-        results.push({ section_id: message.section_id, message_id: Number(sent.result?.message_id ?? 0) });
       }
       const status = failure ? (results.length ? "partial" : "failed") : "sent";
       const attempt = {
