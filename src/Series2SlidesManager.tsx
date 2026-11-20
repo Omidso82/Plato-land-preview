@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
+
+const SERIES2_POSTER_API = 'https://plato-land-media-pages.pages.dev/api/series3-media?asset=series2-poster';
 import Series2FinalistPredictionAdmin from './Series2FinalistPredictionAdmin';
 import Series2ResultsManager from './Series2ResultsManager';
 import PlatoIdScannerApp from './PlatoIdScannerApp';
@@ -14,7 +16,6 @@ import TemporaryPlayerBank from './TemporaryPlayerBank';
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
 
 const BUCKET = 'series2-slides';
-const POSTER_PATH = 'poster/series2-prize-poster';
 // Temporarily hide the 18-slot editor without deleting its code or stored images.
 const SHOW_SLIDE_EDITOR = false;
 type SlideFile = { name: string; url: string; updated_at?: string };
@@ -78,15 +79,13 @@ export default function Series2SlidesManager() {
   }
 
   async function loadPoster() {
-    if (!supabase) return;
-    const {data,error} = await supabase.storage.from(BUCKET).list('poster',{limit:10});
-    if (error) { setMessage('خواندن پوستر ثابت ناموفق بود: '+error.message); return; }
-    const item = (data||[]).find(x => x.name === 'series2-prize-poster');
-    setPoster(item ? {
-      name:item.name,
-      url:supabase.storage.from(BUCKET).getPublicUrl(POSTER_PATH).data.publicUrl,
-      updated_at:item.updated_at
-    } : null);
+    const response=await fetch(SERIES2_POSTER_API,{method:'HEAD',credentials:'omit',mode:'cors',cache:'no-store'});
+    if(response.status===404){setPoster(null);return;}
+    if(!response.ok){setMessage('بررسی پوستر ثابت در Cloudflare R2 ناموفق بود: HTTP '+response.status);return;}
+    const size=Number(response.headers.get('Content-Length')||'0');
+    const type=(response.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
+    if(size<=0||!['image/jpeg','image/png','image/webp'].includes(type)){setMessage('مشخصات فایل پوستر در R2 معتبر نیست.');return;}
+    setPoster({name:'main-poster',url:SERIES2_POSTER_API,updated_at:response.headers.get('ETag')||'r2'});
   }
 
   useEffect(() => { void verifyOwner(); }, []);
@@ -163,19 +162,23 @@ export default function Series2SlidesManager() {
     }
     setPosterBusy(true); setMessage('در حال ذخیره تصویر صفحهٔ اول مسابقات…');
     try {
-      const storage=supabase.storage.from(BUCKET);
-      // Update the existing stable object directly; use upload only for the first poster.
-      const {data:existing,error:listError}=await storage.list('poster',{limit:10});
-      if(listError) throw new Error('بررسی پوستر فعلی ناموفق بود: '+listError.message);
-      const exists=(existing||[]).some(item=>item.name==='series2-prize-poster');
-      const result=exists
-        ? await storage.update(POSTER_PATH,posterSelected,{contentType:posterSelected.type,cacheControl:'0'})
-        : await storage.upload(POSTER_PATH,posterSelected,{upsert:false,contentType:posterSelected.type,cacheControl:'0'});
-      if(result.error) throw new Error('ذخیره پوستر: '+result.error.message);
-      const freshUrl=storage.getPublicUrl(POSTER_PATH).data.publicUrl;
-      setPoster({name:'series2-prize-poster',url:freshUrl,updated_at:new Date().toISOString()});
+      const {data,error:sessionError}=await supabase.auth.getSession();
+      if(sessionError)throw sessionError;
+      const token=data.session?.access_token;
+      if(!token)throw new Error('نشست معتبر مالک پیدا نشد.');
+      const form=new FormData();form.set('file',posterSelected,posterSelected.name);
+      const uploaded=await fetch(SERIES2_POSTER_API,{method:'POST',headers:{Authorization:'Bearer '+token},body:form,credentials:'omit',mode:'cors',cache:'no-store'});
+      const result=await uploaded.json().catch(()=>({}));
+      if(!uploaded.ok)throw new Error(result.error||'ذخیره پوستر در Cloudflare R2 ناموفق بود.');
+      if(result.asset!=='series2-poster'||result.size!==posterSelected.size||result.key!=='plato-land/backgammon/series-2/posters/main-poster')throw new Error('پاسخ ذخیره‌سازی با مسیر ثابت پوستر سری دوم مطابقت ندارد.');
+      const checked=await fetch(SERIES2_POSTER_API,{method:'HEAD',credentials:'omit',mode:'cors',cache:'no-store'});
+      if(!checked.ok)throw new Error('آپلود انجام شد، اما بررسی فایل در R2 ناموفق بود.');
+      const storedSize=Number(checked.headers.get('Content-Length')||'0');
+      const storedType=(checked.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
+      if(storedSize!==posterSelected.size||storedType!==posterSelected.type)throw new Error('تأیید حجم یا نوع فایل در R2 ناموفق بود.');
+      setPoster({name:'main-poster',url:SERIES2_POSTER_API,updated_at:checked.headers.get('ETag')||new Date().toISOString()});
       setPosterSelected(null);
-      setMessage('پوستر جدید ذخیره شد. نسخه تازه برای نمایش عمومی آماده است.');
+      setMessage('پوستر در Cloudflare R2 ذخیره و با HEAD تأیید شد؛ آماده نمایش عمومی است.');
     } catch(e) { setMessage(e instanceof Error?e.message:'بارگذاری پوستر ناموفق بود.'); }
     finally { setPosterBusy(false); }
   }
@@ -237,7 +240,7 @@ export default function Series2SlidesManager() {
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
       <section style={{marginTop:20,padding:16,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#211b12,#111214)'}}>
       <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',flexWrap:'wrap'}}>
-        <div><h2 style={{color:'#f6e8c5',fontSize:19,margin:'0 0 6px'}}>پوستر ثابت مسابقات</h2><p style={muted}>این تصویر مستقل از ۱۸ اسلاید است و همیشه زیر لوگوی PLATO LAND و بالای بخش‌های مسابقات نمایش داده می‌شود.</p></div>
+        <div><h2 style={{color:'#f6e8c5',fontSize:19,margin:'0 0 6px'}}>پوستر ثابت مسابقات</h2><p style={muted}>این تصویر مستقل از ۱۸ اسلاید است و در Cloudflare R2 ذخیره می‌شود.</p></div>
         <span style={{color:poster?'#e4c77e':'#a9a08e',fontSize:12}}>{poster?'پوستر ثبت‌شده':'هنوز پوستری بارگذاری نشده'}</span>
       </div>
       {poster?<img src={poster.url+'?v='+(poster.updated_at||'current')} alt="پیش‌نمایش پوستر ثابت مسابقات" style={{display:'block',maxWidth:'100%',maxHeight:220,objectFit:'contain',margin:'12px auto',borderRadius:9,background:'#090a0c'}}/>:<div style={{minHeight:90,display:'grid',placeItems:'center',color:'#8e8778',background:'#090a0c',borderRadius:9,marginTop:12}}>پیش‌نمایش پوستر پس از بارگذاری نمایش داده می‌شود</div>}
@@ -248,7 +251,7 @@ export default function Series2SlidesManager() {
       <button style={{...primary,width:'100%',marginTop:8}} disabled={posterBusy||!posterSelected} onClick={()=>void uploadPoster()}>
         {posterBusy?'در حال ذخیره…':poster?'جایگزینی پوستر ثابت':'ذخیره پوستر ثابت'}
       </button>
-      <small style={{display:'block',color:'#a9a08e',marginTop:7}}>جایگاه ذخیره‌سازی مستقل؛ بدون تغییر در اسلایدهای ۱ تا ۱۸ · حداکثر ۱۰ مگابایت</small>
+      <small style={{display:'block',color:'#a9a08e',marginTop:7}}>Cloudflare R2 · حداکثر ۱۰ مگابایت</small>{poster&&<div dir="rtl" style={{fontSize:11,lineHeight:1.9,color:'#a9c7a5',overflowWrap:'anywhere',background:'#10140f',border:'1px solid #344a34',borderRadius:8,padding:9,marginTop:9}}><strong>محل ذخیره:</strong> Cloudflare R2<br/><strong>Bucket:</strong> <code dir="ltr">plato-land</code><br/><strong>Object Key:</strong><br/><code dir="ltr">plato-land/backgammon/series-2/posters/main-poster</code></div>}
     </section>
     <section style={{marginTop:20,padding:16,border:'1px solid #705b31',borderRadius:12,background:'#111214'}}>
       <h2 style={{color:'#f6e8c5',fontSize:19,margin:'0 0 8px'}}>مدیریت دسترسی اپراتورها</h2>
