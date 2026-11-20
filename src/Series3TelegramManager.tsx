@@ -136,9 +136,25 @@ export default function Series3TelegramManager() {
       const result=await callApi('send');
       const perDestination=(result?.destination_results||[]).map((item:any)=>item.label+': '+(item.status==='sent'?'موفق':item.status==='partial'?'ناقص':'ناموفق')+' ('+fa(item.sent_count)+' از '+fa(item.total_count)+')').join('؛ ');
       const historyWarning=result?.history_saved===false?' هشدار: نتیجه ارسال در تاریخچه دیتابیس ذخیره نشد.':'';
-      setNotice((perDestination||'نتیجه ارسال دریافت نشد.')+historyWarning);
+      const destinationResults=result?.destination_results||[];
+      const anyDelivered=destinationResults.some((item:any)=>item.sent_count>0);
+      const retryableDestinations=destinationResults
+        .filter((item:any)=>item.sent_count===0 && item.status==='failed')
+        .map((item:any)=>item.destination);
+      if(anyDelivered){
+        // Never leave a preview armed for destinations that may already contain messages.
+        // A partially delivered destination must not be retried wholesale.
+        setPreview([]);
+        setDestinations(retryableDestinations);
+        const retryNote=retryableDestinations.length
+          ? ' پیش‌نمایش پاک شد؛ فقط مقصدهای کاملاً ناموفق انتخاب شدند. برای تلاش مجدد، پیش‌نمایش تازه تهیه کن.'
+          : ' پیش‌نمایش پاک شد تا پیام‌های ارسال‌شده دوباره فرستاده نشوند. مقصدی برای تلاش مجدد خودکار انتخاب نشده است.';
+        setNotice((perDestination||'نتیجه ارسال دریافت نشد.')+historyWarning+retryNote);
+      }else{
+        // No destination accepted any message, so retry remains safe after reviewing the result.
+        setNotice((perDestination||'هیچ پیامی ارسال نشد؛ پس از رفع علت می‌توانی دوباره تلاش کنی.')+historyWarning);
+      }
       await refreshDeliveryHistory();
-      if(result?.sent)setPreview([]);
     }catch(e){setError(e instanceof Error?e.message:'ارسال پیام ناموفق بود.');}
     finally{setSending(false);}
   }
