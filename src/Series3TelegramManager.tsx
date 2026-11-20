@@ -163,13 +163,13 @@ export default function Series3TelegramManager() {
 
     {preview.length>0&&<div style={{display:'grid',gap:10,marginTop:15}}>
       <div style={{color:'#e4c77e',fontWeight:800,fontSize:13}}>پیش‌نمایش · {fa(preview.length)} پیام مستقل</div>
-      {preview.map((message,index)=><article key={message.section_id} style={{border:'1px solid #65512f',borderRadius:9,padding:12,background:'#0d0e10'}}>
-        <div style={{display:'flex',justifyContent:'space-between',gap:8,alignItems:'center',marginBottom:8}}>
+      {preview.map((message,index)=><details key={message.section_id} style={{border:'1px solid #65512f',borderRadius:9,padding:12,background:'#0d0e10'}}>
+        <summary style={{cursor:'pointer',display:'flex',justifyContent:'space-between',gap:8,alignItems:'center'}}>
           <strong style={{color:'#f0d99f',fontSize:12}}>{fa(index+1)}. {message.title}</strong>
           <span style={{color:'#9e927b',fontSize:10}}>{fa(message.item_count)} مورد</span>
-        </div>
-        <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontFamily:'inherit',fontSize:12,lineHeight:1.9,color:'#eee5d4',margin:0}}>{message.plain_text}</pre>
-      </article>)}
+        </summary>
+        <pre style={{whiteSpace:'pre-wrap',overflowWrap:'anywhere',fontFamily:'inherit',fontSize:12,lineHeight:1.9,color:'#eee5d4',margin:'10px 0 0'}}>{message.plain_text}</pre>
+      </details>)}
     </div>}
     <small style={{display:'block',color:'#9e927b',fontSize:10,lineHeight:1.8,marginTop:13}}>ارسال فقط پس از پیش‌نمایش و تأیید نهایی انجام می‌شود. مقصد از Secret سمت سرور خوانده می‌شود و از این پنل قابل تغییر نیست.</small>
     </>}
