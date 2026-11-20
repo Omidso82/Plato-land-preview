@@ -1,10 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import { isSeries3TeaserKey, series3TeaserUrl, uploadSeries3Teaser } from './series3TeaserClient';
 
 const BUCKET = 'series3-slides';
 const POSTER_PATH = 'poster/series3-main-poster';
-const TEASER_BUCKET = 'series3-video';
-const TEASER_PATH = 'teaser/series3-home-teaser.mp4';
 type ImageItem = { url:string; updated_at?:string };
 
 export function Series3SlidesPanel() {
@@ -14,6 +13,7 @@ export function Series3SlidesPanel() {
   const [posterSelected,setPosterSelected]=useState<File|null>(null);
   const [teaserSelected,setTeaserSelected]=useState<File|null>(null);
   const [teaserExists,setTeaserExists]=useState(false);
+  const [teaserKey,setTeaserKey]=useState('');
   const [mediaMode,setMediaMode]=useState<'poster'|'video'>('poster');
   const [busySlot,setBusySlot]=useState<number|null>(null);
   const [posterBusy,setPosterBusy]=useState(false);
@@ -23,16 +23,14 @@ export function Series3SlidesPanel() {
 
   async function refresh() {
     if(!supabase)return;
-    const [slideResult,posterResult,teaserResult,settingsResult]=await Promise.all([
+    const [slideResult,posterResult,settingsResult]=await Promise.all([
       supabase.storage.from(BUCKET).list('slides',{limit:60,sortBy:{column:'name',order:'asc'}}),
       supabase.storage.from(BUCKET).list('poster',{limit:10}),
-      supabase.storage.from(TEASER_BUCKET).list('teaser',{limit:10}),
-      supabase.from('plato_land_series3_home_media_settings').select('media_mode').eq('id',1).maybeSingle()
+      supabase.from('plato_land_series3_home_media_settings').select('media_mode,storage_path').eq('id',1).maybeSingle()
     ]);
     if(slideResult.error){setMessage('خواندن تصاویر سری سوم ناموفق بود: '+slideResult.error.message);return;}
     if(posterResult.error){setMessage('خواندن پوستر سری سوم ناموفق بود: '+posterResult.error.message);return;}
-    if(teaserResult.error){setMessage('خواندن تیزر سری سوم ناموفق بود: '+teaserResult.error.message);return;}
-    if(settingsResult.error){setMessage('تنظیمات رسانه صفحه اول هنوز در دیتابیس فعال نشده است. فایل migration باید جداگانه بررسی و اجرا شود.');}
+    if(settingsResult.error){setMessage('خواندن تنظیمات رسانه صفحه اول ناموفق بود: '+settingsResult.error.message);}
     else if(settingsResult.data?.media_mode==='video'||settingsResult.data?.media_mode==='poster')setMediaMode(settingsResult.data.media_mode);
     const next:Record<number,ImageItem>={};
     (slideResult.data||[]).forEach(item=>{
@@ -44,7 +42,26 @@ export function Series3SlidesPanel() {
     setSlides(next);
     const posterItem=(posterResult.data||[]).find(item=>item.name==='series3-main-poster');
     setPoster(posterItem?{url:supabase.storage.from(BUCKET).getPublicUrl(POSTER_PATH).data.publicUrl,updated_at:posterItem.updated_at||posterItem.created_at||''}:null);
-    setTeaserExists((teaserResult.data||[]).some(item=>item.name==='series3-home-teaser.mp4'));
+
+    const storedKey=typeof settingsResult.data?.storage_path==='string'?settingsResult.data.storage_path:'';
+    if(!settingsResult.error&&isSeries3TeaserKey(storedKey)){
+      try{
+        const response=await fetch(series3TeaserUrl(storedKey),{method:'HEAD',mode:'cors',cache:'no-store'});
+        const size=Number(response.headers.get('Content-Length')||'0');
+        const type=(response.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
+        const valid=response.ok&&size>0&&type==='video/mp4';
+        setTeaserKey(valid?storedKey:'');
+        setTeaserExists(valid);
+        if(!valid)setMessage('مرجع تیزر در Supabase موجود است، اما فایل متناظر در R2 تأیید نشد.');
+      }catch(e){
+        setTeaserKey('');
+        setTeaserExists(false);
+        setMessage('بررسی فایل تیزر در R2 ناموفق بود: '+(e instanceof Error?e.message:'خطای شبکه'));
+      }
+    }else{
+      setTeaserKey('');
+      setTeaserExists(false);
+    }
   }
   useEffect(()=>{void refresh();},[]);
 
@@ -81,27 +98,46 @@ export function Series3SlidesPanel() {
   async function uploadTeaser() {
     if(!supabase||!teaserSelected){setMessage('ابتدا فایل ویدیوی تیزر را انتخاب کن.');return;}
     if(teaserSelected.type!=='video/mp4'||!teaserSelected.name.toLowerCase().endsWith('.mp4')||teaserSelected.size===0||teaserSelected.size>100*1024*1024){setMessage('فقط فایل MP4 معتبر با حجم بیشتر از صفر و حداکثر ۱۰۰ مگابایت مجاز است.');return;}
-    setTeaserBusy(true);setMessage('در حال ذخیره ویدیوی تیزر سری سوم…');
+    setTeaserBusy(true);setMessage('در حال بارگذاری و تأیید فایل تیزر در R2…');
+    let r2Saved=false;
     try{
-      const storage=supabase.storage.from(TEASER_BUCKET);
-      const {data,error:listError}=await storage.list('teaser',{limit:10});
-      if(listError)throw listError;
-      const exists=(data||[]).some(x=>x.name==='series3-home-teaser.mp4');
-      const result=exists?await storage.update(TEASER_PATH,teaserSelected,{contentType:'video/mp4',cacheControl:'0'}):await storage.upload(TEASER_PATH,teaserSelected,{upsert:false,contentType:'video/mp4',cacheControl:'0'});
-      if(result.error)throw result.error;
-      setTeaserSelected(null);await refresh();setMessage('ویدیوی تیزر ذخیره شد. برای نمایش عمومی، حالت «ویدئوی تیزر» را انتخاب کن.');
-    }catch(e){setMessage('ذخیره ویدیوی تیزر ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
-    finally{setTeaserBusy(false);}
+      const uploadedKey=await uploadSeries3Teaser(teaserSelected);
+      r2Saved=true;
+      const {data:{user},error:userError}=await supabase.auth.getUser();
+      if(userError)throw userError;
+      if(!user)throw new Error('نشست مالک معتبر نیست.');
+      const {error:saveError}=await supabase.from('plato_land_series3_home_media_settings').upsert({
+        id:1,
+        media_mode:mediaMode,
+        storage_path:uploadedKey,
+        updated_at:new Date().toISOString(),
+        updated_by:user.id
+      },{onConflict:'id'});
+      if(saveError)throw saveError;
+      setTeaserKey(uploadedKey);
+      setTeaserExists(true);
+      setTeaserSelected(null);
+      setMessage('تیزر در R2 ذخیره، با HEAD تأیید و مرجع آن در Supabase ثبت شد.');
+    }catch(e){
+      setMessage((r2Saved?'فایل در R2 ذخیره شده، اما ثبت مرجع آن در Supabase کامل نشد؛ موفقیت نهایی تأیید نمی‌شود: ':'بارگذاری تیزر ناموفق بود: ')+(e instanceof Error?e.message:'خطای ناشناخته'));
+    }finally{setTeaserBusy(false);}
   }
   async function changeMediaMode(next:'poster'|'video') {
     if(!supabase)return;
-    if(next==='video'&&!teaserExists){setMessage('ابتدا ویدیوی تیزر را بارگذاری کن.');return;}
+    if(next==='video'&&(!teaserExists||!isSeries3TeaserKey(teaserKey))){setMessage('ابتدا ویدیوی تیزر را در R2 بارگذاری و تأیید کن.');return;}
     setModeBusy(true);setMessage('');
     try{
       const {data:{user},error:userError}=await supabase.auth.getUser();
       if(userError)throw userError;
       if(!user)throw new Error('نشست مالک معتبر نیست.');
-      const {error}=await supabase.from('plato_land_series3_home_media_settings').upsert({id:1,media_mode:next,storage_path:TEASER_PATH,updated_at:new Date().toISOString(),updated_by:user.id},{onConflict:'id'});
+      const update:{id:number;media_mode:'poster'|'video';updated_at:string;updated_by:string;storage_path?:string}={
+        id:1,
+        media_mode:next,
+        updated_at:new Date().toISOString(),
+        updated_by:user.id
+      };
+      if(next==='video')update.storage_path=teaserKey;
+      const {error}=await supabase.from('plato_land_series3_home_media_settings').upsert(update,{onConflict:'id'});
       if(error)throw error;
       setMediaMode(next);setMessage(next==='video'?'نمایش ویدئوی تیزر در صفحه اول فعال شد.':'نمایش پوستر ثابت در صفحه اول فعال شد. ویدئو حفظ می‌شود.');
     }catch(e){setMessage('تغییر حالت رسانه ناموفق بود: '+(e instanceof Error?e.message:'تنظیم دیتابیس هنوز اجرا نشده یا دسترسی مالک تأیید نشد.'));}
