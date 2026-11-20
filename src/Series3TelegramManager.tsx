@@ -4,7 +4,7 @@ import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabase } from './supabase';
 type SectionOption = { id: string; label: string };
 type PredictionCampaign = { id:string; title:string; description:string; campaign_type:string; status:string; is_open:boolean; opens_at:string|null; closes_at:string|null; questions:Array<{id:string;label:string;type?:string;options?:string[]}>; prize_rules:any };
 type PreviewMessage = { section_id: string; title: string; text: string; plain_text: string; item_count: number };
-type ApiResult = { ok?: boolean; error?: string; messages?: PreviewMessage[]; sent?: boolean; destination?: 'test_group'; results?: Array<{section_id:string;message_id:number}>; sent_count?: number; failed_section?: string };
+type ApiResult = { ok?: boolean; error?: string; messages?: PreviewMessage[]; sent?: boolean; destination?: 'test_group'; results?: Array<{section_id:string;message_id:number}>; sent_count?: number; failed_section?: string; destination_results?: Array<{destination:string;label:string;status:'sent'|'partial'|'failed';sent_count:number;total_count:number;failed_section:string|null;error:string|null;results:Array<{section_id:string;message_id:number}>}>; history_saved?: boolean };
 
 const groups = 'ABCDEFGHIJKL'.split('');
 const sections: { title: string; description: string; items: SectionOption[] }[] = [
