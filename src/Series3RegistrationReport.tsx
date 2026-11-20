@@ -95,11 +95,13 @@ export default function Series3RegistrationReport(){
   </div>}
  </div>;
 
- return <section dir="rtl" style={panel}>
-  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-   <div><h2 style={{color:'#f6e8c5',fontSize:20,margin:'0 0 5px'}}>مدیریت ثبت‌نام سری سوم</h2><p style={{...muted,margin:0}}>ظرفیت اصلی ۳۲ نفر · صف انتظار به ترتیب زمان ثبت · عملیات فقط برای مالک</p></div>
-   <button style={secondary} onClick={()=>setExpanded(v=>!v)}>{expanded?'بستن جزئیات':'نمایش فهرست‌ها'}</button>
-  </div>
+ return <details dir="rtl" style={{...panel,padding:0}}>
+  <summary style={{cursor:'pointer',padding:16,color:'#f6e8c5',fontSize:20,fontWeight:800}}>مدیریت ثبت‌نام سری سوم</summary>
+  <div style={{padding:'0 16px 16px'}}>
+   <p style={{...muted,margin:'0 0 10px'}}>ظرفیت اصلی ۳۲ نفر · صف انتظار به ترتیب زمان ثبت · عملیات فقط برای مالک</p>
+   <div style={{display:'flex',justifyContent:'flex-end',marginBottom:10}}>
+    <button style={secondary} onClick={()=>setExpanded(v=>!v)}>{expanded?'بستن فهرست‌ها':'نمایش فهرست‌ها'}</button>
+   </div>
   <div style={{display:'flex',gap:10,flexWrap:'wrap',marginTop:14}}>
    {[{t:'اصلی',n:main.length},{t:'رزرو',n:wait.length},{t:'خارج‌شده',n:withdrawn.length}].map(x=><div key={x.t} style={{background:'#211b12',border:'1px solid #66512d',borderRadius:10,padding:'9px 14px',minWidth:95}}><div style={muted}>{x.t}</div><strong style={{fontSize:23,color:'#f1d99e'}}>{loading?'—':fa(x.n)}</strong></div>)}
    <div style={{background:'#171513',border:'1px solid #51452d',borderRadius:10,padding:'9px 14px',minWidth:120}}><div style={muted}>وضعیت ثبت‌نام</div><strong style={{color:isOpen?'#9ed6a3':'#f0aaaa'}}>{loading?'…':isOpen?'باز':'بسته'}</strong></div>
@@ -117,5 +119,6 @@ export default function Series3RegistrationReport(){
    {roster(wait,'waitlist')}
    {roster(withdrawn,'withdrawn')}
   </div>}
- </section>;
+  </div>
+ </details>;
 }
