@@ -214,20 +214,24 @@ export default function Series2Registration({ showSeries3Entry = true, showSerie
     let active = true;
     const loadPoster = async () => {
       if (!supabase) return;
-      const { data, error } = await supabase.storage.from('series2-slides').list('poster', { limit: 10 });
-      if (error) {
-        console.warn('Series 2 fixed poster could not be loaded:', error);
-        return;
-      }
-      const poster = (data || []).find((item) => item.name === 'series2-prize-poster');
+      const response = await fetch('https://plato-land-media-pages.pages.dev/api/series3-media?asset=series2-poster', { method: 'HEAD', credentials: 'omit', mode: 'cors', cache: 'no-store' });
       if (!active) return;
-      if (!poster) {
+      if (response.status === 404) {
         setFixedPosterUrl('');
         return;
       }
-      const publicUrl = supabase.storage.from('series2-slides').getPublicUrl('poster/series2-prize-poster').data.publicUrl;
-      const version = poster.updated_at || poster.created_at || 'current';
-      setFixedPosterUrl(publicUrl + '?v=' + encodeURIComponent(version));
+      if (!response.ok) {
+        console.warn('Series 2 fixed poster could not be loaded from R2:', response.status);
+        return;
+      }
+      const size = Number(response.headers.get('Content-Length') || '0');
+      const type = (response.headers.get('Content-Type') || '').split(';')[0].trim().toLowerCase();
+      if (size <= 0 || !['image/jpeg', 'image/png', 'image/webp'].includes(type)) {
+        console.warn('Series 2 fixed poster in R2 has invalid metadata.');
+        setFixedPosterUrl('');
+        return;
+      }
+      setFixedPosterUrl('https://plato-land-media-pages.pages.dev/api/series3-media?asset=series2-poster');
     };
     void loadPoster();
     return () => { active = false; };
