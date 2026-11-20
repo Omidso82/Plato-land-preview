@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
+import { deleteR2Media } from './r2MediaDeleteClient';
 
 const SERIES2_POSTER_API = 'https://plato-land-media-pages.pages.dev/api/series3-media?asset=series2-poster';
 import Series2FinalistPredictionAdmin from './Series2FinalistPredictionAdmin';
@@ -32,6 +33,8 @@ export default function Series2SlidesManager() {
   const [poster,setPoster] = useState<SlideFile|null>(null);
   const [posterSelected,setPosterSelected] = useState<File|null>(null);
   const [posterBusy,setPosterBusy] = useState(false);
+  const [posterDeleteConfirm,setPosterDeleteConfirm] = useState(false);
+  const [posterDeleteBusy,setPosterDeleteBusy] = useState(false);
   const [selected,setSelected] = useState<Record<number,File>>({});
   const [busySlot,setBusySlot] = useState<number|null>(null);
   const [busy,setBusy] = useState(false);
@@ -183,6 +186,25 @@ export default function Series2SlidesManager() {
     finally { setPosterBusy(false); }
   }
 
+  async function deletePoster() {
+    if (!supabase || !owner) return;
+    setPosterDeleteBusy(true); setMessage('در حال حذف پوستر از Cloudflare R2…');
+    try {
+      const {data,error}=await supabase.auth.getSession();
+      if(error)throw error;
+      const token=data.session?.access_token;
+      if(!token)throw new Error('نشست معتبر مالک پیدا نشد.');
+      const result=await deleteR2Media('series2-poster',token);
+      await loadPoster();
+      setPosterDeleteConfirm(false);
+      setMessage(result.alreadyMissing
+        ? 'فایل از قبل در R2 وجود نداشت؛ پنل به‌روزرسانی شد.'
+        : 'پوستر از Cloudflare R2 حذف و نبودن آن با بررسی سرور تأیید شد.');
+    } catch(e) {
+      setMessage('حذف پوستر کامل نشد: '+(e instanceof Error?e.message:'خطای ناشناخته'));
+    } finally { setPosterDeleteBusy(false); }
+  }
+
   async function signOut() { await supabase?.auth.signOut(); setSignedIn(false); setOwner(false); setOperators([]); setFiles([]); setMessage(''); }
 
   if (checking) return <main dir="rtl" style={shell}><section style={panel}>در حال بررسی دسترسی مالک…</section></main>;
@@ -251,7 +273,19 @@ export default function Series2SlidesManager() {
       <button style={{...primary,width:'100%',marginTop:8}} disabled={posterBusy||!posterSelected} onClick={()=>void uploadPoster()}>
         {posterBusy?'در حال ذخیره…':poster?'جایگزینی پوستر ثابت':'ذخیره پوستر ثابت'}
       </button>
-      <small style={{display:'block',color:'#a9a08e',marginTop:7}}>Cloudflare R2 · حداکثر ۱۰ مگابایت</small>{poster&&<div dir="rtl" style={{fontSize:11,lineHeight:1.9,color:'#a9c7a5',overflowWrap:'anywhere',background:'#10140f',border:'1px solid #344a34',borderRadius:8,padding:9,marginTop:9}}><strong>محل ذخیره:</strong> Cloudflare R2<br/><strong>Bucket:</strong> <code dir="ltr">plato-land</code><br/><strong>Object Key:</strong><br/><code dir="ltr">plato-land/backgammon/series-2/posters/main-poster</code></div>}
+      <small style={{display:'block',color:'#a9a08e',marginTop:7}}>Cloudflare R2 · حداکثر ۱۰ مگابایت</small>
+      {poster&&<div style={{display:'grid',gap:8,marginTop:8}}>
+        {!posterDeleteConfirm
+          ? <button type="button" style={{...secondary,width:'100%',borderColor:'#8d4540',color:'#ffb2a8'}} disabled={posterDeleteBusy||posterBusy} onClick={()=>setPosterDeleteConfirm(true)}>حذف پوستر از R2</button>
+          : <div style={{padding:10,border:'1px solid #8d4540',borderRadius:9,background:'#1b1111'}}>
+              <p style={{...muted,margin:'0 0 8px',color:'#ffb2a8'}}>این کار فایل اصلی پوستر را برای همیشه از Cloudflare R2 حذف می‌کند. ادامه می‌دهی؟</p>
+              <div style={{display:'flex',gap:8}}>
+                <button type="button" style={{...secondary,flex:1}} disabled={posterDeleteBusy} onClick={()=>setPosterDeleteConfirm(false)}>انصراف</button>
+                <button type="button" style={{...primary,flex:1,background:'#9f3932',borderColor:'#c45c52',color:'#fff'}} disabled={posterDeleteBusy} onClick={()=>void deletePoster()}>{posterDeleteBusy?'در حال حذف…':'تأیید حذف دائمی'}</button>
+              </div>
+            </div>}
+      </div>}
+{poster&&<div dir="rtl" style={{fontSize:11,lineHeight:1.9,color:'#a9c7a5',overflowWrap:'anywhere',background:'#10140f',border:'1px solid #344a34',borderRadius:8,padding:9,marginTop:9}}><strong>محل ذخیره:</strong> Cloudflare R2<br/><strong>Bucket:</strong> <code dir="ltr">plato-land</code><br/><strong>Object Key:</strong><br/><code dir="ltr">plato-land/backgammon/series-2/posters/main-poster</code></div>}
     </section>
     <section style={{marginTop:20,padding:16,border:'1px solid #705b31',borderRadius:12,background:'#111214'}}>
       <h2 style={{color:'#f6e8c5',fontSize:19,margin:'0 0 8px'}}>مدیریت دسترسی اپراتورها</h2>
