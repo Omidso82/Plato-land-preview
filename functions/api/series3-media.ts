@@ -73,7 +73,7 @@ function mediaHeaders(size: number, type: string, etag?: string, ownerOnly = fal
     "Content-Type": type,
     "Content-Length": String(size),
     "X-Content-Type-Options": "nosniff",
-    "Cross-Origin-Resource-Policy": "same-site",
+    "Cross-Origin-Resource-Policy": "cross-origin",
   });
   if (etag) headers.set("ETag", etag);
   return headers;
