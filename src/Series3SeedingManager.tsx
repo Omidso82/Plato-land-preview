@@ -315,11 +315,12 @@ export default function Series3SeedingManager() {
   const displayedPots = savedDraw?.pots_snapshot || currentPots;
   const displayedGroups = savedDraw?.groups_snapshot || [];
 
-  return <section dir="rtl" style={panel}>
+  return <details dir="rtl" style={{...panel,padding:0}}>
+    <summary style={{cursor:'pointer',padding:16,color:'#f6e8c5',fontSize:20,fontWeight:800}}>مدیریت رتبه‌بندی و قرعه‌کشی سری سوم</summary>
+    <div style={{padding:'0 16px 16px'}}>
     <Series3FixturesSchedule />
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
       <div style={{ minWidth: 0 }}>
-        <h2 style={{ color: '#f6e8c5', fontSize: 20, margin: '0 0 5px' }}>مدیریت رتبه‌بندی و قرعه‌کشی سری سوم</h2>
         <p style={{ ...muted, margin: 0 }}>۴۸ بازیکن اصلی و رزرو · رتبه‌بندی درصد برد · چهار سید · دوازده گروه</p>
       </div>
       <button type="button" style={button} onClick={() => void load()} disabled={loading}>
@@ -500,5 +501,6 @@ export default function Series3SeedingManager() {
           </div>}
       </>}
     </div>
-  </section>;
+    </div>
+  </details>;
 }
