@@ -68,7 +68,7 @@ The existing poster/video mode control is retained. Uploading a teaser does not 
 
 ## 5. Verification status
 
-- UI branch TypeScript verification and production build: passed at commit `7a5415240bd26c87e3f0913c029e197a5374c257`; the later small state-handling adjustment is at `4f6cec79e228e1e73d4327b7babdf5ea1bf5f4ab`, with its build passed and verify steps passed (final job cleanup was still running at the last check).
+- UI branch TypeScript verification and production build: passed at commit `eea0e71b209229da1179a756a8267a79937cb7d3`. After the small state-handling adjustment at `4f6cec79e228e1e73d4327b7babdf5ea1bf5f4ab`, the build passed and all verify steps passed; the final GitHub Actions cleanup step was still running at the last check.
 - Existing Deno tests and checks in the repository verification workflow: passed in the same run.
 - Cloudflare Pages preview builds for endpoint commit `541ac24cd712de18661d6bad0e7a9973dd16a84b`: successful for `plato-land-media-endpoint`, `plato-land-media-pages`, and `plato-land-preview`.
 - Cloudflare Workers Builds check for endpoint commit `541ac24...`: failed. This is an unresolved check and has not been treated as a successful deployment.
