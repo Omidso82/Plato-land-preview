@@ -7,6 +7,7 @@ interface R2Bucket {
   head(key: string): Promise<{ size: number; httpEtag?: string; httpMetadata?: { contentType?: string } } | null>;
   get(key: string, options?: { range?: { offset: number; length: number } }): Promise<R2ObjectBody | null>;
   put(key: string, value: ArrayBuffer, options?: { httpMetadata?: { contentType?: string; cacheControl?: string } }): Promise<{ size: number; httpEtag?: string }>;
+  delete(key: string): Promise<void>;
 }
 interface Env {
   PLATO_MEDIA_BUCKET?: R2Bucket;
@@ -137,6 +138,33 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
   }
   if (request.method !== "POST" && assetName === "teaser" && !teaserKeyPattern.test(requestedKey)) {
     return json({ error: "A valid versioned teaser key is required." }, 400);
+  }
+
+  if (request.method === "DELETE") {
+    const origin = request.headers.get("Origin");
+    if (!origin || (origin !== url.origin && !ALLOWED_ORIGINS.has(origin))) return json({ error: "Approved site origin required for deletion." }, 403);
+    if (!(await isOwner(request))) return json({ error: "Owner authorization required." }, 403);
+
+    // Deletion is restricted to exact allowlisted R2 objects. Versioned videos
+    // require their complete canonical key; arbitrary bucket paths are rejected.
+    const requestedDeleteKey = url.searchParams.get("key") || "";
+    let objectKey = asset.key;
+    if (assetName === "teaser" || assetName === "rules") {
+      const pattern = assetName === "teaser"
+        ? teaserKeyPattern
+        : rulesKeyPattern;
+      if (!pattern.test(requestedDeleteKey)) return json({ error: "A valid versioned media key is required for deletion." }, 400);
+      objectKey = requestedDeleteKey;
+    } else if (assetName !== "series2-poster" && assetName !== "poster" && !/^series2-slide-\\d{2}$/.test(assetName) && !/^slide-\\d{2}$/.test(assetName)) {
+      return json({ error: "Deletion is not enabled for this media slot." }, 403);
+    }
+
+    const existing = await bucket.head(objectKey);
+    if (!existing || existing.size <= 0) return json({ error: "Media object was not found; nothing was deleted.", key: objectKey }, 404);
+    await bucket.delete(objectKey);
+    const remaining = await bucket.head(objectKey);
+    if (remaining) return json({ error: "R2 did not confirm object deletion.", key: objectKey }, 500);
+    return json({ ok: true, deleted: true, asset: assetName, key: objectKey });
   }
 
   if (request.method === "POST") {
