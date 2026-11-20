@@ -115,13 +115,10 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
       const groupOrder = [...new Set(matches.map(m=>m.group))];
       const lines = groupOrder.map(groupName => {
         const groupMatches = matches.filter(m=>m.group===groupName);
-        return [
-          "<b>گروه "+escapeHtml(groupName)+" · بازی‌های روز "+fa(dayNo)+"</b>",
-          ...groupMatches.map(m =>
-            "بازی "+fa(m.match_no)+"\n"+
-            code(m.player_a.plato_id)+"  <b>مقابل</b>  "+code(m.player_b.plato_id)+"  ·  "+escapeHtml(m.time)
-          )
-        ].join("\n");
+        return groupMatches.map(m =>
+          "<b>بازی "+fa(m.match_no)+"</b>\n"+
+          code(m.player_a.plato_id)+"  <b>مقابل</b>  "+code(m.player_b.plato_id)+"  ·  "+escapeHtml(m.time)
+        ).join("\n");
       });
       const scopeTitle = groupFilter==="ALL" ? "همه گروه‌ها" : "گروه "+groupFilter;
       result.push(makeMessage(id,"برنامه روز "+fa(dayNo)+" · "+scopeTitle,day.persian_date+" · ساعت ۲۱:۰۰ تهران",lines,matches.length));
