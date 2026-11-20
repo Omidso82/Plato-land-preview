@@ -239,17 +239,12 @@ Deno.serve(async (req: Request) => {
     if (wantsSeeding && (groups.length !== 12 || groups.some(g=>!Array.isArray(g.players)||g.players.length!==4))) return json({ error: "Snapshot گروه‌های سری سوم کامل نیست." }, 409);
 
     const messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures,predictions);
-    if (action === "preview") return json({ ok: true, destination: selected.some((id:string)=>id.startsWith('prediction:'))?'series3_channel':'test_group', messages });
+    if (action === "preview") return json({ ok: true, destination: 'test_group', messages });
 
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") ?? "";
-    const hasPredictions=selected.some((id:string)=>id.startsWith('prediction:'));
-    const hasOtherSections=selected.some((id:string)=>!id.startsWith('prediction:'));
-    if (hasPredictions && hasOtherSections) return json({error:'برای جلوگیری از ارسال به مقصد اشتباه، پیش‌بینی‌ها را جدا از جدول‌ها و مسابقات انتخاب و ارسال کن.'},400);
-    const channelChatId=Deno.env.get('TELEGRAM_SERIES3_CHANNEL_ID')??'';
-    const testChatId=Deno.env.get("TELEGRAM_TEST_CHAT_ID") ?? "";
-    const chatId=hasPredictions?channelChatId:testChatId;
-    const destination=hasPredictions?'series3_channel':'test_group';
-    if (!botToken || !chatId) return json({ error: hasPredictions?'مقصد کانال سری سوم هنوز در تنظیمات امن سرور تعریف نشده است؛ هیچ پیامی ارسال نشد.':'تنظیمات ربات یا گروه آزمایشی در سمت سرور موجود نیست.' }, hasPredictions?409:500);
+    const chatId = Deno.env.get("TELEGRAM_TEST_CHAT_ID") ?? "";
+    const destination = 'test_group';
+    if (!botToken || !chatId) return json({ error: "تنظیمات ربات یا گروه آزمایشی در سمت سرور موجود نیست؛ هیچ پیامی ارسال نشد." }, 500);
     const results: Array<{section_id:string;message_id:number}> = [];
     for (const [index, message] of messages.entries()) {
       // Telegram group rate limit: keep the batch below 20 messages per minute.
