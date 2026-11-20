@@ -308,6 +308,8 @@ Deno.serve(async (req: Request) => {
     } else {
       messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures,predictions);
     }
+    if (reportMode && action === "send") return json({error:"گزارش‌های شخصی به دلیل محرمانگی به گروه یا کانال عمومی ارسال نمی‌شوند؛ ابتدا باید مقصد خصوصی معتبر برای هر رأی‌دهنده تعریف شود."},409);
+
     const allowedDestinations = new Set(["test_group", "main_channel"]);
     const requestedDestinations: string[] = Array.isArray(body.destinations)
       ? [...new Set((body.destinations as unknown[]).map((value) => String(value)))]
