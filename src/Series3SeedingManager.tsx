@@ -385,14 +385,13 @@ export default function Series3SeedingManager() {
         <div style={{ display: 'grid', gap: 9 }}>
           {displayedPots.map((pot, index) => <details key={index} style={{ border: '1px solid #59472a', borderRadius: 9, padding: 10, background: '#101112' }}>
             <summary style={{cursor:'pointer',color:'#e4c77e',fontWeight:800}}>سید {fa(index + 1)} · {fa(index * 12 + 1)} تا {fa(index * 12 + 12)} · {fa(pot.length)} بازیکن</summary>
-            <strong style={{ color: '#e4c77e' }}>سید {fa(index + 1)} <span style={muted}>· {fa(index * 12 + 1)} تا {fa(index * 12 + 12)}</span></strong>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: 6, marginTop: 8 }}>
               {pot.map((player, i) => <div key={player.id} style={{ padding: '6px 7px', borderRadius: 6, background: '#1c1b18', minWidth: 0 }}>
                 <span style={{ color: '#c6a45e', fontSize: 11 }}>{fa(index * 12 + i + 1)}. </span>
                 <strong dir="ltr" style={{ fontSize: 12, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
-              </details>)}
+              </div>)}
             </div>
-          </div>)}
+          </details>)}
         </div>
       </>}
     </div>
@@ -416,14 +415,13 @@ export default function Series3SeedingManager() {
           <div style={{ display: 'grid', gap: 9 }}>
             {displayedGroups.map(group => <details key={group.name} style={{ border: '1px solid #806638', borderRadius: 9, padding: 10, background: '#101112' }}>
               <summary style={{cursor:'pointer',color:'#e4c77e',fontSize:15,fontWeight:800}}>گروه {group.name} · {fa(group.players.length)} بازیکن</summary>
-              <strong style={{ color: '#e4c77e', fontSize: 15 }}>گروه {group.name}</strong>
               <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
                 {group.players.map((player, index) => <div key={player.id} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center', padding: '7px 8px', borderRadius: 6, background: '#1b1a17' }}>
                   <strong dir="ltr" style={{ fontSize: 13, overflowWrap: 'anywhere' }}>{player.plato_id}</strong>
                   <span style={{ color: '#c6a45e', fontSize: 11, whiteSpace: 'nowrap' }}>سید {fa(index + 1)}</span>
-                </details>)}
+                </div>)}
               </div>
-            </div>)}
+            </details>)}
           </div>
         </>}
       </>}
