@@ -248,7 +248,7 @@ export default function Series3TelegramManager() {
           </label>)}
         </div>
       </>}
-      {reportCampaignId&&<p style={{...muted,marginTop:9}}>وضعیت فعلی نتایج از دیتابیس خوانده می‌شود؛ برای بازی‌های بدون نتیجه قطعی «در انتظار نتیجه» و برای قهرمانی تا ثبت قهرمان رسمی همین وضعیت نمایش داده می‌شود.</p>}
+      {reportCampaignId&&<p style={{...muted,marginTop:9}}>وضعیت فعلی نتایج از دیتابیس خوانده می‌شود؛ برای بازی‌های بدون نتیجه قطعی «در انتظار نتیجه» و برای قهرمانی تا ثبت قهرمان رسمی همین وضعیت نمایش داده می‌شود. به‌دلیل محرمانگی، این گزارش فقط در پیش‌نمایش مالک قابل مشاهده است؛ ارسال عمومی مسدود است و ارسال خصوصی تا زمان وجود شناسه خصوصی معتبر هر بازیکن فعال نمی‌شود.</p>}
     </details>
 
     <details open style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
@@ -297,7 +297,7 @@ export default function Series3TelegramManager() {
 
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:13}}>
       <button type="button" style={goldButton} disabled={busy||sending||(selectedCount===0&&!(reportCampaignId&&selectedReportVoters.length>0))||destinations.length===0} onClick={()=>void makePreview()}>{busy?'در حال آماده‌سازی…':'تهیه پیش‌نمایش پیام‌ها'}</button>
-      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0||destinations.length===0} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':'ارسال پیام‌های پیش‌نمایش‌شده'}</button>
+      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0||destinations.length===0||(reportCampaignId&&selectedReportVoters.length>0)} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':(reportCampaignId&&selectedReportVoters.length>0?'ارسال خصوصی هنوز فعال نیست':'ارسال پیام‌های پیش‌نمایش‌شده')}</button>
       <button type="button" style={darkButton} disabled={busy||sending} onClick={()=>{setPreview([]);setError('');setNotice('');}}>پاک‌کردن پیش‌نمایش</button>
     </div>
 
