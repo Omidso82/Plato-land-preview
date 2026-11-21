@@ -109,6 +109,13 @@ export function assignThirdPlaceQualifiers(
   if (placeholders.length !== 8 || qualifiers.length !== 8) {
     throw new Error("Exactly eight placeholders and eight third-place qualifiers are required.");
   }
+  if (bracket.round32.some(match => match.a.source === "third" && match.b.source === "third")) {
+    throw new Error("Two third-place placeholders cannot face each other in Round of 32.");
+  }
+  const placeholderOpponentGroups = placeholders.map(slot => slot.opponent.group);
+  if (placeholderOpponentGroups.some(group => !group) || new Set(placeholderOpponentGroups).size !== 8) {
+    throw new Error("Third-place placeholders must face top-two entrants from eight distinct groups.");
+  }
   if (qualifiers.some(q => q.source !== "third" || !q.group || !q.id || !q.label)) {
     throw new Error("Every third-place qualifier must have a unique identity and group.");
   }
