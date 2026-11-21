@@ -115,6 +115,13 @@ begin
     raise exception 'Third-place qualifiers must be resolved as a complete set of eight';
   end if;
 
+  if (
+    select count(distinct x->>'group') from jsonb_array_elements(v_tokens) x
+    where x->>'source' = 'third' and nullif(x->>'group','') is not null
+  ) not in (0, 8) then
+    raise exception 'Resolved third-place qualifiers must come from eight distinct groups';
+  end if;
+
   if exists (
     select 1 from jsonb_array_elements(v_matches) m
     where jsonb_typeof(m) <> 'object'
