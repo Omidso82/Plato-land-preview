@@ -168,3 +168,55 @@ export function assignThirdPlaceQualifiers(
   }
   return { ...bracket, tokens, round32 };
 }
+
+export function buildOwnerApprovedSeries3Bracket(groups = "ABCDEFGHIJKL".split("")): Series3BracketSnapshot {
+  if (groups.length !== 12 || new Set(groups).size !== 12) throw new Error("Exactly twelve unique groups are required.");
+  const tokens: Series3BracketToken[] = [
+    ...groups.map(group => ({ id: "1-" + group, label: "اول گروه " + group, source: "first" as const, group })),
+    ...groups.map(group => ({ id: "2-" + group, label: "دوم گروه " + group, source: "second" as const, group })),
+    ...Array.from({ length: 8 }, (_, i) => ({ id: "3-BEST-" + (i + 1), label: "سوم برتر شماره " + (i + 1), source: "third" as const })),
+  ];
+  const byId = new Map(tokens.map(token => [token.id, token]));
+  const match = (id: string, a: string, b: string): Series3BracketMatch => {
+    const sideA = byId.get(a), sideB = byId.get(b);
+    if (!sideA || !sideB) throw new Error("Unknown approved bracket token: " + (!sideA ? a : b));
+    return { id, a: sideA, b: sideB };
+  };
+  const ref = (id: string, source: "winner" | "loser" = "winner"): Series3BracketToken => ({
+    id: (source === "winner" ? "W-" : "L-") + id,
+    label: (source === "winner" ? "برنده " : "بازنده ") + id,
+    source,
+  });
+  const round32 = [
+    match("R32-1","1-K","3-BEST-3"), match("R32-2","1-B","2-A"),
+    match("R32-3","1-E","3-BEST-2"), match("R32-4","2-E","2-D"),
+    match("R32-5","3-BEST-6","1-J"), match("R32-6","2-G","2-L"),
+    match("R32-7","3-BEST-1","1-C"), match("R32-8","2-H","1-F"),
+    match("R32-9","2-B","1-L"), match("R32-10","1-G","2-J"),
+    match("R32-11","2-I","2-F"), match("R32-12","2-C","2-K"),
+    match("R32-13","3-BEST-5","1-I"), match("R32-14","3-BEST-8","1-H"),
+    match("R32-15","1-A","3-BEST-7"), match("R32-16","1-D","3-BEST-4"),
+  ];
+  const next = (id: string, a: string, b: string): Series3BracketMatch => ({ id, a: ref(a), b: ref(b) });
+  const round16 = [
+    next("R16-1","R32-7","R32-12"), next("R16-2","R32-3","R32-15"),
+    next("R16-3","R32-10","R32-1"), next("R16-4","R32-14","R32-5"),
+    next("R16-5","R32-9","R32-16"), next("R16-6","R32-2","R32-13"),
+    next("R16-7","R32-11","R32-4"), next("R16-8","R32-8","R32-6"),
+  ];
+  const quarterfinals = [
+    next("QF-1","R16-6","R16-2"), next("QF-2","R16-8","R16-4"),
+    next("QF-3","R16-1","R16-7"), next("QF-4","R16-5","R16-3"),
+  ];
+  const semifinals = [next("SF-1","QF-3","QF-1"), next("SF-2","QF-4","QF-2")];
+  const final = [{ id:"F-1", a:ref("SF-1"), b:ref("SF-2") }];
+  const thirdPlace = [{ id:"TP-1", a:ref("SF-1","loser"), b:ref("SF-2","loser") }];
+  const round32Tokens = round32.flatMap(item => [item.a,item.b]);
+  if (round32Tokens.length !== 32 || new Set(round32Tokens.map(token => token.id)).size !== 32) throw new Error("Approved Round of 32 contains duplicate or missing entrants.");
+  if (round32.some(item => item.a.group && item.a.group === item.b.group)) throw new Error("Approved Round of 32 contains a same-group clash.");
+  if (round32.some(item => item.a.source === "third" && item.b.source === "third")) throw new Error("Approved Round of 32 pairs two third-place placeholders.");
+  const thirdOpponentGroups = round32.filter(item => item.a.source === "third" || item.b.source === "third")
+    .map(item => (item.a.source === "third" ? item.b : item.a).group);
+  if (thirdOpponentGroups.length !== 8 || new Set(thirdOpponentGroups).size !== 8) throw new Error("Third-place opponents must come from eight distinct groups.");
+  return { tokens, round32, round16, quarterfinals, semifinals, final, thirdPlace };
+}
