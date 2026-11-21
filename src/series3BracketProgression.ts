@@ -1,4 +1,4 @@
-import type { Series3BracketMatch, Series3BracketSnapshot, Series3BracketToken } from "./series3KnockoutBracket.ts";
+import type { Series3BracketMatch, Series3BracketSnapshot, Series3BracketToken } from "./series3KnockoutBracket";
 
 export type Series3GroupFixture = {
   match_id: string;
