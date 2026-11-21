@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
 import Series3FixturesSchedule from './Series3FixturesSchedule';
 import Series3GroupResultsManager from './Series3GroupResultsManager';
+import { resolveSeries3ThirdPlaces, type Series3PlayoffRecord, type Series3ThirdPlacePlayer } from './series3ThirdPlaceQualification';
 
 type Registration = { id: string; plato_id: string; registration_status: 'main' | 'waitlist' | 'withdrawn' };
 type Stats = { request_id: string; games_played: number; games_won: number };
@@ -261,6 +262,10 @@ export default function Series3SeedingManager() {
   const [bracketConfirm, setBracketConfirm] = useState(false);
   const [bracketReplaceConfirm, setBracketReplaceConfirm] = useState(false);
   const [thirdsLoading, setThirdsLoading] = useState(false);
+  const [playoffCandidates, setPlayoffCandidates] = useState<[Series3ThirdPlacePlayer, Series3ThirdPlacePlayer] | null>(null);
+  const [playoffScoreA, setPlayoffScoreA] = useState('');
+  const [playoffScoreB, setPlayoffScoreB] = useState('');
+  const [playoffSaving, setPlayoffSaving] = useState(false);
   const [bracketLoading, setBracketLoading] = useState(false);
   const [isStale, setIsStale] = useState(false);
   const [error, setError] = useState('');
@@ -483,31 +488,59 @@ export default function Series3SeedingManager() {
     if (!supabase || !savedBracket || thirdsLoading) return;
     setThirdsLoading(true); setError(''); setMessage('');
     try {
-      const {data:groupRows,error:readError}=await supabase.from('plato_land_series3_group_match_results')
-        .select('match_id,group_name,player_a_registration_id,player_a_plato_id,player_b_registration_id,player_b_plato_id,result_status,score_a,score_b');
+      const [{data:groupRows,error:readError},{data:playoffData,error:playoffReadError}] = await Promise.all([
+        supabase.from('plato_land_series3_group_match_results').select('match_id,group_name,player_a_registration_id,player_a_plato_id,player_b_registration_id,player_b_plato_id,result_status,score_a,score_b'),
+        supabase.from('plato_land_series3_third_place_playoff').select('player_a_registration_id,player_a_plato_id,player_a_group,player_b_registration_id,player_b_plato_id,player_b_group,result_status,score_a,score_b').eq('event_key','series3').maybeSingle(),
+      ]);
       if(readError) throw readError;
-      const qualifiers=calculateBestThirdQualifiers((groupRows||[]) as GroupResultRow[]);
+      if(playoffReadError) throw playoffReadError;
+      const resolution = resolveSeries3ThirdPlaces((groupRows || []) as any[], (playoffData || null) as Series3PlayoffRecord | null);
+      if (resolution.status === 'owner_review') throw new Error(resolution.reason);
+      if (resolution.status === 'playoff_required' || resolution.status === 'playoff_pending') {
+        setPlayoffCandidates(resolution.players);
+        setPlayoffScoreA(resolution.savedPlayoff?.score_a == null ? '' : String(resolution.savedPlayoff.score_a));
+        setPlayoffScoreB(resolution.savedPlayoff?.score_b == null ? '' : String(resolution.savedPlayoff.score_b));
+        setMessage('تساوی دقیق در مرز هشتم و نهم وجود دارد؛ نتیجه مسابقه پلی‌آف را ثبت کن.');
+        return;
+      }
+      const qualifiers=resolution.qualifiers.map(p=>({id:'THIRD-'+p.registration_id,label:p.plato_id,source:'third' as const,group:p.group}));
       const nextSnapshot=assignThirdPlaceQualifiers(savedBracket.bracket_snapshot,qualifiers);
       const drawSource=JSON.stringify({entrants:nextSnapshot.tokens,bracket:nextSnapshot});
       const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(drawSource));
       const drawFingerprint=Array.from(new Uint8Array(digest)).map(byte=>byte.toString(16).padStart(2,'0')).join('');
-      const {data:authData,error:authError}=await supabase.auth.getUser();
-      if(authError) throw authError;
-      if(!authData.user) throw new Error('نشست مالک معتبر نیست؛ دوباره وارد پنل شو.');
       const {data:saveData,error:saveError}=await supabase.rpc('replace_series3_knockout_draw',{
-        p_entrants_snapshot:nextSnapshot.tokens,p_bracket_snapshot:nextSnapshot,
-        p_draw_fingerprint:drawFingerprint,
+        p_entrants_snapshot:nextSnapshot.tokens,p_bracket_snapshot:nextSnapshot,p_draw_fingerprint:drawFingerprint,
         p_archive_reason:'Resolved eight official Series 3 third-place qualifiers into fixed bracket placeholders'
       });
       if(saveError) throw saveError;
-      if(!saveData?.success||!saveData?.bracket_snapshot||!saveData?.created_at)
-        throw new Error('پاسخ ذخیره‌سازی کامل نبود؛ وضعیت براکت باید جداگانه بررسی شود.');
+      if(!saveData?.success||!saveData?.bracket_snapshot||!saveData?.created_at) throw new Error('پاسخ ذخیره‌سازی کامل نبود؛ وضعیت براکت باید جداگانه بررسی شود.');
       setSavedBracket({bracket_snapshot:saveData.bracket_snapshot,created_at:saveData.created_at} as SavedBracket);
-      setMessage('هشت نفر سوم بر اساس جدول رسمی گروه‌ها در جایگاه‌های ثابت قرار گرفتند؛ مسیر مسابقات تغییر نکرد.');
+      setPlayoffCandidates(null);
+      setMessage('هشت نفر سوم طبق معیارهای رسمی در جایگاه‌های ثابت ثبت شدند.');
     } catch(e) {
       console.error('Series 3 third-place assignment failed:',e);
       setError('تعیین نفرات سوم انجام نشد: '+(e instanceof Error?e.message:'خطای ناشناخته'));
     } finally {setThirdsLoading(false);}
+  }
+
+  async function saveThirdPlacePlayoff() {
+    if (!supabase || !playoffCandidates || playoffSaving) return;
+    if (!/^\\d+$/.test(playoffScoreA.trim()) || !/^\\d+$/.test(playoffScoreB.trim())) { setError('نتیجه هر دو بازیکن را با عدد صحیح وارد کن.'); return; }
+    const scoreA=Number(playoffScoreA), scoreB=Number(playoffScoreB);
+    if (!Number.isSafeInteger(scoreA)||!Number.isSafeInteger(scoreB)||scoreA<0||scoreB<0||scoreA===scoreB) { setError('نتیجه پلی‌آف باید دو عدد صحیح نامساوی و غیرمنفی باشد.'); return; }
+    const [a,b]=playoffCandidates;
+    setPlayoffSaving(true); setError(''); setMessage('');
+    try {
+      const {data,error:saveError}=await supabase.rpc('save_series3_third_place_playoff',{
+        p_player_a_registration_id:a.registration_id,p_player_a_plato_id:a.plato_id,p_player_a_group:a.group,
+        p_player_b_registration_id:b.registration_id,p_player_b_plato_id:b.plato_id,p_player_b_group:b.group,
+        p_result_status:'completed',p_score_a:scoreA,p_score_b:scoreB,
+      });
+      if(saveError) throw saveError;
+      if(!data?.success) throw new Error('پاسخ ذخیره نتیجه پلی‌آف معتبر نیست.');
+      setMessage('نتیجه پلی‌آف در دیتابیس ثبت شد؛ دوباره محاسبه نفرات سوم را اجرا کن.');
+    } catch(e) { setError('ذخیره نتیجه پلی‌آف انجام نشد: '+(e instanceof Error?e.message:'خطای ناشناخته')); }
+    finally {setPlayoffSaving(false);}
   }
 
   const displayedRanking = savedDraw?.ranking_snapshot || players;
@@ -669,8 +702,17 @@ export default function Series3SeedingManager() {
           {savedBracket.bracket_snapshot.tokens.some(t=>t.source==='third'&&!t.group) ? (
             <div style={{...card,marginTop:12,borderColor:'#806638'}}>
               <strong style={{color:'#e4c77e'}}>جایگزینی جایگاه‌های موقت نفرات سوم</strong>
-              <p style={muted}>پس از پایان هر ۷۲ بازی، هشت نفر سوم با معیارهای رسمی امتیاز، تفاضل ست و ست برده‌شده محاسبه می‌شوند. اگر تساوی تعیین‌کننده وجود داشته باشد، سیستم متوقف می‌شود و انتخاب خودکار انجام نمی‌دهد.</p>
-              <button type="button" style={button} disabled={thirdsLoading} onClick={()=>void runThirdPlaceAssignment()}>{thirdsLoading?'در حال محاسبه و ذخیره…':'محاسبه و ثبت هشت نفر سوم رسمی'}</button>
+              <p style={muted}>معیارها: امتیاز، تفاضل ست و ست برده‌شده. تساوی سوم/چهارم هر گروه با رودررو و تساوی دو نفر در مرز هشتم/نهم با پلی‌آف تعیین می‌شود؛ تساوی چندنفره برای بررسی مالک متوقف خواهد شد.</p>
+              <button type="button" style={button} disabled={thirdsLoading} onClick={()=>void runThirdPlaceAssignment()}>{thirdsLoading?'در حال محاسبه…':'محاسبه و ثبت هشت نفر سوم رسمی'}</button>
+              {playoffCandidates && <div style={{...card,marginTop:10,borderColor:'#b18a45'}}>
+                <strong style={{color:'#f0d79e'}}>مسابقه پلی‌آف برای تعیین نفر هشتم</strong>
+                <p style={muted}>{playoffCandidates[0].plato_id} (گروه {playoffCandidates[0].group}) در برابر {playoffCandidates[1].plato_id} (گروه {playoffCandidates[1].group})</p>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8}}>
+                  <label style={muted}>امتیاز {playoffCandidates[0].plato_id}<input inputMode="numeric" value={playoffScoreA} onChange={e=>setPlayoffScoreA(e.target.value)} style={input}/></label>
+                  <label style={muted}>امتیاز {playoffCandidates[1].plato_id}<input inputMode="numeric" value={playoffScoreB} onChange={e=>setPlayoffScoreB(e.target.value)} style={input}/></label>
+                </div>
+                <button type="button" style={{...button,marginTop:9}} disabled={playoffSaving} onClick={()=>void saveThirdPlacePlayoff()}>{playoffSaving?'در حال ذخیره…':'ثبت نتیجه پلی‌آف'}</button>
+              </div>}
             </div>
           ) : <p style={{...muted,color:'#b8dfa9'}}>هشت جایگاه نفرات سوم با بازیکنان واقعی و گروه‌هایشان تکمیل شده‌اند.</p>}
           <p style={{...muted,marginTop:12}}>مسیر هر برنده از بازی‌های دور اول تا فینال از پیش به‌صورت ثابت مشخص شده است؛ فقط نام بازیکنان واقعیِ نفرات سوم پس از پایان گروه‌ها جایگزین ۸ جایگاه مربوط می‌شود.</p>
