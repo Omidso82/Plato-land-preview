@@ -49,7 +49,7 @@ export default function Series3PublicDashboard(){
    supabase.from('plato_land_series3_public_knockout_results').select('match_id,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status').eq('event_key','series3').order('stage_key').order('match_no')
   ]);
   if(!active)return;
-  const failure=d.error||f.error||b.error||k.error;
+  const failure=d.error||f.error||b.error||(k.error&&k.error.code!=='42P01'?k.error:null);
   if(failure){setError('بارگذاری اطلاعات مسابقات ناموفق بود. لطفاً کمی بعد دوباره تلاش کنید.');}
   else{
    setDraw(d.data as Draw|null);setFixtures((f.data||[]) as Fixture[]);
