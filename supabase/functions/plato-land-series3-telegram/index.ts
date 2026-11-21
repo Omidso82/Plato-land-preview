@@ -26,6 +26,7 @@ type Player = { id?: string; plato_id: string; games_won?: number | null; games_
 type MatchToken = { id?: string; label?: string; source?: string; group?: string };
 type BracketMatch = { id: string; a: MatchToken; b: MatchToken };
 type Bracket = { round32?: BracketMatch[]; round16?: BracketMatch[]; quarterfinals?: BracketMatch[]; semifinals?: BracketMatch[]; thirdPlace?: BracketMatch[]; final?: BracketMatch[] };
+type KnockoutResult = { match_id:string; stage_key:string; match_no:number; player_a_plato_id:string; player_b_plato_id:string; score_a:number|null; score_b:number|null; result_status:string };
 type Fixture = { id:string; group:string; round:number; match_no:number; player_a:{plato_id:string}; player_b:{plato_id:string}; time:string };
 type FixtureSnapshot = { group_stage:{days:Array<{round:number;persian_date:string;time:string;matches:Fixture[]}>} };
 type PredictionQuestion = { id:string; label:string; type?:string; options?:string[]; match?:{matchId?:string;stage?:string;roundNo?:number;matchDate?:string}|null };
@@ -167,7 +168,7 @@ function buildVoterReportMessages(campaign: PredictionCampaign, entries: Predict
     return makeMessage("prediction-report:" + campaign.id + ":" + entry.id, "گزارش پیش‌بینی · " + entry.voter_plato_id, "", lines, campaign.campaign_type === "match_predictions" ? questions.length : 1);
   });
 }
-function buildMessages(selected: string[], ranking: Player[], pots: Player[][], groups: Array<{name:string;players:Player[]}>, bracket: Bracket, fixtures: FixtureSnapshot|undefined, predictions: PredictionCampaign[], matchResults: MatchResult[]): Message[] {
+function buildMessages(selected: string[], ranking: Player[], pots: Player[][], groups: Array<{name:string;players:Player[]}>, bracket: Bracket, fixtures: FixtureSnapshot|undefined, predictions: PredictionCampaign[], matchResults: MatchResult[], knockoutResults: KnockoutResult[]): Message[] {
   const result: Message[] = [];
   const groupNames = "ABCDEFGHIJKL".split("");
   const fixtureIds = [1,2,3].flatMap(day => ["fixtures:day:"+day+":ALL", ...groupNames.map(g=>"fixtures:day:"+day+":"+g)]);
@@ -272,10 +273,19 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
       if (!Array.isArray(matches)) throw new Error("اطلاعات مرحله حذفی انتخاب‌شده پیدا نشد.");
       const expected = key==="round32"?16:key==="round16"?8:key==="quarterfinals"?4:key==="semifinals"?2:1;
       if (matches.length !== expected) throw new Error("تعداد مسابقه‌های "+config.title+" با براکت ثبت‌شده مطابقت ندارد.");
-      const lines = matches.map((match,i)=>[
-        "<b>مسابقه "+fa(i+1)+"</b>  ·  "+code(match.id),
-        playerToken(match.a)+"  <b>مقابل</b>  "+playerToken(match.b),
-      ].join("\n"));
+      const lines = matches.map((match,i)=>{
+        const saved=knockoutResults.find(item=>item.match_id===match.id);
+        const playerA=saved?.player_a_plato_id||match.a?.label||match.a?.id||"جایگاه اول";
+        const playerB=saved?.player_b_plato_id||match.b?.label||match.b?.id||"جایگاه دوم";
+        const state=saved?.result_status==="completed" && saved.score_a!==null && saved.score_b!==null
+          ? "✅ نتیجه نهایی: "+fa(saved.score_a)+" - "+fa(saved.score_b)+" · برنده: "+code(saved.score_a>saved.score_b?playerA:playerB)
+          : saved ? "⏳ بازیکنان ثبت شده‌اند؛ نتیجه در انتظار است" : "⏳ در انتظار ثبت بازیکنان و نتیجه";
+        return [
+          "<b>مسابقه "+fa(i+1)+"</b>  ·  "+code(match.id),
+          code(playerA)+"  <b>VS</b>  "+code(playerB),
+          state,
+        ].join("\n");
+      });
       result.push(makeMessage(id,config.title,config.subtitle,lines,matches.length));
     }
   }
@@ -323,7 +333,7 @@ Deno.serve(async (req: Request) => {
     const wantsSeeding = selected.some((id:string)=>id==="ranking"||id.startsWith("pot:")||id.startsWith("group:")||id.startsWith("fixtures:day:"));
     const predictionIds=selected.filter((id:string)=>id.startsWith('prediction:')).map((id:string)=>id.slice('prediction:'.length));
     if (predictionIds.some((id:string)=>!/^[-a-f0-9]{36}$/i.test(id))) return json({error:'شناسه پیش‌بینی معتبر نیست.'},400);
-    const [seedingResult, knockoutResult, fixturesResult, predictionsResult, reportCampaignResult, reportEntriesResult, reportMatchesResult, fixtureResultsResult] = await Promise.all([
+    const [seedingResult, knockoutResult, fixturesResult, predictionsResult, reportCampaignResult, reportEntriesResult, reportMatchesResult, fixtureResultsResult, knockoutMatchResultsResult] = await Promise.all([
       wantsSeeding
         ? admin.from("plato_land_series3_seeding_draws").select("ranking_snapshot,pots_snapshot,groups_snapshot").eq("event_key","series3").maybeSingle()
         : Promise.resolve({data:null,error:null}),
@@ -350,6 +360,9 @@ Deno.serve(async (req: Request) => {
       wantsFixtures
         ? admin.from('plato_land_series3_group_match_results').select('match_id,result_status,score_a,score_b,player_a_plato_id,player_b_plato_id').eq('event_key','series3')
         : Promise.resolve({data:[],error:null}),
+      wantsBracket
+        ? admin.from('plato_land_series3_knockout_match_results').select('match_id,stage_key,match_no,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status').eq('event_key','series3')
+        : Promise.resolve({data:[],error:null}),
     ]);
     if (seedingResult.error) throw seedingResult.error;
     if (fixturesResult.error) throw fixturesResult.error;
@@ -359,6 +372,7 @@ Deno.serve(async (req: Request) => {
     if (reportEntriesResult.error) throw reportEntriesResult.error;
     if (reportMatchesResult.error) throw reportMatchesResult.error;
     if (fixtureResultsResult.error) throw fixtureResultsResult.error;
+    if (knockoutMatchResultsResult.error) throw knockoutMatchResultsResult.error;
     const predictions=(predictionsResult.data||[]) as PredictionCampaign[];
     if (predictions.length!==predictionIds.length) return json({error:'یکی از پیش‌بینی‌های انتخاب‌شده منتشرشده نیست یا تغییر کرده است؛ فهرست را تازه‌سازی کن.'},409);
     const seeding = seedingResult.data;
@@ -391,7 +405,7 @@ Deno.serve(async (req: Request) => {
         if (messages.length > 100) return json({error:"تعداد پیام‌های گزارش از سقف مجاز بیشتر است."},400);
       }
     } else {
-      messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures,predictions,(fixtureResultsResult.data || []) as MatchResult[]);
+      messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures,predictions,(fixtureResultsResult.data || []) as MatchResult[],(knockoutMatchResultsResult.data || []) as KnockoutResult[]);
     }
 
     const allowedDestinations = new Set(["test_group", "main_channel"]);
