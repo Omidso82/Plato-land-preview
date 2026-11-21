@@ -98,7 +98,8 @@ begin
 
   if exists (
     select 1 from jsonb_array_elements(v_tokens) x
-    where x->>'source' not in ('first','second','third')
+    where nullif(x->>'source','') is null
+       or x->>'source' not in ('first','second','third')
        or (x->>'source' in ('first','second') and nullif(x->>'group','') is null)
        or (x->>'source' = 'third' and nullif(x->>'group','') is not null)
   ) then
@@ -107,7 +108,11 @@ begin
 
   if exists (
     select 1 from jsonb_array_elements(v_matches) m
-    where m->'a' is null or m->'b' is null
+    where jsonb_typeof(m) <> 'object'
+       or jsonb_typeof(m->'a') <> 'object'
+       or jsonb_typeof(m->'b') <> 'object'
+       or nullif(m->'a'->>'id','') is null
+       or nullif(m->'b'->>'id','') is null
        or m->'a'->>'id' = m->'b'->>'id'
        or (nullif(m->'a'->>'group','') is not null and m->'a'->>'group' = m->'b'->>'group')
        or ((m->'a'->>'source' = 'third') = (m->'b'->>'source' = 'third'))
