@@ -94,7 +94,7 @@ export default function Series3KnockoutResultsManager(){
       const payload={
         event_key:'series3',stage_key:stage,match_id:match.id,match_no:index+1,
         player_a_plato_id:a,player_b_plato_id:b,score_a:scoreA,score_b:scoreB,
-        result_status:status,version:(previous?.version||0)+1,
+        result_status:status,version:(previous?.version||0)+1,updated_at:new Date().toISOString(),
         created_by:previous?.created_by||userResult.user.id,
         updated_by:userResult.user.id,
       };
