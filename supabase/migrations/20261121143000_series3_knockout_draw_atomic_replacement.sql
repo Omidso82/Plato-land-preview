@@ -49,7 +49,8 @@ begin
      or jsonb_typeof(p_bracket_snapshot->'round32') is distinct from 'array'
      or jsonb_array_length(p_bracket_snapshot->'round32') <> 16
      or p_draw_fingerprint is null
-     or p_draw_fingerprint !~ '^[0-9a-f]{64}
+     or length(p_draw_fingerprint) <> 64 then
+    raise exception 'Invalid Series 3 bracket payload';
   end if;
 
   v_tokens := p_bracket_snapshot->'tokens';
