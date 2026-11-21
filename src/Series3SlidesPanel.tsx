@@ -54,7 +54,7 @@ export function Series3SlidesPanel() {
         const size=Number(response.headers.get('Content-Length')||'0');
         const type=(response.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
         if(response.ok&&size>0&&['image/jpeg','image/png','image/webp'].includes(type)){
-          setPoster({url:series3PosterUrl()+'?v='+encodeURIComponent(String(size)),storage:'r2',objectKey:posterKey});
+          setPoster({url:series3PosterUrl()+'&v='+encodeURIComponent(String(size)),storage:'r2',objectKey:posterKey});
         }else{
           setPoster(null);
           setMessage('مرجع پوستر در Supabase ثبت شده، اما فایل متناظر در R2 تأیید نشد.');
@@ -64,7 +64,7 @@ export function Series3SlidesPanel() {
         setMessage('بررسی پوستر در R2 ناموفق بود: '+(e instanceof Error?e.message:'خطای شبکه'));
       }
     }else if(!posterKey&&posterItem){
-      setPoster({url:supabase.storage.from(BUCKET).getPublicUrl(POSTER_PATH).data.publicUrl,updated_at:posterItem.updated_at||posterItem.created_at||'',storage:'supabase',objectKey:POSTER_PATH});
+      setPoster({url:supabase.storage.from(BUCKET).getPublicUrl(POSTER_PATH).data.publicUrl+'?v='+encodeURIComponent(posterItem.updated_at||posterItem.created_at||''),storage:'supabase',objectKey:POSTER_PATH});
     }else{
       setPoster(null);
     }
@@ -293,7 +293,7 @@ export function Series3SlidesPanel() {
           </div>
           <div style={{fontSize:12,color:'#c9c0ad',marginBottom:12}}>حالت فعلی: {mediaMode==='video'?'ویدئوی تیزر':'پوستر ثابت'}</div>
           <h4 style={{color:'#f1d99e',margin:'12px 0 8px'}}>پوستر ثابت</h4>
-          {poster?<><img src={poster.url+'?v='+encodeURIComponent(poster.updated_at||'')} alt="پوستر سری سوم" style={{display:'block',maxWidth:'100%',maxHeight:200,objectFit:'contain',margin:'0 auto 10px'}}/><div dir="rtl" style={{fontSize:11,lineHeight:1.9,color:'#a9c7a5',overflowWrap:'anywhere',background:'#10140f',border:'1px solid #344a34',borderRadius:8,padding:9,marginBottom:10}}><strong>محل ذخیره فایل:</strong> {poster.storage==='r2'?'Cloudflare R2':'Supabase Storage (فایل قدیمی؛ فقط تا زمان بارگذاری در R2)'}<br/>{poster.storage==='r2'?<><strong>Bucket:</strong> <code dir="ltr">plato-land</code><br/><strong>Object key:</strong> <code dir="ltr">plato-land/backgammon/series-3/public-media/poster/main-poster</code><br/><strong>مرجع در Supabase:</strong> <code dir="ltr">plato_land_series3_home_media_settings.poster_storage_path</code></>:<><strong>Bucket:</strong> <code dir="ltr">series3-slides</code><br/><strong>Object path:</strong> <code dir="ltr">poster/series3-main-poster</code></>}</div></>:<p style={{color:'#a9a08e',fontSize:13}}>هنوز پوستری بارگذاری نشده است.</p>}
+          {poster?<><img src={poster.url} alt="پوستر سری سوم" style={{display:'block',maxWidth:'100%',maxHeight:200,objectFit:'contain',margin:'0 auto 10px'}}/><div dir="rtl" style={{fontSize:11,lineHeight:1.9,color:'#a9c7a5',overflowWrap:'anywhere',background:'#10140f',border:'1px solid #344a34',borderRadius:8,padding:9,marginBottom:10}}><strong>محل ذخیره فایل:</strong> {poster.storage==='r2'?'Cloudflare R2':'Supabase Storage (فایل قدیمی؛ فقط تا زمان بارگذاری در R2)'}<br/>{poster.storage==='r2'?<><strong>Bucket:</strong> <code dir="ltr">plato-land</code><br/><strong>Object key:</strong> <code dir="ltr">plato-land/backgammon/series-3/public-media/poster/main-poster</code><br/><strong>مرجع در Supabase:</strong> <code dir="ltr">plato_land_series3_home_media_settings.poster_storage_path</code></>:<><strong>Bucket:</strong> <code dir="ltr">series3-slides</code><br/><strong>Object path:</strong> <code dir="ltr">poster/series3-main-poster</code></>}</div></>:<p style={{color:'#a9a08e',fontSize:13}}>هنوز پوستری بارگذاری نشده است.</p>}
           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setPosterSelected(e.target.files?.[0]||null)} style={{width:'100%',color:'#ddd',fontSize:12,margin:'8px 0'}}/>
           <button style={button} disabled={!posterSelected||posterBusy||posterDeleteBusy} onClick={()=>void uploadPoster()}>{posterBusy?'در حال ذخیره…':poster?'جایگزینی پوستر':'بارگذاری پوستر'}</button>
           {poster&&<div style={{marginTop:9}}>
