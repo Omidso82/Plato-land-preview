@@ -83,6 +83,53 @@ function shuffled<T>(items: T[]): T[] {
   return result;
 }
 
+function buildProtectedRound32(tokens: BracketToken[]): { tokens: BracketToken[]; round32: BracketMatch[] } {
+  const topTwo = shuffled(tokens.filter(token => token.source === 'first' || token.source === 'second'));
+  const thirds = shuffled(tokens.filter(token => token.source === 'third'));
+  if (topTwo.length !== 24 || thirds.length !== 8) throw new Error('ساختار ورودی براکت باید دقیقاً ۲۴ نفر اول/دوم و ۸ جای‌نگهدار نفر سوم باشد.');
+  const opponents: BracketToken[] = [];
+  const remaining: BracketToken[] = [];
+  const assignThirds = (index: number, available: BracketToken[]): boolean => {
+    if (index === thirds.length) { remaining.push(...available); return true; }
+    const candidates = shuffled(available.filter(player => player.group));
+    for (const candidate of candidates) {
+      opponents.push(candidate);
+      const next = available.filter(player => player.id !== candidate.id);
+      if (assignThirds(index + 1, next)) return true;
+      opponents.pop();
+    }
+    return false;
+  };
+  if (!assignThirds(0, topTwo)) throw new Error('برای جای‌گذاری هشت نفر سوم، ترکیب معتبر بدون برخورد هم‌گروهی پیدا نشد.');
+  const pairings: Array<[BracketToken, BracketToken]> = [];
+  const pairRemaining = (pool: BracketToken[]): boolean => {
+    if (pool.length === 0) return true;
+    const first = pool[0];
+    for (const candidate of shuffled(pool.slice(1).filter(player => player.group !== first.group))) {
+      const rest = pool.slice(1).filter(player => player.id !== candidate.id);
+      pairings.push([first, candidate]);
+      if (pairRemaining(rest)) return true;
+      pairings.pop();
+    }
+    return false;
+  };
+  if (remaining.length !== 16 || !pairRemaining(remaining)) throw new Error('جفت‌سازی ۱۶ نفر باقی‌مانده بدون برخورد هم‌گروهی ممکن نشد.');
+  const matches: BracketMatch[] = [
+    ...pairings.map(([a,b]) => ({ id: '', a, b })),
+    ...thirds.map((third, index) => ({ id: '', a: third, b: opponents[index] })),
+  ];
+  const ordered = shuffled(matches).map((match, index) => ({ ...match, id: 'R32-' + (index + 1) }));
+  const all = ordered.flatMap(match => [match.a, match.b]);
+  if (all.length !== 32 || new Set(all.map(token => token.id)).size !== 32) throw new Error('اعتبارسنجی یکتایی ورودی‌های براکت ناموفق بود.');
+  for (const match of ordered) {
+    if (match.a.group && match.b.group && match.a.group === match.b.group)
+      throw new Error('خطای کنترل نهایی: دو بازیکن از یک گروه در یک مسابقه دور ۳۲ قرار گرفته‌اند.');
+    if ((match.a.source === 'third') === (match.b.source === 'third'))
+      throw new Error('هر جایگاه نفر سوم باید دقیقاً مقابل یک نفر اول یا دوم قرار بگیرد.');
+  }
+  return { tokens: shuffled(all), round32: ordered };
+}
+
 export default function Series3SeedingManager() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [drafts, setDrafts] = useState<Record<string, { played: string; won: string }>>({});
@@ -281,8 +328,9 @@ export default function Series3SeedingManager() {
         ...groupNames.map(group => ({ id: '2-' + group, label: 'دوم گروه ' + group, source: 'second' as const, group })),
         ...Array.from({length:8},(_,i)=>({id:'3-BEST-'+(i+1),label:'سوم برتر شماره '+fa(i+1),source:'third' as const}))
       ];
-      const shuffledTokens = shuffled(tokens);
-      const round32: BracketMatch[] = Array.from({length:16},(_,i)=>({id:'R32-'+(i+1),a:shuffledTokens[i*2],b:shuffledTokens[i*2+1]}));
+      const protectedDraw = buildProtectedRound32(tokens);
+      const shuffledTokens = protectedDraw.tokens;
+      const round32: BracketMatch[] = protectedDraw.round32;
       const makeNextRound=(prefix:string,previous:BracketMatch[]):BracketMatch[]=>Array.from({length:previous.length/2},(_,i)=>({
         id:prefix+'-'+(i+1),
         a:{id:'W-'+previous[i*2].id,label:'برنده '+previous[i*2].id,source:'winner' as const},
