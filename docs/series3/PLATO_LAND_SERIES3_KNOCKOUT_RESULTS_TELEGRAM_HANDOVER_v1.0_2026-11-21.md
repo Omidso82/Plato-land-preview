@@ -28,7 +28,7 @@ Stages:
 - رده‌بندی — 1 match
 - فینال — 1 match
 
-For each match, the Owner records the two exact Plato IDs and may save it as pending (no scores) or completed (both scores supplied). Plato IDs are validated against the registered Series 3 main-player list. A tie is rejected for a completed knockout match.
+For each match, the Owner records the two exact Plato IDs and may save it as pending (no scores) or completed (both scores supplied). Plato IDs are validated against the eligible Series 3 registration list (main and waitlist), matching the existing seeding manager. A tie is rejected for a completed knockout match.
 
 Saved result rows are then read by the existing Telegram Edge Function. The Telegram preview displays the saved player IDs and, for completed matches, the score and winner. The third-place placeholder uses the stable match key TP-1 when the official bracket snapshot does not yet contain a third-place fixture; sending that report remains blocked until a completed result is saved.
 
