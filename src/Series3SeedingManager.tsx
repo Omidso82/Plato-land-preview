@@ -341,14 +341,17 @@ export default function Series3SeedingManager() {
       const drawSource = JSON.stringify({entrants:shuffledTokens,bracket:bracket_snapshot});
       const drawDigest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(drawSource));
       const draw_fingerprint = Array.from(new Uint8Array(drawDigest)).map(byte=>byte.toString(16).padStart(2,'0')).join('');
-      const {data,error:insertError}=await supabase.from('plato_land_series3_knockout_draws').insert({
-        event_key:'series3',entrants_snapshot:shuffledTokens,bracket_snapshot,draw_fingerprint,created_by:userResult.user.id
-      }).select('bracket_snapshot,created_at').single();
-      if(insertError) {
-        if(insertError.code==='23505') throw new Error('قرعه مرحله حذفی قبلاً ثبت شده است؛ صفحه را تازه‌سازی کن.');
-        throw insertError;
-      }
-      setSavedBracket(data as SavedBracket);
+      const {data,error:replaceError}=await supabase.rpc('replace_series3_knockout_draw',{
+        p_entrants_snapshot: shuffledTokens,
+        p_bracket_snapshot: bracket_snapshot,
+        p_draw_fingerprint: draw_fingerprint,
+        p_archive_reason: 'Replaced invalid Series 3 draw: prevent same-group Round of 32 clashes'
+      });
+      if(replaceError) throw replaceError;
+      const {data:activeRow,error:readError}=await supabase.from('plato_land_series3_knockout_draws')
+        .select('bracket_snapshot,created_at').eq('event_key','series3').single();
+      if(readError) throw readError;
+      setSavedBracket(activeRow as SavedBracket);
       setBracketConfirm(false);
       setMessage('قرعه کامل مسیر حذفی تا فینال در دیتابیس اصلی ذخیره و قفل شد.');
     } catch(e) {
