@@ -42,3 +42,15 @@ Deno.test("refuses to decide a complete tie for first or second alphabetically",
   const placement = resolveLockedGroupPlacements(rows).find(x => x.group === "A")!;
   if (placement.status !== "owner_review") throw new Error("Expected owner review for unresolved top-two tie");
 });
+
+Deno.test("handles the initial incomplete bracket snapshot before the async database load", () => {
+  const resolved = resolveSeries3BracketSlots(
+    { tokens: [] } as unknown as Series3BracketSnapshot,
+    [],
+    [],
+    [],
+  );
+  const thirdPlace = resolved["TP-1"];
+  if (!thirdPlace) throw new Error("Expected safe default third-place match");
+  if (thirdPlace.a.resolved || thirdPlace.b.resolved) throw new Error("Initial bracket slots must remain unresolved");
+});

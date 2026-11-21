@@ -129,23 +129,34 @@ export function resolveSeries3BracketSlots(
   thirdQualifiers: Series3BracketToken[],
   results: Series3KnockoutResult[],
 ): Record<string, { a: ResolvedSlot; b: ResolvedSlot }> {
-  const thirdPlaceMatches = bracket.thirdPlace?.length ? bracket.thirdPlace : [{
+  // The owner UI renders this resolver once before its async bracket fetch completes.
+  // Treat an incomplete initial snapshot as empty stages instead of spreading undefined.
+  const round32 = Array.isArray(bracket?.round32) ? bracket.round32 : [];
+  const round16 = Array.isArray(bracket?.round16) ? bracket.round16 : [];
+  const quarterfinals = Array.isArray(bracket?.quarterfinals) ? bracket.quarterfinals : [];
+  const semifinals = Array.isArray(bracket?.semifinals) ? bracket.semifinals : [];
+  const final = Array.isArray(bracket?.final) ? bracket.final : [];
+  const thirdPlace = Array.isArray(bracket?.thirdPlace) ? bracket.thirdPlace : [];
+  const thirdPlaceMatches = thirdPlace.length ? thirdPlace : [{
     id: "TP-1",
     a: { id: "L-SF-1", label: "بازنده نیمه‌نهایی ۱", source: "loser" as const },
     b: { id: "L-SF-2", label: "بازنده نیمه‌نهایی ۲", source: "loser" as const },
   }];
+  const safePlacements = Array.isArray(placements) ? placements : [];
+  const safeThirdQualifiers = Array.isArray(thirdQualifiers) ? thirdQualifiers : [];
+  const safeResults = Array.isArray(results) ? results : [];
   const allMatches = [
-    ...bracket.round32,
-    ...bracket.round16,
-    ...bracket.quarterfinals,
-    ...bracket.semifinals,
-    ...bracket.final,
+    ...round32,
+    ...round16,
+    ...quarterfinals,
+    ...semifinals,
+    ...final,
     ...thirdPlaceMatches,
   ];
   const byMatch = new Map(allMatches.map(match => [match.id, match]));
-  const resultById = new Map(results.map(result => [result.match_id, result]));
-  const placementByGroup = new Map(placements.map(placement => [placement.group, placement]));
-  const thirdById = new Map(thirdQualifiers.map(token => [token.id, token]));
+  const resultById = new Map(safeResults.map(result => [result.match_id, result]));
+  const placementByGroup = new Map(safePlacements.map(placement => [placement.group, placement]));
+  const thirdById = new Map(safeThirdQualifiers.map(token => [token.id, token]));
   const cache = new Map<string, ResolvedSlot>();
   const resolving = new Set<string>();
 
