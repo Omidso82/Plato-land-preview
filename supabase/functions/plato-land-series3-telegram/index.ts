@@ -500,7 +500,7 @@ Deno.serve(async (req: Request) => {
       };
       destinationResults.push(attempt);
       const { error:historyError } = await admin.from("plato_land_series3_telegram_delivery_history").insert({
-        destination, status, total_count:reportRankingImage ? 1 : messages.length, sent_count:results.length,
+        destination, status, total_count:(reportRankingImage || reportChampionVoterImage) ? 1 : messages.length, sent_count:results.length,
         failed_section:failedSection, error_message:failure,
         telegram_results:results, sent_by:authData.user.id,
       });
