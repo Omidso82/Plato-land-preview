@@ -38,12 +38,12 @@ type PredictionRankingRow = { plato_id:string; correct:number; incorrect:number;
 type PredictionRanking = { title:string; total_questions:number; rows:PredictionRankingRow[] };
 
 const roundConfig: Record<string, { title: string; subtitle: string }> = {
-  round32: { title: "برنامه یک‌شانزدهم نهایی", subtitle: "۱۶ مسابقه · دور نخست مرحله حذفی" },
-  round16: { title: "برنامه یک‌هشتم نهایی", subtitle: "۸ مسابقه · مسیر صعود به یک‌چهارم نهایی" },
-  quarterfinals: { title: "برنامه یک‌چهارم نهایی", subtitle: "۴ مسابقه · رقابت برای صعود به نیمه‌نهایی" },
-  semifinals: { title: "برنامه نیمه‌نهایی", subtitle: "۲ مسابقه · گام پایانی تا فینال" },
-  thirdPlace: { title: "مسابقه رده‌بندی", subtitle: "رقابت برای کسب مقام سوم سری سوم" },
-  final: { title: "مسابقه فینال", subtitle: "رقابت نهایی برای قهرمانی سری سوم" },
+  round32: { title: "برنامه یک‌شانزدهم نهایی", subtitle: "سه‌شنبه ۳ آذر · ۱۶ مسابقه · دور نخست مرحله حذفی" },
+  round16: { title: "برنامه یک‌هشتم نهایی", subtitle: "چهارشنبه ۴ آذر · ۸ مسابقه · مسیر صعود به یک‌چهارم نهایی" },
+  quarterfinals: { title: "برنامه یک‌چهارم نهایی", subtitle: "شنبه ۷ آذر · ۴ مسابقه · رقابت برای صعود به نیمه‌نهایی" },
+  semifinals: { title: "برنامه نیمه‌نهایی", subtitle: "یکشنبه ۸ آذر · ۲ مسابقه · گام پایانی تا فینال" },
+  thirdPlace: { title: "مسابقه رده‌بندی", subtitle: "دوشنبه ۹ آذر · رقابت برای کسب مقام سوم سری سوم" },
+  final: { title: "مسابقه فینال", subtitle: "دوشنبه ۹ آذر · رقابت نهایی برای قهرمانی سری سوم" },
 };
 
 function makeMessage(sectionId: string, title: string, subtitle: string, lines: string[], count: number): Message {
