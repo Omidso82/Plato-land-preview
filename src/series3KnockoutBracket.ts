@@ -17,7 +17,9 @@ export type Series3BracketSnapshot = {
 function shuffled<T>(items: T[]): T[] {
   const result = [...items];
   for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const random = new Uint32Array(1);
+    crypto.getRandomValues(random);
+    const j = Math.floor((random[0] / 0x100000000) * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
@@ -27,11 +29,19 @@ export function buildProtectedRound32(tokens: Series3BracketToken[]): {
   tokens: Series3BracketToken[];
   round32: Series3BracketMatch[];
 } {
-  const topTwo = shuffled(tokens.filter(token => token.source === "first" || token.source === "second"));
+  const firsts = tokens.filter(token => token.source === "first");
+  const seconds = tokens.filter(token => token.source === "second");
   const thirds = shuffled(tokens.filter(token => token.source === "third"));
-  if (topTwo.length !== 24 || thirds.length !== 8) {
-    throw new Error("Round of 32 requires exactly 24 first/second entrants and eight third-place placeholders.");
+  const groups = "ABCDEFGHIJKL".split("");
+  const validTopTwoGroups = (pool: Series3BracketToken[]) =>
+    pool.length === 12 &&
+    pool.every(token => Boolean(token.group) && groups.includes(token.group!)) &&
+    new Set(pool.map(token => token.group)).size === 12 &&
+    groups.every(group => pool.filter(token => token.group === group).length === 1);
+  if (!validTopTwoGroups(firsts) || !validTopTwoGroups(seconds) || thirds.length !== 8) {
+    throw new Error("Round of 32 requires exactly one first-place and one second-place entrant from each group A-L, plus eight third-place placeholders.");
   }
+  const topTwo = shuffled([...firsts, ...seconds]);
   const opponents: Series3BracketToken[] = [];
   const pairings: Array<[Series3BracketToken, Series3BracketToken]> = [];
   const pairRemaining = (pool: Series3BracketToken[]): boolean => {
