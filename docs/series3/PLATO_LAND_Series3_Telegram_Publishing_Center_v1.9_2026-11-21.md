@@ -95,3 +95,13 @@ The existing saved ranking order and win-percentage calculation remain unchanged
 - Statistic values remain 36px and row numbers 34px. Ranking order, values, labels, IDs, data source, database, and Telegram send behavior remain unchanged.
 - No message was sent. CI and refreshed preview verification pending.
 - Follow-up implementation commit: `70b3adc99d0ff681ea29636f2080cf27e214eb58`.
+
+
+## Follow-up adjustment — v1.9.4 (2026-11-21)
+
+- The fourth iPhone preview still showed the rightmost statistics card visually touching/covering some Plato IDs, and the numeric values remained too small at phone display scale.
+- Rebuilt each row with three wider statistic cards confined to the left region (centers 185, 385, 585; width 144px). Statistic values increased from 36px to 54px; labels increased from 18px to 21px.
+- Reserved a separate right-side Plato ID lane from x=790 to 1000, with an opaque background and clipping. Plato IDs are painted last so they remain visually on top; long IDs shrink only as needed to fit the ID lane.
+- Row numbers remain 34px. Ranking order, source data, values, labels, IDs, database, bot destination, and Telegram delivery behavior remain unchanged.
+- No Telegram message was sent. CI and preview verification pending.
+- Follow-up implementation commit: `7196ba4dbab2f86a5747693dfd85ad170e573c1e`.
