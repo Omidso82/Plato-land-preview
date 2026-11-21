@@ -61,7 +61,6 @@ export default function Series3KnockoutResultsManager(){
     finally{setLoading(false);}
   }
   useEffect(()=>{void refresh();},[]);
-  const selectedStage=stages.find(x=>x.key===stage)!;
   const matches=useMemo(()=>{
     if(stage==='thirdPlace'&&!Array.isArray(bracket.thirdPlace))return [{id:'TP-1',a:{id:'TP-A',label:'بازیکن اول رده‌بندی',source:'manual'},b:{id:'TP-B',label:'بازیکن دوم رده‌بندی',source:'manual'}}];
     return Array.isArray(bracket[stage])?bracket[stage]:[];
