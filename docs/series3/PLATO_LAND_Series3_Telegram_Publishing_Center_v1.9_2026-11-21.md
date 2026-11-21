@@ -1,9 +1,9 @@
 # PLATO LAND – Series 3 Telegram Ranking Image Layout
 
-**Version:** 1.9.4  
+**Version:** 1.10.0  
 **Date:** 2026-11-21  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** Implementation and automated verification complete; existing temporary admin panel release pending.
+**Status:** New column redesign committed to a review branch; merge and live-panel verification pending.
 
 ## 1. Scope
 
@@ -24,18 +24,18 @@ The owner identified two visual defects in the ranking image preview:
 
 Several earlier branch-only preview iterations did not update the owner's existing temporary admin panel. The owner explicitly requires all work and manual verification to happen in the existing temporary panel.
 
-## 3. Final implementation in this revision
+## 3. Ranking row redesign (v1.10.0)
 
-Each ranking row now uses three statistic cards in a dedicated left-side region and a separate right-side Plato ID region.
+The owner supplied a live-panel screenshot showing that the prior arrangement still did not communicate a clean separation between rank, statistics, and Plato ID. The row is now redesigned as three distinct visual zones:
 
-- Row number: 34px bold.
-- Statistics values (remaining, incorrect, correct): 54px bold.
-- Statistics labels: 21px.
-- Statistic cards: centers at x=185, 385, and 585; width 144px.
-- Plato ID region: x=790–1000, with an opaque background and clipping.
-- Plato ID is rendered after the statistic cards and uses a maximum 38px bold font, reducing only as needed to fit its own region.
+- Rank: a compact, outlined gold badge at the far left.
+- Statistics: three equal-width cards with consistent spacing and centered values/labels.
+- Plato ID: a wider, contrasting gold-outlined panel at the far right.
+- A vertical divider and generous gutter separate the statistics area from the Plato ID panel.
+- The ID is right-aligned, clipped only within its own panel, and reduced in font size only when needed to fit.
+- Existing row height, ranking order, exact Plato IDs, statistics values, labels, title, footer, data source, and delivery flow remain unchanged.
 
-The visual layout change does not alter ranking order, source rows, exact Plato IDs, statistics values, labels, title, or footer.
+This redesign replaces the previous x=790–1000 ID lane and closely spaced statistic centers. It is intended to make the three zones visually unmistakable on mobile screenshots and Telegram.
 
 ## 4. Data, security, and delivery boundaries
 

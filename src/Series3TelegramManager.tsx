@@ -204,22 +204,26 @@ export default function Series3TelegramManager() {
       ranking.rows.forEach((row,index)=>{
         const y=top+index*rowHeight;
         rounded(65,y,width-130,84,16,index%2===0?'#17191c':'#111315','#4b402c');
-        ctx.direction='ltr';ctx.textAlign='left';ctx.fillStyle='#d9b96e';ctx.font='bold 34px Arial';ctx.fillText(String(index+1).padStart(2,'0'),95,y+54);
-        // Statistics are drawn first in a fixed left-side area.
-        const stats=[{x:185,label:'باقی‌مانده',value:row.remaining,color:'#d9b96e'},{x:385,label:'غلط',value:row.incorrect,color:'#e49a9a'},{x:585,label:'درست',value:row.correct,color:'#9ed29c'}];
+        // A dedicated rank badge, three evenly spaced statistic cards, and a visibly isolated Plato ID column.
+        rounded(82,y+12,64,60,13,'#2a2418','#9b783d');
+        ctx.direction='ltr';ctx.textAlign='center';ctx.fillStyle='#e5c477';ctx.font='bold 30px Arial';
+        ctx.fillText(String(index+1).padStart(2,'0'),114,y+52);
+        const stats=[{x:235,label:'باقی‌مانده',value:row.remaining,color:'#d9b96e'},{x:390,label:'غلط',value:row.incorrect,color:'#e49a9a'},{x:545,label:'درست',value:row.correct,color:'#9ed29c'}];
         stats.forEach(stat=>{
-          rounded(stat.x-72,y+7,144,70,12,'#202226');
-          ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle=stat.color;ctx.font='bold 54px Arial';ctx.fillText(new Intl.NumberFormat('fa-IR').format(stat.value),stat.x,y+49);
-          ctx.fillStyle='#c9c0b0';ctx.font='21px Arial';ctx.fillText(stat.label,stat.x,y+72);
+          rounded(stat.x-65,y+8,130,68,12,'#202226');
+          ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle=stat.color;ctx.font='bold 50px Arial';
+          ctx.fillText(new Intl.NumberFormat('fa-IR').format(stat.value),stat.x,y+48);
+          ctx.fillStyle='#c9c0b0';ctx.font='19px Arial';ctx.fillText(stat.label,stat.x,y+70);
         });
-        // Plato ID gets a separate right-side lane and is painted last, above every other element.
-        const idRight=1000, idLeft=790, idMaxWidth=idRight-idLeft;
-        rounded(idLeft,y+7,idMaxWidth,70,10,'#17191c');
-        ctx.save();ctx.beginPath();ctx.rect(idLeft+8,y+4,idMaxWidth-16,76);ctx.clip();
-        ctx.direction='ltr';ctx.textAlign='right';ctx.fillStyle='#f2e6cf';
+        // Strong visual gutter prevents the ID lane from reading as a fourth statistic card.
+        ctx.beginPath();ctx.moveTo(665,y+13);ctx.lineTo(665,y+71);ctx.strokeStyle='#65502d';ctx.lineWidth=2;ctx.stroke();
+        const idLeft=700,idRight=1000,idWidth=idRight-idLeft;
+        rounded(idLeft,y+7,idWidth,70,12,'#292318','#8e6b34');
+        ctx.save();ctx.beginPath();ctx.rect(idLeft+12,y+5,idWidth-24,74);ctx.clip();
+        ctx.direction='ltr';ctx.textAlign='right';ctx.fillStyle='#fff0d2';
         let idFontSize=38;ctx.font='bold '+idFontSize+'px Arial';
-        while(ctx.measureText(row.plato_id).width>idMaxWidth-24 && idFontSize>22){idFontSize-=1;ctx.font='bold '+idFontSize+'px Arial';}
-        ctx.fillText(row.plato_id,idRight-12,y+54);ctx.restore();
+        while(ctx.measureText(row.plato_id).width>idWidth-32 && idFontSize>22){idFontSize-=1;ctx.font='bold '+idFontSize+'px Arial';}
+        ctx.fillText(row.plato_id,idRight-18,y+54);ctx.restore();
       });
       const footerY=top+ranking.rows.length*rowHeight+72;
       ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle='#d9b96e';ctx.font='26px Arial';ctx.fillText('بازی، رقابت، قهرمانی',width/2,footerY);
