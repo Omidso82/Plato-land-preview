@@ -284,7 +284,7 @@ Deno.serve(async (req: Request) => {
         ? admin.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,is_open,opens_at,closes_at,questions,prize_rules').eq('event_key','series3').eq('status','published').in('id',predictionIds)
         : Promise.resolve({data:[],error:null}),
       reportMode
-        ? admin.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,questions,prize_rules').eq('event_key','series3').eq('id',reportCampaignId).eq('status','published').maybeSingle()
+        ? admin.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,questions,prize_rules').eq('event_key','series3').eq('id',reportCampaignId).in('status',['published','closed']).maybeSingle()
         : Promise.resolve({data:null,error:null}),
       reportMode
         ? admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).in('id',reportVoterIds)
@@ -318,7 +318,7 @@ Deno.serve(async (req: Request) => {
     let messages: Message[];
     if (reportMode) {
       const reportCampaign = reportCampaignResult.data as PredictionCampaign | null;
-      if (!reportCampaign || !["champion","match_predictions"].includes(reportCampaign.campaign_type)) return json({error:"کمپین گزارش پیدا نشد یا نوع آن پشتیبانی نمی‌شود."},404);
+      if (!reportCampaign || !["published","closed"].includes(reportCampaign.status) || !["champion","match_predictions"].includes(reportCampaign.campaign_type)) return json({error:"کمپین گزارش پیدا نشد یا نوع آن پشتیبانی نمی‌شود."},404);
       const reportEntries = (reportEntriesResult.data || []) as PredictionEntry[];
       if (reportEntries.length !== reportVoterIds.length) return json({error:"فهرست رأی‌دهندگان با داده‌های کمپین مطابقت ندارد؛ فهرست را تازه‌سازی کن."},409);
       messages = buildVoterReportMessages(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
