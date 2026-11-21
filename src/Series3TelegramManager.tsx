@@ -205,22 +205,21 @@ export default function Series3TelegramManager() {
         const y=top+index*rowHeight;
         rounded(65,y,width-130,84,16,index%2===0?'#17191c':'#111315','#4b402c');
         ctx.direction='ltr';ctx.textAlign='left';ctx.fillStyle='#d9b96e';ctx.font='bold 34px Arial';ctx.fillText(String(index+1).padStart(2,'0'),95,y+54);
-        // Dedicated, clipped Plato ID lane: the ID can never paint over a statistic card.
-        const idRight=1000, idLeft=735, idMaxWidth=idRight-idLeft;
-        // Paint an opaque ID lane so no statistic card or text can visually intrude.
-        rounded(idLeft,y+8,idMaxWidth,68,10,'#17191c');
+        // Statistics are drawn first in a fixed left-side area.
+        const stats=[{x:185,label:'باقی‌مانده',value:row.remaining,color:'#d9b96e'},{x:385,label:'غلط',value:row.incorrect,color:'#e49a9a'},{x:585,label:'درست',value:row.correct,color:'#9ed29c'}];
+        stats.forEach(stat=>{
+          rounded(stat.x-72,y+7,144,70,12,'#202226');
+          ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle=stat.color;ctx.font='bold 54px Arial';ctx.fillText(new Intl.NumberFormat('fa-IR').format(stat.value),stat.x,y+49);
+          ctx.fillStyle='#c9c0b0';ctx.font='21px Arial';ctx.fillText(stat.label,stat.x,y+72);
+        });
+        // Plato ID gets a separate right-side lane and is painted last, above every other element.
+        const idRight=1000, idLeft=790, idMaxWidth=idRight-idLeft;
+        rounded(idLeft,y+7,idMaxWidth,70,10,'#17191c');
         ctx.save();ctx.beginPath();ctx.rect(idLeft+8,y+4,idMaxWidth-16,76);ctx.clip();
         ctx.direction='ltr';ctx.textAlign='right';ctx.fillStyle='#f2e6cf';
-        let idFontSize=34;ctx.font='bold '+idFontSize+'px Arial';
+        let idFontSize=38;ctx.font='bold '+idFontSize+'px Arial';
         while(ctx.measureText(row.plato_id).width>idMaxWidth-24 && idFontSize>22){idFontSize-=1;ctx.font='bold '+idFontSize+'px Arial';}
         ctx.fillText(row.plato_id,idRight-12,y+54);ctx.restore();
-        // Three statistic cards are confined to the left half, leaving a generous gap before Plato ID.
-        const stats=[{x:175,label:'باقی‌مانده',value:row.remaining,color:'#d9b96e'},{x:345,label:'غلط',value:row.incorrect,color:'#e49a9a'},{x:515,label:'درست',value:row.correct,color:'#9ed29c'}];
-        stats.forEach(stat=>{
-          rounded(stat.x-55,y+9,110,66,12,'#202226');
-          ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle=stat.color;ctx.font='bold 36px Arial';ctx.fillText(new Intl.NumberFormat('fa-IR').format(stat.value),stat.x,y+42);
-          ctx.fillStyle='#c9c0b0';ctx.font='18px Arial';ctx.fillText(stat.label,stat.x,y+65);
-        });
       });
       const footerY=top+ranking.rows.length*rowHeight+72;
       ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle='#d9b96e';ctx.font='26px Arial';ctx.fillText('بازی، رقابت، قهرمانی',width/2,footerY);
