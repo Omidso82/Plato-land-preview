@@ -413,10 +413,9 @@ export default function Series3SeedingManager() {
         p_archive_reason: 'Replaced invalid Series 3 draw: prevent same-group Round of 32 clashes'
       });
       if(replaceError) throw replaceError;
-      const {data:activeRow,error:readError}=await supabase.from('plato_land_series3_knockout_draws')
-        .select('bracket_snapshot,created_at').eq('event_key','series3').single();
-      if(readError) throw readError;
-      setSavedBracket(activeRow as SavedBracket);
+      if (!data?.success || !data?.bracket_snapshot || !data?.created_at)
+        throw new Error('پاسخ ذخیره‌سازی کامل نبود؛ وضعیت رکورد باید جداگانه بررسی شود.');
+      setSavedBracket({ bracket_snapshot: data.bracket_snapshot, created_at: data.created_at } as SavedBracket);
       setBracketConfirm(false);
       setMessage('قرعه کامل مسیر حذفی تا فینال در دیتابیس اصلی ذخیره و قفل شد.');
     } catch(e) {
