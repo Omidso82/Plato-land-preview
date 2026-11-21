@@ -3,7 +3,7 @@ Version: 1.1
 Date: 2026-11-21
 Project: PLATO LAND – Temporary Projects
 Event: Series 3 Backgammon League
-Status: Refactor prepared on feature branch; awaiting CI, preview review, and separate Owner approval for production release
+Status: Feature branch checks and Cloudflare frontend preview successful; PR #297 remains Draft/unmerged; production release awaits separate Owner approval
 
 ## 1. Scope and owner decision
 This revision implements the owner's clarified workflow:
@@ -74,8 +74,8 @@ Previous implementation release:
 
 ## 7. Verification and release gates
 Pending for this revision:
-- GitHub build/typecheck on this branch.
-- Review the latest Cloudflare preview result; do not treat a Wrangler preview-command failure as a failed Vite build.
+- GitHub Build and typecheck: completed successfully on head `1edd31d9f21cc0e19992561e27178c3eda886ed1` (run 44937928556), including Vite build, Deno tests, and Edge Function type check.
+- Cloudflare Pages frontend preview: successful for commit `d4b9ee0` at `https://f378c3ba.plato-land-preview.pages.dev`; branch preview `https://feature-series3-knockout-res-mjwp.plato-land-preview.pages.dev`. The subsequent Edge Function-only code commit is not deployed to Supabase yet.
 - Inspect the live panel after release, on the existing Owner session.
 - Verify group-stage entry remains available and knockout entry appears beneath it.
 - Verify Telegram center contains no knockout result-entry form and still has the report choices.
@@ -85,4 +85,4 @@ Do not merge or deploy this v1.1 change until CI/preview checks are reviewed and
 
 ## 8. Change log
 - v1.0 — 2026-11-21: Initial isolated knockout result table, Owner-only access, and Telegram reporting integration; later merged as PR #295.
-- v1.1 — 2026-11-21: Owner clarified that all result entry belongs in the existing group results manager; Telegram center is reporting-only. Added the six-stage calendar dates and moved the result-entry UI accordingly.
+- v1.1 — 2026-11-21: Owner clarified that all result entry belongs in the existing group results manager; Telegram center is reporting-only. Added the six-stage calendar dates and moved the result-entry UI accordingly. PR #297 created; Build/typecheck and Cloudflare frontend preview succeeded; not merged or released.
