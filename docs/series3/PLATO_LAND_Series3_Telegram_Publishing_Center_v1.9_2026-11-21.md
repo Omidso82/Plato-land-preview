@@ -65,3 +65,13 @@ The existing saved ranking order and win-percentage calculation remain unchanged
 - No database, Supabase Edge Function, bot destination, authentication, delivery behavior, or Telegram send was changed. No message was sent.
 - Implementation commit: `22b1fbad11d176714264740af3f778a34b6492bb`.
 - CI and mobile preview verification are pending.
+
+
+## Follow-up adjustment — v1.9.1 (2026-11-21)
+
+- The first preview confirmed that the longer Plato IDs could still visually touch/overlap the rightmost statistic card.
+- Moved all three statistic cards farther left (centers now 255, 435, and 615; card width 128px) and moved the Plato ID right alignment to x=1000 to reserve a wider dedicated ID lane.
+- Kept statistic values at 36px and row numbers at 34px.
+- No ranking/data/database/bot destination/delivery behavior changed. No Telegram message was sent.
+- Follow-up implementation commit: `c82f60b153ceffed852dad714ed70e6d358d5c52`.
+- CI and refreshed preview verification pending.
