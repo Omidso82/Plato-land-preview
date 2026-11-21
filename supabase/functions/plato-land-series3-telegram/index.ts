@@ -37,8 +37,8 @@ type PredictionRankingRow = { plato_id:string; correct:number; incorrect:number;
 type PredictionRanking = { title:string; total_questions:number; rows:PredictionRankingRow[] };
 
 const roundConfig: Record<string, { title: string; subtitle: string }> = {
-  round32: { title: "قرعه مرحله ۳۲ نفره", subtitle: "۱۶ مسابقه · مسیر ورود به جمع ۱۶ بازیکن" },
-  round16: { title: "قرعه مرحله ۱۶ نفره", subtitle: "۸ مسابقه · مسیر صعود به یک‌چهارم نهایی" },
+  round32: { title: "برنامه یک‌شانزدهم نهایی", subtitle: "۱۶ مسابقه · دور نخست مرحله حذفی" },
+  round16: { title: "برنامه یک‌هشتم نهایی", subtitle: "۸ مسابقه · مسیر صعود به یک‌چهارم نهایی" },
   quarterfinals: { title: "برنامه یک‌چهارم نهایی", subtitle: "۴ مسابقه · رقابت برای صعود به نیمه‌نهایی" },
   semifinals: { title: "برنامه نیمه‌نهایی", subtitle: "۲ مسابقه · گام پایانی تا فینال" },
   thirdPlace: { title: "مسابقه رده‌بندی", subtitle: "رقابت برای کسب مقام سوم سری سوم" },
