@@ -42,7 +42,7 @@ export default function Series3KnockoutResultsManager(){
       const [drawResult,resultResult,playersResult]=await Promise.all([
         supabase.from('plato_land_series3_knockout_draws').select('bracket_snapshot').eq('event_key','series3').maybeSingle(),
         supabase.from('plato_land_series3_knockout_match_results').select('id,stage_key,match_id,match_no,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status,version,created_by').eq('event_key','series3').order('stage_key').order('match_no'),
-        supabase.from('plato_land_series3_registration_requests').select('plato_id').eq('registration_status','main').order('plato_id'),
+        supabase.from('plato_land_series3_registration_requests').select('plato_id').in('registration_status',['main','waitlist']).order('plato_id'),
       ]);
       if(drawResult.error)throw drawResult.error;
       if(resultResult.error)throw resultResult.error;
@@ -75,7 +75,7 @@ export default function Series3KnockoutResultsManager(){
     const a=draft.a.trim(),b=draft.b.trim(),sa=draft.scoreA.trim(),sb=draft.scoreB.trim();
     if(!a||!b){setError('برای ثبت نتیجه، Plato ID دقیق هر دو بازیکن را وارد کن.');return;}
     if(a.toLowerCase()===b.toLowerCase()){setError('Plato ID دو بازیکن باید متفاوت باشد.');return;}
-    if(!players.some(x=>x.toLowerCase()===a.toLowerCase())||!players.some(x=>x.toLowerCase()===b.toLowerCase())){setError('Plato ID باید دقیقاً در فهرست بازیکنان اصلی ثبت‌نام‌شده سری سوم وجود داشته باشد.');return;}
+    if(!players.some(x=>x.toLowerCase()===a.toLowerCase())||!players.some(x=>x.toLowerCase()===b.toLowerCase())){setError('Plato ID باید دقیقاً در فهرست بازیکنان واجد شرایط سری سوم (اصلی و رزرو) وجود داشته باشد.');return;}
     if(Boolean(sa)!==Boolean(sb)){setError('هر دو امتیاز را وارد کن یا هر دو را خالی بگذار.');return;}
     let scoreA:number|null=null,scoreB:number|null=null,status:'pending'|'completed'='pending';
     if(sa&&sb){
@@ -107,7 +107,7 @@ export default function Series3KnockoutResultsManager(){
   }
   return <details dir="rtl" style={{marginTop:12,border:'1px solid #806638',borderRadius:10,padding:12,background:'#111214'}}>
     <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>ثبت و گزارش نتایج مراحل حذفی · سری سوم</summary>
-    <p style={{...muted,margin:'8px 0'}}>نتایج این بخش مستقل از نتایج مرحله گروهی ذخیره می‌شوند. Plato ID هر دو بازیکن باید از فهرست ۴۸ بازیکن اصلی باشد. برای اعلام نتیجه، هر دو امتیاز را وارد کن؛ برای ثبت بازی برنامه‌ریزی‌شده بدون نتیجه، امتیازها را خالی بگذار.</p>
+    <p style={{...muted,margin:'8px 0'}}>نتایج این بخش مستقل از نتایج مرحله گروهی ذخیره می‌شوند. Plato ID هر دو بازیکن باید از فهرست ۴۸ بازیکن واجد شرایط (اصلی و رزرو) باشد. برای اعلام نتیجه، هر دو امتیاز را وارد کن؛ برای ثبت بازی برنامه‌ریزی‌شده بدون نتیجه، امتیازها را خالی بگذار.</p>
     <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
       <button type="button" onClick={()=>void refresh()} disabled={loading} style={{background:'#211b12',border:'1px solid #806638',borderRadius:8,color:'#e4c77e',padding:'9px 12px'}}>{loading?'در حال دریافت…':'به‌روزرسانی براکت و نتایج'}</button>
       <span style={muted}>{fa(saved.filter(x=>x.result_status==='completed').length)} نتیجه ثبت‌شده · {fa(saved.length)} بازی ذخیره‌شده</span>
