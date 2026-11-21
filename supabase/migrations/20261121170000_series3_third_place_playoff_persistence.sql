@@ -118,6 +118,8 @@ begin
      or nullif(trim(p_player_a_plato_id),'') is null
      or nullif(trim(p_player_b_plato_id),'') is null
      or p_player_a_plato_id = p_player_b_plato_id
+     or p_player_a_group is null
+     or p_player_b_group is null
      or p_player_a_group not in ('A','B','C','D','E','F','G','H','I','J','K','L')
      or p_player_b_group not in ('A','B','C','D','E','F','G','H','I','J','K','L')
      or p_player_a_group = p_player_b_group
@@ -136,6 +138,39 @@ begin
     where r.id = p_player_b_registration_id and r.plato_id = p_player_b_plato_id
   ) then
     raise exception 'Playoff participants do not match registered Series 3 players';
+  end if;
+
+  -- Group labels must match the latest saved Series 3 seeding draw, not caller input.
+  if not exists (
+    select 1
+    from public.plato_land_series3_seeding_draws d
+    cross join lateral jsonb_array_elements(d.groups_snapshot) g
+    cross join lateral jsonb_array_elements(g -> 'players') p
+    where d.event_key = 'series3'
+      and g ->> 'name' = p_player_a_group
+      and p ->> 'id' = p_player_a_registration_id::text
+      and p ->> 'plato_id' = p_player_a_plato_id
+      and d.created_at = (
+        select max(latest.created_at)
+        from public.plato_land_series3_seeding_draws latest
+        where latest.event_key = 'series3'
+      )
+  ) or not exists (
+    select 1
+    from public.plato_land_series3_seeding_draws d
+    cross join lateral jsonb_array_elements(d.groups_snapshot) g
+    cross join lateral jsonb_array_elements(g -> 'players') p
+    where d.event_key = 'series3'
+      and g ->> 'name' = p_player_b_group
+      and p ->> 'id' = p_player_b_registration_id::text
+      and p ->> 'plato_id' = p_player_b_plato_id
+      and d.created_at = (
+        select max(latest.created_at)
+        from public.plato_land_series3_seeding_draws latest
+        where latest.event_key = 'series3'
+      )
+  ) then
+    raise exception 'Playoff participant groups do not match the latest saved Series 3 group draw';
   end if;
 
   insert into public.plato_land_series3_third_place_playoff
