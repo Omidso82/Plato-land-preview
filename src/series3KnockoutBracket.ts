@@ -12,6 +12,7 @@ export type Series3BracketSnapshot = {
   quarterfinals: Series3BracketMatch[];
   semifinals: Series3BracketMatch[];
   final: Series3BracketMatch[];
+  thirdPlace?: Series3BracketMatch[];
 };
 
 function shuffled<T>(items: T[]): T[] {
