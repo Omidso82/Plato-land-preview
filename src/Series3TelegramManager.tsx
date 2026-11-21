@@ -22,6 +22,7 @@ const sections: { title: string; description: string; items: SectionOption[] }[]
     { id: 'bracket:round16', label: 'مرحله ۱۶ نفره · ۸ مسابقه' },
     { id: 'bracket:quarterfinals', label: 'یک‌چهارم نهایی · ۴ مسابقه' },
     { id: 'bracket:semifinals', label: 'نیمه‌نهایی · ۲ مسابقه' },
+    { id: 'bracket:thirdPlace', label: 'بازی رده‌بندی · ۱ مسابقه' },
     { id: 'bracket:final', label: 'فینال · ۱ مسابقه' },
   ] },
 ];
