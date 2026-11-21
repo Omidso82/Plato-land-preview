@@ -38,6 +38,7 @@ export default function Series3PublicDashboard(){
  const [knockoutResults,setKnockoutResults]=useState<KnockoutResult[]>([]);
  const [tab,setTab]=useState<'overview'|'ranking'|'groups'|'bracket'>('overview');
  const [loading,setLoading]=useState(true);
+ const [refreshTick,setRefreshTick]=useState(0);
  const [error,setError]=useState('');
  useEffect(()=>{let active=true;(async()=>{
   if(!supabase){setError('اتصال به اطلاعات مسابقات در دسترس نیست.');setLoading(false);return;}
@@ -57,7 +58,15 @@ export default function Series3PublicDashboard(){
    if(!d.data||!b.data)setError('اطلاعات قرعه‌کشی هنوز کامل در دسترس نیست.');
   }
   setLoading(false);
- })();return()=>{active=false}},[]);
+ })();return()=>{active=false}},[refreshTick]);
+ useEffect(()=>{
+  if(!supabase)return;
+  const channel=supabase.channel('series3-public-bracket-live')
+   .on('postgres_changes',{event:'*',schema:'public',table:'plato_land_series3_public_fixtures'},()=>setRefreshTick(value=>value+1))
+   .on('postgres_changes',{event:'*',schema:'public',table:'plato_land_series3_public_knockout_results'},()=>setRefreshTick(value=>value+1))
+   .subscribe();
+  return()=>{void supabase.removeChannel(channel)};
+ },[]);
  const ranking=draw?.ranking_snapshot||[];
  const pots=draw?.pots_snapshot||[];
  const groupDraw=draw?.groups_snapshot||[];
