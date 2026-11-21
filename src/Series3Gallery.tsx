@@ -61,7 +61,7 @@ export default function Series3Gallery(){
       const response=await fetch(url,{method:'HEAD',mode:'cors',cache:'no-store'});
       const size=Number(response.headers.get('Content-Length')||'0');
       const type=(response.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
-      if(active&&response.ok&&size>0&&['image/jpeg','image/png','image/webp'].includes(type))setPoster(url+'?v='+encodeURIComponent(String(size)));
+      if(active&&response.ok&&size>0&&['image/jpeg','image/png','image/webp'].includes(type))setPoster(url+'&v='+encodeURIComponent(String(size)));
      }catch(error){console.warn('Series 3 poster is not available from R2.',error);}
     }else if(!posterKey){
      // Transitional legacy read only: keep the current Supabase poster visible until an R2 upload is verified and referenced.
