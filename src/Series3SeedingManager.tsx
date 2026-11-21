@@ -17,7 +17,6 @@ type GroupResultRow = {
   player_b_registration_id:string; player_b_plato_id:string; result_status:'pending'|'completed'|'double_no_show';
   score_a:number|null; score_b:number|null;
 };
-type GroupStanding = { registration_id:string; plato_id:string; played:number; wins:number; points:number; setsFor:number; setsAgainst:number; diff:number };
 
 type SavedDraw = {
   ranking_snapshot: Player[];
@@ -92,48 +91,6 @@ function shuffled<T>(items: T[]): T[] {
   return result;
 }
 
-
-function calculateBestThirdQualifiers(rows: GroupResultRow[]): BracketToken[] {
-  const groups = 'ABCDEFGHIJKL'.split('');
-  if (rows.length !== 72 || rows.some(row => row.result_status === 'pending'))
-    throw new Error('تا زمانی که نتیجه هر ۷۲ بازی گروهی نهایی نشده باشد، تعیین نفرات سوم مجاز نیست.');
-  const thirdPlaces: Array<{group:string; standing:GroupStanding}> = [];
-  for (const group of groups) {
-    const groupRows = rows.filter(row => row.group_name === group);
-    if (groupRows.length !== 6) throw new Error('تعداد بازی‌های گروه '+group+' کامل نیست.');
-    const map = new Map<string,GroupStanding>();
-    const ensure = (id:string, platoId:string) => {
-      if (!map.has(id)) map.set(id,{registration_id:id,plato_id:platoId,played:0,wins:0,points:0,setsFor:0,setsAgainst:0,diff:0});
-      return map.get(id)!;
-    };
-    for (const row of groupRows) {
-      const a=ensure(row.player_a_registration_id,row.player_a_plato_id);
-      const b=ensure(row.player_b_registration_id,row.player_b_plato_id);
-      a.played++; b.played++;
-      if (row.result_status === 'completed' && row.score_a !== null && row.score_b !== null) {
-        a.setsFor+=row.score_a; a.setsAgainst+=row.score_b;
-        b.setsFor+=row.score_b; b.setsAgainst+=row.score_a;
-        if(row.score_a>row.score_b){a.wins++;a.points+=3;} else {b.wins++;b.points+=3;}
-      }
-    }
-    if(map.size!==4) throw new Error('فهرست بازیکنان گروه '+group+' کامل یا یکتا نیست.');
-    const ranked=[...map.values()].map(p=>({...p,diff:p.setsFor-p.setsAgainst}))
-      .sort((a,b)=>b.points-a.points||b.diff-a.diff||b.setsFor-a.setsFor||a.plato_id.localeCompare(b.plato_id,'en'));
-    const sameOfficialRank=(a:GroupStanding,b:GroupStanding)=>a.points===b.points&&a.diff===b.diff&&a.setsFor===b.setsFor;
-    if(sameOfficialRank(ranked[1],ranked[2])||sameOfficialRank(ranked[2],ranked[3]))
-      throw new Error('رتبه سوم گروه '+group+' با معیارهای رسمی قابل تفکیک نیست؛ تساوی باید طبق تصمیم رسمی مدیریت تعیین تکلیف شود.');
-    thirdPlaces.push({group,standing:ranked[2]});
-  }
-  thirdPlaces.sort((a,b)=>b.standing.points-a.standing.points||b.standing.diff-a.standing.diff||b.standing.setsFor-a.standing.setsFor||a.group.localeCompare(b.group,'en'));
-  const tiedCutoff=thirdPlaces[6]&&thirdPlaces[7]&&
-    thirdPlaces[6].standing.points===thirdPlaces[7].standing.points&&
-    thirdPlaces[6].standing.diff===thirdPlaces[7].standing.diff&&
-    thirdPlaces[6].standing.setsFor===thirdPlaces[7].standing.setsFor;
-  if(tiedCutoff) throw new Error('رتبه هشتم نفرات سوم با معیارهای رسمی مساوی است؛ بدون تصمیم تکمیلی، انتخاب هشت نفر ممکن نیست.');
-  return thirdPlaces.slice(0,8).map(({group,standing})=>({
-    id:'THIRD-'+standing.registration_id,label:standing.plato_id,source:'third',group
-  }));
-}
 
 function buildProtectedRound32(tokens: BracketToken[]): { tokens: BracketToken[]; round32: BracketMatch[] } {
   const topTwo = shuffled(tokens.filter(token => token.source === 'first' || token.source === 'second'));
@@ -489,7 +446,7 @@ export default function Series3SeedingManager() {
     setThirdsLoading(true); setError(''); setMessage('');
     try {
       const [{data:groupRows,error:readError},{data:playoffData,error:playoffReadError}] = await Promise.all([
-        supabase.from('plato_land_series3_group_match_results').select('match_id,group_name,player_a_registration_id,player_a_plato_id,player_b_registration_id,player_b_plato_id,result_status,score_a,score_b'),
+        supabase.from('plato_land_series3_group_match_results').select('match_id,group_name,player_a_registration_id,player_a_plato_id,player_b_registration_id,player_b_plato_id,result_status,score_a,score_b').eq('event_key','series3'),
         supabase.from('plato_land_series3_third_place_playoff').select('player_a_registration_id,player_a_plato_id,player_a_group,player_b_registration_id,player_b_plato_id,player_b_group,result_status,score_a,score_b').eq('event_key','series3').maybeSingle(),
       ]);
       if(readError) throw readError;
@@ -503,6 +460,9 @@ export default function Series3SeedingManager() {
         setMessage('تساوی دقیق در مرز هشتم و نهم وجود دارد؛ نتیجه مسابقه پلی‌آف را ثبت کن.');
         return;
       }
+      setPlayoffCandidates(null);
+      setPlayoffScoreA('');
+      setPlayoffScoreB('');
       const qualifiers=resolution.qualifiers.map(p=>({id:'THIRD-'+p.registration_id,label:p.plato_id,source:'third' as const,group:p.group}));
       const nextSnapshot=assignThirdPlaceQualifiers(savedBracket.bracket_snapshot,qualifiers);
       const drawSource=JSON.stringify({entrants:nextSnapshot.tokens,bracket:nextSnapshot});
