@@ -446,7 +446,7 @@ Deno.serve(async (req: Request) => {
         : "sent";
       const attempt = {
         destination, label:destinationLabels[destination], status,
-        sent_count:results.length, total_count:messages.length,
+        sent_count:results.length, total_count:reportRankingImage ? 1 : messages.length,
         failed_section:failedSection, error:failure, results,
       };
       destinationResults.push(attempt);
@@ -466,7 +466,7 @@ Deno.serve(async (req: Request) => {
     return json({
       sent:allSent, partial:anySent&&!allSent, destination_results:destinationResults,
       sent_count:destinationResults.reduce((sum,item)=>sum+item.sent_count,0),
-      total_count:messages.length*destinationResults.length,
+      total_count:(reportRankingImage ? 1 : messages.length)*destinationResults.length,
       history_saved: attemptHistorySaved,
     }, allSent?200:502);
   } catch (error) {
