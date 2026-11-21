@@ -10,6 +10,14 @@ type DrawGroup = { name: string; players: Player[] };
 type BracketToken = { id: string; label: string; source: 'first' | 'second' | 'third' | 'winner'; group?: string };
 type BracketMatch = { id: string; a: BracketToken; b: BracketToken };
 type SavedBracket = { bracket_snapshot: { tokens: BracketToken[]; round32: BracketMatch[]; round16: BracketMatch[]; quarterfinals: BracketMatch[]; semifinals: BracketMatch[]; final: BracketMatch[] }; created_at: string };
+
+type GroupResultRow = {
+  match_id:string; group_name:string; player_a_registration_id:string; player_a_plato_id:string;
+  player_b_registration_id:string; player_b_plato_id:string; result_status:'pending'|'completed'|'double_no_show';
+  score_a:number|null; score_b:number|null;
+};
+type GroupStanding = { registration_id:string; plato_id:string; played:number; wins:number; points:number; setsFor:number; setsAgainst:number; diff:number };
+
 type SavedDraw = {
   ranking_snapshot: Player[];
   pots_snapshot: Player[][];
@@ -81,6 +89,49 @@ function shuffled<T>(items: T[]): T[] {
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;
+}
+
+
+function calculateBestThirdQualifiers(rows: GroupResultRow[]): BracketToken[] {
+  const groups = 'ABCDEFGHIJKL'.split('');
+  if (rows.length !== 72 || rows.some(row => row.result_status === 'pending'))
+    throw new Error('تا زمانی که نتیجه هر ۷۲ بازی گروهی نهایی نشده باشد، تعیین نفرات سوم مجاز نیست.');
+  const thirdPlaces: Array<{group:string; standing:GroupStanding}> = [];
+  for (const group of groups) {
+    const groupRows = rows.filter(row => row.group_name === group);
+    if (groupRows.length !== 6) throw new Error('تعداد بازی‌های گروه '+group+' کامل نیست.');
+    const map = new Map<string,GroupStanding>();
+    const ensure = (id:string, platoId:string) => {
+      if (!map.has(id)) map.set(id,{registration_id:id,plato_id:platoId,played:0,wins:0,points:0,setsFor:0,setsAgainst:0,diff:0});
+      return map.get(id)!;
+    };
+    for (const row of groupRows) {
+      const a=ensure(row.player_a_registration_id,row.player_a_plato_id);
+      const b=ensure(row.player_b_registration_id,row.player_b_plato_id);
+      a.played++; b.played++;
+      if (row.result_status === 'completed' && row.score_a !== null && row.score_b !== null) {
+        a.setsFor+=row.score_a; a.setsAgainst+=row.score_b;
+        b.setsFor+=row.score_b; b.setsAgainst+=row.score_a;
+        if(row.score_a>row.score_b){a.wins++;a.points+=3;} else {b.wins++;b.points+=3;}
+      }
+    }
+    if(map.size!==4) throw new Error('فهرست بازیکنان گروه '+group+' کامل یا یکتا نیست.');
+    const ranked=[...map.values()].map(p=>({...p,diff:p.setsFor-p.setsAgainst}))
+      .sort((a,b)=>b.points-a.points||b.diff-a.diff||b.setsFor-a.setsFor||a.plato_id.localeCompare(b.plato_id,'en'));
+    const sameOfficialRank=(a:GroupStanding,b:GroupStanding)=>a.points===b.points&&a.diff===b.diff&&a.setsFor===b.setsFor;
+    if(sameOfficialRank(ranked[1],ranked[2])||sameOfficialRank(ranked[2],ranked[3]))
+      throw new Error('رتبه سوم گروه '+group+' با معیارهای رسمی قابل تفکیک نیست؛ تساوی باید طبق تصمیم رسمی مدیریت تعیین تکلیف شود.');
+    thirdPlaces.push({group,standing:ranked[2]});
+  }
+  thirdPlaces.sort((a,b)=>b.standing.points-a.standing.points||b.standing.diff-a.standing.diff||b.standing.setsFor-a.standing.setsFor||a.group.localeCompare(b.group,'en'));
+  const tiedCutoff=thirdPlaces[6]&&thirdPlaces[7]&&
+    thirdPlaces[6].standing.points===thirdPlaces[7].standing.points&&
+    thirdPlaces[6].standing.diff===thirdPlaces[7].standing.diff&&
+    thirdPlaces[6].standing.setsFor===thirdPlaces[7].standing.setsFor;
+  if(tiedCutoff) throw new Error('رتبه هشتم نفرات سوم با معیارهای رسمی مساوی است؛ بدون تصمیم تکمیلی، انتخاب هشت نفر ممکن نیست.');
+  return thirdPlaces.slice(0,8).map(({group,standing})=>({
+    id:'THIRD-'+standing.registration_id,label:standing.plato_id,source:'third',group
+  }));
 }
 
 function buildProtectedRound32(tokens: BracketToken[]): { tokens: BracketToken[]; round32: BracketMatch[] } {
@@ -208,6 +259,8 @@ export default function Series3SeedingManager() {
   const [savedBracket, setSavedBracket] = useState<SavedBracket | null>(null);
   const [bracketExpanded, setBracketExpanded] = useState(true);
   const [bracketConfirm, setBracketConfirm] = useState(false);
+  const [bracketReplaceConfirm, setBracketReplaceConfirm] = useState(false);
+  const [thirdsLoading, setThirdsLoading] = useState(false);
   const [bracketLoading, setBracketLoading] = useState(false);
   const [isStale, setIsStale] = useState(false);
   const [error, setError] = useState('');
@@ -376,8 +429,8 @@ export default function Series3SeedingManager() {
   }
 
 
-  async function runBracketDraw() {
-    if (!supabase || !savedDraw || savedBracket || bracketLoading) return;
+  async function runBracketDraw(replaceExisting = false) {
+    if (!supabase || !savedDraw || (savedBracket && !replaceExisting) || bracketLoading) return;
     setBracketLoading(true); setError(''); setMessage('');
     try {
       const { data: userResult, error: userError } = await supabase.auth.getUser();
@@ -417,11 +470,44 @@ export default function Series3SeedingManager() {
         throw new Error('پاسخ ذخیره‌سازی کامل نبود؛ وضعیت رکورد باید جداگانه بررسی شود.');
       setSavedBracket({ bracket_snapshot: data.bracket_snapshot, created_at: data.created_at } as SavedBracket);
       setBracketConfirm(false);
+      setBracketReplaceConfirm(false);
       setMessage('قرعه کامل مسیر حذفی تا فینال در دیتابیس اصلی ذخیره و قفل شد.');
     } catch(e) {
       console.error('Series 3 knockout draw failed:',e);
       setError('قرعه مرحله حذفی ذخیره نشد: '+(e instanceof Error?e.message:'خطای ناشناخته'));
     } finally {setBracketLoading(false);}
+  }
+
+
+  async function runThirdPlaceAssignment() {
+    if (!supabase || !savedBracket || thirdsLoading) return;
+    setThirdsLoading(true); setError(''); setMessage('');
+    try {
+      const {data,error:readError}=await supabase.from('plato_land_series3_group_match_results')
+        .select('match_id,group_name,player_a_registration_id,player_a_plato_id,player_b_registration_id,player_b_plato_id,result_status,score_a,score_b');
+      if(readError) throw readError;
+      const qualifiers=calculateBestThirdQualifiers((data||[]) as GroupResultRow[]);
+      const nextSnapshot=assignThirdPlaceQualifiers(savedBracket.bracket_snapshot,qualifiers);
+      const drawSource=JSON.stringify({entrants:nextSnapshot.tokens,bracket:nextSnapshot});
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(drawSource));
+      const drawFingerprint=Array.from(new Uint8Array(digest)).map(byte=>byte.toString(16).padStart(2,'0')).join('');
+      const {data:authData,error:authError}=await supabase.auth.getUser();
+      if(authError) throw authError;
+      if(!authData.user) throw new Error('نشست مالک معتبر نیست؛ دوباره وارد پنل شو.');
+      const {data,error:saveError}=await supabase.rpc('replace_series3_knockout_draw',{
+        p_entrants_snapshot:nextSnapshot.tokens,p_bracket_snapshot:nextSnapshot,
+        p_draw_fingerprint:drawFingerprint,
+        p_archive_reason:'Resolved eight official Series 3 third-place qualifiers into fixed bracket placeholders'
+      });
+      if(saveError) throw saveError;
+      if(!data?.success||!data?.bracket_snapshot||!data?.created_at)
+        throw new Error('پاسخ ذخیره‌سازی کامل نبود؛ وضعیت براکت باید جداگانه بررسی شود.');
+      setSavedBracket({bracket_snapshot:data.bracket_snapshot,created_at:data.created_at} as SavedBracket);
+      setMessage('هشت نفر سوم بر اساس جدول رسمی گروه‌ها در جایگاه‌های ثابت قرار گرفتند؛ مسیر مسابقات تغییر نکرد.');
+    } catch(e) {
+      console.error('Series 3 third-place assignment failed:',e);
+      setError('تعیین نفرات سوم انجام نشد: '+(e instanceof Error?e.message:'خطای ناشناخته'));
+    } finally {setThirdsLoading(false);}
   }
 
   const displayedRanking = savedDraw?.ranking_snapshot || players;
@@ -555,6 +641,13 @@ export default function Series3SeedingManager() {
               <button type="button" style={secondaryButton} disabled={bracketLoading} onClick={()=>setBracketConfirm(false)}>انصراف</button>
             </div>}
         </> : <>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:8}}>
+            {!bracketReplaceConfirm ? <button type="button" style={secondaryButton} onClick={()=>setBracketReplaceConfirm(true)}>اصلاح قرعه ذخیره‌شده (حفظ نسخه قبلی در تاریخچه)</button> :
+              <>
+                <button type="button" style={button} disabled={bracketLoading} onClick={()=>void runBracketDraw(true)}>{bracketLoading?'در حال اصلاح…':'تأیید اصلاح و جایگزینی براکت'}</button>
+                <button type="button" style={secondaryButton} disabled={bracketLoading} onClick={()=>setBracketReplaceConfirm(false)}>انصراف</button>
+              </>}
+          </div>
           <p style={{...muted,color:'#b8dfa9'}}>قرعه ثبت شده و ثابت است · {new Date(savedBracket.created_at).toLocaleString('fa-IR')}</p>
           {([
             ['یک‌شانزدهم نهایی · ۱۶ بازی',savedBracket.bracket_snapshot.round32],
@@ -572,6 +665,14 @@ export default function Series3SeedingManager() {
               </div>)}
             </div>
           </details>)}
+
+          {savedBracket.bracket_snapshot.tokens.some(t=>t.source==='third'&&!t.group) ? (
+            <div style={{...card,marginTop:12,borderColor:'#806638'}}>
+              <strong style={{color:'#e4c77e'}}>جایگزینی جایگاه‌های موقت نفرات سوم</strong>
+              <p style={muted}>پس از پایان هر ۷۲ بازی، هشت نفر سوم با معیارهای رسمی امتیاز، تفاضل ست و ست برده‌شده محاسبه می‌شوند. اگر تساوی تعیین‌کننده وجود داشته باشد، سیستم متوقف می‌شود و انتخاب خودکار انجام نمی‌دهد.</p>
+              <button type="button" style={button} disabled={thirdsLoading} onClick={()=>void runThirdPlaceAssignment()}>{thirdsLoading?'در حال محاسبه و ذخیره…':'محاسبه و ثبت هشت نفر سوم رسمی'}</button>
+            </div>
+          ) : <p style={{...muted,color:'#b8dfa9'}}>هشت جایگاه نفرات سوم با بازیکنان واقعی و گروه‌هایشان تکمیل شده‌اند.</p>}
           <p style={{...muted,marginTop:12}}>مسیر هر برنده از بازی‌های دور اول تا فینال از پیش به‌صورت ثابت مشخص شده است؛ فقط نام بازیکنان واقعیِ نفرات سوم پس از پایان گروه‌ها جایگزین ۸ جایگاه مربوط می‌شود.</p>
         </>}
       </>}
