@@ -1,7 +1,7 @@
 export type Series3BracketToken = {
   id: string;
   label: string;
-  source: "first" | "second" | "third" | "winner";
+  source: "first" | "second" | "third" | "winner" | "loser";
   group?: string;
 };
 export type Series3BracketMatch = { id: string; a: Series3BracketToken; b: Series3BracketToken };
