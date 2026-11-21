@@ -47,8 +47,12 @@ export function resolveSeries3ThirdPlaces(
   rows: Series3GroupResultRow[],
   playoff: Series3PlayoffRecord | null,
 ): Series3ThirdPlaceResolution {
-  if (rows.length !== 72 || rows.some(row => row.result_status !== 'completed' || row.score_a === null || row.score_b === null))
-    return { status: 'owner_review', reason: 'برای تعیین نفرات سوم، نتیجه معتبر هر ۷۲ بازی گروهی لازم است.' };
+  if (rows.length !== 72 || rows.some(row =>
+    row.result_status !== 'completed' || row.score_a === null || row.score_b === null ||
+    !Number.isInteger(row.score_a) || !Number.isInteger(row.score_b) ||
+    row.score_a < 0 || row.score_b < 0 || row.score_a === row.score_b
+  ))
+    return { status: 'owner_review', reason: 'برای تعیین نفرات سوم، نتیجه معتبر و غیرمساوی هر ۷۲ بازی گروهی لازم است.' };
 
   const thirdPlaces: Series3ThirdPlacePlayer[] = [];
   for (const group of GROUPS) {
