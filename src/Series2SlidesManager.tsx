@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { Component, useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import { deleteR2Media } from './r2MediaDeleteClient';
 
@@ -252,11 +252,11 @@ export default function Series2SlidesManager() {
     {managerPage==='series3'&&<>
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
       <h2 style={{...heading,marginTop:18}}>مدیریت سری سوم مسابقات تخته‌نرد</h2>
-      <Series3SlidesPanel />
-      <Series3VideoManager />
-      <Series3RegistrationReport />
-      <Series3SeedingManager />
-      <Series3TelegramManager />
+      <Series3SectionBoundary title="مدیریت تصاویر و تیزر سری سوم"><Series3SlidesPanel /></Series3SectionBoundary>
+      <Series3SectionBoundary title="مدیریت ویدیوی قوانین سری سوم"><Series3VideoManager /></Series3SectionBoundary>
+      <Series3SectionBoundary title="گزارش ثبت‌نام سری سوم"><Series3RegistrationReport /></Series3SectionBoundary>
+      <Series3SectionBoundary title="سیدبندی و نتایج سری سوم"><Series3SeedingManager /></Series3SectionBoundary>
+      <Series3SectionBoundary title="گزارش‌ها و مدیریت تلگرام سری سوم"><Series3TelegramManager /></Series3SectionBoundary>
     </>}
     {managerPage==='series2'&&<>
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
@@ -330,6 +330,35 @@ export default function Series2SlidesManager() {
     {message&&<p role="status" style={{...muted,marginTop:16}}>{message}</p>}
     </>}
   </section></main>;
+}
+
+type Series3SectionBoundaryProps = { title: string; children: React.ReactNode };
+type Series3SectionBoundaryState = { error: Error | null };
+
+// Keep one failing Series 3 tool from unmounting the entire temporary admin panel.
+class Series3SectionBoundary extends Component<Series3SectionBoundaryProps, Series3SectionBoundaryState> {
+  state: Series3SectionBoundaryState = { error: null };
+
+  static getDerivedStateFromError(error: Error): Series3SectionBoundaryState {
+    return { error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error('[PLATO LAND][Series 3 admin section]', this.props.title, error, info.componentStack);
+  }
+
+  render() {
+    if (this.state.error) {
+      return (
+        <section dir="rtl" role="alert" style={{ marginTop: 18, padding: 16, border: '1px solid #9b5148', borderRadius: 12, background: '#211314', color: '#ffe0dc' }}>
+          <strong style={{ display: 'block', marginBottom: 8 }}>{this.props.title} با خطا مواجه شد؛ سایر بخش‌های پنل فعال می‌مانند.</strong>
+          <p style={{ fontSize: 12, lineHeight: 1.8, overflowWrap: 'anywhere', margin: '0 0 10px' }}>{this.state.error.name}: {this.state.error.message || 'بدون توضیح خطا'}</p>
+          <button type="button" onClick={() => this.setState({ error: null })} style={{ padding: '9px 13px', border: '1px solid #b18b45', borderRadius: 8, background: '#302313', color: '#f6e8c5', fontWeight: 700 }}>تلاش دوباره برای بارگذاری این بخش</button>
+        </section>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 const shell:React.CSSProperties={minHeight:'100vh',background:'radial-gradient(ellipse at 50% 0%,#292216 0,#111214 48%,#090a0c 100%)',color:'#f4f0e8',padding:'28px 16px',fontFamily:'inherit'};
