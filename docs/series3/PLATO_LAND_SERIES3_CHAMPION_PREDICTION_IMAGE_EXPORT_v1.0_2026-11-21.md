@@ -1,9 +1,9 @@
 # PLATO LAND – Series 3 Champion Prediction Image Export
 
-**Version:** 1.0  
+**Version:** 1.1  
 **Date:** 2026-11-21  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** Implemented on feature branch; awaiting CI and Owner review. Not merged or deployed.
+**Status:** Implemented on feature branch; automated build/typecheck passed; branch preview available; awaiting Owner visual verification. Not merged or deployed to production.
 
 ## 1. Request and placement
 
@@ -37,9 +37,9 @@ The feature reuses the existing Owner-authenticated, read-only campaign and vote
 
 ## 4. User workflow
 
-1. Open the existing temporary Owner panel.
+1. Open the branch preview URL listed in Section 7, then navigate to `/series2-slides-manager/`.
 2. Open the Series 3 Telegram management area.
-3. In «گزارش نتایج پیش‌بینی‌ها»، select the champion campaign.
+3. In «گزارش نتایج پیش‌بینی‌ها», select the champion campaign.
 4. Choose «تهیه تصویر پیش‌بینی قهرمان».
 5. Review the rendered two-column PNG preview.
 6. Use «دریافت تصویر PNG» to save the file and send it manually outside this feature.
@@ -58,7 +58,18 @@ Changes:
 - Add a PNG download link.
 - Keep the existing match-prediction ranking image and per-voter report flows separate.
 
-## 6. Safety and release boundaries
+## 6. Automated checks and release boundaries
+
+GitHub Actions for head commit `4dd5c18410830b917a72b6d09eb2bb02550f3813`:
+
+- **Build and typecheck:** completed successfully.
+  - `npm run typecheck`: success
+  - `npm run build`: success
+  - Existing Deno tests and checks in the workflow: success
+- **GitHub Pages build/upload workflow:** build, TypeScript verification, production-site build, Pages output preparation, configuration and upload steps completed successfully.
+  - The workflow's separate `deploy` job was **skipped**.
+- **Cloudflare Pages PR previews:** successful preview comments were recorded for the `plato-land-preview`, `plato-land-media-pages`, and `plato-land-media-endpoint` Pages projects.
+- **Separate Cloudflare Workers preview notice:** a build failure was reported for `plato-land-media-endpoint` Workers preview. No Worker or Edge Function files are part of this PR; investigate separately if that service is in scope. This does not change the successful application typecheck/build result.
 
 Not performed:
 - No database writes or migrations.
@@ -68,17 +79,24 @@ Not performed:
 - No production deployment.
 - No change to PLATO LAND – Main Website scope.
 
-The implementation is pending automated checks and Owner review. A successful branch build does not itself publish the change to the existing temporary Owner panel.
+A branch preview is not a production release. Owner must visually verify the feature in the branch preview before any separate release approval is requested.
 
-## 7. GitHub
+## 7. GitHub and preview
 
 - Repository: `Omidso82/Plato-land-preview`
+- Pull request: https://github.com/Omidso82/Plato-land-preview/pull/312
+- PR state at verification: open, draft, not merged; mergeable.
 - Feature branch: `feat/series3-champion-voter-image-telegram`
-- Initial implementation commit: `1d8251c4391a9ba3dee32140f491c35e028f13a7`
 - Base branch: `main`
+- Head commit: `4dd5c18410830b917a72b6d09eb2bb02550f3813`
+- Relevant Cloudflare Pages branch preview:
+  https://feat-series3-champion-voter.plato-land-preview.pages.dev
+- Preview page to inspect:
+  https://feat-series3-champion-voter.plato-land-preview.pages.dev/series2-slides-manager/
 
-## 8. Acceptance checks still required
+## 8. Owner visual acceptance checks still required
 
+- Confirm the preview panel opens and Owner authentication works.
 - Confirm the campaign selector resolves the Series 3 champion campaign.
 - Confirm all valid voter/champion pairs appear exactly once.
 - Confirm the PNG contains only the two requested data columns.
@@ -86,4 +104,7 @@ The implementation is pending automated checks and Owner review. A successful br
 - Confirm the download action saves a PNG.
 - Confirm no Telegram message is sent.
 - Confirm no database mutation occurs.
-- Review automated build/typecheck results before requesting production release approval.
+
+## 9. Release gate
+
+Do not mark the PR ready, merge it, deploy to production, or alter the main website without separate explicit Owner approval. The PR remains draft until the visual acceptance checks are completed.
