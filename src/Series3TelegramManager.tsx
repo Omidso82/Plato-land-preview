@@ -141,6 +141,51 @@ export default function Series3TelegramManager() {
     return result as ApiResult;
   }
 
+  async function makeRankingImagePreview() {
+    if(!reportCampaignId){setError('ابتدا کمپین پیش‌بینی بازی‌ها را انتخاب کن.');return;}
+    if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
+    setRankingImageBusy(true);setError('');setNotice('');setPreview([]);setRankingImageData('');setRankingImageBase64('');
+    try {
+      const result=await callApi('preview',{rankingImage:true});
+      const ranking=result?.ranking as PredictionRanking|undefined;
+      if(!result?.ok||!ranking||!ranking.rows?.length) throw new Error(result?.error||'اطلاعات رتبه‌بندی برای تصویر آماده نیست.');
+      const width=1080, rowHeight=104, top=390, height=top+ranking.rows.length*rowHeight+190;
+      const canvas=document.createElement('canvas'); canvas.width=width; canvas.height=height;
+      const ctx=canvas.getContext('2d'); if(!ctx) throw new Error('ساخت تصویر در این مرورگر پشتیبانی نمی‌شود.');
+      ctx.fillStyle='#0b0c0e';ctx.fillRect(0,0,width,height);
+      const rounded=(x:number,y:number,w:number,h:number,r:number,fill:string,stroke?:string)=>{
+        ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();
+        ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=3;ctx.stroke();}
+      };
+      rounded(28,28,width-56,height-56,28,'#101113','#8e6b34');
+      ctx.textAlign='center';ctx.direction='ltr';ctx.fillStyle='#d9b96e';ctx.font='bold 42px Arial';ctx.fillText('♛ PLATO LAND',width/2,105);
+      ctx.direction='rtl';ctx.fillStyle='#f4e5c4';ctx.font='bold 48px Arial';ctx.fillText('رتبه‌بندی شرکت‌کنندگان',width/2,190);
+      ctx.fillStyle='#c6b99f';ctx.font='30px Arial';ctx.fillText('پیش‌بینی بازی‌های دور اول · سری سوم لیگ تخته‌نرد',width/2,250);
+      ctx.fillStyle='#d9b96e';ctx.font='26px Arial';ctx.fillText('مبنای رتبه‌بندی: تعداد پیش‌بینی‌های درست',width/2,305);
+      ctx.fillStyle='#9e927d';ctx.font='23px Arial';ctx.fillText('بدون امتیازدهی وزنی',width/2,345);
+      ranking.rows.forEach((row,index)=>{
+        const y=top+index*rowHeight;
+        rounded(65,y,width-130,84,16,index%2===0?'#17191c':'#111315','#4b402c');
+        ctx.direction='ltr';ctx.textAlign='left';ctx.fillStyle='#d9b96e';ctx.font='bold 30px Arial';ctx.fillText(String(index+1).padStart(2,'0'),95,y+52);
+        ctx.direction='ltr';ctx.textAlign='right';ctx.fillStyle='#f2e6cf';ctx.font='bold 34px Arial';ctx.fillText(row.plato_id,980,y+52);
+        const stats=[{x:365,label:'باقی‌مانده',value:row.remaining,color:'#d9b96e'},{x:565,label:'غلط',value:row.incorrect,color:'#e49a9a'},{x:765,label:'درست',value:row.correct,color:'#9ed29c'}];
+        stats.forEach(stat=>{
+          rounded(stat.x-74,y+10,148,64,12,'#202226');
+          ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle=stat.color;ctx.font='bold 27px Arial';ctx.fillText(new Intl.NumberFormat('fa-IR').format(stat.value),stat.x,y+38);
+          ctx.fillStyle='#c9c0b0';ctx.font='18px Arial';ctx.fillText(stat.label,stat.x,y+62);
+        });
+      });
+      const footerY=top+ranking.rows.length*rowHeight+72;
+      ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle='#d9b96e';ctx.font='26px Arial';ctx.fillText('بازی، رقابت، قهرمانی',width/2,footerY);
+      ctx.fillStyle='#8e846f';ctx.font='20px Arial';ctx.fillText(new Intl.NumberFormat('fa-IR').format(ranking.rows.length)+' شرکت‌کننده · '+new Intl.NumberFormat('fa-IR').format(ranking.total_questions)+' پرسش',width/2,footerY+42);
+      const dataUrl=canvas.toDataURL('image/png'); const base64=dataUrl.split(',')[1]||'';
+      if(!base64) throw new Error('تبدیل تصویر به PNG ناموفق بود.');
+      setRankingImageData(dataUrl);setRankingImageBase64(base64);
+      setNotice('تصویر رتبه‌بندی آماده شد. قبل از ارسال، تمام ردیف‌ها و اعداد را بررسی کن.');
+    } catch(e) {setError(e instanceof Error?e.message:'ساخت تصویر رتبه‌بندی ناموفق بود.');}
+    finally {setRankingImageBusy(false);}
+  }
+
   async function makePreview() {
     if(selected.length===0 && !(reportCampaignId && selectedReportVoters.length)){setError('حداقل یک مورد یا رأی‌دهنده را برای پیش‌نمایش انتخاب کن.');return;}
     if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
