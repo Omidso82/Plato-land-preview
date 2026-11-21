@@ -1,6 +1,6 @@
 # PLATO LAND – Series 3 Public Dashboard Handover
-**Version:** 1.7  
-**Date:** 2026-11-20  
+**Version:** 1.8  
+**Date:** 2026-11-21  
 **Scope:** PLATO LAND – Temporary Projects / Series 3 only
 
 ## 1. Goal and confirmed decisions
