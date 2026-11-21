@@ -74,8 +74,8 @@ export function buildProtectedRound32(tokens: Series3BracketToken[]): {
     if (match.a.group && match.b.group && match.a.group === match.b.group) {
       throw new Error("A same-group Round-of-32 pairing was generated.");
     }
-    if ((match.a.source === "third") === (match.b.source === "third")) {
-      throw new Error("Every third-place placeholder must face exactly one first/second-place entrant.");
+    if (match.a.source === "third" && match.b.source === "third") {
+      throw new Error("Two third-place placeholders cannot face each other.");
     }
   }
   const placeholderOpponentGroups = round32
