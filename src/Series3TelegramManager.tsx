@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabase } from './supabase';
-import Series3KnockoutResultsManager from './Series3KnockoutResultsManager';
 
 type SectionOption = { id: string; label: string };
 type PredictionCampaign = { id:string; title:string; description:string; campaign_type:string; status:string; is_open:boolean; opens_at:string|null; closes_at:string|null; questions:Array<{id:string;label:string;type?:string;options?:string[]}>; prize_rules:any };
@@ -18,13 +17,13 @@ const sections: { title: string; description: string; items: SectionOption[] }[]
     { id: 'fixtures:day:'+day+':ALL', label: 'روز '+day+' · همه گروه‌ها (۲۴ بازی)' },
     ...groups.map(g => ({ id: 'fixtures:day:'+day+':'+g, label: 'روز '+day+' · گروه '+g+' (۲ بازی)' }))
   ]) },
-  { title: 'مراحل حذفی', description: 'هر مرحله جداگانه و بر اساس براکت ذخیره‌شده', items: [
-    { id: 'bracket:round32', label: 'یک‌شانزدهم نهایی · ۱۶ مسابقه' },
-    { id: 'bracket:round16', label: 'یک‌هشتم نهایی · ۸ مسابقه' },
-    { id: 'bracket:quarterfinals', label: 'یک‌چهارم نهایی · ۴ مسابقه' },
-    { id: 'bracket:semifinals', label: 'نیمه‌نهایی · ۲ مسابقه' },
-    { id: 'bracket:thirdPlace', label: 'بازی رده‌بندی · ۱ مسابقه' },
-    { id: 'bracket:final', label: 'فینال · ۱ مسابقه' },
+  { title: 'مراحل حذفی', description: 'انتخاب، پیش‌نمایش و ارسال گزارش نتایج ثبت‌شده در بخش ثبت نتایج سری سوم', items: [
+    { id: 'bracket:round32', label: 'سه‌شنبه ۳ آذر · یک‌شانزدهم نهایی · ۱۶ مسابقه' },
+    { id: 'bracket:round16', label: 'چهارشنبه ۴ آذر · یک‌هشتم نهایی · ۸ مسابقه' },
+    { id: 'bracket:quarterfinals', label: 'شنبه ۷ آذر · یک‌چهارم نهایی · ۴ مسابقه' },
+    { id: 'bracket:semifinals', label: 'یکشنبه ۸ آذر · نیمه‌نهایی · ۲ مسابقه' },
+    { id: 'bracket:thirdPlace', label: 'دوشنبه ۹ آذر · بازی رده‌بندی · ۱ مسابقه' },
+    { id: 'bracket:final', label: 'دوشنبه ۹ آذر · فینال · ۱ مسابقه' },
   ] },
 ];
 
@@ -335,7 +334,6 @@ export default function Series3TelegramManager() {
       </details>)}
     </div>
 
-    <Series3KnockoutResultsManager />
 
     <details open style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
       <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>گزارش نتایج پیش‌بینی‌ها · فقط مالک</summary>
