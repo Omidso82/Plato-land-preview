@@ -199,10 +199,18 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
       const matches = day.matches.filter(m=>groupFilter==="ALL" || m.group===groupFilter);
       const expected = groupFilter==="ALL"?24:2;
       if (matches.length!==expected) throw new Error("تعداد مسابقات برنامه با ساختار مصوب مطابقت ندارد.");
-      const lines = matches.map(m=>[
-        "<b>گروه "+escapeHtml(m.group)+" · بازی "+fa(m.match_no)+"</b>",
-        code(m.player_a.plato_id)+"  <b>مقابل</b>  "+code(m.player_b.plato_id)+"  ·  "+escapeHtml(m.time)
-      ].join("\n"));
+      const lines: string[] = [];
+      let currentGroup = "";
+      for (const match of matches) {
+        if (match.group !== currentGroup) {
+          currentGroup = match.group;
+          lines.push("<b>گروه " + escapeHtml(currentGroup) + "</b>");
+        }
+        lines.push(
+          code(match.player_a.plato_id) + "  <b>VS</b>  " +
+          code(match.player_b.plato_id) + "  ·  " + escapeHtml(match.time)
+        );
+      }
       const scopeTitle = groupFilter==="ALL" ? "همه گروه‌ها" : "گروه "+groupFilter;
       result.push(makeMessage(id,"برنامه روز "+fa(dayNo)+" · "+scopeTitle,day.persian_date+" · ساعت ۲۱:۰۰ تهران",lines,matches.length));
       continue;
