@@ -176,9 +176,11 @@ export function resolveSeries3BracketSlots(
     if (!previousA.resolved || !previousB.resolved) {
       return { token, resolved: false, pendingReason: "Previous match participants are not resolved." };
     }
-    const winnerA = result.score_a > result.score_b;
-    const winningToken = winnerA ? previousA.token : previousB.token;
-    const losingToken = winnerA ? previousB.token : previousA.token;
+    const resultAIsBracketA = result.player_a_plato_id.toLowerCase() === previousA.token.label.toLowerCase();
+    const resultAIsWinner = result.score_a > result.score_b;
+    const bracketAIsWinner = resultAIsBracketA ? resultAIsWinner : !resultAIsWinner;
+    const winningToken = bracketAIsWinner ? previousA.token : previousB.token;
+    const losingToken = bracketAIsWinner ? previousB.token : previousA.token;
     const expectedA = previousA.token.label;
     const expectedB = previousB.token.label;
     const resultMatches = (result.player_a_plato_id === expectedA && result.player_b_plato_id === expectedB) ||
