@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
+import { resolveLockedGroupPlacements, resolveSeries3BracketSlots, validateSeries3BracketResult } from './series3BracketProgression';
 
 type ResultStatus = 'pending' | 'completed' | 'double_no_show';
 type MatchResult = {
@@ -17,7 +18,7 @@ type Standing = {
 const fa = (n:number) => n.toLocaleString('fa-IR');
 
 type KnockoutStageKey = 'round32'|'round16'|'quarterfinals'|'semifinals'|'thirdPlace'|'final';
-type KnockoutToken = { id:string; label:string; source:string; group?:string };
+type KnockoutToken = { id:string; label:string; source:'first'|'second'|'third'|'winner'|'loser'; group?:string };
 type KnockoutMatch = { id:string; a:KnockoutToken; b:KnockoutToken };
 type KnockoutResult = {
   id:string; stage_key:KnockoutStageKey; match_id:string; match_no:number;
@@ -126,10 +127,23 @@ export default function Series3GroupResultsManager() {
   useEffect(()=>{void load();void loadKnockout();},[load,loadKnockout]);
   const knockoutMatches=useMemo(()=>{
     if(knockoutStage==='thirdPlace'&&!Array.isArray(knockoutBracket.thirdPlace))
-      return [{id:'TP-1',a:{id:'TP-A',label:'بازیکن اول رده‌بندی',source:'manual'},b:{id:'TP-B',label:'بازیکن دوم رده‌بندی',source:'manual'}}] as KnockoutMatch[];
+      return [{id:'TP-1',a:{id:'L-SF-1',label:'بازنده نیمه‌نهایی ۱',source:'loser'},b:{id:'L-SF-2',label:'بازنده نیمه‌نهایی ۲',source:'loser'}}] as KnockoutMatch[];
     return Array.isArray(knockoutBracket[knockoutStage])?knockoutBracket[knockoutStage]:[];
   },[knockoutBracket,knockoutStage]);
   const knockoutSavedMap=useMemo(()=>new Map(knockoutRows.map(row=>[row.match_id,row])),[knockoutRows]);
+  const lockedGroupPlacements=useMemo(()=>resolveLockedGroupPlacements(rows.map(row=>({
+    match_id:row.match_id,group_name:row.group_name,
+    player_a_registration_id:row.player_a_registration_id,player_a_plato_id:row.player_a_plato_id,
+    player_b_registration_id:row.player_b_registration_id,player_b_plato_id:row.player_b_plato_id,
+    result_status:row.result_status,score_a:row.score_a,score_b:row.score_b,
+  }))),[rows]);
+  const actualThirdQualifiers=useMemo(()=>knockoutBracket.tokens?.filter(token=>token.source==='third'&&Boolean(token.group)&&!token.id.startsWith('3-BEST-'))||[],[knockoutBracket]);
+  const resolvedKnockoutSlots=useMemo(()=>resolveSeries3BracketSlots(
+    knockoutBracket as any,
+    lockedGroupPlacements,
+    actualThirdQualifiers as any,
+    knockoutRows,
+  ),[knockoutBracket,lockedGroupPlacements,actualThirdQualifiers,knockoutRows]);
   function changeKnockout(matchId:string,field:keyof KnockoutDraft,value:string){
     setKnockoutDrafts(prev=>({...prev,[matchId]:{...(prev[matchId]||{a:'',b:'',scoreA:'',scoreB:''}),[field]:value}}));
   }
