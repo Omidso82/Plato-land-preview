@@ -370,7 +370,7 @@ export default function Series3SeedingManager() {
 
   async function saveThirdPlacePlayoff() {
     if (!supabase || !playoffCandidates || playoffSaving) return;
-    if (!/^\\d+$/.test(playoffScoreA.trim()) || !/^\\d+$/.test(playoffScoreB.trim())) { setError('نتیجه هر دو بازیکن را با عدد صحیح وارد کن.'); return; }
+    if (!/^\d+$/.test(playoffScoreA.trim()) || !/^\d+$/.test(playoffScoreB.trim())) { setError('نتیجه هر دو بازیکن را با عدد صحیح وارد کن.'); return; }
     const scoreA=Number(playoffScoreA), scoreB=Number(playoffScoreB);
     if (!Number.isSafeInteger(scoreA)||!Number.isSafeInteger(scoreB)||scoreA<0||scoreB<0||scoreA===scoreB) { setError('نتیجه پلی‌آف باید دو عدد صحیح نامساوی و غیرمنفی باشد.'); return; }
     const [a,b]=playoffCandidates;
