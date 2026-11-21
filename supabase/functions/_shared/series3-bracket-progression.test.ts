@@ -15,8 +15,8 @@ function fixtures(group: string, completed: number): Series3GroupFixture[] {
     player_a_registration_id: ids[a], player_a_plato_id: ids[a],
     player_b_registration_id: ids[b], player_b_plato_id: ids[b],
     result_status: i < completed ? "completed" : "pending",
-    score_a: i < completed ? (a===0 ? 5 : 1) : null,
-    score_b: i < completed ? (a===0 ? 1 : 5) : null,
+    score_a: i < completed ? 5 : null,
+    score_b: i < completed ? 1 : null,
   }));
 }
 Deno.test("does not lock a group position while any rival can still overtake on points", () => {
@@ -31,7 +31,14 @@ Deno.test("locks first and second only when their current points strictly exceed
   if (placement.first.plato_id !== "A-P1" || placement.second.plato_id !== "A-P2") throw new Error("Unexpected official order");
 });
 Deno.test("refuses to decide a complete tie for first or second alphabetically", () => {
-  const rows = fixtures("A", 6).map((row,i) => i===0 ? {...row,score_a:5,score_b:1} : row);
+  const rows = fixtures("A", 6).map((row,i) => {
+    const cycleWinner = [0,2,0,1,1,2][i];
+    const ids = ["A-P1","A-P2","A-P3","A-P4"];
+    const aIndex = ids.indexOf(row.player_a_plato_id);
+    const bIndex = ids.indexOf(row.player_b_plato_id);
+    const aWins = cycleWinner === aIndex;
+    return {...row,score_a:aWins?5:1,score_b:aWins?1:5};
+  });
   const placement = resolveLockedGroupPlacements(rows).find(x => x.group === "A")!;
   if (placement.status !== "owner_review") throw new Error("Expected owner review for unresolved top-two tie");
 });
