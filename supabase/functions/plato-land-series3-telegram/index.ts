@@ -286,9 +286,6 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
   }
   return result;
 }
-function playerToken(token: MatchToken): string {
-  return code(token?.label || token?.id || "جایگاه مشخص‌نشده");
-}
 
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
