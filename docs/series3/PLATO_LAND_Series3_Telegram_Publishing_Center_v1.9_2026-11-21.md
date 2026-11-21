@@ -1,107 +1,75 @@
-# PLATO LAND – Series 3 Telegram Publishing Center
+# PLATO LAND – Series 3 Telegram Ranking Image Layout
 
-**Version:** 1.9  
+**Version:** 1.9.4  
 **Date:** 2026-11-21  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** Merged and deployed; verification and production function deployment confirmed.
+**Status:** Implementation and automated verification complete; existing temporary admin panel release pending.
 
 ## 1. Scope
 
-This correction restricts win statistics to the overall 48-player ranking message only.
+This change corrects only the ranking-image preview generated inside the existing Series 3 Telegram management workflow in the existing temporary management panel.
 
-## 2. Overall 48-player ranking
+- Existing management route: `/series2-slides-manager/`
+- Existing panel component: `Series2SlidesManager`
+- Existing Series 3 tools remain mounted within that panel.
+- Ranking image generator: `src/Series3TelegramManager.tsx`
 
-The ranking retains:
-- Row number (ردیف).
-- Exact Plato ID.
-- Number of wins (تعداد برد).
-- Existing win percentage (میانگین برد).
+No separate admin page, standalone preview page, or parallel management panel is created.
 
-The existing saved ranking order and win-percentage calculation remain unchanged. The win count is read from the existing `games_won` field in the saved ranking snapshot. Games played is not displayed.
+## 2. Owner-reported issues
 
-## 3. All other Telegram messages
+The owner identified two visual defects in the ranking image preview:
+1. Statistics cards overlapped or obscured long Plato IDs.
+2. Numeric statistics were too small to read comfortably on an iPhone and in Telegram.
 
-- Seeding pots 1–4: row number and Plato ID only (as released in v1.7).
-- Groups A–L: row number, Plato ID, and the existing seed designation only. Win count, games played, and win percentage are removed.
-- Knockout messages: unchanged; they do not display player win statistics.
+Several earlier branch-only preview iterations did not update the owner's existing temporary admin panel. The owner explicitly requires all work and manual verification to happen in the existing temporary panel.
 
-## 4. Data and safety
+## 3. Final implementation in this revision
 
-- No ranking, seeding, group, registration, match, or result data is changed.
-- No database schema or data writes are included.
-- Authentication, owner-only access, test-group-only destination, manual preview/send flow, and JWT verification remain unchanged.
-- No Telegram message is sent as part of this code change.
-- PLATO LAND – Main Website remains outside scope.
+Each ranking row now uses three statistic cards in a dedicated left-side region and a separate right-side Plato ID region.
 
-## 5. Implementation
+- Row number: 34px bold.
+- Statistics values (remaining, incorrect, correct): 54px bold.
+- Statistics labels: 21px.
+- Statistic cards: centers at x=185, 385, and 585; width 144px.
+- Plato ID region: x=790–1000, with an opaque background and clipping.
+- Plato ID is rendered after the statistic cards and uses a maximum 38px bold font, reducing only as needed to fit its own region.
+
+The visual layout change does not alter ranking order, source rows, exact Plato IDs, statistics values, labels, title, or footer.
+
+## 4. Data, security, and delivery boundaries
+
+- No Supabase database schema or data writes.
+- No Supabase Edge Function change.
+- No authentication, authorization, Telegram destination, or delivery behavior change.
+- No Telegram message was sent as part of this implementation.
+- No PLATO LAND – Main Website feature or page is intentionally changed; the affected UI is the existing temporary management route only.
+
+## 5. GitHub implementation
 
 - Repository: `Omidso82/Plato-land-preview`
-- Branch: `fix/series3-stats-only-ranking-v2`
-- Feature commit: `5b10ac55e4966f69579790ac31543323102f40dd`
-- PR: [#226](https://github.com/Omidso82/Plato-land-preview/pull/226) — merged.
-- Merge commit: `7c5003fbc244e49d05456b4fd7f760847c664dc5`
-- Source: `supabase/functions/plato-land-series3-telegram/index.ts`
-- Ranking output adds the wins-count column.
-- Group output removes player statistics and retains seed designation.
-- Supabase Edge Function `plato-land-series3-telegram`: ACTIVE, version 7, `verify_jwt=true`.
-- Merged main source rechecked: ranking includes wins and win percentage; pot and group builders contain no player statistics.
-- No Telegram messages were sent.
+- Branch: `fix/series3-telegram-ranking-image-readability`
+- PR: [#292](https://github.com/Omidso82/Plato-land-preview/pull/292)
+- Latest implementation/documentation head before merge: `9b01149a990002b46b8749d013e1042dd44e348c`
+- Implementation commit: `7196ba4dbab2f86a5747693dfd85ad170e573c1e`
+- Changed application file: `src/Series3TelegramManager.tsx`
+- This document records the successive layout adjustments and the final 54px statistic typography.
 
-## 6. Version history
+## 6. Verification and release gate
 
-- **v1.5:** Three-column 48-player ranking.
-- **v1.6:** Corrected ranking headings.
-- **v1.7:** Removed statistics from seeding-pot messages.
-- **v1.8:** Restricts win count and win percentage to the overall ranking; removes them from group messages.
+For the latest PR head:
+- Build and typecheck: SUCCESS.
+- Verify: SUCCESS.
+- Cloudflare Pages branch build for `plato-land-preview`: SUCCESS.
+- Cloudflare Pages branch build for `plato-land-media-pages`: SUCCESS.
+- Cloudflare Pages branch build for `plato-land-media-endpoint`: SUCCESS.
+- A separate Workers Builds check for `plato-land-media-endpoint` reported FAILURE; this is not the Pages deployment and is not evidence that the ranking image change failed. Its cause is not established by this handover.
 
+Branch Preview deployment does not prove that the existing temporary admin panel has been updated. The required manual acceptance location remains the existing owner-used panel at `https://platoland.org/series2-slides-manager/`.
 
-## 7. Change log — v1.9 (2026-11-21)
+The owner has not yet accepted the final rendered image. No Telegram send is authorized by this handover.
 
-- Improved the Series 3 prediction-ranking image generated in `src/Series3TelegramManager.tsx`.
-- Increased the row-number typography from 30px to 34px and the three statistic values (correct, incorrect, remaining) from 27px to 36px.
-- Moved and narrowed the statistic cards left to reserve a separate right-side area for the full Plato ID. This addresses the overlap visible in the owner preview and improves readability in the Telegram image.
-- Adjusted the vertical baselines inside each row to fit the larger values.
-- The ranking source, row order, Plato ID strings, statistic values, labels, title, and overall dark/gold design remain unchanged.
-- No database, Supabase Edge Function, bot destination, authentication, delivery behavior, or Telegram send was changed. No message was sent.
-- Implementation commit: `22b1fbad11d176714264740af3f778a34b6492bb`.
-- CI and mobile preview verification are pending.
+## 7. Version history
 
-
-## Follow-up adjustment — v1.9.1 (2026-11-21)
-
-- The first preview confirmed that the longer Plato IDs could still visually touch/overlap the rightmost statistic card.
-- Moved all three statistic cards farther left (centers now 255, 435, and 615; card width 128px) and moved the Plato ID right alignment to x=1000 to reserve a wider dedicated ID lane.
-- Kept statistic values at 36px and row numbers at 34px.
-- No ranking/data/database/bot destination/delivery behavior changed. No Telegram message was sent.
-- Follow-up implementation commit: `c82f60b153ceffed852dad714ed70e6d358d5c52`.
-- CI and refreshed preview verification pending.
-
-
-## Follow-up adjustment — v1.9.2 (2026-11-21)
-
-- The second iPhone preview still showed visual collision between the rightmost statistic card and some Plato IDs.
-- Reworked the row into two explicitly separated drawing lanes: statistic cards are restricted to the left lane; Plato IDs are rendered inside a clipped right lane (x=650–1000). The ID font automatically reduces only when needed to fit that lane.
-- Statistic cards moved to centers 205, 375, and 545 with 116px width. Statistic values remain 36px; row numbers remain 34px.
-- This layout prevents statistic cards from painting over the Plato ID lane. Ranking order, values, labels, IDs, data source, database, and Telegram send behavior remain unchanged.
-- No message was sent. CI and refreshed preview verification pending.
-- Follow-up implementation commit: `bcdb72bb7b1f3b9d1593f8f80117c298829c7735`.
-
-
-## Follow-up adjustment — v1.9.3 (2026-11-21)
-
-- The third iPhone preview still showed insufficient visual separation between the rightmost statistics card and some Plato IDs.
-- Increased the separation substantially: the ID lane now starts at x=735, has an opaque dark background, and clips ID text within its own lane. The three statistic cards are confined to centers 175, 345, and 515, each 110px wide.
-- ID text remains right-aligned and automatically scales down only if needed to fit the reserved lane.
-- Statistic values remain 36px and row numbers 34px. Ranking order, values, labels, IDs, data source, database, and Telegram send behavior remain unchanged.
-- No message was sent. CI and refreshed preview verification pending.
-- Follow-up implementation commit: `70b3adc99d0ff681ea29636f2080cf27e214eb58`.
-
-
-## Follow-up adjustment — v1.9.4 (2026-11-21)
-
-- The fourth iPhone preview still showed the rightmost statistics card visually touching/covering some Plato IDs, and the numeric values remained too small at phone display scale.
-- Rebuilt each row with three wider statistic cards confined to the left region (centers 185, 385, 585; width 144px). Statistic values increased from 36px to 54px; labels increased from 18px to 21px.
-- Reserved a separate right-side Plato ID lane from x=790 to 1000, with an opaque background and clipping. Plato IDs are painted last so they remain visually on top; long IDs shrink only as needed to fit the ID lane.
-- Row numbers remain 34px. Ranking order, source data, values, labels, IDs, database, bot destination, and Telegram delivery behavior remain unchanged.
-- No Telegram message was sent. CI and preview verification pending.
-- Follow-up implementation commit: `7196ba4dbab2f86a5747693dfd85ad170e573c1e`.
+- v1.9.0–v1.9.3: Earlier layout attempts recorded during owner feedback; these did not fully resolve overlap.
+- v1.9.4 (2026-11-21): Rebuilt row layout with wider statistics cards, 54px values, and a separate right-side Plato ID region. Corrected the deployment target to the existing temporary management panel as the only owner verification surface.
