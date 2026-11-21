@@ -402,8 +402,11 @@ Deno.serve(async (req: Request) => {
         predictionRanking = buildPredictionRanking(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
       } else {
         if (reportChampionVoterImage && reportCampaign.campaign_type !== "champion") return json({error:"ارسال تصویر رأی‌دهندگان فقط برای کمپین پیش‌بینی قهرمان پشتیبانی می‌شود."},400);
-        if (reportEntries.length !== reportVoterIds.length) return json({error:"فهرست رأی‌دهندگان با داده‌های کمپین مطابقت ندارد؛ فهرست را تازه‌سازی کن."},409);
-        messages = buildVoterReportMessages(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
+        if (!reportChampionVoterImage) {
+          if (reportEntries.length !== reportVoterIds.length) return json({error:"فهرست رأی‌دهندگان با داده‌های کمپین مطابقت ندارد؛ فهرست را تازه‌سازی کن."},409);
+          messages = buildVoterReportMessages(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
+        }
+
         if (messages.length > 100) return json({error:"تعداد پیام‌های گزارش از سقف مجاز بیشتر است."},400);
       }
     } else {
