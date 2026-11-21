@@ -106,6 +106,16 @@ Deno.test("does not finalize qualification while the cutoff playoff is pending",
   if (result.status !== "playoff_pending") throw new Error("Expected playoff_pending until a valid result is recorded");
 });
 
+Deno.test("does not accept a saved playoff whose Plato IDs differ from the current tied entrants", () => {
+  const margins = [1, 2, 3, 4, 5, 6, 7, 8, 8, 9, 10, 11];
+  const saved = playoff("H", "I", "completed", 5, 3);
+  saved.player_a_plato_id = "wrong_plato_id";
+  const result = resolveSeries3ThirdPlaces(allGroups(margins), saved);
+  if (result.status !== "playoff_required") {
+    throw new Error("Expected a fresh playoff requirement when saved participant identity does not match");
+  }
+});
+
 Deno.test("includes the winner of the eighth/ninth playoff among exactly eight qualifiers", () => {
   const margins = [1, 2, 3, 4, 5, 6, 7, 8, 8, 9, 10, 11];
   const result = resolveSeries3ThirdPlaces(allGroups(margins), playoff("H", "I", "completed", 5, 3));
