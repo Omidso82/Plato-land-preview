@@ -90,6 +90,10 @@ create trigger series3_third_place_playoff_audit
 before insert or update on public.plato_land_series3_third_place_playoff
 for each row execute function public.audit_series3_third_place_playoff();
 
+-- Trigger functions are invoked by the trigger, not directly through the Data API.
+-- Remove default PUBLIC execution to keep this SECURITY DEFINER helper non-callable as an RPC.
+revoke all on function public.audit_series3_third_place_playoff() from public, anon, authenticated;
+
 create or replace function public.save_series3_third_place_playoff(
   p_player_a_registration_id uuid,
   p_player_a_plato_id text,
