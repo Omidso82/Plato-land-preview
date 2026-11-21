@@ -2,14 +2,16 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
 import Series3FixturesSchedule from './Series3FixturesSchedule';
 import Series3GroupResultsManager from './Series3GroupResultsManager';
+import { resolveSeries3ThirdPlaces, type Series3PlayoffRecord, type Series3ThirdPlacePlayer } from './series3ThirdPlaceQualification';
+import { buildProtectedRound32, assignThirdPlaceQualifiers } from './series3KnockoutBracket';
 
 type Registration = { id: string; plato_id: string; registration_status: 'main' | 'waitlist' | 'withdrawn' };
 type Stats = { request_id: string; games_played: number; games_won: number };
 type Player = Registration & { games_played: number | null; games_won: number | null; updated_at?: string };
 type DrawGroup = { name: string; players: Player[] };
-type BracketToken = { id: string; label: string; source: 'first' | 'second' | 'third' | 'winner'; group?: string };
-type BracketMatch = { id: string; a: BracketToken; b: BracketToken };
-type SavedBracket = { bracket_snapshot: { tokens: BracketToken[]; round32: BracketMatch[]; round16: BracketMatch[]; quarterfinals: BracketMatch[]; semifinals: BracketMatch[]; final: BracketMatch[] }; created_at: string };
+type BracketToken = import("./series3KnockoutBracket").Series3BracketToken;
+type BracketMatch = import("./series3KnockoutBracket").Series3BracketMatch;
+type SavedBracket = { bracket_snapshot: import("./series3KnockoutBracket").Series3BracketSnapshot; created_at: string };
 type SavedDraw = {
   ranking_snapshot: Player[];
   pots_snapshot: Player[][];
@@ -83,6 +85,7 @@ function shuffled<T>(items: T[]): T[] {
   return result;
 }
 
+
 export default function Series3SeedingManager() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [drafts, setDrafts] = useState<Record<string, { played: string; won: string }>>({});
@@ -99,6 +102,12 @@ export default function Series3SeedingManager() {
   const [savedBracket, setSavedBracket] = useState<SavedBracket | null>(null);
   const [bracketExpanded, setBracketExpanded] = useState(true);
   const [bracketConfirm, setBracketConfirm] = useState(false);
+  const [bracketReplaceConfirm, setBracketReplaceConfirm] = useState(false);
+  const [thirdsLoading, setThirdsLoading] = useState(false);
+  const [playoffCandidates, setPlayoffCandidates] = useState<[Series3ThirdPlacePlayer, Series3ThirdPlacePlayer] | null>(null);
+  const [playoffScoreA, setPlayoffScoreA] = useState('');
+  const [playoffScoreB, setPlayoffScoreB] = useState('');
+  const [playoffSaving, setPlayoffSaving] = useState(false);
   const [bracketLoading, setBracketLoading] = useState(false);
   const [isStale, setIsStale] = useState(false);
   const [error, setError] = useState('');
@@ -267,8 +276,8 @@ export default function Series3SeedingManager() {
   }
 
 
-  async function runBracketDraw() {
-    if (!supabase || !savedDraw || savedBracket || bracketLoading) return;
+  async function runBracketDraw(replaceExisting = false) {
+    if (!supabase || !savedDraw || (savedBracket && !replaceExisting) || bracketLoading) return;
     setBracketLoading(true); setError(''); setMessage('');
     try {
       const { data: userResult, error: userError } = await supabase.auth.getUser();
@@ -281,8 +290,9 @@ export default function Series3SeedingManager() {
         ...groupNames.map(group => ({ id: '2-' + group, label: 'دوم گروه ' + group, source: 'second' as const, group })),
         ...Array.from({length:8},(_,i)=>({id:'3-BEST-'+(i+1),label:'سوم برتر شماره '+fa(i+1),source:'third' as const}))
       ];
-      const shuffledTokens = shuffled(tokens);
-      const round32: BracketMatch[] = Array.from({length:16},(_,i)=>({id:'R32-'+(i+1),a:shuffledTokens[i*2],b:shuffledTokens[i*2+1]}));
+      const protectedDraw = buildProtectedRound32(tokens);
+      const shuffledTokens = protectedDraw.tokens;
+      const round32: BracketMatch[] = protectedDraw.round32;
       const makeNextRound=(prefix:string,previous:BracketMatch[]):BracketMatch[]=>Array.from({length:previous.length/2},(_,i)=>({
         id:prefix+'-'+(i+1),
         a:{id:'W-'+previous[i*2].id,label:'برنده '+previous[i*2].id,source:'winner' as const},
@@ -296,20 +306,100 @@ export default function Series3SeedingManager() {
       const drawSource = JSON.stringify({entrants:shuffledTokens,bracket:bracket_snapshot});
       const drawDigest = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(drawSource));
       const draw_fingerprint = Array.from(new Uint8Array(drawDigest)).map(byte=>byte.toString(16).padStart(2,'0')).join('');
-      const {data,error:insertError}=await supabase.from('plato_land_series3_knockout_draws').insert({
-        event_key:'series3',entrants_snapshot:shuffledTokens,bracket_snapshot,draw_fingerprint,created_by:userResult.user.id
-      }).select('bracket_snapshot,created_at').single();
-      if(insertError) {
-        if(insertError.code==='23505') throw new Error('قرعه مرحله حذفی قبلاً ثبت شده است؛ صفحه را تازه‌سازی کن.');
-        throw insertError;
-      }
-      setSavedBracket(data as SavedBracket);
+      const {data,error:replaceError}=await supabase.rpc('replace_series3_knockout_draw',{
+        p_entrants_snapshot: shuffledTokens,
+        p_bracket_snapshot: bracket_snapshot,
+        p_draw_fingerprint: draw_fingerprint,
+        p_archive_reason: 'Replaced invalid Series 3 draw: prevent same-group Round of 32 clashes'
+      });
+      if(replaceError) throw replaceError;
+      if (!data?.success || !data?.bracket_snapshot || !data?.created_at)
+        throw new Error('پاسخ ذخیره‌سازی کامل نبود؛ وضعیت رکورد باید جداگانه بررسی شود.');
+      setSavedBracket({ bracket_snapshot: data.bracket_snapshot, created_at: data.created_at } as SavedBracket);
       setBracketConfirm(false);
+      setBracketReplaceConfirm(false);
       setMessage('قرعه کامل مسیر حذفی تا فینال در دیتابیس اصلی ذخیره و قفل شد.');
     } catch(e) {
       console.error('Series 3 knockout draw failed:',e);
       setError('قرعه مرحله حذفی ذخیره نشد: '+(e instanceof Error?e.message:'خطای ناشناخته'));
     } finally {setBracketLoading(false);}
+  }
+
+
+  async function runThirdPlaceAssignment() {
+    if (!supabase || !savedBracket || thirdsLoading) return;
+    setThirdsLoading(true); setError(''); setMessage('');
+    try {
+      const [{data:groupRows,error:readError},{data:playoffData,error:playoffReadError}] = await Promise.all([
+        supabase.from('plato_land_series3_group_match_results').select('match_id,group_name,player_a_registration_id,player_a_plato_id,player_b_registration_id,player_b_plato_id,result_status,score_a,score_b').eq('event_key','series3'),
+        supabase.from('plato_land_series3_third_place_playoff').select('player_a_registration_id,player_a_plato_id,player_a_group,player_b_registration_id,player_b_plato_id,player_b_group,result_status,score_a,score_b').eq('event_key','series3').maybeSingle(),
+      ]);
+      if(readError) throw readError;
+      if(playoffReadError) throw playoffReadError;
+      const resolution = resolveSeries3ThirdPlaces((groupRows || []) as any[], (playoffData || null) as Series3PlayoffRecord | null);
+      if (resolution.status === 'owner_review') throw new Error(resolution.reason);
+      if (resolution.status === 'playoff_required' || resolution.status === 'playoff_pending') {
+        setPlayoffCandidates(resolution.players);
+        setPlayoffScoreA(resolution.savedPlayoff?.score_a == null ? '' : String(resolution.savedPlayoff.score_a));
+        setPlayoffScoreB(resolution.savedPlayoff?.score_b == null ? '' : String(resolution.savedPlayoff.score_b));
+        setMessage('تساوی دقیق در مرز هشتم و نهم وجود دارد؛ نتیجه مسابقه پلی‌آف را ثبت کن.');
+        return;
+      }
+      setPlayoffCandidates(null);
+      setPlayoffScoreA('');
+      setPlayoffScoreB('');
+      const qualifiers=resolution.qualifiers.map(p=>({id:'THIRD-'+p.registration_id,label:p.plato_id,source:'third' as const,group:p.group}));
+      const nextSnapshot=assignThirdPlaceQualifiers(savedBracket.bracket_snapshot,qualifiers);
+      const drawSource=JSON.stringify({entrants:nextSnapshot.tokens,bracket:nextSnapshot});
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(drawSource));
+      const drawFingerprint=Array.from(new Uint8Array(digest)).map(byte=>byte.toString(16).padStart(2,'0')).join('');
+      const {data:saveData,error:saveError}=await supabase.rpc('replace_series3_knockout_draw',{
+        p_entrants_snapshot:nextSnapshot.tokens,p_bracket_snapshot:nextSnapshot,p_draw_fingerprint:drawFingerprint,
+        p_archive_reason:'Resolved eight official Series 3 third-place qualifiers into fixed bracket placeholders'
+      });
+      if(saveError) throw saveError;
+      if(!saveData?.success||!saveData?.bracket_snapshot||!saveData?.created_at) throw new Error('پاسخ ذخیره‌سازی کامل نبود؛ وضعیت براکت باید جداگانه بررسی شود.');
+      setSavedBracket({bracket_snapshot:saveData.bracket_snapshot,created_at:saveData.created_at} as SavedBracket);
+      setPlayoffCandidates(null);
+      setMessage('هشت نفر سوم طبق معیارهای رسمی در جایگاه‌های ثابت ثبت شدند.');
+    } catch(e) {
+      console.error('Series 3 third-place assignment failed:',e);
+      setError('تعیین نفرات سوم انجام نشد: '+(e instanceof Error?e.message:'خطای ناشناخته'));
+    } finally {setThirdsLoading(false);}
+  }
+
+  async function saveThirdPlacePlayoff() {
+    if (!supabase || !playoffCandidates || playoffSaving) return;
+    if (!/^\d+$/.test(playoffScoreA.trim()) || !/^\d+$/.test(playoffScoreB.trim())) { setError('نتیجه هر دو بازیکن را با عدد صحیح وارد کن.'); return; }
+    const scoreA=Number(playoffScoreA), scoreB=Number(playoffScoreB);
+    if (!Number.isSafeInteger(scoreA)||!Number.isSafeInteger(scoreB)||scoreA<0||scoreB<0||scoreA===scoreB) { setError('نتیجه پلی‌آف باید دو عدد صحیح نامساوی و غیرمنفی باشد.'); return; }
+    const [a,b]=playoffCandidates;
+    setPlayoffSaving(true); setError(''); setMessage('');
+    try {
+      const { data: latestRows, error: latestReadError } = await supabase
+        .from('plato_land_series3_group_match_results')
+        .select('match_id,group_name,player_a_registration_id,player_a_plato_id,player_b_registration_id,player_b_plato_id,result_status,score_a,score_b')
+        .eq('event_key','series3');
+      if (latestReadError) throw latestReadError;
+      const latestResolution = resolveSeries3ThirdPlaces((latestRows || []) as any[], null);
+      if (latestResolution.status !== 'playoff_required') {
+        throw new Error('نتایج گروهی تغییر کرده‌اند یا دیگر پلی‌آف لازم نیست؛ ابتدا محاسبه نفرات سوم را دوباره اجرا کن.');
+      }
+      const latestIds = latestResolution.players.map(player => player.registration_id).sort();
+      const currentIds = playoffCandidates.map(player => player.registration_id).sort();
+      if (latestIds.join('|') !== currentIds.join('|')) {
+        throw new Error('بازیکنان واجد شرایط پلی‌آف تغییر کرده‌اند؛ ابتدا محاسبه نفرات سوم را دوباره اجرا کن.');
+      }
+      const {data,error:saveError}=await supabase.rpc('save_series3_third_place_playoff',{
+        p_player_a_registration_id:a.registration_id,p_player_a_plato_id:a.plato_id,p_player_a_group:a.group,
+        p_player_b_registration_id:b.registration_id,p_player_b_plato_id:b.plato_id,p_player_b_group:b.group,
+        p_result_status:'completed',p_score_a:scoreA,p_score_b:scoreB,
+      });
+      if(saveError) throw saveError;
+      if(!data?.success) throw new Error('پاسخ ذخیره نتیجه پلی‌آف معتبر نیست.');
+      setMessage('نتیجه پلی‌آف در دیتابیس ثبت شد؛ دوباره محاسبه نفرات سوم را اجرا کن.');
+    } catch(e) { setError('ذخیره نتیجه پلی‌آف انجام نشد: '+(e instanceof Error?e.message:'خطای ناشناخته')); }
+    finally {setPlayoffSaving(false);}
   }
 
   const displayedRanking = savedDraw?.ranking_snapshot || players;
@@ -443,6 +533,13 @@ export default function Series3SeedingManager() {
               <button type="button" style={secondaryButton} disabled={bracketLoading} onClick={()=>setBracketConfirm(false)}>انصراف</button>
             </div>}
         </> : <>
+          <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:8}}>
+            {!bracketReplaceConfirm ? <button type="button" style={secondaryButton} onClick={()=>setBracketReplaceConfirm(true)}>اصلاح قرعه ذخیره‌شده (حفظ نسخه قبلی در تاریخچه)</button> :
+              <>
+                <button type="button" style={button} disabled={bracketLoading} onClick={()=>void runBracketDraw(true)}>{bracketLoading?'در حال اصلاح…':'تأیید اصلاح و جایگزینی براکت'}</button>
+                <button type="button" style={secondaryButton} disabled={bracketLoading} onClick={()=>setBracketReplaceConfirm(false)}>انصراف</button>
+              </>}
+          </div>
           <p style={{...muted,color:'#b8dfa9'}}>قرعه ثبت شده و ثابت است · {new Date(savedBracket.created_at).toLocaleString('fa-IR')}</p>
           {([
             ['یک‌شانزدهم نهایی · ۱۶ بازی',savedBracket.bracket_snapshot.round32],
@@ -460,6 +557,23 @@ export default function Series3SeedingManager() {
               </div>)}
             </div>
           </details>)}
+
+          {savedBracket.bracket_snapshot.tokens.some(t=>t.source==='third'&&!t.group) ? (
+            <div style={{...card,marginTop:12,borderColor:'#806638'}}>
+              <strong style={{color:'#e4c77e'}}>جایگزینی جایگاه‌های موقت نفرات سوم</strong>
+              <p style={muted}>معیارها: امتیاز، تفاضل ست و ست برده‌شده. تساوی سوم/چهارم هر گروه با رودررو و تساوی دو نفر در مرز هشتم/نهم با پلی‌آف تعیین می‌شود؛ تساوی چندنفره برای بررسی مالک متوقف خواهد شد.</p>
+              <button type="button" style={button} disabled={thirdsLoading} onClick={()=>void runThirdPlaceAssignment()}>{thirdsLoading?'در حال محاسبه…':'محاسبه و ثبت هشت نفر سوم رسمی'}</button>
+              {playoffCandidates && <div style={{...card,marginTop:10,borderColor:'#b18a45'}}>
+                <strong style={{color:'#f0d79e'}}>مسابقه پلی‌آف برای تعیین نفر هشتم</strong>
+                <p style={muted}>{playoffCandidates[0].plato_id} (گروه {playoffCandidates[0].group}) در برابر {playoffCandidates[1].plato_id} (گروه {playoffCandidates[1].group})</p>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(2,minmax(0,1fr))',gap:8}}>
+                  <label style={muted}>امتیاز {playoffCandidates[0].plato_id}<input inputMode="numeric" value={playoffScoreA} onChange={e=>setPlayoffScoreA(e.target.value)} style={input}/></label>
+                  <label style={muted}>امتیاز {playoffCandidates[1].plato_id}<input inputMode="numeric" value={playoffScoreB} onChange={e=>setPlayoffScoreB(e.target.value)} style={input}/></label>
+                </div>
+                <button type="button" style={{...button,marginTop:9}} disabled={playoffSaving} onClick={()=>void saveThirdPlacePlayoff()}>{playoffSaving?'در حال ذخیره…':'ثبت نتیجه پلی‌آف'}</button>
+              </div>}
+            </div>
+          ) : <p style={{...muted,color:'#b8dfa9'}}>هشت جایگاه نفرات سوم با بازیکنان واقعی و گروه‌هایشان تکمیل شده‌اند.</p>}
           <p style={{...muted,marginTop:12}}>مسیر هر برنده از بازی‌های دور اول تا فینال از پیش به‌صورت ثابت مشخص شده است؛ فقط نام بازیکنان واقعیِ نفرات سوم پس از پایان گروه‌ها جایگزین ۸ جایگاه مربوط می‌شود.</p>
         </>}
       </>}
