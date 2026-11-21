@@ -376,6 +376,20 @@ export default function Series3SeedingManager() {
     const [a,b]=playoffCandidates;
     setPlayoffSaving(true); setError(''); setMessage('');
     try {
+      const { data: latestRows, error: latestReadError } = await supabase
+        .from('plato_land_series3_group_match_results')
+        .select('match_id,group_name,player_a_registration_id,player_a_plato_id,player_b_registration_id,player_b_plato_id,result_status,score_a,score_b')
+        .eq('event_key','series3');
+      if (latestReadError) throw latestReadError;
+      const latestResolution = resolveSeries3ThirdPlaces((latestRows || []) as any[], null);
+      if (latestResolution.status !== 'playoff_required') {
+        throw new Error('نتایج گروهی تغییر کرده‌اند یا دیگر پلی‌آف لازم نیست؛ ابتدا محاسبه نفرات سوم را دوباره اجرا کن.');
+      }
+      const latestIds = latestResolution.players.map(player => player.registration_id).sort();
+      const currentIds = playoffCandidates.map(player => player.registration_id).sort();
+      if (latestIds.join('|') !== currentIds.join('|')) {
+        throw new Error('بازیکنان واجد شرایط پلی‌آف تغییر کرده‌اند؛ ابتدا محاسبه نفرات سوم را دوباره اجرا کن.');
+      }
       const {data,error:saveError}=await supabase.rpc('save_series3_third_place_playoff',{
         p_player_a_registration_id:a.registration_id,p_player_a_plato_id:a.plato_id,p_player_a_group:a.group,
         p_player_b_registration_id:b.registration_id,p_player_b_plato_id:b.plato_id,p_player_b_group:b.group,
