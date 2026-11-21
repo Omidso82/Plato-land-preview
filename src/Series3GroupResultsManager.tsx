@@ -120,7 +120,7 @@ export default function Series3GroupResultsManager() {
       const saved=(resultResult.data||[]) as KnockoutResult[];
       setKnockoutRows(saved);
       setKnockoutPlayers([...new Set((playersResult.data||[]).map((x:any)=>String(x.plato_id||'').trim()).filter(Boolean))]);
-      setKnockoutDrafts(Object.fromEntries(saved.map(row=>[row.match_id,{a:row.player_a_plato_id,b:row.player_b_plato_id,scoreA:row.score_a===null?'':String(row.score_a),scoreB:row.score_b===null?'':String(row.score_b)}])));
+      setKnockoutDrafts({});
       setKnockoutLoaded(true);
     }catch(e){setKnockoutError('دریافت براکت یا نتایج حذفی ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص'));}
     finally{setKnockoutLoading(false);}
@@ -153,7 +153,7 @@ export default function Series3GroupResultsManager() {
     const draft=knockoutDrafts[match.id]||{a:'',b:'',scoreA:'',scoreB:''};
     const slots=resolvedKnockoutSlots[match.id];
     if(!slots){setKnockoutError('جایگاه‌های رسمی این مسابقه هنوز قابل محاسبه نیستند.');setKnockoutMessage('');return;}
-    const a=draft.a.trim(),b=draft.b.trim(),sa=draft.scoreA.trim(),sb=draft.scoreB.trim();
+    const a=slots.a.token.label.trim(),b=slots.b.token.label.trim(),sa=draft.scoreA.trim(),sb=draft.scoreB.trim();
     const slotError=validateSeries3BracketResult(match as any,slots,a,b);
     if(slotError){setKnockoutError(slotError);setKnockoutMessage('');return;}
     if(!knockoutPlayers.some(x=>x.toLowerCase()===a.toLowerCase())||!knockoutPlayers.some(x=>x.toLowerCase()===b.toLowerCase())){setKnockoutError('Plato ID باید در فهرست بازیکنان اصلی یا رزرو سری سوم وجود داشته باشد.');setKnockoutMessage('');return;}
@@ -312,10 +312,13 @@ export default function Series3GroupResultsManager() {
             const slots=resolvedKnockoutSlots[match.id];
             const resolvedA=slots?.a.resolved?slots.a.token.label:'';
             const resolvedB=slots?.b.resolved?slots.b.token.label:'';
-            const draft=knockoutDrafts[match.id]||{a:resolvedA,b:resolvedB,scoreA:'',scoreB:''};
+            const saved=knockoutSavedMap.get(match.id);
+            const savedOrderMatches=Boolean(saved&&resolvedA&&saved.player_a_plato_id.toLowerCase()===resolvedA.toLowerCase());
+            const defaultScoreA=saved?(savedOrderMatches?saved.score_a:saved.score_b):null;
+            const defaultScoreB=saved?(savedOrderMatches?saved.score_b:saved.score_a):null;
+            const draft=knockoutDrafts[match.id]||{a:resolvedA,b:resolvedB,scoreA:defaultScoreA===null?'':String(defaultScoreA),scoreB:defaultScoreB===null?'':String(defaultScoreB)};
             const playerA=resolvedA||draft.a;
             const playerB=resolvedB||draft.b;
-            const saved=knockoutSavedMap.get(match.id);
             return <details key={match.id} style={card}>
               <summary style={{cursor:'pointer',display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap',color:'#e4c77e'}}>
                 <strong>بازی {fa(index+1)} · {match.id}</strong>
