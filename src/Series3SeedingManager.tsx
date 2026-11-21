@@ -483,10 +483,10 @@ export default function Series3SeedingManager() {
     if (!supabase || !savedBracket || thirdsLoading) return;
     setThirdsLoading(true); setError(''); setMessage('');
     try {
-      const {data,error:readError}=await supabase.from('plato_land_series3_group_match_results')
+      const {data:groupRows,error:readError}=await supabase.from('plato_land_series3_group_match_results')
         .select('match_id,group_name,player_a_registration_id,player_a_plato_id,player_b_registration_id,player_b_plato_id,result_status,score_a,score_b');
       if(readError) throw readError;
-      const qualifiers=calculateBestThirdQualifiers((data||[]) as GroupResultRow[]);
+      const qualifiers=calculateBestThirdQualifiers((groupRows||[]) as GroupResultRow[]);
       const nextSnapshot=assignThirdPlaceQualifiers(savedBracket.bracket_snapshot,qualifiers);
       const drawSource=JSON.stringify({entrants:nextSnapshot.tokens,bracket:nextSnapshot});
       const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(drawSource));
@@ -494,15 +494,15 @@ export default function Series3SeedingManager() {
       const {data:authData,error:authError}=await supabase.auth.getUser();
       if(authError) throw authError;
       if(!authData.user) throw new Error('نشست مالک معتبر نیست؛ دوباره وارد پنل شو.');
-      const {data,error:saveError}=await supabase.rpc('replace_series3_knockout_draw',{
+      const {data:saveData,error:saveError}=await supabase.rpc('replace_series3_knockout_draw',{
         p_entrants_snapshot:nextSnapshot.tokens,p_bracket_snapshot:nextSnapshot,
         p_draw_fingerprint:drawFingerprint,
         p_archive_reason:'Resolved eight official Series 3 third-place qualifiers into fixed bracket placeholders'
       });
       if(saveError) throw saveError;
-      if(!data?.success||!data?.bracket_snapshot||!data?.created_at)
+      if(!saveData?.success||!saveData?.bracket_snapshot||!saveData?.created_at)
         throw new Error('پاسخ ذخیره‌سازی کامل نبود؛ وضعیت براکت باید جداگانه بررسی شود.');
-      setSavedBracket({bracket_snapshot:data.bracket_snapshot,created_at:data.created_at} as SavedBracket);
+      setSavedBracket({bracket_snapshot:saveData.bracket_snapshot,created_at:saveData.created_at} as SavedBracket);
       setMessage('هشت نفر سوم بر اساس جدول رسمی گروه‌ها در جایگاه‌های ثابت قرار گرفتند؛ مسیر مسابقات تغییر نکرد.');
     } catch(e) {
       console.error('Series 3 third-place assignment failed:',e);
