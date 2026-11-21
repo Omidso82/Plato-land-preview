@@ -5,6 +5,7 @@ type SectionOption = { id: string; label: string };
 type PredictionCampaign = { id:string; title:string; description:string; campaign_type:string; status:string; is_open:boolean; opens_at:string|null; closes_at:string|null; questions:Array<{id:string;label:string;type?:string;options?:string[]}>; prize_rules:any };
 type PreviewMessage = { section_id: string; title: string; text: string; plain_text: string; item_count: number };
 type ReportVoter = { id:string; voter_plato_id:string };
+type PredictionRanking = { title:string; total_questions:number; rows:Array<{plato_id:string;correct:number;incorrect:number;remaining:number}> };
 type ApiResult = { ok?: boolean; error?: string; messages?: PreviewMessage[]; sent?: boolean; destination?: 'test_group'; results?: Array<{section_id:string;message_id:number}>; sent_count?: number; failed_section?: string; destination_results?: Array<{destination:string;label:string;status:'sent'|'partial'|'failed';sent_count:number;total_count:number;failed_section:string|null;error:string|null;results:Array<{section_id:string;message_id:number}>}>; history_saved?: boolean };
 
 const groups = 'ABCDEFGHIJKL'.split('');
@@ -52,6 +53,9 @@ export default function Series3TelegramManager() {
   const [selectedReportVoters, setSelectedReportVoters] = useState<string[]>([]);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState('');
+  const [rankingImageData, setRankingImageData] = useState('');
+  const [rankingImageBase64, setRankingImageBase64] = useState('');
+  const [rankingImageBusy, setRankingImageBusy] = useState(false);
 
   useEffect(() => { if (expanded) { void refreshCampaigns(); void refreshDeliveryHistory(); } }, [expanded]);
 
@@ -66,7 +70,7 @@ export default function Series3TelegramManager() {
   }
 
   const selectedCount = selected.length;
-  const previewCount = useMemo(() => preview.length, [preview]);
+  const previewCount = useMemo(() => preview.length + (rankingImageBase64 ? 1 : 0), [preview, rankingImageBase64]);
   async function refreshCampaigns() {
     if (!supabase) { setPredictionError('اتصال به دیتابیس برقرار نیست.'); return; }
     setPredictionLoading(true); setPredictionError('');
@@ -117,7 +121,7 @@ export default function Series3TelegramManager() {
     setNotice('');
   }
 
-  async function callApi(action:'preview'|'send') {
+  async function callApi(action:'preview'|'send', options:{rankingImage?:boolean;imageBase64?:string}={}) {
     if(!supabase){setError('اتصال به حساب مدیریت برقرار نیست.');return null;}
     const {data,error:sessionError}=await supabase.auth.getSession();
     if(sessionError)throw sessionError;
@@ -126,7 +130,7 @@ export default function Series3TelegramManager() {
     const response=await fetch(SUPABASE_URL+'/functions/v1/plato-land-series3-telegram',{
       method:'POST',
       headers:{Authorization:'Bearer '+token,apikey:SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',Accept:'application/json'},
-      body:JSON.stringify({action,sections:selected,destinations,report_campaign_id:reportCampaignId||undefined,report_voter_ids:selectedReportVoters.length?selectedReportVoters:undefined}),
+      body:JSON.stringify({action,sections:selected,destinations,report_campaign_id:reportCampaignId||undefined,report_voter_ids:options.rankingImage?undefined:(selectedReportVoters.length?selectedReportVoters:undefined),report_ranking_image:options.rankingImage===true||undefined,ranking_image_base64:options.imageBase64||undefined}),
       cache:'no-store',
     });
     const result=await response.json().catch(()=>({}));
