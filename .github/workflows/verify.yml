@@ -20,6 +20,7 @@ jobs:
       - run: deno test supabase/functions/_shared/series2-qualification.test.ts
       - run: deno test supabase/functions/_shared/series3-third-place-qualification.test.ts
       - run: deno test supabase/functions/_shared/series3-knockout-bracket.test.ts
+      - run: deno test supabase/functions/_shared/series3-bracket-progression.test.ts
       - run: deno test supabase/functions/plato-land-series2-progression/_shared/series2-bracket.test.ts
       - run: deno test supabase/functions/_shared/plato-id-scanner-telegram-report.test.ts
       - run: deno test supabase/functions/_shared/plato-id-scanner-telegram-format.test.ts
