@@ -3,21 +3,15 @@ import { supabase } from './supabase';
 import Series3FixturesSchedule from './Series3FixturesSchedule';
 import Series3GroupResultsManager from './Series3GroupResultsManager';
 import { resolveSeries3ThirdPlaces, type Series3PlayoffRecord, type Series3ThirdPlacePlayer } from './series3ThirdPlaceQualification';
+import { buildProtectedRound32, assignThirdPlaceQualifiers } from './series3KnockoutBracket';
 
 type Registration = { id: string; plato_id: string; registration_status: 'main' | 'waitlist' | 'withdrawn' };
 type Stats = { request_id: string; games_played: number; games_won: number };
 type Player = Registration & { games_played: number | null; games_won: number | null; updated_at?: string };
 type DrawGroup = { name: string; players: Player[] };
-type BracketToken = { id: string; label: string; source: 'first' | 'second' | 'third' | 'winner'; group?: string };
-type BracketMatch = { id: string; a: BracketToken; b: BracketToken };
-type SavedBracket = { bracket_snapshot: { tokens: BracketToken[]; round32: BracketMatch[]; round16: BracketMatch[]; quarterfinals: BracketMatch[]; semifinals: BracketMatch[]; final: BracketMatch[] }; created_at: string };
-
-type GroupResultRow = {
-  match_id:string; group_name:string; player_a_registration_id:string; player_a_plato_id:string;
-  player_b_registration_id:string; player_b_plato_id:string; result_status:'pending'|'completed'|'double_no_show';
-  score_a:number|null; score_b:number|null;
-};
-
+type BracketToken = import("./series3KnockoutBracket").Series3BracketToken;
+type BracketMatch = import("./series3KnockoutBracket").Series3BracketMatch;
+type SavedBracket = { bracket_snapshot: import("./series3KnockoutBracket").Series3BracketSnapshot; created_at: string };
 type SavedDraw = {
   ranking_snapshot: Player[];
   pots_snapshot: Player[][];
@@ -91,115 +85,6 @@ function shuffled<T>(items: T[]): T[] {
   return result;
 }
 
-
-function buildProtectedRound32(tokens: BracketToken[]): { tokens: BracketToken[]; round32: BracketMatch[] } {
-  const topTwo = shuffled(tokens.filter(token => token.source === 'first' || token.source === 'second'));
-  const thirds = shuffled(tokens.filter(token => token.source === 'third'));
-  if (topTwo.length !== 24 || thirds.length !== 8) throw new Error('ساختار ورودی براکت باید دقیقاً ۲۴ نفر اول/دوم و ۸ جای‌نگهدار نفر سوم باشد.');
-  const opponents: BracketToken[] = [];
-  const pairings: Array<[BracketToken, BracketToken]> = [];
-  const pairRemaining = (pool: BracketToken[]): boolean => {
-    if (pool.length === 0) return true;
-    const first = pool[0];
-    for (const candidate of shuffled(pool.slice(1).filter(player => player.group !== first.group))) {
-      const rest = pool.slice(1).filter(player => player.id !== candidate.id);
-      pairings.push([first, candidate]);
-      if (pairRemaining(rest)) return true;
-      pairings.pop();
-    }
-    return false;
-  };
-  const assignThirds = (index: number, available: BracketToken[]): boolean => {
-    if (index === thirds.length) return available.length === 16 && pairRemaining(available);
-    const candidates = shuffled(available.filter(player => player.group));
-    for (const candidate of candidates) {
-      opponents.push(candidate);
-      if (assignThirds(index + 1, available.filter(player => player.id !== candidate.id))) return true;
-      opponents.pop();
-    }
-    return false;
-  };
-  if (!assignThirds(0, topTwo)) throw new Error('ترکیب معتبر قرعه بدون برخورد هم‌گروهی پیدا نشد؛ قرعه ذخیره نشد.');
-  const matches: Array<Omit<BracketMatch, 'id'>> = [
-    ...pairings.map(([a,b]) => ({ a, b })),
-    ...thirds.map((third, index) => ({ a: third, b: opponents[index] })),
-  ];
-  const ordered: BracketMatch[] = shuffled(matches).map((match, index) => ({ ...match, id: 'R32-' + (index + 1) }));
-  const all = ordered.flatMap(match => [match.a, match.b]);
-  if (all.length !== 32 || new Set(all.map(token => token.id)).size !== 32) throw new Error('اعتبارسنجی یکتایی ورودی‌های براکت ناموفق بود.');
-  for (const match of ordered) {
-    if (match.a.group && match.b.group && match.a.group === match.b.group)
-      throw new Error('خطای کنترل نهایی: دو بازیکن از یک گروه در یک مسابقه دور ۳۲ قرار گرفته‌اند.');
-    if ((match.a.source === 'third') === (match.b.source === 'third'))
-      throw new Error('هر جایگاه نفر سوم باید دقیقاً مقابل یک نفر اول یا دوم قرار بگیرد.');
-  }
-  return { tokens: shuffled(all), round32: ordered };
-}
-
-/**
- * Maps the final eight third-place qualifiers onto the pre-drawn placeholder
- * slots. A qualifier can only occupy a slot whose R32 opponent is from another
- * group. No bracket positions or downstream winner references are changed.
- */
-function assignThirdPlaceQualifiers(
-  bracket: SavedBracket['bracket_snapshot'],
-  qualifiers: BracketToken[],
-): SavedBracket['bracket_snapshot'] {
-  const placeholders = bracket.round32.flatMap(match => [
-    { matchId: match.id, side: 'a' as const, token: match.a, opponent: match.b },
-    { matchId: match.id, side: 'b' as const, token: match.b, opponent: match.a },
-  ]).filter(slot => slot.token.source === 'third');
-
-  if (placeholders.length !== 8 || qualifiers.length !== 8)
-    throw new Error('برای جایگزینی باید دقیقاً هشت جایگاه و هشت صعودکننده سوم وجود داشته باشد.');
-  if (qualifiers.some(q => q.source !== 'third' || !q.group || !q.id || !q.label))
-    throw new Error('اطلاعات هر هشت صعودکننده سوم باید شامل شناسه، نام نمایشی و گروه معتبر باشد.');
-  if (new Set(qualifiers.map(q => q.id)).size !== 8 || new Set(qualifiers.map(q => q.group)).size !== 8)
-    throw new Error('شناسه بازیکنان و گروه صعودکنندگان سوم باید یکتا باشد.');
-  if (qualifiers.some(q => placeholders.some(p => p.token.id === q.id)))
-    throw new Error('شناسه بازیکن واقعی با شناسه جایگاه موقت تداخل دارد.');
-
-  // Minimum-remaining-values ordering makes the matching deterministic and
-  // quickly exposes an impossible assignment instead of forcing a bad pairing.
-  const ordered = [...qualifiers].sort((a, b) =>
-    placeholders.filter(p => p.opponent.group !== a.group).length -
-    placeholders.filter(p => p.opponent.group !== b.group).length ||
-    String(a.group).localeCompare(String(b.group), 'en')
-  );
-  const assignment = new Map<string, BracketToken>();
-  const usedSlots = new Set<string>();
-  const search = (index: number): boolean => {
-    if (index === ordered.length) return true;
-    const qualifier = ordered[index];
-    const candidates = placeholders
-      .filter(slot => !usedSlots.has(slot.token.id) && slot.opponent.group !== qualifier.group)
-      .sort((a, b) => a.token.id.localeCompare(b.token.id, 'en'));
-    for (const slot of candidates) {
-      usedSlots.add(slot.token.id);
-      assignment.set(slot.token.id, qualifier);
-      if (search(index + 1)) return true;
-      assignment.delete(slot.token.id);
-      usedSlots.delete(slot.token.id);
-    }
-    return false;
-  };
-  if (!search(0))
-    throw new Error('برای این ترکیب نفرات سوم، تطبیق کامل بدون هم‌گروهی در دور اول ممکن نیست؛ هیچ تغییری اعمال نشد.');
-
-  const replace = (token: BracketToken): BracketToken =>
-    token.source === 'third' ? assignment.get(token.id)! : token;
-  const round32 = bracket.round32.map(match => ({
-    ...match, a: replace(match.a), b: replace(match.b),
-  }));
-  const tokens = bracket.tokens.map(replace);
-  const all = round32.flatMap(match => [match.a, match.b]);
-  if (all.length !== 32 || new Set(all.map(token => token.id)).size !== 32 ||
-      round32.some(match => match.a.group && match.a.group === match.b.group) ||
-      all.filter(token => token.source === 'third' && token.group).length !== 8) {
-    throw new Error('کنترل نهایی جایگزینی نفرات سوم ناموفق بود؛ براکت ذخیره نشد.');
-  }
-  return { ...bracket, tokens, round32 };
-}
 
 export default function Series3SeedingManager() {
   const [players, setPlayers] = useState<Player[]>([]);
