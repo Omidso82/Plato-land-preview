@@ -33,6 +33,8 @@ type PredictionCampaign = { id:string; title:string; description:string|null; ca
 type PredictionEntry = { id:string; voter_plato_id:string; response:Record<string,unknown>|null; result_status:string|null };
 type MatchResult = { match_id:string; result_status:string; score_a:number|null; score_b:number|null; player_a_plato_id:string; player_b_plato_id:string };
 type Message = { section_id: string; title: string; text: string; plain_text: string; item_count: number };
+type PredictionRankingRow = { plato_id:string; correct:number; incorrect:number; remaining:number };
+type PredictionRanking = { title:string; total_questions:number; rows:PredictionRankingRow[] };
 
 const roundConfig: Record<string, { title: string; subtitle: string }> = {
   round32: { title: "قرعه مرحله ۳۲ نفره", subtitle: "۱۶ مسابقه · مسیر ورود به جمع ۱۶ بازیکن" },
@@ -86,6 +88,34 @@ function buildPredictionMessage(campaign: PredictionCampaign): Message {
   lines.push('', '<b>ثبت پیش‌بینی:</b> https://platoland.org/predictions');
   return makeMessage('prediction:'+campaign.id,campaign.title,'پیش‌بینی قهرمان · سری سوم',lines,optionCount||campaign.questions.length);
 }
+function buildPredictionRanking(campaign: PredictionCampaign, entries: PredictionEntry[], results: MatchResult[]): PredictionRanking {
+  if (!["published","closed"].includes(campaign.status) || campaign.campaign_type !== "match_predictions") {
+    throw new Error("فقط کمپین پیش‌بینی بازی‌ها برای ساخت رتبه‌بندی تصویری پشتیبانی می‌شود.");
+  }
+  const resultById = new Map(results.map(item => [item.match_id, item]));
+  const questions = campaign.questions || [];
+  const rows = entries.map(entry => {
+    const response = entry.response && typeof entry.response === "object" ? entry.response : {};
+    let correct = 0, incorrect = 0;
+    for (const question of questions) {
+      const matchId = question.match?.matchId;
+      const picked = response[question.id];
+      const match = typeof matchId === "string" ? resultById.get(matchId) : undefined;
+      if (!match || match.result_status === "pending" || match.score_a === null || match.score_b === null || match.score_a === match.score_b) continue;
+      if (Number.isFinite(match.score_a) && Number.isFinite(match.score_b)) {
+        const winner = match.score_a! > match.score_b! ? match.player_a_plato_id : match.player_b_plato_id;
+        if (typeof picked === "string" && picked) {
+          if (picked.toLowerCase() === winner.toLowerCase()) correct++;
+          else incorrect++;
+        }
+      }
+    }
+    return { plato_id:entry.voter_plato_id, correct, incorrect, remaining:Math.max(0,questions.length-correct-incorrect) };
+  });
+  rows.sort((a,b) => b.correct-a.correct || a.plato_id.localeCompare(b.plato_id,"en",{sensitivity:"base"}));
+  return { title:campaign.title, total_questions:questions.length, rows };
+}
+
 function buildVoterReportMessages(campaign: PredictionCampaign, entries: PredictionEntry[], results: MatchResult[]): Message[] {
   if (!["published","closed"].includes(campaign.status)) throw new Error("کمپین انتخاب‌شده منتشرشده نیست.");
   const resultById = new Map(results.map(item => [item.match_id, item]));
@@ -262,8 +292,11 @@ Deno.serve(async (req: Request) => {
     const selected = Array.isArray(body.sections) ? body.sections.map((x: unknown)=>String(x)) : [];
     const reportCampaignId = typeof body.report_campaign_id === "string" ? body.report_campaign_id : "";
     const reportVoterIds = Array.isArray(body.report_voter_ids) ? [...new Set(body.report_voter_ids.map((x:unknown)=>String(x)))] : [];
-    const reportMode = Boolean(reportCampaignId || reportVoterIds.length);
-    if (reportMode && (!/^[-a-f0-9]{36}$/i.test(reportCampaignId) || reportVoterIds.length < 1 || reportVoterIds.length > 100)) return json({error:"کمپین یا فهرست رأی‌دهندگان برای گزارش معتبر نیست."},400);
+    const reportRankingImage = body.report_ranking_image === true;
+    const rankingImageBase64 = typeof body.ranking_image_base64 === "string" ? body.ranking_image_base64 : "";
+    const reportMode = Boolean(reportCampaignId || reportVoterIds.length || reportRankingImage);
+    if (reportMode && (!/^[-a-f0-9]{36}$/i.test(reportCampaignId) || (reportRankingImage ? reportVoterIds.length !== 0 : reportVoterIds.length < 1) || reportVoterIds.length > 100)) return json({error:"کمپین یا فهرست رأی‌دهندگان برای گزارش معتبر نیست."},400);
+    if (reportRankingImage && action === "send" && (!rankingImageBase64 || rankingImageBase64.length > 8_000_000)) return json({error:"تصویر رتبه‌بندی نامعتبر یا بزرگ‌تر از حد مجاز است."},400);
 
     const wantsFixtures = selected.some((id:string)=>id.startsWith("fixtures:day:"));
     const wantsBracket = selected.some((id:string)=>id.startsWith("bracket:"));
@@ -287,7 +320,9 @@ Deno.serve(async (req: Request) => {
         ? admin.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,questions,prize_rules').eq('event_key','series3').eq('id',reportCampaignId).in('status',['published','closed']).maybeSingle()
         : Promise.resolve({data:null,error:null}),
       reportMode
-        ? admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).in('id',reportVoterIds)
+        ? (reportRankingImage
+            ? admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).order('submitted_at',{ascending:true})
+            : admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).in('id',reportVoterIds))
         : Promise.resolve({data:[],error:null}),
       reportMode
         ? admin.from('plato_land_series3_group_match_results').select('match_id,result_status,score_a,score_b,player_a_plato_id,player_b_plato_id').eq('event_key','series3')
@@ -315,14 +350,19 @@ Deno.serve(async (req: Request) => {
     if (wantsFixtures && !fixtures) return json({ error: "برنامه مسابقات سری سوم هنوز در دیتابیس ثبت نشده است." }, 409);
     if (wantsSeeding && (groups.length !== 12 || groups.some(g=>!Array.isArray(g.players)||g.players.length!==4))) return json({ error: "Snapshot گروه‌های سری سوم کامل نیست." }, 409);
 
-    let messages: Message[];
+    let messages: Message[] = [];
+    let predictionRanking: PredictionRanking | null = null;
     if (reportMode) {
       const reportCampaign = reportCampaignResult.data as PredictionCampaign | null;
       if (!reportCampaign || !["published","closed"].includes(reportCampaign.status) || !["champion","match_predictions"].includes(reportCampaign.campaign_type)) return json({error:"کمپین گزارش پیدا نشد یا نوع آن پشتیبانی نمی‌شود."},404);
       const reportEntries = (reportEntriesResult.data || []) as PredictionEntry[];
-      if (reportEntries.length !== reportVoterIds.length) return json({error:"فهرست رأی‌دهندگان با داده‌های کمپین مطابقت ندارد؛ فهرست را تازه‌سازی کن."},409);
-      messages = buildVoterReportMessages(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
-      if (messages.length > 100) return json({error:"تعداد پیام‌های گزارش از سقف مجاز بیشتر است."},400);
+      if (reportRankingImage) {
+        predictionRanking = buildPredictionRanking(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
+      } else {
+        if (reportEntries.length !== reportVoterIds.length) return json({error:"فهرست رأی‌دهندگان با داده‌های کمپین مطابقت ندارد؛ فهرست را تازه‌سازی کن."},409);
+        messages = buildVoterReportMessages(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
+        if (messages.length > 100) return json({error:"تعداد پیام‌های گزارش از سقف مجاز بیشتر است."},400);
+      }
     } else {
       messages = buildMessages(selected,ranking,pots,groups,bracket,fixtures,predictions);
     }
@@ -340,7 +380,7 @@ Deno.serve(async (req: Request) => {
       main_channel: "کانال اصلی PLATO LAND",
     };
     if (action === "preview") {
-      return json({ ok: true, destinations: requestedDestinations.map((id:string)=>({id,label:destinationLabels[id]})), messages });
+      return json({ ok: true, destinations: requestedDestinations.map((id:string)=>({id,label:destinationLabels[id]})), messages, ranking:predictionRanking });
     }
 
     const botToken = Deno.env.get("TELEGRAM_BOT_TOKEN") ?? "";
@@ -362,25 +402,43 @@ Deno.serve(async (req: Request) => {
         ? null
         : "شناسه این مقصد در Secretهای سمت سرور تنظیم نشده است.";
       let failedSection: string|null = failure ? "configuration" : null;
-      for (const [index, message] of messages.entries()) {
-        if (failure) break;
-        if (index > 0) await new Promise(resolve => setTimeout(resolve, 3100));
+      if (reportRankingImage) {
         try {
-          const response = await fetch("https://api.telegram.org/bot"+botToken+"/sendMessage", {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ chat_id: chatIds[destination], text: message.text, parse_mode: "HTML", disable_web_page_preview: true }),
-          });
+          const binary = Uint8Array.from(atob(rankingImageBase64), c => c.charCodeAt(0));
+          if (binary.length < 8 || binary[0] !== 0x89 || binary[1] !== 0x50 || binary[2] !== 0x4e || binary[3] !== 0x47) throw new Error("فایل تصویر PNG معتبر نیست.");
+          const form = new FormData();
+          form.append("chat_id", chatIds[destination]);
+          form.append("caption", "♛ PLATO LAND · لیگ تخته‌نرد سری سوم" + String.fromCharCode(10) + "رتبه‌بندی پیش‌بینی‌کنندگان دور اول");
+          form.append("photo", new Blob([binary], {type:"image/png"}), "series3-prediction-ranking.png");
+          const response = await fetch("https://api.telegram.org/bot"+botToken+"/sendPhoto", {method:"POST", body:form});
           const sent = await response.json().catch(()=>null);
-          if (!response.ok || !sent?.ok) {
-            failure = String(sent?.description ?? "Telegram send failed.");
+          if (!response.ok || !sent?.ok) throw new Error(String(sent?.description ?? "Telegram photo send failed."));
+          results.push({section_id:"prediction-ranking-image",message_id:Number(sent.result?.message_id ?? 0)});
+        } catch (sendError) {
+          failure = sendError instanceof Error ? sendError.message : "ارسال تصویر به تلگرام ناموفق بود.";
+          failedSection = "prediction-ranking-image";
+        }
+      } else {
+        for (const [index, message] of messages.entries()) {
+          if (failure) break;
+          if (index > 0) await new Promise(resolve => setTimeout(resolve, 3100));
+          try {
+            const response = await fetch("https://api.telegram.org/bot"+botToken+"/sendMessage", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ chat_id: chatIds[destination], text: message.text, parse_mode: "HTML", disable_web_page_preview: true }),
+            });
+            const sent = await response.json().catch(()=>null);
+            if (!response.ok || !sent?.ok) {
+              failure = String(sent?.description ?? "Telegram send failed.");
+              failedSection = message.section_id;
+              break;
+            }
+            results.push({ section_id: message.section_id, message_id: Number(sent.result?.message_id ?? 0) });
+          } catch (sendError) {
+            failure = sendError instanceof Error ? sendError.message : "ارتباط با تلگرام برقرار نشد.";
             failedSection = message.section_id;
             break;
           }
-          results.push({ section_id: message.section_id, message_id: Number(sent.result?.message_id ?? 0) });
-        } catch (sendError) {
-          failure = sendError instanceof Error ? sendError.message : "ارتباط با تلگرام برقرار نشد.";
-          failedSection = message.section_id;
-          break;
         }
       }
       const status: "sent" | "partial" | "failed" = failure
@@ -388,12 +446,12 @@ Deno.serve(async (req: Request) => {
         : "sent";
       const attempt = {
         destination, label:destinationLabels[destination], status,
-        sent_count:results.length, total_count:messages.length,
+        sent_count:results.length, total_count:reportRankingImage ? 1 : messages.length,
         failed_section:failedSection, error:failure, results,
       };
       destinationResults.push(attempt);
       const { error:historyError } = await admin.from("plato_land_series3_telegram_delivery_history").insert({
-        destination, status, total_count:messages.length, sent_count:results.length,
+        destination, status, total_count:reportRankingImage ? 1 : messages.length, sent_count:results.length,
         failed_section:failedSection, error_message:failure,
         telegram_results:results, sent_by:authData.user.id,
       });
@@ -408,7 +466,7 @@ Deno.serve(async (req: Request) => {
     return json({
       sent:allSent, partial:anySent&&!allSent, destination_results:destinationResults,
       sent_count:destinationResults.reduce((sum,item)=>sum+item.sent_count,0),
-      total_count:messages.length*destinationResults.length,
+      total_count:(reportRankingImage ? 1 : messages.length)*destinationResults.length,
       history_saved: attemptHistorySaved,
     }, allSent?200:502);
   } catch (error) {
