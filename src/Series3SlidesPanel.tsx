@@ -19,6 +19,8 @@ export function Series3SlidesPanel() {
   const [mediaMode,setMediaMode]=useState<'poster'|'video'>('poster');
   const [busySlot,setBusySlot]=useState<number|null>(null);
   const [posterBusy,setPosterBusy]=useState(false);
+  const [posterDeleteConfirm,setPosterDeleteConfirm]=useState(false);
+  const [posterDeleteBusy,setPosterDeleteBusy]=useState(false);
   const [teaserBusy,setTeaserBusy]=useState(false);
   const [teaserDeleteConfirm,setTeaserDeleteConfirm]=useState(false);
   const [teaserDeleteBusy,setTeaserDeleteBusy]=useState(false);
@@ -52,7 +54,7 @@ export function Series3SlidesPanel() {
         const size=Number(response.headers.get('Content-Length')||'0');
         const type=(response.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
         if(response.ok&&size>0&&['image/jpeg','image/png','image/webp'].includes(type)){
-          setPoster({url:series3PosterUrl()+'?v='+encodeURIComponent(String(size)),storage:'r2',objectKey:posterKey});
+          setPoster({url:series3PosterUrl()+'&v='+encodeURIComponent(String(size)),storage:'r2',objectKey:posterKey});
         }else{
           setPoster(null);
           setMessage('مرجع پوستر در Supabase ثبت شده، اما فایل متناظر در R2 تأیید نشد.');
@@ -62,7 +64,7 @@ export function Series3SlidesPanel() {
         setMessage('بررسی پوستر در R2 ناموفق بود: '+(e instanceof Error?e.message:'خطای شبکه'));
       }
     }else if(!posterKey&&posterItem){
-      setPoster({url:supabase.storage.from(BUCKET).getPublicUrl(POSTER_PATH).data.publicUrl,updated_at:posterItem.updated_at||posterItem.created_at||'',storage:'supabase',objectKey:POSTER_PATH});
+      setPoster({url:supabase.storage.from(BUCKET).getPublicUrl(POSTER_PATH).data.publicUrl+'?v='+encodeURIComponent(posterItem.updated_at||posterItem.created_at||''),storage:'supabase',objectKey:POSTER_PATH});
     }else{
       setPoster(null);
     }
@@ -128,6 +130,63 @@ export function Series3SlidesPanel() {
       setMessage((r2Saved?'فایل در R2 ذخیره و تأیید شده، اما ثبت مرجع آن در Supabase کامل نشد؛ موفقیت نهایی تأیید نمی‌شود: ':'بارگذاری پوستر ناموفق بود: ')+(e instanceof Error?e.message:'خطای ناشناخته'));
     }finally{setPosterBusy(false);}
   }
+  async function deletePoster() {
+    if(!supabase||!poster)return;
+    setPosterDeleteBusy(true);
+    setMessage('در حال بررسی مرجع پوستر و آماده‌سازی حذف…');
+    let metadataCleared=false;
+    try {
+      const {data:{user},error:userError}=await supabase.auth.getUser();
+      if(userError)throw userError;
+      if(!user)throw new Error('نشست معتبر مالک پیدا نشد.');
+      const {data:current,error:readError}=await supabase.from('plato_land_series3_home_media_settings')
+        .select('poster_storage_path').eq('id',1).maybeSingle();
+      if(readError)throw readError;
+
+      if(poster.storage==='r2'){
+        if(!isSeries3PosterKey(poster.objectKey||'')||current?.poster_storage_path!==poster.objectKey){
+          throw new Error('مرجع پوستر در Supabase با فایل انتخاب‌شده یکسان نیست؛ برای جلوگیری از حذف فایل اشتباه، عملیات متوقف شد.');
+        }
+        const {error:clearError}=await supabase.from('plato_land_series3_home_media_settings')
+          .update({poster_storage_path:null,updated_at:new Date().toISOString(),updated_by:user.id}).eq('id',1);
+        if(clearError)throw clearError;
+        metadataCleared=true;
+        const {data:session,error:sessionError}=await supabase.auth.getSession();
+        if(sessionError)throw sessionError;
+        const token=session.session?.access_token;
+        if(!token)throw new Error('نشست معتبر مالک پیدا نشد.');
+        const result=await deleteR2Media('poster',token);
+        if(result.key!==poster.objectKey)throw new Error('کلید پاسخ حذف با پوستر انتخاب‌شده یکسان نیست.');
+      }else if(poster.storage==='supabase'){
+        if(current?.poster_storage_path)throw new Error('یک پوستر R2 در دیتابیس ثبت شده است؛ صفحه را تازه‌سازی کن و دوباره بررسی کن.');
+        if(poster.objectKey!==POSTER_PATH)throw new Error('مسیر پوستر قدیمی با مسیر مجاز مطابقت ندارد.');
+        const {error:removeError}=await supabase.storage.from(BUCKET).remove([POSTER_PATH]);
+        if(removeError)throw removeError;
+        const {data:remaining,error:verifyError}=await supabase.storage.from(BUCKET).list('poster',{limit:10});
+        if(verifyError)throw verifyError;
+        if((remaining||[]).some(item=>item.name==='series3-main-poster'))throw new Error('فایل قدیمی پس از درخواست حذف هنوز در فهرست Storage دیده می‌شود.');
+      }else{
+        throw new Error('محل ذخیره پوستر مشخص نیست؛ حذف متوقف شد.');
+      }
+
+      setPoster(null);
+      setPosterSelected(null);
+      setPosterDeleteConfirm(false);
+      await refresh();
+      setMessage(poster.storage==='r2'
+        ? 'پوستر از Cloudflare R2 حذف، نبودن آن تأیید و مرجعش از Supabase پاک شد.'
+        : 'پوستر قدیمی از Supabase Storage حذف و نبودن آن در فهرست فایل‌ها تأیید شد.');
+    }catch(e){
+      let rollbackMessage='';
+      if(metadataCleared&&supabase){
+        const {error:rollbackError}=await supabase.from('plato_land_series3_home_media_settings')
+          .update({poster_storage_path:poster.objectKey,updated_at:new Date().toISOString()}).eq('id',1);
+        if(rollbackError)rollbackMessage=' بازگردانی مرجع پوستر در Supabase هم ناموفق بود: '+rollbackError.message;
+      }
+      setMessage('حذف پوستر کامل نشد: '+(e instanceof Error?e.message:'خطای ناشناخته')+rollbackMessage);
+    }finally{setPosterDeleteBusy(false);}
+  }
+
   async function uploadTeaser() {
     if(!supabase||!teaserSelected){setMessage('ابتدا فایل ویدیوی تیزر را انتخاب کن.');return;}
     if(teaserSelected.type!=='video/mp4'||!teaserSelected.name.toLowerCase().endsWith('.mp4')||teaserSelected.size===0||teaserSelected.size>100*1024*1024){setMessage('فقط فایل MP4 معتبر با حجم بیشتر از صفر و حداکثر ۱۰۰ مگابایت مجاز است.');return;}
@@ -234,9 +293,20 @@ export function Series3SlidesPanel() {
           </div>
           <div style={{fontSize:12,color:'#c9c0ad',marginBottom:12}}>حالت فعلی: {mediaMode==='video'?'ویدئوی تیزر':'پوستر ثابت'}</div>
           <h4 style={{color:'#f1d99e',margin:'12px 0 8px'}}>پوستر ثابت</h4>
-          {poster?<><img src={poster.url+'?v='+encodeURIComponent(poster.updated_at||'')} alt="پوستر سری سوم" style={{display:'block',maxWidth:'100%',maxHeight:200,objectFit:'contain',margin:'0 auto 10px'}}/><div dir="rtl" style={{fontSize:11,lineHeight:1.9,color:'#a9c7a5',overflowWrap:'anywhere',background:'#10140f',border:'1px solid #344a34',borderRadius:8,padding:9,marginBottom:10}}><strong>محل ذخیره فایل:</strong> {poster.storage==='r2'?'Cloudflare R2':'Supabase Storage (فایل قدیمی؛ فقط تا زمان بارگذاری در R2)'}<br/>{poster.storage==='r2'?<><strong>Bucket:</strong> <code dir="ltr">plato-land</code><br/><strong>Object key:</strong> <code dir="ltr">plato-land/backgammon/series-3/public-media/poster/main-poster</code><br/><strong>مرجع در Supabase:</strong> <code dir="ltr">plato_land_series3_home_media_settings.poster_storage_path</code></>:<><strong>Bucket:</strong> <code dir="ltr">series3-slides</code><br/><strong>Object path:</strong> <code dir="ltr">poster/series3-main-poster</code></>}</div></>:<p style={{color:'#a9a08e',fontSize:13}}>هنوز پوستری بارگذاری نشده است.</p>}
+          {poster?<><img src={poster.url} alt="پوستر سری سوم" style={{display:'block',maxWidth:'100%',maxHeight:200,objectFit:'contain',margin:'0 auto 10px'}}/><div dir="rtl" style={{fontSize:11,lineHeight:1.9,color:'#a9c7a5',overflowWrap:'anywhere',background:'#10140f',border:'1px solid #344a34',borderRadius:8,padding:9,marginBottom:10}}><strong>محل ذخیره فایل:</strong> {poster.storage==='r2'?'Cloudflare R2':'Supabase Storage (فایل قدیمی؛ فقط تا زمان بارگذاری در R2)'}<br/>{poster.storage==='r2'?<><strong>Bucket:</strong> <code dir="ltr">plato-land</code><br/><strong>Object key:</strong> <code dir="ltr">plato-land/backgammon/series-3/public-media/poster/main-poster</code><br/><strong>مرجع در Supabase:</strong> <code dir="ltr">plato_land_series3_home_media_settings.poster_storage_path</code></>:<><strong>Bucket:</strong> <code dir="ltr">series3-slides</code><br/><strong>Object path:</strong> <code dir="ltr">poster/series3-main-poster</code></>}</div></>:<p style={{color:'#a9a08e',fontSize:13}}>هنوز پوستری بارگذاری نشده است.</p>}
           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setPosterSelected(e.target.files?.[0]||null)} style={{width:'100%',color:'#ddd',fontSize:12,margin:'8px 0'}}/>
-          <button style={button} disabled={!posterSelected||posterBusy} onClick={()=>void uploadPoster()}>{posterBusy?'در حال ذخیره…':poster?'جایگزینی پوستر':'بارگذاری پوستر'}</button>
+          <button style={button} disabled={!posterSelected||posterBusy||posterDeleteBusy} onClick={()=>void uploadPoster()}>{posterBusy?'در حال ذخیره…':poster?'جایگزینی پوستر':'بارگذاری پوستر'}</button>
+          {poster&&<div style={{marginTop:9}}>
+            {!posterDeleteConfirm
+              ? <button type="button" disabled={posterBusy||posterDeleteBusy} onClick={()=>setPosterDeleteConfirm(true)} style={{...button,background:'#42201e',color:'#ffd0c9',border:'1px solid #8d4540'}}>حذف پوستر</button>
+              : <div style={{padding:10,border:'1px solid #8d4540',borderRadius:9,background:'#1b1111'}}>
+                  <p style={{fontSize:12,lineHeight:1.8,color:'#ffb2a8',margin:'0 0 8px'}}>پوستر فعلی به‌صورت دائمی از {poster.storage==='r2'?'Cloudflare R2':'Supabase Storage'} حذف می‌شود. {mediaMode==='poster'?'حالت نمایش صفحه اول روی پوستر باقی می‌ماند و تا بارگذاری پوستر جدید، تصویر پوستر نمایش داده نخواهد شد.':'حالت نمایش فعلی تغییر نمی‌کند.'}</p>
+                  <div style={{display:'flex',gap:8}}>
+                    <button type="button" disabled={posterDeleteBusy} onClick={()=>setPosterDeleteConfirm(false)} style={{...button,background:'#302718',color:'#eee',flex:1}}>انصراف</button>
+                    <button type="button" disabled={posterDeleteBusy} onClick={()=>void deletePoster()} style={{...button,background:'#9f3932',color:'#fff',flex:1}}>{posterDeleteBusy?'در حال حذف…':'تأیید حذف دائمی'}</button>
+                  </div>
+                </div>}
+          </div>}
           <div style={{borderTop:'1px solid #51452d',margin:'16px 0'}}/>
           <h4 style={{color:'#f1d99e',margin:'12px 0 8px'}}>ویدیوی تیزر صفحه اول (MP4 · حداکثر ۱۰۰ مگابایت)</h4>
           <div style={{fontSize:12,color:teaserExists?'#9ed6a3':'#b5a98e',marginBottom:8}}>{teaserExists?'فایل تیزر در Cloudflare R2 تأیید شده است.':'هنوز فایل تیزری بارگذاری نشده است.'}</div>

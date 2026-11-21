@@ -1,7 +1,7 @@
 const MEDIA_API = 'https://plato-land-media-pages.pages.dev/api/series3-media';
 
 export async function deleteR2Media(
-  asset: 'series2-poster' | 'teaser' | 'rules',
+  asset: 'series2-poster' | 'poster' | 'teaser' | 'rules',
   accessToken: string,
   key?: string,
 ): Promise<{ key: string; alreadyMissing?: boolean }> {
