@@ -18,8 +18,8 @@ const sections: { title: string; description: string; items: SectionOption[] }[]
     ...groups.map(g => ({ id: 'fixtures:day:'+day+':'+g, label: 'روز '+day+' · گروه '+g+' (۲ بازی)' }))
   ]) },
   { title: 'مراحل حذفی', description: 'هر مرحله جداگانه و بر اساس براکت ذخیره‌شده', items: [
-    { id: 'bracket:round32', label: 'مرحله ۳۲ نفره · ۱۶ مسابقه' },
-    { id: 'bracket:round16', label: 'مرحله ۱۶ نفره · ۸ مسابقه' },
+    { id: 'bracket:round32', label: 'یک‌شانزدهم نهایی · ۱۶ مسابقه' },
+    { id: 'bracket:round16', label: 'یک‌هشتم نهایی · ۸ مسابقه' },
     { id: 'bracket:quarterfinals', label: 'یک‌چهارم نهایی · ۴ مسابقه' },
     { id: 'bracket:semifinals', label: 'نیمه‌نهایی · ۲ مسابقه' },
     { id: 'bracket:thirdPlace', label: 'بازی رده‌بندی · ۱ مسابقه' },
