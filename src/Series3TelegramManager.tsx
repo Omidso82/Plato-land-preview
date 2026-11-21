@@ -207,7 +207,7 @@ export default function Series3TelegramManager() {
     if(preview.length===0 && !rankingImageBase64){setError('قبل از ارسال، ابتدا پیش‌نمایش را تهیه و بررسی کن.');return;}
     const target=destinations.map(id=>id==='test_group'?'گروه آزمایشی':'کانال اصلی').join(' و ');
     const reportSending=Boolean((reportCampaignId&&selectedReportVoters.length>0)||rankingImageSending);
-    const warning=reportSending?' این گزارش‌ها شامل Plato ID و پیش‌بینی هر رأی‌دهنده است و در مقصد انتخاب‌شده برای اعضای آن قابل مشاهده خواهد بود.':'';
+    const warning=rankingImageSending?' این تصویر شامل Plato ID و آمار پیش‌بینی شرکت‌کنندگان است و برای اعضای مقصد قابل مشاهده خواهد بود.':reportSending?' این گزارش‌ها شامل Plato ID و پیش‌بینی هر رأی‌دهنده است و در مقصد انتخاب‌شده برای اعضای آن قابل مشاهده خواهد بود.':'';
     const approved=window.confirm('آیا ارسال '+fa(previewCount)+' مورد به هر مقصد انتخاب‌شده ('+target+') را تأیید می‌کنی؟'+warning);
     if(!approved)return;
     setSending(true);setError('');setNotice('');
