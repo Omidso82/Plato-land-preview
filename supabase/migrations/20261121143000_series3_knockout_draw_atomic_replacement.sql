@@ -33,6 +33,7 @@ as $$
 declare
   v_uid uuid := auth.uid();
   v_old public.plato_land_series3_knockout_draws%rowtype;
+  v_saved public.plato_land_series3_knockout_draws%rowtype;
   v_new_id uuid;
   v_matches jsonb;
   v_tokens jsonb;
@@ -190,15 +191,19 @@ begin
           created_by=v_uid,
           created_at=now()
       where id=v_old.id
-      returning id into v_new_id;
+      returning * into v_saved;
+    v_new_id := v_saved.id;
   else
     insert into public.plato_land_series3_knockout_draws
       (event_key,entrants_snapshot,bracket_snapshot,draw_fingerprint,created_by)
     values ('series3',p_entrants_snapshot,p_bracket_snapshot,p_draw_fingerprint,v_uid)
-    returning id into v_new_id;
+    returning * into v_saved;
+    v_new_id := v_saved.id;
   end if;
 
-  return jsonb_build_object('success',true,'active_id',v_new_id,'archived_id',case when v_old.id is null then null else v_old.id end);
+  return jsonb_build_object('success',true,'active_id',v_new_id,
+    'archived_id',case when v_old.id is null then null else v_old.id end,
+    'bracket_snapshot',v_saved.bracket_snapshot,'created_at',v_saved.created_at);
 end;
 $$;
 
