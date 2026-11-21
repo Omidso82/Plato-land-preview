@@ -106,7 +106,7 @@ export function Series3SlidesPanel() {
   }
   async function uploadPoster() {
     if(!supabase||!posterSelected){setMessage('ابتدا پوستر سری سوم را انتخاب کن.');return;}
-    if(!/^image\\/(jpeg|png|webp)$/.test(posterSelected.type)||posterSelected.size<=0||posterSelected.size>10*1024*1024){setMessage('فرمت پوستر باید JPG، PNG یا WEBP و حجم آن حداکثر ۱۰ مگابایت باشد.');return;}
+    if(!/^image\/(jpeg|png|webp)$/.test(posterSelected.type)||posterSelected.size<=0||posterSelected.size>10*1024*1024){setMessage('فرمت پوستر باید JPG، PNG یا WEBP و حجم آن حداکثر ۱۰ مگابایت باشد.');return;}
     setPosterBusy(true);setMessage('در حال بارگذاری پوستر در Cloudflare R2 و تأیید فایل…');
     let r2Saved=false;
     try{
