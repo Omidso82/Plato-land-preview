@@ -4,7 +4,7 @@ import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabase } from './supabase';
 type SectionOption = { id: string; label: string };
 type PredictionCampaign = { id:string; title:string; description:string; campaign_type:string; status:string; is_open:boolean; opens_at:string|null; closes_at:string|null; questions:Array<{id:string;label:string;type?:string;options?:string[]}>; prize_rules:any };
 type PreviewMessage = { section_id: string; title: string; text: string; plain_text: string; item_count: number };
-type ReportVoter = { id:string; voter_plato_id:string };
+type ReportVoter = { id:string; voter_plato_id:string; response:Record<string,unknown>|null };
 type PredictionRanking = { title:string; total_questions:number; rows:Array<{plato_id:string;correct:number;incorrect:number;remaining:number}> };
 type ApiResult = { ok?: boolean; error?: string; messages?: PreviewMessage[]; ranking?: PredictionRanking; sent?: boolean; destination?: 'test_group'; results?: Array<{section_id:string;message_id:number}>; sent_count?: number; failed_section?: string; destination_results?: Array<{destination:string;label:string;status:'sent'|'partial'|'failed';sent_count:number;total_count:number;failed_section:string|null;error:string|null;results:Array<{section_id:string;message_id:number}>}>; history_saved?: boolean };
 
@@ -57,6 +57,8 @@ export default function Series3TelegramManager() {
   const [rankingImageData, setRankingImageData] = useState('');
   const [rankingImageBase64, setRankingImageBase64] = useState('');
   const [rankingImageBusy, setRankingImageBusy] = useState(false);
+  const [championImageData, setChampionImageData] = useState('');
+  const [championImageBusy, setChampionImageBusy] = useState(false);
   const [dailySchedule, setDailySchedule] = useState<any>(null);
   const [dailyResults, setDailyResults] = useState<Array<{match_id:string;result_status:string;score_a:number|null;score_b:number|null}>>([]);
   const [dailyDay, setDailyDay] = useState('');
@@ -127,12 +129,12 @@ export default function Series3TelegramManager() {
 
   async function loadReportVoters(campaignId:string) {
     setReportCampaignId(campaignId); setReportVoters([]); setSelectedReportVoters([]);
-    setPreview([]); setRankingImageData(''); setRankingImageBase64(''); setReportError('');
+    setPreview([]); setRankingImageData(''); setRankingImageBase64(''); setChampionImageData(''); setReportError('');
     if(!campaignId || !supabase) return;
     setReportLoading(true);
     try {
       const {data,error}=await supabase.from('plato_land_prediction_entries')
-        .select('id,voter_plato_id').eq('campaign_id',campaignId).order('submitted_at',{ascending:true});
+        .select('id,voter_plato_id,response').eq('campaign_id',campaignId).order('submitted_at',{ascending:true});
       if(error) throw error;
       setReportVoters((data||[]) as ReportVoter[]);
     } catch(e) {
@@ -240,6 +242,71 @@ export default function Series3TelegramManager() {
       setNotice('تصویر رتبه‌بندی آماده شد. قبل از ارسال، تمام ردیف‌ها و اعداد را بررسی کن.');
     } catch(e) {setError(e instanceof Error?e.message:'ساخت تصویر رتبه‌بندی ناموفق بود.');}
     finally {setRankingImageBusy(false);}
+  }
+
+  function makeChampionVoterImage() {
+    const campaign = reportCampaigns.find(item => item.id === reportCampaignId);
+    if (!campaign || campaign.campaign_type !== 'champion') {
+      setReportError('برای تهیه این تصویر، کمپین قهرمانی سری سوم را انتخاب کن.');
+      return;
+    }
+    if (reportVoters.length === 0) {
+      setReportError('برای این کمپین پاسخ ثبت‌شده‌ای وجود ندارد.');
+      return;
+    }
+    setChampionImageBusy(true); setReportError(''); setChampionImageData('');
+    try {
+      const rows = reportVoters.map(entry => ({
+        voter: String(entry.voter_plato_id || '').trim(),
+        champion: typeof entry.response?.champion === 'string' ? String(entry.response.champion).trim() : '',
+      })).filter(row => row.voter && row.champion);
+      if (rows.length === 0) throw new Error('در پاسخ‌های ثبت‌شده، انتخاب قهرمان معتبری پیدا نشد.');
+      const width = 1080, rowHeight = 112, top = 330, height = top + rows.length * rowHeight + 150;
+      const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('ساخت تصویر در این مرورگر پشتیبانی نمی‌شود.');
+      ctx.fillStyle = '#0b0c0e'; ctx.fillRect(0,0,width,height);
+      const rounded = (x:number,y:number,w:number,h:number,r:number,fill:string,stroke?:string) => {
+        ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+        ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+        ctx.fillStyle=fill; ctx.fill(); if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();}
+      };
+      rounded(28,28,width-56,height-56,28,'#101113','#8e6b34');
+      ctx.textAlign='center'; ctx.direction='ltr'; ctx.fillStyle='#d9b96e'; ctx.font='bold 42px Arial';
+      ctx.fillText('♛ PLATO LAND',width/2,105);
+      ctx.direction='rtl'; ctx.fillStyle='#f4e5c4'; ctx.font='bold 48px Arial';
+      ctx.fillText('پیش‌بینی قهرمان سری سوم',width/2,190);
+      ctx.fillStyle='#c6b99f'; ctx.font='28px Arial'; ctx.fillText('گزارش انتخاب‌های ثبت‌شده شرکت‌کنندگان',width/2,245);
+      const leftX=72, colW=450, gap=36, rightX=leftX+colW+gap;
+      rounded(leftX,top-64,colW,52,12,'#2a2418','#9b783d');
+      rounded(rightX,top-64,colW,52,12,'#2a2418','#9b783d');
+      ctx.direction='rtl'; ctx.textAlign='center'; ctx.fillStyle='#e5c477'; ctx.font='bold 25px Arial';
+      ctx.fillText('Plato ID رأی‌دهنده',leftX+colW/2,top-29);
+      ctx.fillText('Plato ID قهرمان انتخاب‌شده',rightX+colW/2,top-29);
+      rows.forEach((row,index)=>{
+        const y=top+index*rowHeight;
+        rounded(leftX,y,colW,88,13,index%2===0?'#17191c':'#111315','#4b402c');
+        rounded(rightX,y,colW,88,13,index%2===0?'#211d14':'#17140f','#8e6b34');
+        const drawId=(value:string,x:number)=>{
+          ctx.save(); ctx.beginPath(); ctx.rect(x+18,y+8,colW-36,72); ctx.clip();
+          ctx.direction='ltr'; ctx.textAlign='center'; ctx.fillStyle='#fff0d2';
+          let size=39; ctx.font='bold '+size+'px Arial';
+          while(ctx.measureText(value).width>colW-48 && size>22){size--;ctx.font='bold '+size+'px Arial';}
+          ctx.fillText(value,x+colW/2,y+56); ctx.restore();
+        };
+        drawId(row.voter,leftX); drawId(row.champion,rightX);
+      });
+      const footerY=top+rows.length*rowHeight+58;
+      ctx.direction='rtl'; ctx.textAlign='center'; ctx.fillStyle='#d9b96e'; ctx.font='26px Arial';
+      ctx.fillText('بازی، رقابت، قهرمانی',width/2,footerY);
+      ctx.fillStyle='#8e846f'; ctx.font='20px Arial';
+      ctx.fillText(new Intl.NumberFormat('fa-IR').format(rows.length)+' پاسخ معتبر',width/2,footerY+38);
+      const dataUrl=canvas.toDataURL('image/png');
+      if(!dataUrl.startsWith('data:image/png;base64,')) throw new Error('تبدیل تصویر به PNG ناموفق بود.');
+      setChampionImageData(dataUrl);
+    } catch(e) {
+      setReportError('ساخت تصویر پیش‌بینی قهرمان ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص'));
+    } finally { setChampionImageBusy(false); }
   }
 
   async function makePreview() {
@@ -355,6 +422,7 @@ export default function Series3TelegramManager() {
           <strong style={{color:'#f0d99f',fontSize:12}}>رأی‌دهندگان: {fa(reportVoters.length)} نفر</strong>
           <button type="button" style={darkButton} onClick={()=>setSelectedReportVoters(selectedReportVoters.length===reportVoters.length?[]:reportVoters.map(v=>v.id))}>{selectedReportVoters.length===reportVoters.length?'لغو انتخاب همه':'انتخاب همه رأی‌دهندگان'}</button>
           <button type="button" style={goldButton} disabled={rankingImageBusy||reportLoading||!reportCampaignId} onClick={()=>void makeRankingImagePreview()}>{rankingImageBusy?'در حال ساخت تصویر…':'تهیه تصویر رتبه‌بندی'}</button>
+          {reportCampaigns.find(c=>c.id===reportCampaignId)?.campaign_type==='champion'&&<button type="button" style={goldButton} disabled={championImageBusy||reportLoading||!reportCampaignId} onClick={makeChampionVoterImage}>{championImageBusy?'در حال ساخت تصویر…':'تهیه تصویر پیش‌بینی قهرمان'}</button>}
           <span style={muted}>انتخاب‌شده: {fa(selectedReportVoters.length)}</span>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(145px,1fr))',gap:7,marginTop:9}}>
@@ -365,6 +433,12 @@ export default function Series3TelegramManager() {
         </div>
       </>}
       {rankingImageData&&<div style={{marginTop:12,border:'1px solid #806638',borderRadius:10,padding:8,background:'#0d0e10'}}><strong style={{display:'block',color:'#f0d99f',fontSize:12,marginBottom:8}}>پیش‌نمایش تصویر رتبه‌بندی</strong><img src={rankingImageData} alt="تصویر رتبه‌بندی پیش‌بینی‌کنندگان سری سوم" style={{display:'block',width:'100%',height:'auto',borderRadius:8}}/><button type="button" style={darkButton} onClick={()=>{setRankingImageData('');setRankingImageBase64('');}}>پاک‌کردن تصویر</button></div>}
+      {championImageData&&<div style={{marginTop:12,border:'1px solid #806638',borderRadius:10,padding:8,background:'#0d0e10'}}>
+        <strong style={{display:'block',color:'#f0d99f',fontSize:12,marginBottom:8}}>پیش‌نمایش تصویر پیش‌بینی قهرمان · فقط دریافت فایل</strong>
+        <img src={championImageData} alt="گزارش Plato ID رأی‌دهنده و Plato ID قهرمان انتخاب‌شده" style={{display:'block',width:'100%',height:'auto',borderRadius:8}}/>
+        <a href={championImageData} download="PLATO-LAND-Series3-Champion-Predictions.png" style={{...goldButton,display:'inline-block',textDecoration:'none',marginTop:9}}>دریافت تصویر PNG</a>
+        <button type="button" style={{...darkButton,marginInlineStart:8}} onClick={()=>setChampionImageData('')}>پاک‌کردن تصویر</button>
+      </div>}
       {reportCampaignId&&<p style={{...muted,marginTop:9}}>وضعیت نتایج از دیتابیس خوانده می‌شود. هر گزارش شامل Plato ID و پیش‌بینی همان رأی‌دهنده است و پس از تأیید Owner به مقصد انتخاب‌شده ارسال می‌شود؛ اعضای آن گروه یا کانال می‌توانند محتوای پیام را ببینند.</p>}
     </details>
 
