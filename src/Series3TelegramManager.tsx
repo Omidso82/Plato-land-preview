@@ -6,7 +6,7 @@ type PredictionCampaign = { id:string; title:string; description:string; campaig
 type PreviewMessage = { section_id: string; title: string; text: string; plain_text: string; item_count: number };
 type ReportVoter = { id:string; voter_plato_id:string };
 type PredictionRanking = { title:string; total_questions:number; rows:Array<{plato_id:string;correct:number;incorrect:number;remaining:number}> };
-type ApiResult = { ok?: boolean; error?: string; messages?: PreviewMessage[]; sent?: boolean; destination?: 'test_group'; results?: Array<{section_id:string;message_id:number}>; sent_count?: number; failed_section?: string; destination_results?: Array<{destination:string;label:string;status:'sent'|'partial'|'failed';sent_count:number;total_count:number;failed_section:string|null;error:string|null;results:Array<{section_id:string;message_id:number}>}>; history_saved?: boolean };
+type ApiResult = { ok?: boolean; error?: string; messages?: PreviewMessage[]; ranking?: PredictionRanking; sent?: boolean; destination?: 'test_group'; results?: Array<{section_id:string;message_id:number}>; sent_count?: number; failed_section?: string; destination_results?: Array<{destination:string;label:string;status:'sent'|'partial'|'failed';sent_count:number;total_count:number;failed_section:string|null;error:string|null;results:Array<{section_id:string;message_id:number}>}>; history_saved?: boolean };
 
 const groups = 'ABCDEFGHIJKL'.split('');
 const sections: { title: string; description: string; items: SectionOption[] }[] = [
@@ -208,7 +208,7 @@ export default function Series3TelegramManager() {
     const target=destinations.map(id=>id==='test_group'?'گروه آزمایشی':'کانال اصلی').join(' و ');
     const reportSending=Boolean((reportCampaignId&&selectedReportVoters.length>0)||rankingImageSending);
     const warning=reportSending?' این گزارش‌ها شامل Plato ID و پیش‌بینی هر رأی‌دهنده است و در مقصد انتخاب‌شده برای اعضای آن قابل مشاهده خواهد بود.':'';
-    const approved=window.confirm('آیا ارسال '+fa(preview.length)+' پیام به هر مقصد انتخاب‌شده ('+target+') را تأیید می‌کنی؟'+warning);
+    const approved=window.confirm('آیا ارسال '+fa(previewCount)+' مورد به هر مقصد انتخاب‌شده ('+target+') را تأیید می‌کنی؟'+warning);
     if(!approved)return;
     setSending(true);setError('');setNotice('');
     try{
@@ -260,7 +260,7 @@ export default function Series3TelegramManager() {
         {id:'test_group',label:'فقط گروه آزمایشی'},
         {id:'main_channel',label:'فقط کانال اصلی'},
       ].map(option=><label key={option.id} style={{display:'flex',gap:9,alignItems:'center',padding:'8px 0',color:'#eee5d4',fontSize:13}}>
-        <input type="checkbox" checked={destinations.includes(option.id)} onChange={()=>{setDestinations(current=>current.includes(option.id)?current.filter(x=>x!==option.id):[...current,option.id]);setPreview([]);setNotice('');}} style={{accentColor:'#d6b35f',width:18,height:18}}/>
+        <input type="checkbox" checked={destinations.includes(option.id)} onChange={()=>{setDestinations(current=>current.includes(option.id)?current.filter(x=>x!==option.id):[...current,option.id]);setPreview([]);setRankingImageData('');setRankingImageBase64('');setNotice('');}} style={{accentColor:'#d6b35f',width:18,height:18}}/>
         {option.label}
       </label>)}
       {destinations.length===0&&<p style={{color:'#ffc8c8',fontSize:12}}>برای پیش‌نمایش و ارسال، حداقل یک مقصد انتخاب کن.</p>}
