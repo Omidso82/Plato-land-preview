@@ -64,6 +64,41 @@ Deno.test("rejects entrant pools without exactly one first and second from every
   if (!rejected) throw new Error("Expected malformed group distribution to be rejected");
 });
 
+Deno.test("rejects an old bracket that pairs two third-place placeholders together", () => {
+  const draw = buildProtectedRound32(entrants);
+  const round32 = draw.round32.map(match => ({ ...match }));
+  const thirdMatches = round32.filter(match => match.a.source === "third" || match.b.source === "third");
+  const firstMatch = thirdMatches[0];
+  const secondMatch = thirdMatches[1];
+  const firstTopTwo = firstMatch.a.source === "third" ? firstMatch.b : firstMatch.a;
+  const secondThird = secondMatch.a.source === "third" ? secondMatch.a : secondMatch.b;
+  if (firstMatch.a.source === "third") firstMatch.b = secondThird;
+  else firstMatch.a = secondThird;
+  if (secondMatch.a.source === "third") secondMatch.a = firstTopTwo;
+  else secondMatch.b = firstTopTwo;
+  const malformed: Series3BracketSnapshot = {
+    tokens: draw.tokens,
+    round32,
+    round16: [],
+    quarterfinals: [],
+    semifinals: [],
+    final: [],
+  };
+  const qualifiers: Series3BracketToken[] = groups.slice(0, 8).map(group => ({
+    id: "THIRD-" + group,
+    label: "Third " + group,
+    source: "third",
+    group,
+  }));
+  let rejected = false;
+  try {
+    assignThirdPlaceQualifiers(malformed, qualifiers);
+  } catch {
+    rejected = true;
+  }
+  if (!rejected) throw new Error("Expected two third-place placeholders in one R32 match to be rejected");
+});
+
 Deno.test("every possible set of eight distinct third-place groups can be assigned without a same-group clash", () => {
   const draw = buildProtectedRound32(entrants);
   const base: Series3BracketSnapshot = {
