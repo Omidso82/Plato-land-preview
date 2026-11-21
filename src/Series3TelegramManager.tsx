@@ -17,7 +17,7 @@ const sections: { title: string; description: string; items: SectionOption[] }[]
     { id: 'fixtures:day:'+day+':ALL', label: 'روز '+day+' · همه گروه‌ها (۲۴ بازی)' },
     ...groups.map(g => ({ id: 'fixtures:day:'+day+':'+g, label: 'روز '+day+' · گروه '+g+' (۲ بازی)' }))
   ]) },
-  { title: 'مراحل حذفی', description: 'انتخاب، پیش‌نمایش و ارسال گزارش نتایج ثبت‌شده در بخش ثبت نتایج سری سوم', items: [
+  { title: 'گزارش بازی‌ها و نتایج مراحل حذفی', description: 'هر دور یک گزارش مستقل؛ همه بازی‌ها، Plato ID بازیکنان، نتایج ثبت‌شده، برنده و بازی‌های در انتظار نتیجه', items: [
     { id: 'bracket:round32', label: 'سه‌شنبه ۳ آذر · یک‌شانزدهم نهایی · ۱۶ مسابقه' },
     { id: 'bracket:round16', label: 'چهارشنبه ۴ آذر · یک‌هشتم نهایی · ۸ مسابقه' },
     { id: 'bracket:quarterfinals', label: 'شنبه ۷ آذر · یک‌چهارم نهایی · ۴ مسابقه' },
