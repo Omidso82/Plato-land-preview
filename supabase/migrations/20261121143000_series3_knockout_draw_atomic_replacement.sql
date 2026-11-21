@@ -61,6 +61,50 @@ begin
     raise exception 'Bracket entrants must contain 32 unique tokens and exactly 8 third-place placeholders';
   end if;
 
+  -- The entrants snapshot, token registry, and actual R32 slots must be the same set.
+  if exists (
+    select 1
+    from (
+      (select x->>'id' as id from jsonb_array_elements(p_entrants_snapshot) x
+       except
+       select x->>'id' from jsonb_array_elements(v_tokens) x)
+      union all
+      (select x->>'id' from jsonb_array_elements(v_tokens) x
+       except
+       select x->>'id' from jsonb_array_elements(p_entrants_snapshot) x)
+    ) mismatch
+  ) then
+    raise exception 'Entrants snapshot and bracket token registry do not match';
+  end if;
+
+  if exists (
+    select 1
+    from (
+      (select t.token->>'id' as id
+       from jsonb_array_elements(v_matches) m,
+            lateral (values (m->'a'),(m->'b')) t(token)
+       except
+       select x->>'id' from jsonb_array_elements(v_tokens) x)
+      union all
+      (select x->>'id' from jsonb_array_elements(v_tokens) x
+       except
+       select t.token->>'id'
+       from jsonb_array_elements(v_matches) m,
+            lateral (values (m->'a'),(m->'b')) t(token))
+    ) mismatch
+  ) then
+    raise exception 'Round of 32 slots do not contain exactly the registered 32 entrants';
+  end if;
+
+  if exists (
+    select 1 from jsonb_array_elements(v_tokens) x
+    where x->>'source' not in ('first','second','third')
+       or (x->>'source' in ('first','second') and nullif(x->>'group','') is null)
+       or (x->>'source' = 'third' and nullif(x->>'group','') is not null)
+  ) then
+    raise exception 'Entrant token source or group metadata is invalid';
+  end if;
+
   if exists (
     select 1 from jsonb_array_elements(v_matches) m
     where m->'a' is null or m->'b' is null
