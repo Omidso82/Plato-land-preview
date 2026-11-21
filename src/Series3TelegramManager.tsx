@@ -206,16 +206,18 @@ export default function Series3TelegramManager() {
         rounded(65,y,width-130,84,16,index%2===0?'#17191c':'#111315','#4b402c');
         ctx.direction='ltr';ctx.textAlign='left';ctx.fillStyle='#d9b96e';ctx.font='bold 34px Arial';ctx.fillText(String(index+1).padStart(2,'0'),95,y+54);
         // Dedicated, clipped Plato ID lane: the ID can never paint over a statistic card.
-        const idRight=1000, idLeft=650, idMaxWidth=idRight-idLeft;
-        ctx.save();ctx.beginPath();ctx.rect(idLeft,y+4,idMaxWidth,76);ctx.clip();
+        const idRight=1000, idLeft=735, idMaxWidth=idRight-idLeft;
+        // Paint an opaque ID lane so no statistic card or text can visually intrude.
+        rounded(idLeft,y+8,idMaxWidth,68,10,'#17191c');
+        ctx.save();ctx.beginPath();ctx.rect(idLeft+8,y+4,idMaxWidth-16,76);ctx.clip();
         ctx.direction='ltr';ctx.textAlign='right';ctx.fillStyle='#f2e6cf';
         let idFontSize=34;ctx.font='bold '+idFontSize+'px Arial';
-        while(ctx.measureText(row.plato_id).width>idMaxWidth && idFontSize>22){idFontSize-=1;ctx.font='bold '+idFontSize+'px Arial';}
-        ctx.fillText(row.plato_id,idRight,y+54);ctx.restore();
-        // Statistic cards occupy only the left-side lane, with a fixed gap before the ID lane.
-        const stats=[{x:205,label:'باقی‌مانده',value:row.remaining,color:'#d9b96e'},{x:375,label:'غلط',value:row.incorrect,color:'#e49a9a'},{x:545,label:'درست',value:row.correct,color:'#9ed29c'}];
+        while(ctx.measureText(row.plato_id).width>idMaxWidth-24 && idFontSize>22){idFontSize-=1;ctx.font='bold '+idFontSize+'px Arial';}
+        ctx.fillText(row.plato_id,idRight-12,y+54);ctx.restore();
+        // Three statistic cards are confined to the left half, leaving a generous gap before Plato ID.
+        const stats=[{x:175,label:'باقی‌مانده',value:row.remaining,color:'#d9b96e'},{x:345,label:'غلط',value:row.incorrect,color:'#e49a9a'},{x:515,label:'درست',value:row.correct,color:'#9ed29c'}];
         stats.forEach(stat=>{
-          rounded(stat.x-58,y+9,116,66,12,'#202226');
+          rounded(stat.x-55,y+9,110,66,12,'#202226');
           ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle=stat.color;ctx.font='bold 36px Arial';ctx.fillText(new Intl.NumberFormat('fa-IR').format(stat.value),stat.x,y+42);
           ctx.fillStyle='#c9c0b0';ctx.font='18px Arial';ctx.fillText(stat.label,stat.x,y+65);
         });
