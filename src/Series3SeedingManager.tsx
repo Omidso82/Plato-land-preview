@@ -127,6 +127,71 @@ function buildProtectedRound32(tokens: BracketToken[]): { tokens: BracketToken[]
   return { tokens: shuffled(all), round32: ordered };
 }
 
+/**
+ * Maps the final eight third-place qualifiers onto the pre-drawn placeholder
+ * slots. A qualifier can only occupy a slot whose R32 opponent is from another
+ * group. No bracket positions or downstream winner references are changed.
+ */
+function assignThirdPlaceQualifiers(
+  bracket: SavedBracket['bracket_snapshot'],
+  qualifiers: BracketToken[],
+): SavedBracket['bracket_snapshot'] {
+  const placeholders = bracket.round32.flatMap(match => [
+    { matchId: match.id, side: 'a' as const, token: match.a, opponent: match.b },
+    { matchId: match.id, side: 'b' as const, token: match.b, opponent: match.a },
+  ]).filter(slot => slot.token.source === 'third');
+
+  if (placeholders.length !== 8 || qualifiers.length !== 8)
+    throw new Error('برای جایگزینی باید دقیقاً هشت جایگاه و هشت صعودکننده سوم وجود داشته باشد.');
+  if (qualifiers.some(q => q.source !== 'third' || !q.group || !q.id || !q.label))
+    throw new Error('اطلاعات هر هشت صعودکننده سوم باید شامل شناسه، نام نمایشی و گروه معتبر باشد.');
+  if (new Set(qualifiers.map(q => q.id)).size !== 8 || new Set(qualifiers.map(q => q.group)).size !== 8)
+    throw new Error('شناسه بازیکنان و گروه صعودکنندگان سوم باید یکتا باشد.');
+  if (qualifiers.some(q => placeholders.some(p => p.token.id === q.id)))
+    throw new Error('شناسه بازیکن واقعی با شناسه جایگاه موقت تداخل دارد.');
+
+  // Minimum-remaining-values ordering makes the matching deterministic and
+  // quickly exposes an impossible assignment instead of forcing a bad pairing.
+  const ordered = [...qualifiers].sort((a, b) =>
+    placeholders.filter(p => p.opponent.group !== a.group).length -
+    placeholders.filter(p => p.opponent.group !== b.group).length ||
+    String(a.group).localeCompare(String(b.group), 'en')
+  );
+  const assignment = new Map<string, BracketToken>();
+  const usedSlots = new Set<string>();
+  const search = (index: number): boolean => {
+    if (index === ordered.length) return true;
+    const qualifier = ordered[index];
+    const candidates = placeholders
+      .filter(slot => !usedSlots.has(slot.token.id) && slot.opponent.group !== qualifier.group)
+      .sort((a, b) => a.token.id.localeCompare(b.token.id, 'en'));
+    for (const slot of candidates) {
+      usedSlots.add(slot.token.id);
+      assignment.set(slot.token.id, qualifier);
+      if (search(index + 1)) return true;
+      assignment.delete(slot.token.id);
+      usedSlots.delete(slot.token.id);
+    }
+    return false;
+  };
+  if (!search(0))
+    throw new Error('برای این ترکیب نفرات سوم، تطبیق کامل بدون هم‌گروهی در دور اول ممکن نیست؛ هیچ تغییری اعمال نشد.');
+
+  const replace = (token: BracketToken): BracketToken =>
+    token.source === 'third' ? assignment.get(token.id)! : token;
+  const round32 = bracket.round32.map(match => ({
+    ...match, a: replace(match.a), b: replace(match.b),
+  }));
+  const tokens = bracket.tokens.map(replace);
+  const all = round32.flatMap(match => [match.a, match.b]);
+  if (all.length !== 32 || new Set(all.map(token => token.id)).size !== 32 ||
+      round32.some(match => match.a.group && match.a.group === match.b.group) ||
+      all.filter(token => token.source === 'third' && token.group).length !== 8) {
+    throw new Error('کنترل نهایی جایگزینی نفرات سوم ناموفق بود؛ براکت ذخیره نشد.');
+  }
+  return { ...bracket, tokens, round32 };
+}
+
 export default function Series3SeedingManager() {
   const [players, setPlayers] = useState<Player[]>([]);
   const [drafts, setDrafts] = useState<Record<string, { played: string; won: string }>>({});
