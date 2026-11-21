@@ -198,7 +198,12 @@ export default function Series3TelegramManager() {
       rounded(28,28,width-56,height-56,28,'#101113','#8e6b34');
       ctx.textAlign='center';ctx.direction='ltr';ctx.fillStyle='#d9b96e';ctx.font='bold 42px Arial';ctx.fillText('♛ PLATO LAND',width/2,105);
       ctx.direction='rtl';ctx.fillStyle='#f4e5c4';ctx.font='bold 48px Arial';ctx.fillText('رتبه‌بندی شرکت‌کنندگان',width/2,190);
-      ctx.fillStyle='#c6b99f';ctx.font='30px Arial';ctx.fillText('پیش‌بینی بازی‌های دور اول · سری سوم لیگ تخته‌نرد',width/2,250);
+      ctx.fillStyle='#c6b99f';
+      let subtitleFontSize=30;
+      const rankingSubtitle=(ranking.title||'پیش‌بینی بازی‌ها')+' · سری سوم لیگ تخته‌نرد';
+      ctx.font=subtitleFontSize+'px Arial';
+      while(ctx.measureText(rankingSubtitle).width>940 && subtitleFontSize>20){subtitleFontSize-=1;ctx.font=subtitleFontSize+'px Arial';}
+      ctx.fillText(rankingSubtitle,width/2,250);
       ctx.fillStyle='#d9b96e';ctx.font='26px Arial';ctx.fillText('مبنای رتبه‌بندی: تعداد پیش‌بینی‌های درست',width/2,305);
       ctx.fillStyle='#9e927d';ctx.font='23px Arial';ctx.fillText('بدون امتیازدهی وزنی',width/2,345);
       ranking.rows.forEach((row,index)=>{
