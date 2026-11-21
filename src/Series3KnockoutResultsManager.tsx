@@ -7,7 +7,7 @@ type BracketMatch = { id:string; a:BracketToken; b:BracketToken };
 type SavedResult = {
   id:string; stage_key:StageKey; match_id:string; match_no:number;
   player_a_plato_id:string; player_b_plato_id:string;
-  score_a:number|null; score_b:number|null; result_status:'pending'|'completed'; version:number;
+  score_a:number|null; score_b:number|null; result_status:'pending'|'completed'; version:number; created_by:string;
 };
 type Draft = { a:string; b:string; scoreA:string; scoreB:string };
 const stages:{key:StageKey;label:string;count:number}[]=[
@@ -41,7 +41,7 @@ export default function Series3KnockoutResultsManager(){
     try{
       const [drawResult,resultResult,playersResult]=await Promise.all([
         supabase.from('plato_land_series3_knockout_draws').select('bracket_snapshot').eq('event_key','series3').maybeSingle(),
-        supabase.from('plato_land_series3_knockout_match_results').select('id,stage_key,match_id,match_no,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status,version').eq('event_key','series3').order('stage_key').order('match_no'),
+        supabase.from('plato_land_series3_knockout_match_results').select('id,stage_key,match_id,match_no,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status,version,created_by').eq('event_key','series3').order('stage_key').order('match_no'),
         supabase.from('plato_land_series3_registration_requests').select('plato_id').eq('registration_status','main').order('plato_id'),
       ]);
       if(drawResult.error)throw drawResult.error;
@@ -95,11 +95,11 @@ export default function Series3KnockoutResultsManager(){
         event_key:'series3',stage_key:stage,match_id:match.id,match_no:index+1,
         player_a_plato_id:a,player_b_plato_id:b,score_a:scoreA,score_b:scoreB,
         result_status:status,version:(previous?.version||0)+1,
-        created_by:previous?.id?undefined:userResult.user.id,
+        created_by:previous?.created_by||userResult.user.id,
         updated_by:userResult.user.id,
       };
       const {data,error}=await supabase.from('plato_land_series3_knockout_match_results')
-        .upsert(payload,{onConflict:'event_key,match_id'}).select('id,stage_key,match_id,match_no,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status,version').single();
+        .upsert(payload,{onConflict:'event_key,match_id'}).select('id,stage_key,match_id,match_no,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status,version,created_by').single();
       if(error)throw error;
       setSaved(prev=>[...prev.filter(x=>x.match_id!==match.id),data as SavedResult]);
       setNotice('نتیجه بازی '+fa(index+1)+' با موفقیت در دیتابیس اصلی ذخیره شد.');
