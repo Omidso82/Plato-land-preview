@@ -58,6 +58,8 @@ Repository: `Omidso82/Plato-land-preview`
 Base branch: `main`
 Base commit: `ff485fdb05d87d756ea5e6f03180cdc92f08d9c0`
 Feature branch: `feature/series3-knockout-results-unified-entry`
+Pull request: #297 — https://github.com/Omidso82/Plato-land-preview/pull/297
+Latest documented feature head before this documentation-only update: `8ce7eb21793af6237546895d9881b90d63004bcd`
 
 Files changed:
 - `src/Series3GroupResultsManager.tsx` — add knockout result entry to the existing group result manager.
@@ -74,8 +76,8 @@ Previous implementation release:
 
 ## 7. Verification and release gates
 Pending for this revision:
-- GitHub Build and typecheck: completed successfully on head `1edd31d9f21cc0e19992561e27178c3eda886ed1` (run 44937928556), including Vite build, Deno tests, and Edge Function type check.
-- Cloudflare Pages frontend preview: successful for commit `d4b9ee0` at `https://f378c3ba.plato-land-preview.pages.dev`; branch preview `https://feature-series3-knockout-res-mjwp.plato-land-preview.pages.dev`. The subsequent Edge Function-only code commit is not deployed to Supabase yet.
+- GitHub Build and typecheck: completed successfully on head `8ce7eb21793af6237546895d9881b90d63004bcd` (run 44938037935), including Vite build, Deno tests, and Edge Function type check.
+- Cloudflare Pages frontend preview: successful for commit `8ce7eb2` at `https://40e8f8c5.plato-land-preview.pages.dev`; branch preview `https://feature-series3-knockout-res-mjwp.plato-land-preview.pages.dev`. The Edge Function source change is part of the PR but is not deployed to Supabase yet.
 - Inspect the live panel after release, on the existing Owner session.
 - Verify group-stage entry remains available and knockout entry appears beneath it.
 - Verify Telegram center contains no knockout result-entry form and still has the report choices.
@@ -85,4 +87,4 @@ Do not merge or deploy this v1.1 change until CI/preview checks are reviewed and
 
 ## 8. Change log
 - v1.0 — 2026-11-21: Initial isolated knockout result table, Owner-only access, and Telegram reporting integration; later merged as PR #295.
-- v1.1 — 2026-11-21: Owner clarified that all result entry belongs in the existing group results manager; Telegram center is reporting-only. Added the six-stage calendar dates and moved the result-entry UI accordingly. PR #297 created; Build/typecheck and Cloudflare frontend preview succeeded; not merged or released.
+- v1.1 — 2026-11-21: Owner clarified that all result entry belongs in the existing group results manager; Telegram center is reporting-only. Added the six-stage calendar dates and moved the result-entry UI accordingly. PR #297 created and remains Draft/unmerged; latest documented Build/typecheck and Cloudflare frontend preview succeeded; not merged or released.
