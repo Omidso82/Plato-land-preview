@@ -421,7 +421,7 @@ export default function Series3TelegramManager() {
         <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',marginTop:10}}>
           <strong style={{color:'#f0d99f',fontSize:12}}>رأی‌دهندگان: {fa(reportVoters.length)} نفر</strong>
           <button type="button" style={darkButton} onClick={()=>setSelectedReportVoters(selectedReportVoters.length===reportVoters.length?[]:reportVoters.map(v=>v.id))}>{selectedReportVoters.length===reportVoters.length?'لغو انتخاب همه':'انتخاب همه رأی‌دهندگان'}</button>
-          <button type="button" style={goldButton} disabled={rankingImageBusy||reportLoading||!reportCampaignId} onClick={()=>void makeRankingImagePreview()}>{rankingImageBusy?'در حال ساخت تصویر…':'تهیه تصویر رتبه‌بندی'}</button>
+          {reportCampaigns.find(c=>c.id===reportCampaignId)?.campaign_type==='match_predictions'&&<button type="button" style={goldButton} disabled={rankingImageBusy||reportLoading||!reportCampaignId} onClick={()=>void makeRankingImagePreview()}>{rankingImageBusy?'در حال ساخت تصویر…':'تهیه تصویر رتبه‌بندی'}</button>}
           {reportCampaigns.find(c=>c.id===reportCampaignId)?.campaign_type==='champion'&&<button type="button" style={goldButton} disabled={championImageBusy||reportLoading||!reportCampaignId} onClick={makeChampionVoterImage}>{championImageBusy?'در حال ساخت تصویر…':'تهیه تصویر پیش‌بینی قهرمان'}</button>}
           <span style={muted}>انتخاب‌شده: {fa(selectedReportVoters.length)}</span>
         </div>
