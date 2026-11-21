@@ -88,19 +88,6 @@ function buildProtectedRound32(tokens: BracketToken[]): { tokens: BracketToken[]
   const thirds = shuffled(tokens.filter(token => token.source === 'third'));
   if (topTwo.length !== 24 || thirds.length !== 8) throw new Error('ساختار ورودی براکت باید دقیقاً ۲۴ نفر اول/دوم و ۸ جای‌نگهدار نفر سوم باشد.');
   const opponents: BracketToken[] = [];
-  const remaining: BracketToken[] = [];
-  const assignThirds = (index: number, available: BracketToken[]): boolean => {
-    if (index === thirds.length) { remaining.push(...available); return true; }
-    const candidates = shuffled(available.filter(player => player.group));
-    for (const candidate of candidates) {
-      opponents.push(candidate);
-      const next = available.filter(player => player.id !== candidate.id);
-      if (assignThirds(index + 1, next)) return true;
-      opponents.pop();
-    }
-    return false;
-  };
-  if (!assignThirds(0, topTwo)) throw new Error('برای جای‌گذاری هشت نفر سوم، ترکیب معتبر بدون برخورد هم‌گروهی پیدا نشد.');
   const pairings: Array<[BracketToken, BracketToken]> = [];
   const pairRemaining = (pool: BracketToken[]): boolean => {
     if (pool.length === 0) return true;
@@ -113,12 +100,22 @@ function buildProtectedRound32(tokens: BracketToken[]): { tokens: BracketToken[]
     }
     return false;
   };
-  if (remaining.length !== 16 || !pairRemaining(remaining)) throw new Error('جفت‌سازی ۱۶ نفر باقی‌مانده بدون برخورد هم‌گروهی ممکن نشد.');
-  const matches: BracketMatch[] = [
-    ...pairings.map(([a,b]) => ({ id: '', a, b })),
-    ...thirds.map((third, index) => ({ id: '', a: third, b: opponents[index] })),
+  const assignThirds = (index: number, available: BracketToken[]): boolean => {
+    if (index === thirds.length) return available.length === 16 && pairRemaining(available);
+    const candidates = shuffled(available.filter(player => player.group));
+    for (const candidate of candidates) {
+      opponents.push(candidate);
+      if (assignThirds(index + 1, available.filter(player => player.id !== candidate.id))) return true;
+      opponents.pop();
+    }
+    return false;
+  };
+  if (!assignThirds(0, topTwo)) throw new Error('ترکیب معتبر قرعه بدون برخورد هم‌گروهی پیدا نشد؛ قرعه ذخیره نشد.');
+  const matches: Array<Omit<BracketMatch, 'id'>> = [
+    ...pairings.map(([a,b]) => ({ a, b })),
+    ...thirds.map((third, index) => ({ a: third, b: opponents[index] })),
   ];
-  const ordered = shuffled(matches).map((match, index) => ({ ...match, id: 'R32-' + (index + 1) }));
+  const ordered: BracketMatch[] = shuffled(matches).map((match, index) => ({ ...match, id: 'R32-' + (index + 1) }));
   const all = ordered.flatMap(match => [match.a, match.b]);
   if (all.length !== 32 || new Set(all.map(token => token.id)).size !== 32) throw new Error('اعتبارسنجی یکتایی ورودی‌های براکت ناموفق بود.');
   for (const match of ordered) {
