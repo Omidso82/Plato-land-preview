@@ -259,17 +259,12 @@ function buildMessages(selected: string[], ranking: Player[], pots: Player[][], 
     if (id.startsWith("bracket:")) {
       const key = id.slice("bracket:".length);
       const config = roundConfig[key];
-      const matches = bracket[key as keyof Bracket];
+      const matches = Array.isArray(bracket[key as keyof Bracket])
+        ? bracket[key as keyof Bracket]
+        : key === "thirdPlace"
+          ? [{id:"TP-1",a:{id:"TP-A",label:"بازیکن اول رده‌بندی",source:"manual"},b:{id:"TP-B",label:"بازیکن دوم رده‌بندی",source:"manual"}}]
+          : undefined;
       if (!config) throw new Error("مرحله انتخاب‌شده در فهرست مسابقات سری سوم تعریف نشده است.");
-      if (key === "thirdPlace" && !Array.isArray(matches)) {
-        const lines = [
-          "<b>مسابقه " + fa(1) + "</b>",
-          code("بازیکن اول (پس از ثبت رسمی)") + "  <b>مقابل</b>  " + code("بازیکن دوم (پس از ثبت رسمی)"),
-          "<i>قالب پیش‌نمایش؛ نام بازیکنان هنوز در براکت رسمی ثبت نشده است.</i>",
-        ];
-        result.push(makeMessage(id, config.title, config.subtitle, lines, 1));
-        continue;
-      }
       if (!Array.isArray(matches)) throw new Error("اطلاعات مرحله حذفی انتخاب‌شده پیدا نشد.");
       const expected = key==="round32"?16:key==="round16"?8:key==="quarterfinals"?4:key==="semifinals"?2:1;
       if (matches.length !== expected) throw new Error("تعداد مسابقه‌های "+config.title+" با براکت ثبت‌شده مطابقت ندارد.");
@@ -385,7 +380,10 @@ Deno.serve(async (req: Request) => {
     const groups = Array.isArray(seeding?.groups_snapshot) ? seeding.groups_snapshot as Array<{name:string;players:Player[]}> : [];
     const bracket = (knockout?.bracket_snapshot ?? {}) as Bracket;
     if (action === "send" && selected.includes("bracket:thirdPlace") && (!Array.isArray(bracket.thirdPlace) || bracket.thirdPlace.length !== 1)) {
-      return json({ error: "برای ارسال مسابقه رده‌بندی، ابتدا اطلاعات رسمی دو بازیکن در براکت ثبت شود؛ هیچ پیامی ارسال نشد." }, 409);
+      const thirdPlaceResult=(knockoutMatchResultsResult.data||[]).find((item:KnockoutResult)=>item.match_id==="TP-1");
+      if (!thirdPlaceResult || thirdPlaceResult.result_status!=="completed" || thirdPlaceResult.score_a===null || thirdPlaceResult.score_b===null) {
+        return json({ error: "برای ارسال نتیجه رده‌بندی، ابتدا Plato ID دو بازیکن و امتیاز نهایی را در بخش ثبت نتایج حذفی ذخیره کن؛ هیچ پیامی ارسال نشد." }, 409);
+      }
     }
     const fixtures = (fixturesResult.data?.schedule_snapshot ?? undefined) as FixtureSnapshot | undefined;
     if (wantsFixtures && !fixtures) return json({ error: "برنامه مسابقات سری سوم هنوز در دیتابیس ثبت نشده است." }, 409);
