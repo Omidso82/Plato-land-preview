@@ -101,9 +101,18 @@ begin
     where nullif(x->>'source','') is null
        or x->>'source' not in ('first','second','third')
        or (x->>'source' in ('first','second') and nullif(x->>'group','') is null)
-       or (x->>'source' = 'third' and nullif(x->>'group','') is not null)
+       or (x->>'source' = 'third' and nullif(x->>'id','') is null)
   ) then
     raise exception 'Entrant token source or group metadata is invalid';
+  end if;
+
+  -- Third-place entries must be either all unresolved placeholders or all
+  -- resolved qualifiers carrying their actual group.
+  if (
+    select count(*) from jsonb_array_elements(v_tokens) x
+    where x->>'source' = 'third' and nullif(x->>'group','') is not null
+  ) not in (0, 8) then
+    raise exception 'Third-place qualifiers must be resolved as a complete set of eight';
   end if;
 
   if exists (
