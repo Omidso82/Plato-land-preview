@@ -56,8 +56,45 @@ export default function Series3TelegramManager() {
   const [rankingImageData, setRankingImageData] = useState('');
   const [rankingImageBase64, setRankingImageBase64] = useState('');
   const [rankingImageBusy, setRankingImageBusy] = useState(false);
+  const [dailySchedule, setDailySchedule] = useState<any>(null);
+  const [dailyResults, setDailyResults] = useState<Array<{match_id:string;result_status:string;score_a:number|null;score_b:number|null}>>([]);
+  const [dailyDay, setDailyDay] = useState('');
+  const [dailyGroup, setDailyGroup] = useState('ALL');
+  const [dailyLoading, setDailyLoading] = useState(false);
+  const [dailyError, setDailyError] = useState('');
 
-  useEffect(() => { if (expanded) { void refreshCampaigns(); void refreshDeliveryHistory(); } }, [expanded]);
+  useEffect(() => { if (expanded) { void refreshCampaigns(); void refreshDeliveryHistory(); void refreshDailyFixtures(); } }, [expanded]);
+
+  async function refreshDailyFixtures() {
+    if (!supabase) { setDailyError('اتصال به دیتابیس اصلی در دسترس نیست.'); return; }
+    setDailyLoading(true); setDailyError('');
+    try {
+      const [scheduleResult, resultsResult] = await Promise.all([
+        supabase.from('plato_land_series3_group_fixtures').select('schedule_snapshot').eq('event_key','series3').maybeSingle(),
+        supabase.from('plato_land_series3_group_match_results').select('match_id,result_status,score_a,score_b').eq('event_key','series3'),
+      ]);
+      if (scheduleResult.error) throw scheduleResult.error;
+      if (resultsResult.error) throw resultsResult.error;
+      const snapshot = scheduleResult.data?.schedule_snapshot;
+      if (!snapshot?.group_stage?.days?.length) throw new Error('برنامه رسمی مسابقات در دیتابیس پیدا نشد.');
+      setDailySchedule(snapshot);
+      setDailyResults((resultsResult.data || []) as Array<{match_id:string;result_status:string;score_a:number|null;score_b:number|null}>);
+      setDailyDay((current:string) => current || snapshot.group_stage.days[0].date);
+    } catch (e) {
+      setDailyError('دریافت برنامه و نتایج روزانه ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص'));
+    } finally { setDailyLoading(false); }
+  }
+
+  function addDailyFixtureSelection() {
+    if (!dailyDay || !dailySchedule) { setDailyError('ابتدا تاریخ مسابقات را انتخاب کن.'); return; }
+    const day = dailySchedule.group_stage.days.find((item:any)=>item.date===dailyDay);
+    if (!day) { setDailyError('تاریخ انتخاب‌شده در برنامه رسمی پیدا نشد.'); return; }
+    const id = 'fixtures:day:'+day.round+':'+dailyGroup;
+    setSelected(current=>current.includes(id)?current:[...current,id]);
+    setPreview([]); setRankingImageData(''); setRankingImageBase64('');
+    setDailyError('');
+    setNotice('برنامه و نتایج '+day.persian_date+' · '+(dailyGroup==='ALL'?'همه گروه‌ها':'گروه '+dailyGroup)+' به فهرست پیش‌نمایش اضافه شد.');
+  }
 
   async function refreshDeliveryHistory() {
     if (!supabase) return;
@@ -329,13 +366,27 @@ export default function Series3TelegramManager() {
     <details style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
       <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>برنامه و نتایج روزانه سری سوم</summary>
       <div style={{marginTop:8}}>
-      <strong style={{color:'#f0d99f'}}>برنامه و نتایج روزانه سری سوم</strong>
-      <p style={{...muted,margin:'5px 0 0'}}>بخش آماده برای اتصال به ثبت برنامه و نتایج سری سوم؛ پس از فعال‌شدن منبع رسمی مسابقات، انتخاب تاریخ شمسی، ارسال کل برنامه روز یا فقط گروه انتخابی و انتشار نتایج همان روز در همین کارت فعال می‌شود. در حال حاضر هیچ داده‌ای از سری دوم خوانده نمی‌شود.</p>
-      <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:10}}>
-        <span style={{fontSize:11,color:'#9d927d',border:'1px solid #4a4030',borderRadius:7,padding:'6px 9px'}}>تاریخ شمسی · در انتظار منبع سری سوم</span>
-        <span style={{fontSize:11,color:'#9d927d',border:'1px solid #4a4030',borderRadius:7,padding:'6px 9px'}}>کل روز / گروه A تا L</span>
-        <span style={{fontSize:11,color:'#9d927d',border:'1px solid #4a4030',borderRadius:7,padding:'6px 9px'}}>نتایج ثبت‌شده</span>
-      </div>
+        <p style={{...muted,margin:'5px 0 10px'}}>اطلاعات مستقیماً از برنامه ثابت و جدول نتایج سری سوم خوانده می‌شود. نتیجه‌های ثبت‌شده، بازی‌های در انتظار و عدم حضور دوطرفه در پیام تلگرام نمایش داده می‌شوند.</p>
+        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+          <button type="button" style={darkButton} disabled={dailyLoading} onClick={()=>void refreshDailyFixtures()}>{dailyLoading?'در حال دریافت…':'به‌روزرسانی برنامه و نتایج'}</button>
+          {dailySchedule&&<span style={muted}>{fa(dailySchedule.group_stage.match_count)} مسابقه رسمی</span>}
+        </div>
+        {dailyError&&<p role="alert" style={{color:'#ffc8c8',fontSize:12}}>{dailyError}</p>}
+        {dailyLoading&&!dailySchedule?<p style={muted}>در حال دریافت اطلاعات از دیتابیس اصلی…</p>:dailySchedule&&<>
+          <label style={{display:'grid',gap:6,color:'#eee5d4',fontSize:12,marginTop:10}}>تاریخ مسابقات
+            <select value={dailyDay} onChange={e=>setDailyDay(e.target.value)} style={{background:'#171717',color:'#f0d99f',border:'1px solid #806638',borderRadius:8,padding:10}}>
+              {dailySchedule.group_stage.days.map((day:any)=><option key={day.date} value={day.date}>{day.persian_date}</option>)}
+            </select>
+          </label>
+          <label style={{display:'grid',gap:6,color:'#eee5d4',fontSize:12,marginTop:9}}>محدوده ارسال
+            <select value={dailyGroup} onChange={e=>setDailyGroup(e.target.value)} style={{background:'#171717',color:'#f0d99f',border:'1px solid #806638',borderRadius:8,padding:10}}>
+              <option value="ALL">کل روز · همه گروه‌ها</option>
+              {groups.map(g=><option key={g} value={g}>فقط گروه {g}</option>)}
+            </select>
+          </label>
+          {(()=>{const day=dailySchedule.group_stage.days.find((item:any)=>item.date===dailyDay);const matches=(day?.matches||[]).filter((m:any)=>dailyGroup==='ALL'||m.group===dailyGroup);const completed=matches.filter((m:any)=>dailyResults.find(r=>r.match_id===m.id)?.result_status==='completed').length;const noShow=matches.filter((m:any)=>dailyResults.find(r=>r.match_id===m.id)?.result_status==='double_no_show').length;return <div style={{...muted,marginTop:10}}>تعداد بازی: {fa(matches.length)} · نتیجه ثبت‌شده: {fa(completed)} · عدم حضور دوطرفه: {fa(noShow)} · در انتظار: {fa(matches.length-completed-noShow)}</div>;})()}
+          <button type="button" style={{...goldButton,marginTop:10}} onClick={addDailyFixtureSelection}>افزودن برنامه و نتایج به پیش‌نمایش</button>
+        </>}
       </div>
     </details>
 
