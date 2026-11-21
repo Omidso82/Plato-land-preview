@@ -92,5 +92,17 @@ begin
   ) then
     alter publication supabase_realtime add table public.plato_land_series3_public_fixtures;
   end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime' and schemaname='public' and tablename='plato_land_series3_group_match_results'
+  ) then
+    alter publication supabase_realtime add table public.plato_land_series3_group_match_results;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime' and schemaname='public' and tablename='plato_land_series3_third_place_playoff'
+  ) then
+    alter publication supabase_realtime add table public.plato_land_series3_third_place_playoff;
+  end if;
 end;
 $$;
