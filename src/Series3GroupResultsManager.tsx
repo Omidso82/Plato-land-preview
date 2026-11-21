@@ -20,6 +20,7 @@ const fa = (n:number) => n.toLocaleString('fa-IR');
 type KnockoutStageKey = 'round32'|'round16'|'quarterfinals'|'semifinals'|'thirdPlace'|'final';
 type KnockoutToken = { id:string; label:string; source:'first'|'second'|'third'|'winner'|'loser'; group?:string };
 type KnockoutMatch = { id:string; a:KnockoutToken; b:KnockoutToken };
+type KnockoutSnapshot = { tokens:KnockoutToken[]; [key:string]:any };
 type KnockoutResult = {
   id:string; stage_key:KnockoutStageKey; match_id:string; match_no:number;
   player_a_plato_id:string; player_b_plato_id:string; score_a:number|null; score_b:number|null;
@@ -79,7 +80,7 @@ export default function Series3GroupResultsManager() {
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
   const [knockoutStage,setKnockoutStage]=useState<KnockoutStageKey>('round32');
-  const [knockoutBracket,setKnockoutBracket]=useState<Record<string,KnockoutMatch[]>>({});
+  const [knockoutBracket,setKnockoutBracket]=useState<KnockoutSnapshot>({tokens:[]});
   const [knockoutRows,setKnockoutRows]=useState<KnockoutResult[]>([]);
   const [knockoutPlayers,setKnockoutPlayers]=useState<string[]>([]);
   const [knockoutDrafts,setKnockoutDrafts]=useState<Record<string,KnockoutDraft>>({});
@@ -115,7 +116,7 @@ export default function Series3GroupResultsManager() {
       if(resultResult.error)throw resultResult.error;
       if(playersResult.error)throw playersResult.error;
       if(!drawResult.data?.bracket_snapshot)throw new Error('براکت رسمی حذفی سری سوم هنوز در دیتابیس ثبت نشده است.');
-      setKnockoutBracket(drawResult.data.bracket_snapshot as Record<string,KnockoutMatch[]>);
+      setKnockoutBracket(drawResult.data.bracket_snapshot as KnockoutSnapshot);
       const saved=(resultResult.data||[]) as KnockoutResult[];
       setKnockoutRows(saved);
       setKnockoutPlayers([...new Set((playersResult.data||[]).map((x:any)=>String(x.plato_id||'').trim()).filter(Boolean))]);
