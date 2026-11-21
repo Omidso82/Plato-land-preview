@@ -61,6 +61,36 @@ begin
     raise exception 'Bracket entrants must contain 32 unique tokens and exactly 8 third-place placeholders';
   end if;
 
+  -- Validate slot cardinality and uniqueness separately: EXCEPT compares sets
+  -- and by itself would not detect a duplicated slot replacing a missing entrant.
+  if (select count(*) from jsonb_array_elements(v_matches) m,
+       lateral (values (m->'a'),(m->'b')) t(token)) <> 32
+     or (select count(distinct t.token->>'id') from jsonb_array_elements(v_matches) m,
+       lateral (values (m->'a'),(m->'b')) t(token)) <> 32
+     or (select count(*) from jsonb_array_elements(v_matches) m,
+       lateral (values (m->'a'),(m->'b')) t(token)
+       where nullif(t.token->>'id','') is null) <> 0
+     or (select count(distinct m->>'id') from jsonb_array_elements(v_matches) m) <> 16
+     or (select count(*) from jsonb_array_elements(v_matches) m
+       where nullif(m->>'id','') is null) <> 0 then
+    raise exception 'Round of 32 must contain 16 uniquely identified matches and 32 unique entrant slots';
+  end if;
+
+  -- Slot token objects must match the authoritative token registry, not merely
+  -- reuse a registered ID with altered source/group metadata.
+  if exists (
+    select 1
+    from jsonb_array_elements(v_matches) m,
+         lateral (values (m->'a'),(m->'b')) t(token)
+    where not exists (
+      select 1 from jsonb_array_elements(v_tokens) registered
+      where registered->>'id' = t.token->>'id'
+        and registered = t.token
+    )
+  ) then
+    raise exception 'Round of 32 slot metadata differs from the registered entrant token';
+  end if;
+
   -- The entrants snapshot, token registry, and actual R32 slots must be the same set.
   if exists (
     select 1
