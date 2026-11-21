@@ -1,13 +1,15 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {supabase} from './supabase';
+import {resolveLockedGroupPlacements,resolveSeries3BracketSlots} from './series3BracketProgression';
 
 type Player={plato_id:string;games_played:number|null;games_won:number|null};
 type Group={name:string;players:Player[]};
 type Draw={ranking_snapshot:Player[];pots_snapshot:Player[][];groups_snapshot:Group[]};
 type Fixture={match_id:string;match_date:string;round_no:number;group_name:string;match_no:number;player_a_plato_id:string;player_b_plato_id:string;result_status:'pending'|'completed'|'double_no_show';score_a:number|null;score_b:number|null};
-type Token={id:string;label:string;source:string;group?:string};
+type Token={id:string;label:string;source:'first'|'second'|'third'|'winner'|'loser';group?:string};
 type Match={id:string;a:Token;b:Token};
-type Bracket={tokens:Token[];round32:Match[];round16:Match[];quarterfinals:Match[];semifinals:Match[];final:Match[]};
+type Bracket={tokens:Token[];round32:Match[];round16:Match[];quarterfinals:Match[];semifinals:Match[];final:Match[];thirdPlace?:Match[]};
+type KnockoutResult={match_id:string;player_a_plato_id:string;player_b_plato_id:string;score_a:number|null;score_b:number|null;result_status:'pending'|'completed'};
 type Standing={plato_id:string;played:number;wins:number;losses:number;points:number;for:number;against:number;diff:number};
 const fa=(n:number)=>n.toLocaleString('fa-IR');
 const groups='ABCDEFGHIJKL'.split('');
@@ -33,22 +35,25 @@ export default function Series3PublicDashboard(){
  const [draw,setDraw]=useState<Draw|null>(null);
  const [fixtures,setFixtures]=useState<Fixture[]>([]);
  const [bracket,setBracket]=useState<Bracket|null>(null);
+ const [knockoutResults,setKnockoutResults]=useState<KnockoutResult[]>([]);
  const [tab,setTab]=useState<'overview'|'ranking'|'groups'|'bracket'>('overview');
  const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  useEffect(()=>{let active=true;(async()=>{
   if(!supabase){setError('اتصال به اطلاعات مسابقات در دسترس نیست.');setLoading(false);return;}
-  const [d,f,b]=await Promise.all([
+  const [d,f,b,k]=await Promise.all([
    supabase.from('plato_land_series3_public_draw').select('ranking_snapshot,pots_snapshot,groups_snapshot').eq('event_key','series3').maybeSingle(),
    supabase.from('plato_land_series3_public_fixtures').select('match_id,match_date,round_no,group_name,match_no,player_a_plato_id,player_b_plato_id,result_status,score_a,score_b').eq('event_key','series3').order('match_date').order('group_name').order('match_no'),
-   supabase.from('plato_land_series3_public_bracket').select('bracket_snapshot,created_at').eq('event_key','series3').maybeSingle()
+   supabase.from('plato_land_series3_public_bracket').select('bracket_snapshot,created_at').eq('event_key','series3').maybeSingle(),
+   supabase.from('plato_land_series3_public_knockout_results').select('match_id,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status').eq('event_key','series3').order('stage_key').order('match_no')
   ]);
   if(!active)return;
-  const failure=d.error||f.error||b.error;
+  const failure=d.error||f.error||b.error||k.error;
   if(failure){setError('بارگذاری اطلاعات مسابقات ناموفق بود. لطفاً کمی بعد دوباره تلاش کنید.');}
   else{
    setDraw(d.data as Draw|null);setFixtures((f.data||[]) as Fixture[]);
    setBracket((b.data?.bracket_snapshot||null) as Bracket|null);
+   setKnockoutResults((k.data||[]) as KnockoutResult[]);
    if(!d.data||!b.data)setError('اطلاعات قرعه‌کشی هنوز کامل در دسترس نیست.');
   }
   setLoading(false);
@@ -60,6 +65,14 @@ export default function Series3PublicDashboard(){
  const noShows=fixtures.filter(x=>x.result_status==='double_no_show').length;
  const pending=fixtures.filter(x=>x.result_status==='pending').length;
  const standings=useMemo(()=>groups.map(g=>({group:g,players:standingsFor(g,fixtures)})),[fixtures]);
+ const lockedPlacements=useMemo(()=>resolveLockedGroupPlacements(fixtures.map(row=>({
+  match_id:row.match_id,group_name:row.group_name,
+  player_a_registration_id:row.player_a_plato_id,player_a_plato_id:row.player_a_plato_id,
+  player_b_registration_id:row.player_b_plato_id,player_b_plato_id:row.player_b_plato_id,
+  result_status:row.result_status,score_a:row.score_a,score_b:row.score_b,
+ }))),[fixtures]);
+ const thirdQualifiers=useMemo(()=>bracket?.tokens.filter(token=>token.source==='third'&&Boolean(token.group)&&!token.id.startsWith('3-BEST-'))||[],[bracket]);
+ const resolvedBracketSlots=useMemo(()=>bracket?resolveSeries3BracketSlots(bracket,lockedPlacements,thirdQualifiers as any,knockoutResults):{},[bracket,lockedPlacements,thirdQualifiers,knockoutResults]);
  const tabs:[typeof tab,string][]=[['overview','خلاصه مسابقات'],['ranking','رتبه‌بندی و سیدها'],['groups','گروه‌ها و نتایج'],['bracket','مسیر قهرمانی']];
  const th:React.CSSProperties={padding:'7px 5px',borderBottom:'1px solid #67532f',whiteSpace:'nowrap',textAlign:'center',fontSize:10,color:'#e6d3a7'};
  const td:React.CSSProperties={padding:'7px 5px',borderBottom:'1px solid #30291d',textAlign:'center',fontSize:11,whiteSpace:'nowrap'};
