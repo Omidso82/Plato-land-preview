@@ -59,7 +59,11 @@ begin
 
   if (select count(distinct x->>'id') from jsonb_array_elements(v_tokens) x) <> 32
      or (select count(*) from jsonb_array_elements(v_tokens) x where nullif(x->>'id','') is null) <> 0
+     or (select count(*) from jsonb_array_elements(v_tokens) x where x->>'source' = 'first') <> 12
+     or (select count(*) from jsonb_array_elements(v_tokens) x where x->>'source' = 'second') <> 12
      or (select count(*) from jsonb_array_elements(v_tokens) x where x->>'source' = 'third') <> 8
+     or (select count(distinct x->>'group') from jsonb_array_elements(v_tokens) x where x->>'source' = 'first') <> 12
+     or (select count(distinct x->>'group') from jsonb_array_elements(v_tokens) x where x->>'source' = 'second') <> 12
      or (select count(distinct x->>'id') from jsonb_array_elements(p_entrants_snapshot) x) <> 32 then
     raise exception 'Bracket entrants must contain 32 unique tokens and exactly 8 third-place placeholders';
   end if;
@@ -133,8 +137,11 @@ begin
     select 1 from jsonb_array_elements(v_tokens) x
     where nullif(x->>'source','') is null
        or x->>'source' not in ('first','second','third')
-       or (x->>'source' in ('first','second') and nullif(x->>'group','') is null)
+       or (x->>'source' in ('first','second') and
+           (nullif(x->>'group','') is null or x->>'group' not in ('A','B','C','D','E','F','G','H','I','J','K','L')))
        or (x->>'source' = 'third' and nullif(x->>'id','') is null)
+       or (x->>'source' = 'third' and nullif(x->>'group','') is not null
+           and x->>'group' not in ('A','B','C','D','E','F','G','H','I','J','K','L'))
   ) then
     raise exception 'Entrant token source or group metadata is invalid';
   end if;
@@ -155,6 +162,18 @@ begin
     raise exception 'Resolved third-place qualifiers must come from eight distinct groups';
   end if;
 
+  -- Every third-place placeholder must face a top-two entrant from a distinct group.
+  if (
+    select count(distinct case
+      when m->'a'->>'source' = 'third' then m->'b'->>'group'
+      else m->'a'->>'group'
+    end)
+    from jsonb_array_elements(v_matches) m
+    where m->'a'->>'source' = 'third' or m->'b'->>'source' = 'third'
+  ) <> 8 then
+    raise exception 'Third-place placeholders must face top-two entrants from eight distinct groups';
+  end if;
+
   if exists (
     select 1 from jsonb_array_elements(v_matches) m
     where jsonb_typeof(m) <> 'object'
@@ -164,7 +183,7 @@ begin
        or nullif(m->'b'->>'id','') is null
        or m->'a'->>'id' = m->'b'->>'id'
        or (nullif(m->'a'->>'group','') is not null and m->'a'->>'group' = m->'b'->>'group')
-       or ((m->'a'->>'source' = 'third') = (m->'b'->>'source' = 'third'))
+       or (m->'a'->>'source' = 'third' and m->'b'->>'source' = 'third')
   ) then
     raise exception 'Round of 32 contains an invalid or same-group pairing';
   end if;
