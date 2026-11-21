@@ -31,12 +31,6 @@ function standingsFor(group:string,fixtures:Fixture[]):Standing[]{
  return [...map.values()].map(x=>({...x,diff:x.for-x.against})).sort((a,b)=>b.points-a.points||b.diff-a.diff||b.for-a.for||a.plato_id.localeCompare(b.plato_id,'en'));
 }
 const stages:[keyof Bracket,string][]=[['round32','یک‌شانزدهم نهایی'],['round16','یک‌هشتم نهایی'],['quarterfinals','یک‌چهارم نهایی'],['semifinals','نیمه‌نهایی'],['thirdPlace','رده‌بندی (مقام سوم و چهارم)'],['final','فینال']];
-function pendingSlotHint(token:Token):string{
- if(token.source==='first'||token.source==='second')return 'پس از قطعی‌شدن نتایج گروه مشخص می‌شود';
- if(token.source==='third')return 'پس از پایان گروه‌ها و تعیین ۸ نفر سوم برتر مشخص می‌شود';
- const matchId=token.id.replace(/^[WL]-/,'');
- return `پس از پایان بازی ${matchId} مشخص می‌شود`;
-}
 export default function Series3PublicDashboard(){
  const [draw,setDraw]=useState<Draw|null>(null);
  const [fixtures,setFixtures]=useState<Fixture[]>([]);
