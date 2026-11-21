@@ -4,6 +4,7 @@ import {supabase} from './supabase';
 import TemporaryPageHeader from './TemporaryPageHeader';
 import {isSeries3RulesVideoKey,series3RulesVideoUrl} from './series3RulesVideoClient';
 import {isSeries3TeaserKey,series3TeaserUrl} from './series3TeaserClient';
+import {isSeries3PosterKey,series3PosterUrl} from './series3PosterClient';
 import Series3PublicDashboard from './Series3PublicDashboard';
 
 export default function Series3Gallery(){
@@ -32,7 +33,7 @@ export default function Series3Gallery(){
   let active=true;
   async function load(){
    if(!supabase)return;
-   const {data:homeSettings,error:homeSettingsError}=await supabase.from('plato_land_series3_home_media_settings').select('media_mode,storage_path').eq('id',1).maybeSingle();
+   const {data:homeSettings,error:homeSettingsError}=await supabase.from('plato_land_series3_home_media_settings').select('media_mode,storage_path,poster_storage_path').eq('id',1).maybeSingle();
    if(!active)return;
    if(homeSettingsError||!homeSettings||!['poster','video'].includes(homeSettings.media_mode)){
     setHeroMode(null);
@@ -53,11 +54,23 @@ export default function Series3Gallery(){
    }else if(homeSettings.media_mode==='poster'){
     // Only load the poster after the admin has explicitly selected poster mode.
     setHeroMode('poster');
-    const imageStorage=supabase.storage.from('series3-slides');
-    const {data:posterItems,error:posterError}=await imageStorage.list('poster',{limit:10});
-    if(active&&!posterError){
-     const item=(posterItems||[]).find(x=>x.name==='series3-main-poster');
-     if(item){const url=imageStorage.getPublicUrl('poster/series3-main-poster').data.publicUrl;setPoster(url+'?v='+encodeURIComponent(item.updated_at||item.created_at||''));}
+    const posterKey=typeof homeSettings.poster_storage_path==='string'?homeSettings.poster_storage_path:'';
+    if(isSeries3PosterKey(posterKey)){
+     try{
+      const url=series3PosterUrl();
+      const response=await fetch(url,{method:'HEAD',mode:'cors',cache:'no-store'});
+      const size=Number(response.headers.get('Content-Length')||'0');
+      const type=(response.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
+      if(active&&response.ok&&size>0&&['image/jpeg','image/png','image/webp'].includes(type))setPoster(url+'?v='+encodeURIComponent(String(size)));
+     }catch(error){console.warn('Series 3 poster is not available from R2.',error);}
+    }else if(!posterKey){
+     // Transitional legacy read only: keep the current Supabase poster visible until an R2 upload is verified and referenced.
+     const imageStorage=supabase.storage.from('series3-slides');
+     const {data:posterItems,error:posterError}=await imageStorage.list('poster',{limit:10});
+     if(active&&!posterError){
+      const item=(posterItems||[]).find(x=>x.name==='series3-main-poster');
+      if(item){const url=imageStorage.getPublicUrl('poster/series3-main-poster').data.publicUrl;setPoster(url+'?v='+encodeURIComponent(item.updated_at||item.created_at||''));}
+     }
     }
    }
     const {data:settings,error:settingsError}=await supabase.from('plato_land_series3_video_settings').select('storage_path,is_active').eq('id',1).maybeSingle();
