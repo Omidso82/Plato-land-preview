@@ -1,6 +1,7 @@
 import {
   assignThirdPlaceQualifiers,
   buildProtectedRound32,
+  buildOwnerApprovedSeries3Bracket,
   type Series3BracketSnapshot,
   type Series3BracketToken,
 } from "../../../src/series3KnockoutBracket.ts";
@@ -125,5 +126,28 @@ Deno.test("every possible set of eight distinct third-place groups can be assign
     if (assigned.round32.flatMap(match => [match.a, match.b]).filter(token => token.source === "third").length !== 8) {
       throw new Error("Expected exactly eight real third-place qualifiers");
     }
+  }
+});
+
+Deno.test("owner-approved Series 3 draw preserves the exact confirmed randomized path through the final", () => {
+  const bracket = buildOwnerApprovedSeries3Bracket();
+  const ids = (items: typeof bracket.round32) => items.map(match => [match.a.id, match.b.id]);
+  const expectedR32 = [
+    ["1-K","3-BEST-3"],["1-B","2-A"],["1-E","3-BEST-2"],["2-E","2-D"],
+    ["3-BEST-6","1-J"],["2-G","2-L"],["3-BEST-1","1-C"],["2-H","1-F"],
+    ["2-B","1-L"],["1-G","2-J"],["2-I","2-F"],["2-C","2-K"],
+    ["3-BEST-5","1-I"],["3-BEST-8","1-H"],["1-A","3-BEST-7"],["1-D","3-BEST-4"],
+  ];
+  if (JSON.stringify(ids(bracket.round32)) !== JSON.stringify(expectedR32)) throw new Error("R32 differs from owner-approved pairings");
+  const expectedR16 = [
+    ["W-R32-7","W-R32-12"],["W-R32-3","W-R32-15"],["W-R32-10","W-R32-1"],["W-R32-14","W-R32-5"],
+    ["W-R32-9","W-R32-16"],["W-R32-2","W-R32-13"],["W-R32-11","W-R32-4"],["W-R32-8","W-R32-6"],
+  ];
+  if (JSON.stringify(ids(bracket.round16)) !== JSON.stringify(expectedR16)) throw new Error("R16 differs from owner-approved path");
+  if (bracket.quarterfinals.length !== 4 || bracket.semifinals.length !== 2 || bracket.final.length !== 1 || bracket.thirdPlace?.length !== 1) {
+    throw new Error("Expected QF/SF/final/third-place match counts");
+  }
+  if (bracket.thirdPlace[0].a.id !== "L-SF-1" || bracket.thirdPlace[0].b.id !== "L-SF-2") {
+    throw new Error("Third-place match must use the two semifinal losers");
   }
 });
