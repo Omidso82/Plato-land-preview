@@ -15,6 +15,25 @@ type Standing = {
   setsFor: number; setsAgainst: number; diff: number;
 };
 const fa = (n:number) => n.toLocaleString('fa-IR');
+
+type KnockoutStageKey = 'round32'|'round16'|'quarterfinals'|'semifinals'|'thirdPlace'|'final';
+type KnockoutToken = { id:string; label:string; source:string; group?:string };
+type KnockoutMatch = { id:string; a:KnockoutToken; b:KnockoutToken };
+type KnockoutResult = {
+  id:string; stage_key:KnockoutStageKey; match_id:string; match_no:number;
+  player_a_plato_id:string; player_b_plato_id:string; score_a:number|null; score_b:number|null;
+  result_status:'pending'|'completed'; version:number; created_by:string;
+};
+type KnockoutDraft = { a:string; b:string; scoreA:string; scoreB:string };
+const knockoutStages:{key:KnockoutStageKey;label:string;date:string;count:number}[]=[
+  {key:'round32',label:'یک‌شانزدهم نهایی',date:'سه‌شنبه ۳ آذر',count:16},
+  {key:'round16',label:'یک‌هشتم نهایی',date:'چهارشنبه ۴ آذر',count:8},
+  {key:'quarterfinals',label:'یک‌چهارم نهایی',date:'شنبه ۷ آذر',count:4},
+  {key:'semifinals',label:'نیمه‌نهایی',date:'یکشنبه ۸ آذر',count:2},
+  {key:'thirdPlace',label:'رده‌بندی',date:'دوشنبه ۹ آذر',count:1},
+  {key:'final',label:'فینال',date:'دوشنبه ۹ آذر',count:1},
+];
+
 const panel: React.CSSProperties = { marginTop:14,padding:14,border:'1px solid #8c6a34',borderRadius:13,background:'linear-gradient(145deg,#211b12,#111214)',color:'#f2ead8' };
 const card: React.CSSProperties = { border:'1px solid #59472a',borderRadius:10,padding:11,background:'#101112',minWidth:0 };
 const muted: React.CSSProperties = { color:'#c9c0b0',fontSize:12,lineHeight:1.8 };
@@ -58,6 +77,16 @@ export default function Series3GroupResultsManager() {
   const [saving,setSaving]=useState<string|null>(null);
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
+  const [knockoutStage,setKnockoutStage]=useState<KnockoutStageKey>('round32');
+  const [knockoutBracket,setKnockoutBracket]=useState<Record<string,KnockoutMatch[]>>({});
+  const [knockoutRows,setKnockoutRows]=useState<KnockoutResult[]>([]);
+  const [knockoutPlayers,setKnockoutPlayers]=useState<string[]>([]);
+  const [knockoutDrafts,setKnockoutDrafts]=useState<Record<string,KnockoutDraft>>({});
+  const [knockoutLoading,setKnockoutLoading]=useState(false);
+  const [knockoutLoaded,setKnockoutLoaded]=useState(false);
+  const [knockoutSaving,setKnockoutSaving]=useState<string|null>(null);
+  const [knockoutError,setKnockoutError]=useState('');
+  const [knockoutMessage,setKnockoutMessage]=useState('');
   const load=useCallback(async()=>{
     if(!supabase){setError('اتصال به دیتابیس اصلی در دسترس نیست.');setLoading(false);return;}
     setLoading(true);setError('');
@@ -71,7 +100,76 @@ export default function Series3GroupResultsManager() {
     setDrafts(Object.fromEntries(next.map(r=>[r.match_id,emptyDraft(r)])));
     setLoading(false);
   },[]);
-  useEffect(()=>{void load();},[load]);
+
+  const loadKnockout=useCallback(async()=>{
+    if(!supabase){setKnockoutError('اتصال به دیتابیس اصلی در دسترس نیست.');return;}
+    setKnockoutLoading(true);setKnockoutError('');
+    try{
+      const [drawResult,resultResult,playersResult]=await Promise.all([
+        supabase.from('plato_land_series3_knockout_draws').select('bracket_snapshot').eq('event_key','series3').maybeSingle(),
+        supabase.from('plato_land_series3_knockout_match_results').select('id,stage_key,match_id,match_no,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status,version,created_by').eq('event_key','series3').order('stage_key').order('match_no'),
+        supabase.from('plato_land_series3_registration_requests').select('plato_id').in('registration_status',['main','waitlist']).order('plato_id'),
+      ]);
+      if(drawResult.error)throw drawResult.error;
+      if(resultResult.error)throw resultResult.error;
+      if(playersResult.error)throw playersResult.error;
+      if(!drawResult.data?.bracket_snapshot)throw new Error('براکت رسمی حذفی سری سوم هنوز در دیتابیس ثبت نشده است.');
+      setKnockoutBracket(drawResult.data.bracket_snapshot as Record<string,KnockoutMatch[]>);
+      const saved=(resultResult.data||[]) as KnockoutResult[];
+      setKnockoutRows(saved);
+      setKnockoutPlayers([...new Set((playersResult.data||[]).map((x:any)=>String(x.plato_id||'').trim()).filter(Boolean))]);
+      setKnockoutDrafts(Object.fromEntries(saved.map(row=>[row.match_id,{a:row.player_a_plato_id,b:row.player_b_plato_id,scoreA:row.score_a===null?'':String(row.score_a),scoreB:row.score_b===null?'':String(row.score_b)}])));
+      setKnockoutLoaded(true);
+    }catch(e){setKnockoutError('دریافت براکت یا نتایج حذفی ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص'));}
+    finally{setKnockoutLoading(false);}
+  },[]);
+  useEffect(()=>{void load();void loadKnockout();},[load,loadKnockout]);
+  const knockoutMatches=useMemo(()=>{
+    if(knockoutStage==='thirdPlace'&&!Array.isArray(knockoutBracket.thirdPlace))
+      return [{id:'TP-1',a:{id:'TP-A',label:'بازیکن اول رده‌بندی',source:'manual'},b:{id:'TP-B',label:'بازیکن دوم رده‌بندی',source:'manual'}}] as KnockoutMatch[];
+    return Array.isArray(knockoutBracket[knockoutStage])?knockoutBracket[knockoutStage]:[];
+  },[knockoutBracket,knockoutStage]);
+  const knockoutSavedMap=useMemo(()=>new Map(knockoutRows.map(row=>[row.match_id,row])),[knockoutRows]);
+  function changeKnockout(matchId:string,field:keyof KnockoutDraft,value:string){
+    setKnockoutDrafts(prev=>({...prev,[matchId]:{...(prev[matchId]||{a:'',b:'',scoreA:'',scoreB:''}),[field]:value}}));
+  }
+  async function saveKnockout(match:KnockoutMatch,index:number){
+    if(!supabase)return;
+    const draft=knockoutDrafts[match.id]||{a:'',b:'',scoreA:'',scoreB:''};
+    const a=draft.a.trim(),b=draft.b.trim(),sa=draft.scoreA.trim(),sb=draft.scoreB.trim();
+    if(!a||!b||a===b){setKnockoutError('Plato ID دقیق هر دو بازیکن را جداگانه وارد کن.');setKnockoutMessage('');return;}
+    if(!knockoutPlayers.includes(a)||!knockoutPlayers.includes(b)){setKnockoutError('هر دو Plato ID باید در فهرست بازیکنان اصلی یا رزرو سری سوم باشند.');setKnockoutMessage('');return;}
+    if(Boolean(sa)!==Boolean(sb)){setKnockoutError('هر دو امتیاز را وارد کن یا هر دو را خالی بگذار.');setKnockoutMessage('');return;}
+    let scoreA:number|null=null,scoreB:number|null=null;
+    let resultStatus:'pending'|'completed'='pending';
+    if(sa&&sb){
+      scoreA=Number(sa);scoreB=Number(sb);
+      if(!Number.isSafeInteger(scoreA)||!Number.isSafeInteger(scoreB)||scoreA<0||scoreB<0){setKnockoutError('امتیازها باید عدد صحیح و غیرمنفی باشند.');setKnockoutMessage('');return;}
+      if(scoreA===scoreB){setKnockoutError('نتیجه مساوی برای مسابقه حذفی قابل ثبت نیست.');setKnockoutMessage('');return;}
+      resultStatus='completed';
+    }
+    setKnockoutSaving(match.id);setKnockoutError('');setKnockoutMessage('');
+    try{
+      const {data:userResult,error:userError}=await supabase.auth.getUser();
+      if(userError)throw userError;
+      if(!userResult.user)throw new Error('نشست معتبر مالک پیدا نشد؛ دوباره وارد پنل شو.');
+      const previous=knockoutSavedMap.get(match.id);
+      const payload={
+        event_key:'series3',stage_key:knockoutStage,match_id:match.id,match_no:index+1,
+        player_a_plato_id:a,player_b_plato_id:b,score_a:scoreA,score_b:scoreB,
+        result_status:resultStatus,version:(previous?.version||0)+1,updated_at:new Date().toISOString(),
+        created_by:previous?.created_by||userResult.user.id,updated_by:userResult.user.id,
+      };
+      const {data,error}=await supabase.from('plato_land_series3_knockout_match_results')
+        .upsert(payload,{onConflict:'event_key,match_id'})
+        .select('id,stage_key,match_id,match_no,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status,version,created_by').single();
+      if(error)throw error;
+      setKnockoutRows(prev=>[...prev.filter(x=>x.match_id!==match.id),data as KnockoutResult]);
+      setKnockoutMessage('نتیجه '+fa(index+1)+' با موفقیت ذخیره شد؛ نسخه '+fa(data.version)+'.');
+    }catch(e){setKnockoutError('ذخیره نتیجه حذفی انجام نشد: '+(e instanceof Error?e.message:'خطای نامشخص'));}
+    finally{setKnockoutSaving(null);}
+  }
+
   const days=useMemo(()=>[...new Set(rows.map(r=>r.match_date))].sort(),[rows]);
   const visible=useMemo(()=>rows.filter(r=>(day==='ALL'||r.match_date===day)&&(group==='ALL'||r.group_name===group)),[rows,day,group]);
   const done=rows.filter(r=>r.result_status==='completed').length;
@@ -100,11 +198,11 @@ export default function Series3GroupResultsManager() {
     await load();setSaving(null);
   }
   return <details dir="rtl" style={panel}>
-    <summary style={{cursor:'pointer',color:'#f3dfad',fontSize:17,fontWeight:800}}>ثبت نتایج و جدول گروهی سری سوم</summary>
+    <summary style={{cursor:'pointer',color:'#f3dfad',fontSize:17,fontWeight:800}}>ثبت نتایج بازی‌های گروهی و حذفی سری سوم</summary>
     <div style={{marginTop:10}}>
     <div style={{display:'flex',justifyContent:'flex-end',alignItems:'center',gap:8,flexWrap:'wrap'}}>
       <div><p style={{...muted,margin:'4px 0 0'}}>متصل به برنامه ثابت ۷۲ بازی · هر برد ۳ امتیاز</p></div>
-      <button type="button" style={secondary} disabled={loading} onClick={()=>void load()}>{loading?'در حال دریافت…':'تازه‌سازی'}</button>
+      <button type="button" style={secondary} disabled={loading} onClick={()=>{void load();void loadKnockout();}}>{loading||knockoutLoading?'در حال دریافت…':'تازه‌سازی'}</button>
     </div>
     <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:7,marginTop:12}}>
       {[['کل بازی‌ها',rows.length],['ثبت نتیجه',done],['عدم حضور دوطرفه',noShows],['در انتظار',pending]].map(([label,value])=><div key={String(label)} style={{...card,padding:8}}><div style={{...muted,fontSize:10}}>{label}</div><strong style={{fontSize:20,color:'#e4c77e'}}>{loading?'—':fa(Number(value))}</strong></div>)}
@@ -130,7 +228,7 @@ export default function Series3GroupResultsManager() {
       </div>
     </div>
     <div style={{...card,marginTop:12}}>
-      <strong style={{color:'#e4c77e'}}>ثبت نتیجه بازی‌ها</strong>
+      <strong style={{color:'#e4c77e'}}>ثبت نتیجه بازی‌های مرحله گروهی</strong>
       <div style={{display:'flex',gap:7,overflowX:'auto',padding:'9px 0'}}>
         <button type="button" style={day==='ALL'?primary:secondary} onClick={()=>setDay('ALL')}>همه روزها</button>
         {days.map(d=><button type="button" key={d} style={day===d?primary:secondary} onClick={()=>setDay(d)}>{new Date(d+'T12:00:00').toLocaleDateString('fa-IR')}</button>)}
@@ -177,6 +275,56 @@ export default function Series3GroupResultsManager() {
         })}
       </div>}
     </div>
+
+    <div style={{...card,marginTop:12}}>
+      <strong style={{color:'#e4c77e'}}>ثبت نتایج مراحل حذفی</strong>
+      <p style={muted}>ثبت نتایج حذفی در همین بخش انجام می‌شود. بازیکنان باید از فهرست اصلی یا رزرو سری سوم باشند؛ برای هر بازی هر دو Plato ID و در صورت پایان بازی هر دو امتیاز را وارد کن.</p>
+      <div style={{display:'flex',gap:7,overflowX:'auto',padding:'9px 0'}}>
+        {knockoutStages.map(item=><button key={item.key} type="button" style={knockoutStage===item.key?primary:secondary} onClick={()=>{setKnockoutStage(item.key);setKnockoutError('');setKnockoutMessage('');}}>{item.label}<small style={{display:'block',fontSize:10,fontWeight:500}}>{item.date} · {fa(item.count)} بازی</small></button>)}
+      </div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap'}}>
+        <span style={muted}>{knockoutStages.find(x=>x.key===knockoutStage)?.date} · {fa(knockoutMatches.length)} مسابقه در براکت</span>
+        <button type="button" style={secondary} disabled={knockoutLoading||knockoutSaving!==null} onClick={()=>void loadKnockout()}>{knockoutLoading?'در حال دریافت…':'تازه‌سازی حذفی'}</button>
+      </div>
+      {knockoutError&&<p role="alert" style={{color:'#efaaaa',fontSize:12}}>{knockoutError}</p>}
+      {knockoutMessage&&<p role="status" style={{color:'#b8dfa9',fontSize:12}}>{knockoutMessage}</p>}
+      {!knockoutLoaded&&knockoutLoading?<p style={muted}>در حال بارگذاری براکت حذفی…</p>:knockoutMatches.length===0?<p style={muted}>برای این مرحله مسابقه‌ای در براکت رسمی ثبت نشده است.</p>:
+        <div style={{display:'grid',gap:8,marginTop:8}}>
+          {knockoutMatches.map((match,index)=>{
+            const draft=knockoutDrafts[match.id]||{a:'',b:'',scoreA:'',scoreB:''};
+            const saved=knockoutSavedMap.get(match.id);
+            return <details key={match.id} style={card}>
+              <summary style={{cursor:'pointer',display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap',color:'#e4c77e'}}>
+                <strong>بازی {fa(index+1)} · {match.id}</strong>
+                <span style={muted}>{saved?.result_status==='completed'?'نتیجه ثبت شده':saved?'بازیکنان ذخیره شده؛ در انتظار نتیجه':'ثبت نشده'}</span>
+              </summary>
+              <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:8,marginTop:10}}>
+                <label style={muted}>بازیکن اول · {match.a?.label||'جایگاه اول'}
+                  <input list="series3-knockout-player-ids" dir="ltr" value={draft.a} onChange={e=>changeKnockout(match.id,'a',e.target.value)} placeholder="Plato ID" style={input}/>
+                </label>
+                <label style={muted}>بازیکن دوم · {match.b?.label||'جایگاه دوم'}
+                  <input list="series3-knockout-player-ids" dir="ltr" value={draft.b} onChange={e=>changeKnockout(match.id,'b',e.target.value)} placeholder="Plato ID" style={input}/>
+                </label>
+              </div>
+              <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:8,marginTop:8}}>
+                <label style={muted}>امتیاز بازیکن اول
+                  <input type="number" inputMode="numeric" min="0" step="1" value={draft.scoreA} onChange={e=>changeKnockout(match.id,'scoreA',e.target.value)} placeholder="—" style={input}/>
+                </label>
+                <label style={muted}>امتیاز بازیکن دوم
+                  <input type="number" inputMode="numeric" min="0" step="1" value={draft.scoreB} onChange={e=>changeKnockout(match.id,'scoreB',e.target.value)} placeholder="—" style={input}/>
+                </label>
+              </div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap',marginTop:9}}>
+                <span style={muted}>{saved?.result_status==='completed'?'نتیجه: '+fa(saved.score_a??0)+' - '+fa(saved.score_b??0):saved?'بازی در انتظار نتیجه':'هنوز ذخیره نشده'}</span>
+                <button type="button" style={primary} disabled={knockoutSaving!==null} onClick={()=>void saveKnockout(match,index)}>{knockoutSaving===match.id?'در حال ذخیره…':'ذخیره نتیجه حذفی'}</button>
+              </div>
+            </details>;
+          })}
+        </div>}
+      <datalist id="series3-knockout-player-ids">{knockoutPlayers.map(id=><option key={id} value={id}/>)}</datalist>
+      <p style={{...muted,marginTop:8}}>نتایج حذفی در جدول مستقل و تاریخچه‌دار ذخیره می‌شوند؛ آمار و امتیازهای گروهی را تغییر نمی‌دهند.</p>
+    </div>
+
     <p style={{...muted,marginTop:10}}>هر اصلاح، نسخه قبلی را در تاریخچه نگه می‌دارد. برنامه بازی‌ها و جای بازیکنان قابل تغییر نیست.</p>
     </div>
   </details>;
