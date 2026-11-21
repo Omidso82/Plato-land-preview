@@ -115,7 +115,9 @@ export function resolveSeries3ThirdPlaces(
       ((playoff.player_a_registration_id === a.registration_id && playoff.player_b_registration_id === b.registration_id) ||
        (playoff.player_a_registration_id === b.registration_id && playoff.player_b_registration_id === a.registration_id)) &&
       playoff.player_a_group === (playoff.player_a_registration_id === a.registration_id ? a.group : b.group) &&
-      playoff.player_b_group === (playoff.player_b_registration_id === b.registration_id ? b.group : a.group));
+      playoff.player_b_group === (playoff.player_b_registration_id === b.registration_id ? b.group : a.group) &&
+      playoff.player_a_plato_id === (playoff.player_a_registration_id === a.registration_id ? a.plato_id : b.plato_id) &&
+      playoff.player_b_plato_id === (playoff.player_b_registration_id === b.registration_id ? b.plato_id : a.plato_id));
     if (!matchesSaved) return { status: 'playoff_required', players: [a, b], savedPlayoff: null };
     if (playoff!.result_status !== 'completed' || playoff!.score_a === null || playoff!.score_b === null || playoff!.score_a === playoff!.score_b)
       return { status: 'playoff_pending', players: [a, b], savedPlayoff: playoff! };
