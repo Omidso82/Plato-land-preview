@@ -204,14 +204,22 @@ export default function Series3TelegramManager() {
       ranking.rows.forEach((row,index)=>{
         const y=top+index*rowHeight;
         rounded(65,y,width-130,84,16,index%2===0?'#17191c':'#111315','#4b402c');
-        ctx.direction='ltr';ctx.textAlign='left';ctx.fillStyle='#d9b96e';ctx.font='bold 30px Arial';ctx.fillText(String(index+1).padStart(2,'0'),95,y+52);
-        ctx.direction='ltr';ctx.textAlign='right';ctx.fillStyle='#f2e6cf';ctx.font='bold 34px Arial';ctx.fillText(row.plato_id,980,y+52);
-        const stats=[{x:365,label:'باقی‌مانده',value:row.remaining,color:'#d9b96e'},{x:565,label:'غلط',value:row.incorrect,color:'#e49a9a'},{x:765,label:'درست',value:row.correct,color:'#9ed29c'}];
+        ctx.direction='ltr';ctx.textAlign='left';ctx.fillStyle='#d9b96e';ctx.font='bold 34px Arial';ctx.fillText(String(index+1).padStart(2,'0'),95,y+54);
+        // Statistics are drawn first in a fixed left-side area.
+        const stats=[{x:185,label:'باقی‌مانده',value:row.remaining,color:'#d9b96e'},{x:385,label:'غلط',value:row.incorrect,color:'#e49a9a'},{x:585,label:'درست',value:row.correct,color:'#9ed29c'}];
         stats.forEach(stat=>{
-          rounded(stat.x-74,y+10,148,64,12,'#202226');
-          ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle=stat.color;ctx.font='bold 27px Arial';ctx.fillText(new Intl.NumberFormat('fa-IR').format(stat.value),stat.x,y+38);
-          ctx.fillStyle='#c9c0b0';ctx.font='18px Arial';ctx.fillText(stat.label,stat.x,y+62);
+          rounded(stat.x-72,y+7,144,70,12,'#202226');
+          ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle=stat.color;ctx.font='bold 54px Arial';ctx.fillText(new Intl.NumberFormat('fa-IR').format(stat.value),stat.x,y+49);
+          ctx.fillStyle='#c9c0b0';ctx.font='21px Arial';ctx.fillText(stat.label,stat.x,y+72);
         });
+        // Plato ID gets a separate right-side lane and is painted last, above every other element.
+        const idRight=1000, idLeft=790, idMaxWidth=idRight-idLeft;
+        rounded(idLeft,y+7,idMaxWidth,70,10,'#17191c');
+        ctx.save();ctx.beginPath();ctx.rect(idLeft+8,y+4,idMaxWidth-16,76);ctx.clip();
+        ctx.direction='ltr';ctx.textAlign='right';ctx.fillStyle='#f2e6cf';
+        let idFontSize=38;ctx.font='bold '+idFontSize+'px Arial';
+        while(ctx.measureText(row.plato_id).width>idMaxWidth-24 && idFontSize>22){idFontSize-=1;ctx.font='bold '+idFontSize+'px Arial';}
+        ctx.fillText(row.plato_id,idRight-12,y+54);ctx.restore();
       });
       const footerY=top+ranking.rows.length*rowHeight+72;
       ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle='#d9b96e';ctx.font='26px Arial';ctx.fillText('بازی، رقابت، قهرمانی',width/2,footerY);
