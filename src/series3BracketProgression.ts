@@ -129,12 +129,18 @@ export function resolveSeries3BracketSlots(
   thirdQualifiers: Series3BracketToken[],
   results: Series3KnockoutResult[],
 ): Record<string, { a: ResolvedSlot; b: ResolvedSlot }> {
+  const thirdPlaceMatches = bracket.thirdPlace?.length ? bracket.thirdPlace : [{
+    id: "TP-1",
+    a: { id: "L-SF-1", label: "بازنده نیمه‌نهایی ۱", source: "loser" as const },
+    b: { id: "L-SF-2", label: "بازنده نیمه‌نهایی ۲", source: "loser" as const },
+  }];
   const allMatches = [
     ...bracket.round32,
     ...bracket.round16,
     ...bracket.quarterfinals,
     ...bracket.semifinals,
     ...bracket.final,
+    ...thirdPlaceMatches,
   ];
   const byMatch = new Map(allMatches.map(match => [match.id, match]));
   const resultById = new Map(results.map(result => [result.match_id, result]));
