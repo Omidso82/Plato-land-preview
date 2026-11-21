@@ -76,3 +76,21 @@ on conflict (event_key,match_id) do update set
   score_b=excluded.score_b,
   result_status=excluded.result_status,
   updated_at=now();
+
+-- Publish only the public-safe projections for realtime read updates.
+do $$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime' and schemaname='public' and tablename='plato_land_series3_public_knockout_results'
+  ) then
+    alter publication supabase_realtime add table public.plato_land_series3_public_knockout_results;
+  end if;
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname='supabase_realtime' and schemaname='public' and tablename='plato_land_series3_public_fixtures'
+  ) then
+    alter publication supabase_realtime add table public.plato_land_series3_public_fixtures;
+  end if;
+end;
+$$;
