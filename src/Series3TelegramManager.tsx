@@ -89,7 +89,7 @@ export default function Series3TelegramManager() {
 
   async function loadReportVoters(campaignId:string) {
     setReportCampaignId(campaignId); setReportVoters([]); setSelectedReportVoters([]);
-    setPreview([]); setReportError('');
+    setPreview([]); setRankingImageData(''); setRankingImageBase64(''); setReportError('');
     if(!campaignId || !supabase) return;
     setReportLoading(true);
     try {
@@ -189,7 +189,7 @@ export default function Series3TelegramManager() {
   async function makePreview() {
     if(selected.length===0 && !(reportCampaignId && selectedReportVoters.length)){setError('حداقل یک مورد یا رأی‌دهنده را برای پیش‌نمایش انتخاب کن.');return;}
     if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
-    setBusy(true);setError('');setNotice('');setPreview([]);
+    setBusy(true);setError('');setNotice('');setPreview([]);setRankingImageData('');setRankingImageBase64('');
     try{
       const result=await callApi('preview');
       if(!result?.ok||!result.messages?.length)throw new Error(result?.error||'برای انتخاب‌های فعلی پیام قابل تهیه نیست.');
@@ -201,17 +201,18 @@ export default function Series3TelegramManager() {
   }
 
   async function sendSelected() {
-    if(selected.length===0 && !(reportCampaignId && selectedReportVoters.length)){setError('ابتدا موارد یا رأی‌دهندگان موردنظر را انتخاب کن.');return;}
+    const rankingImageSending=Boolean(reportCampaignId&&rankingImageBase64);
+    if(selected.length===0 && !(reportCampaignId && selectedReportVoters.length) && !rankingImageSending){setError('ابتدا موارد یا رأی‌دهندگان موردنظر را انتخاب کن.');return;}
     if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
-    if(preview.length===0){setError('قبل از ارسال، ابتدا پیش‌نمایش را تهیه و بررسی کن.');return;}
+    if(preview.length===0 && !rankingImageBase64){setError('قبل از ارسال، ابتدا پیش‌نمایش را تهیه و بررسی کن.');return;}
     const target=destinations.map(id=>id==='test_group'?'گروه آزمایشی':'کانال اصلی').join(' و ');
-    const reportSending=Boolean(reportCampaignId&&selectedReportVoters.length>0);
+    const reportSending=Boolean((reportCampaignId&&selectedReportVoters.length>0)||rankingImageSending);
     const warning=reportSending?' این گزارش‌ها شامل Plato ID و پیش‌بینی هر رأی‌دهنده است و در مقصد انتخاب‌شده برای اعضای آن قابل مشاهده خواهد بود.':'';
     const approved=window.confirm('آیا ارسال '+fa(preview.length)+' پیام به هر مقصد انتخاب‌شده ('+target+') را تأیید می‌کنی؟'+warning);
     if(!approved)return;
     setSending(true);setError('');setNotice('');
     try{
-      const result=await callApi('send');
+      const result=await callApi('send',rankingImageSending?{rankingImage:true,imageBase64:rankingImageBase64}:{});
       const perDestination=(result?.destination_results||[]).map((item:any)=>item.label+': '+(item.status==='sent'?'موفق':item.status==='partial'?'ناقص':'ناموفق')+' ('+fa(item.sent_count)+' از '+fa(item.total_count)+')').join('؛ ');
       const historyWarning=result?.history_saved===false?' هشدار: نتیجه ارسال در تاریخچه دیتابیس ذخیره نشد.':'';
       const destinationResults=result?.destination_results||[];
@@ -222,7 +223,7 @@ export default function Series3TelegramManager() {
       if(anyDelivered){
         // Never leave a preview armed for destinations that may already contain messages.
         // A partially delivered destination must not be retried wholesale.
-        setPreview([]);
+        setPreview([]);setRankingImageData('');setRankingImageBase64('');
         setDestinations(retryableDestinations);
         const retryNote=retryableDestinations.length
           ? ' پیش‌نمایش پاک شد؛ فقط مقصدهای کاملاً ناموفق انتخاب شدند. برای تلاش مجدد، پیش‌نمایش تازه تهیه کن.'
@@ -296,6 +297,7 @@ export default function Series3TelegramManager() {
         <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap',marginTop:10}}>
           <strong style={{color:'#f0d99f',fontSize:12}}>رأی‌دهندگان: {fa(reportVoters.length)} نفر</strong>
           <button type="button" style={darkButton} onClick={()=>setSelectedReportVoters(selectedReportVoters.length===reportVoters.length?[]:reportVoters.map(v=>v.id))}>{selectedReportVoters.length===reportVoters.length?'لغو انتخاب همه':'انتخاب همه رأی‌دهندگان'}</button>
+          <button type="button" style={goldButton} disabled={rankingImageBusy||reportLoading||!reportCampaignId} onClick={()=>void makeRankingImagePreview()}>{rankingImageBusy?'در حال ساخت تصویر…':'تهیه تصویر رتبه‌بندی'}</button>
           <span style={muted}>انتخاب‌شده: {fa(selectedReportVoters.length)}</span>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(145px,1fr))',gap:7,marginTop:9}}>
@@ -305,6 +307,7 @@ export default function Series3TelegramManager() {
           </label>)}
         </div>
       </>}
+      {rankingImageData&&<div style={{marginTop:12,border:'1px solid #806638',borderRadius:10,padding:8,background:'#0d0e10'}}><strong style={{display:'block',color:'#f0d99f',fontSize:12,marginBottom:8}}>پیش‌نمایش تصویر رتبه‌بندی</strong><img src={rankingImageData} alt="تصویر رتبه‌بندی پیش‌بینی‌کنندگان سری سوم" style={{display:'block',width:'100%',height:'auto',borderRadius:8}}/><button type="button" style={darkButton} onClick={()=>{setRankingImageData('');setRankingImageBase64('');}}>پاک‌کردن تصویر</button></div>}
       {reportCampaignId&&<p style={{...muted,marginTop:9}}>وضعیت نتایج از دیتابیس خوانده می‌شود. هر گزارش شامل Plato ID و پیش‌بینی همان رأی‌دهنده است و پس از تأیید Owner به مقصد انتخاب‌شده ارسال می‌شود؛ اعضای آن گروه یا کانال می‌توانند محتوای پیام را ببینند.</p>}
     </details>
 
@@ -354,7 +357,7 @@ export default function Series3TelegramManager() {
 
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:13}}>
       <button type="button" style={goldButton} disabled={busy||sending||(selectedCount===0&&!(reportCampaignId&&selectedReportVoters.length>0))||destinations.length===0} onClick={()=>void makePreview()}>{busy?'در حال آماده‌سازی…':'تهیه پیش‌نمایش پیام‌ها'}</button>
-      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0||destinations.length===0} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':'ارسال پیام‌های پیش‌نمایش‌شده'}</button>
+      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0||destinations.length===0} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':rankingImageBase64?'ارسال تصویر رتبه‌بندی':'ارسال پیام‌های پیش‌نمایش‌شده'}</button>
       <button type="button" style={darkButton} disabled={busy||sending} onClick={()=>{setPreview([]);setError('');setNotice('');}}>پاک‌کردن پیش‌نمایش</button>
     </div>
 
