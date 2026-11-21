@@ -1,9 +1,9 @@
 # PLATO LAND – Series 3 Telegram Ranking Image Layout
 
-**Version:** 1.11.0  
+**Version:** 1.12.0  
 **Date:** 2026-11-21  
 **Project:** PLATO LAND – Temporary Projects  
-**Status:** New column redesign committed to a review branch; merge and live-panel verification pending.
+**Status:** RTL column order and campaign-specific ranking subtitle implemented; campaign-title update pending review and release.
 
 ## 1. Scope
 
@@ -48,6 +48,15 @@ After review of the generated mobile image, the owner specified the Persian righ
 5. Remaining predictions at the far left.
 
 The row keeps the same overall dimensions and visual style. Rank and ID remain separate, and the statistics remain individual cards. Only column positions/order are changed; source values, participant order, IDs, and calculation logic are preserved.
+
+## 3.2 Campaign-specific ranking subtitle (v1.12.0)
+
+The owner identified that the ranking image for the second-day match-prediction campaign still displayed the stale fixed subtitle for the first round. The subtitle is now sourced from the selected campaign's title returned with the ranking data, rather than a hard-coded first-round phrase.
+
+- The displayed campaign title follows the selected campaign (for example, the second-day prediction campaign).
+- The Series 3 league descriptor remains appended.
+- Long campaign titles are measured and the subtitle font is reduced only as needed to fit the available width.
+- Ranking order, participant IDs, statistics, scoring logic, campaign data, and Telegram delivery behavior are unchanged.
 
 ## 4. Data, security, and delivery boundaries
 
