@@ -448,7 +448,7 @@ Deno.serve(async (req: Request) => {
           if (binary.length < 8 || binary[0] !== 0x89 || binary[1] !== 0x50 || binary[2] !== 0x4e || binary[3] !== 0x47) throw new Error("فایل تصویر PNG معتبر نیست.");
           const form = new FormData();
           form.append("chat_id", chatIds[destination]);
-          form.append("caption", "♛ PLATO LAND · لیگ تخته‌نرد سری سوم" + String.fromCharCode(10) + "رتبه‌بندی پیش‌بینی‌کنندگان دور اول");
+          form.append("caption", "♛ PLATO LAND · لیگ تخته‌نرد سری سوم" + String.fromCharCode(10) + "رتبه‌بندی پیش‌بینی‌کنندگان · " + (predictionRanking?.title || "پیش‌بینی بازی‌ها"));
           form.append("photo", new Blob([binary], {type:"image/png"}), "series3-prediction-ranking.png");
           const response = await fetch("https://api.telegram.org/bot"+botToken+"/sendPhoto", {method:"POST", body:form});
           const sent = await response.json().catch(()=>null);

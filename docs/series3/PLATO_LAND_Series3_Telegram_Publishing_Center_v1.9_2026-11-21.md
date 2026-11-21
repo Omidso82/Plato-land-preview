@@ -1,6 +1,6 @@
 # PLATO LAND – Series 3 Telegram Ranking Image Layout
 
-**Version:** 1.12.0  
+**Version:** 1.13.0  
 **Date:** 2026-11-21  
 **Project:** PLATO LAND – Temporary Projects  
 **Status:** RTL column order and campaign-specific ranking subtitle implemented; campaign-title update pending review and release.
@@ -58,6 +58,18 @@ The owner identified that the ranking image for the second-day match-prediction 
 - Long campaign titles are measured and the subtitle font is reduced only as needed to fit the available width.
 - Ranking order, participant IDs, statistics, scoring logic, campaign data, and Telegram delivery behavior are unchanged.
 
+## 3.3 Telegram photo caption follows selected campaign (v1.13.0)
+
+The owner identified that the generated image preview correctly showed the selected second-day campaign title, while the caption attached to the photo sent to Telegram still used a hard-coded first-round label.
+
+The Series 3 Telegram Edge Function now builds the photo caption from the same selected campaign title carried by the ranking result:
+
+- Caption format: PLATO LAND · Series 3, followed by the selected campaign's title.
+- The stale fixed phrase for first-round predictions is removed.
+- The image content and ranking data are unchanged.
+- Previously sent Telegram messages are not automatically edited; this correction applies to future sends after the Edge Function update is deployed.
+
+This change touches the existing plato-land-series3-telegram Edge Function source only. It does not alter database schema/data, authentication, destinations, or send authorization.
 ## 4. Data, security, and delivery boundaries
 
 - No Supabase database schema or data writes.
