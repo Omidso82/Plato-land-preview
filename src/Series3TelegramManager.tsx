@@ -41,6 +41,7 @@ export default function Series3TelegramManager() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [campaigns, setCampaigns] = useState<PredictionCampaign[]>([]);
+  const [reportCampaigns, setReportCampaigns] = useState<PredictionCampaign[]>([]);
   const [destinations, setDestinations] = useState<string[]>(['test_group']);
   const [deliveryHistory, setDeliveryHistory] = useState<any[]>([]);
   const [historyError, setHistoryError] = useState('');
@@ -70,9 +71,14 @@ export default function Series3TelegramManager() {
     if (!supabase) { setPredictionError('اتصال به دیتابیس برقرار نیست.'); return; }
     setPredictionLoading(true); setPredictionError('');
     try {
-      const {data,error}=await supabase.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,is_open,opens_at,closes_at,questions,prize_rules').eq('event_key','series3').eq('status','published').order('created_at',{ascending:false});
-      if (error) throw error;
-      setCampaigns((data||[]) as PredictionCampaign[]);
+      const [publishedResult, reportResult] = await Promise.all([
+        supabase.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,is_open,opens_at,closes_at,questions,prize_rules').eq('event_key','series3').eq('status','published').order('created_at',{ascending:false}),
+        supabase.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,is_open,opens_at,closes_at,questions,prize_rules').eq('event_key','series3').in('status',['published','closed']).order('created_at',{ascending:false}),
+      ]);
+      if (publishedResult.error) throw publishedResult.error;
+      if (reportResult.error) throw reportResult.error;
+      setCampaigns((publishedResult.data||[]) as PredictionCampaign[]);
+      setReportCampaigns((reportResult.data||[]) as PredictionCampaign[]);
     } catch (e) { setPredictionError('دریافت پیش‌بینی‌های منتشرشده ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص')); }
     finally { setPredictionLoading(false); }
   }
@@ -229,12 +235,12 @@ export default function Series3TelegramManager() {
 
     <details open style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
       <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>گزارش نتایج پیش‌بینی‌ها · فقط مالک</summary>
-      <p style={{...muted,margin:'8px 0'}}>برای هر رأی‌دهنده یک پیام مستقل ساخته می‌شود. ارسال به مقصدهای انتخاب‌شده فقط توسط Owner و پس از بررسی پیش‌نمایش و تأیید نهایی انجام می‌شود.</p>
+      <p style={{...muted,margin:'8px 0'}}>کمپین‌های منتشرشده و بسته‌شده قابل گزارش هستند؛ بستن مهلت پیش‌بینی، پاسخ‌های ثبت‌شده را از گزارش حذف نمی‌کند. برای هر رأی‌دهنده یک پیام مستقل ساخته می‌شود و ارسال فقط توسط Owner و پس از بررسی پیش‌نمایش و تأیید نهایی انجام می‌شود.</p>
       <label style={{display:'grid',gap:7,color:'#eee5d4',fontSize:12}}>
         انتخاب کمپین
         <select value={reportCampaignId} onChange={e=>void loadReportVoters(e.target.value)} style={{background:'#171717',color:'#f0d99f',border:'1px solid #806638',borderRadius:8,padding:10}}>
           <option value="">یک کمپین انتخاب کن</option>
-          {campaigns.filter(c=>c.campaign_type==='champion'||c.campaign_type==='match_predictions').map(c=><option key={c.id} value={c.id}>{c.title} · {c.campaign_type==='champion'?'قهرمانی':'پیش‌بینی بازی‌ها'}</option>)}
+          {reportCampaigns.filter(c=>c.campaign_type==='champion'||c.campaign_type==='match_predictions').map(c=><option key={c.id} value={c.id}>{c.title} · {c.campaign_type==='champion'?'قهرمانی':'پیش‌بینی بازی‌ها'}{c.status==='closed'?' · بسته‌شده':''}</option>)}
         </select>
       </label>
       {reportLoading?<p style={muted}>در حال دریافت رأی‌دهندگان…</p>:reportError?<p role="alert" style={{color:'#ffc8c8',fontSize:12}}>{reportError}</p>:reportCampaignId&&reportVoters.length===0?<p style={muted}>برای این کمپین رأی‌دهنده‌ای ثبت نشده است.</p>:reportVoters.length>0&&<>
