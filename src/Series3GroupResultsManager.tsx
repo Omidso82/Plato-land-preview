@@ -85,8 +85,8 @@ export default function Series3GroupResultsManager() {
     if(d.status==='completed'){
       if(!/^\d+$/.test(d.scoreA)||!/^\d+$/.test(d.scoreB)){setError('برای نتیجه عادی، هر دو امتیاز را با عدد صحیح وارد کن.');setMessage('');return;}
       scoreA=Number(d.scoreA);scoreB=Number(d.scoreB);
-      if(!Number.isInteger(scoreA)||!Number.isInteger(scoreB)||scoreA<0||scoreB<0||scoreA>5||scoreB>5||!((scoreA===5&&scoreB<5)||(scoreB===5&&scoreA<5))){
-        setError('در بازی پنج‌امتیازی، نتیجه باید ۵ به عددی بین صفر تا ۴ باشد.');setMessage('');return;
+      if(!Number.isSafeInteger(scoreA)||!Number.isSafeInteger(scoreB)||scoreA<0||scoreB<0||scoreA===scoreB){
+        setError('هر دو امتیاز باید عدد صحیحِ صفر یا بیشتر باشند و نتیجه مساوی نباشد.');setMessage('');return;
       }
     }
     setSaving(row.match_id);setError('');setMessage('');
@@ -152,13 +152,13 @@ export default function Series3GroupResultsManager() {
               <div style={{minWidth:0}}>
                 <strong dir="ltr" style={{display:'block',fontSize:12,overflowWrap:'anywhere',textAlign:'center',minHeight:32}}>{row.player_a_plato_id}</strong>
                 <label style={muted}>امتیاز
-                  <input type="number" inputMode="numeric" min="0" max="5" step="1" value={d.scoreA} onChange={e=>setDrafts(p=>({...p,[row.match_id]:{...d,scoreA:e.target.value}}))} disabled={d.status!=='completed'} style={input}/>
+                  <input type="number" inputMode="numeric" min="0" step="1" value={d.scoreA} onChange={e=>setDrafts(p=>({...p,[row.match_id]:{...d,scoreA:e.target.value}}))} disabled={d.status!=='completed'} style={input}/>
                 </label>
               </div>
               <div style={{minWidth:0}}>
                 <strong dir="ltr" style={{display:'block',fontSize:12,overflowWrap:'anywhere',textAlign:'center',minHeight:32}}>{row.player_b_plato_id}</strong>
                 <label style={muted}>امتیاز
-                  <input type="number" inputMode="numeric" min="0" max="5" step="1" value={d.scoreB} onChange={e=>setDrafts(p=>({...p,[row.match_id]:{...d,scoreB:e.target.value}}))} disabled={d.status!=='completed'} style={input}/>
+                  <input type="number" inputMode="numeric" min="0" step="1" value={d.scoreB} onChange={e=>setDrafts(p=>({...p,[row.match_id]:{...d,scoreB:e.target.value}}))} disabled={d.status!=='completed'} style={input}/>
                 </label>
               </div>
             </div>
