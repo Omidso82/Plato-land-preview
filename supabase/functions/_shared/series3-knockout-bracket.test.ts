@@ -45,7 +45,23 @@ Deno.test("protected Round of 32 contains no same-group match and uses eight dis
     if (placeholderMatches.length !== 8 || new Set(opponentGroups).size !== 8) {
       throw new Error("Expected eight placeholder opponents from eight distinct groups");
     }
+    const topTwoMatches = draw.round32.filter(match => match.a.source !== "third" && match.b.source !== "third");
+    if (topTwoMatches.length !== 8) {
+      throw new Error("Expected eight matches pairing first/second entrants against first/second entrants");
+    }
   }
+});
+
+Deno.test("rejects entrant pools without exactly one first and second from every group", () => {
+  const malformed = entrants.filter(token => token.id !== "2-A");
+  malformed.push({ id: "2-A-duplicate", label: "Duplicate second", source: "second", group: "B" });
+  let rejected = false;
+  try {
+    buildProtectedRound32(malformed);
+  } catch {
+    rejected = true;
+  }
+  if (!rejected) throw new Error("Expected malformed group distribution to be rejected");
 });
 
 Deno.test("every possible set of eight distinct third-place groups can be assigned without a same-group clash", () => {
