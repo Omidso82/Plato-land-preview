@@ -206,10 +206,12 @@ export default function Series3TelegramManager() {
         rounded(65,y,width-130,84,16,index%2===0?'#17191c':'#111315','#4b402c');
         ctx.direction='ltr';ctx.textAlign='left';ctx.fillStyle='#d9b96e';ctx.font='bold 34px Arial';ctx.fillText(String(index+1).padStart(2,'0'),95,y+54);
         // Reserve a clear right-side lane for the full Plato ID; keep every stat card to its left.
-        ctx.direction='ltr';ctx.textAlign='right';ctx.fillStyle='#f2e6cf';ctx.font='bold 34px Arial';ctx.fillText(row.plato_id,980,y+54);
-        const stats=[{x:335,label:'باقی‌مانده',value:row.remaining,color:'#d9b96e'},{x:515,label:'غلط',value:row.incorrect,color:'#e49a9a'},{x:695,label:'درست',value:row.correct,color:'#9ed29c'}];
+        // Keep a wider, dedicated right-side lane for long Plato IDs.
+        ctx.direction='ltr';ctx.textAlign='right';ctx.fillStyle='#f2e6cf';ctx.font='bold 34px Arial';ctx.fillText(row.plato_id,1000,y+54);
+        // Shift the statistic cards farther left so even the longest IDs never sit beneath them.
+        const stats=[{x:255,label:'باقی‌مانده',value:row.remaining,color:'#d9b96e'},{x:435,label:'غلط',value:row.incorrect,color:'#e49a9a'},{x:615,label:'درست',value:row.correct,color:'#9ed29c'}];
         stats.forEach(stat=>{
-          rounded(stat.x-68,y+9,136,66,12,'#202226');
+          rounded(stat.x-64,y+9,128,66,12,'#202226');
           ctx.direction='rtl';ctx.textAlign='center';ctx.fillStyle=stat.color;ctx.font='bold 36px Arial';ctx.fillText(new Intl.NumberFormat('fa-IR').format(stat.value),stat.x,y+42);
           ctx.fillStyle='#c9c0b0';ctx.font='18px Arial';ctx.fillText(stat.label,stat.x,y+65);
         });
