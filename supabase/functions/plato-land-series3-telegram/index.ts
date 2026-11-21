@@ -87,7 +87,7 @@ function buildPredictionMessage(campaign: PredictionCampaign): Message {
   return makeMessage('prediction:'+campaign.id,campaign.title,'پیش‌بینی قهرمان · سری سوم',lines,optionCount||campaign.questions.length);
 }
 function buildVoterReportMessages(campaign: PredictionCampaign, entries: PredictionEntry[], results: MatchResult[]): Message[] {
-  if (campaign.status !== "published") throw new Error("کمپین انتخاب‌شده منتشرشده نیست.");
+  if (!["published","closed"].includes(campaign.status)) throw new Error("کمپین انتخاب‌شده منتشرشده نیست.");
   const resultById = new Map(results.map(item => [item.match_id, item]));
   const questions = campaign.questions || [];
   return entries.map(entry => {
