@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { supabase } from './supabase';
 import { isSeries3TeaserKey, series3TeaserUrl, uploadSeries3Teaser } from './series3TeaserClient';
 import { deleteR2Media } from './r2MediaDeleteClient';
+import { isSeries3PosterKey, series3PosterUrl, uploadSeries3Poster } from './series3PosterClient';
 
 const BUCKET = 'series3-slides';
 const POSTER_PATH = 'poster/series3-main-poster';
-type ImageItem = { url:string; updated_at?:string };
+type ImageItem = { url:string; updated_at?:string; storage?:'r2'|'supabase'; objectKey?:string };
 
 export function Series3SlidesPanel() {
   const [slides,setSlides]=useState<Record<number,ImageItem>>({});
@@ -29,7 +30,7 @@ export function Series3SlidesPanel() {
     const [slideResult,posterResult,settingsResult]=await Promise.all([
       supabase.storage.from(BUCKET).list('slides',{limit:60,sortBy:{column:'name',order:'asc'}}),
       supabase.storage.from(BUCKET).list('poster',{limit:10}),
-      supabase.from('plato_land_series3_home_media_settings').select('media_mode,storage_path').eq('id',1).maybeSingle()
+      supabase.from('plato_land_series3_home_media_settings').select('media_mode,storage_path,poster_storage_path').eq('id',1).maybeSingle()
     ]);
     if(slideResult.error){setMessage('خواندن تصاویر سری سوم ناموفق بود: '+slideResult.error.message);return;}
     if(posterResult.error){setMessage('خواندن پوستر سری سوم ناموفق بود: '+posterResult.error.message);return;}
@@ -44,7 +45,27 @@ export function Series3SlidesPanel() {
     });
     setSlides(next);
     const posterItem=(posterResult.data||[]).find(item=>item.name==='series3-main-poster');
-    setPoster(posterItem?{url:supabase.storage.from(BUCKET).getPublicUrl(POSTER_PATH).data.publicUrl,updated_at:posterItem.updated_at||posterItem.created_at||''}:null);
+    const posterKey=typeof settingsResult.data?.poster_storage_path==='string'?settingsResult.data.poster_storage_path:'';
+    if(!settingsResult.error&&isSeries3PosterKey(posterKey)){
+      try{
+        const response=await fetch(series3PosterUrl(),{method:'HEAD',mode:'cors',cache:'no-store'});
+        const size=Number(response.headers.get('Content-Length')||'0');
+        const type=(response.headers.get('Content-Type')||'').split(';')[0].trim().toLowerCase();
+        if(response.ok&&size>0&&['image/jpeg','image/png','image/webp'].includes(type)){
+          setPoster({url:series3PosterUrl()+'?v='+encodeURIComponent(String(size)),storage:'r2',objectKey:posterKey});
+        }else{
+          setPoster(null);
+          setMessage('مرجع پوستر در Supabase ثبت شده، اما فایل متناظر در R2 تأیید نشد.');
+        }
+      }catch(e){
+        setPoster(null);
+        setMessage('بررسی پوستر در R2 ناموفق بود: '+(e instanceof Error?e.message:'خطای شبکه'));
+      }
+    }else if(!posterKey&&posterItem){
+      setPoster({url:supabase.storage.from(BUCKET).getPublicUrl(POSTER_PATH).data.publicUrl,updated_at:posterItem.updated_at||posterItem.created_at||'',storage:'supabase',objectKey:POSTER_PATH});
+    }else{
+      setPoster(null);
+    }
 
     const storedKey=typeof settingsResult.data?.storage_path==='string'?settingsResult.data.storage_path:'';
     if(!settingsResult.error&&isSeries3TeaserKey(storedKey)){
@@ -85,18 +106,27 @@ export function Series3SlidesPanel() {
   }
   async function uploadPoster() {
     if(!supabase||!posterSelected){setMessage('ابتدا پوستر سری سوم را انتخاب کن.');return;}
-    if(!/^image\/(jpeg|png|webp)$/.test(posterSelected.type)||posterSelected.size>10*1024*1024){setMessage('فرمت پوستر باید JPG، PNG یا WEBP و حجم آن حداکثر ۱۰ مگابایت باشد.');return;}
-    setPosterBusy(true);setMessage('در حال ذخیره پوستر سری سوم…');
+    if(!/^image\\/(jpeg|png|webp)$/.test(posterSelected.type)||posterSelected.size<=0||posterSelected.size>10*1024*1024){setMessage('فرمت پوستر باید JPG، PNG یا WEBP و حجم آن حداکثر ۱۰ مگابایت باشد.');return;}
+    setPosterBusy(true);setMessage('در حال بارگذاری پوستر در Cloudflare R2 و تأیید فایل…');
+    let r2Saved=false;
     try{
-      const storage=supabase.storage.from(BUCKET);
-      const {data,error:listError}=await storage.list('poster',{limit:10});
-      if(listError)throw listError;
-      const exists=(data||[]).some(x=>x.name==='series3-main-poster');
-      const result=exists?await storage.update(POSTER_PATH,posterSelected,{contentType:posterSelected.type,cacheControl:'0'}):await storage.upload(POSTER_PATH,posterSelected,{upsert:false,contentType:posterSelected.type,cacheControl:'0'});
-      if(result.error)throw result.error;
-      setPosterSelected(null);await refresh();setMessage('پوستر سری سوم ذخیره شد.');
-    }catch(e){setMessage('ذخیره پوستر ناموفق بود: '+(e instanceof Error?e.message:'خطای ناشناخته'));}
-    finally{setPosterBusy(false);}
+      const uploadedKey=await uploadSeries3Poster(posterSelected);
+      r2Saved=true;
+      const {data:{user},error:userError}=await supabase.auth.getUser();
+      if(userError)throw userError;
+      if(!user)throw new Error('نشست معتبر مالک نیست.');
+      const {error:saveError}=await supabase.from('plato_land_series3_home_media_settings').update({
+        poster_storage_path:uploadedKey,
+        updated_at:new Date().toISOString(),
+        updated_by:user.id
+      }).eq('id',1);
+      if(saveError)throw saveError;
+      setPosterSelected(null);
+      await refresh();
+      setMessage('پوستر در Cloudflare R2 ذخیره، با HEAD تأیید و مرجع آن در Supabase ثبت شد.');
+    }catch(e){
+      setMessage((r2Saved?'فایل در R2 ذخیره و تأیید شده، اما ثبت مرجع آن در Supabase کامل نشد؛ موفقیت نهایی تأیید نمی‌شود: ':'بارگذاری پوستر ناموفق بود: ')+(e instanceof Error?e.message:'خطای ناشناخته'));
+    }finally{setPosterBusy(false);}
   }
   async function uploadTeaser() {
     if(!supabase||!teaserSelected){setMessage('ابتدا فایل ویدیوی تیزر را انتخاب کن.');return;}
@@ -204,7 +234,7 @@ export function Series3SlidesPanel() {
           </div>
           <div style={{fontSize:12,color:'#c9c0ad',marginBottom:12}}>حالت فعلی: {mediaMode==='video'?'ویدئوی تیزر':'پوستر ثابت'}</div>
           <h4 style={{color:'#f1d99e',margin:'12px 0 8px'}}>پوستر ثابت</h4>
-          {poster?<><img src={poster.url+'?v='+encodeURIComponent(poster.updated_at||'')} alt="پوستر سری سوم" style={{display:'block',maxWidth:'100%',maxHeight:200,objectFit:'contain',margin:'0 auto 10px'}}/><div dir="rtl" style={{fontSize:11,lineHeight:1.9,color:'#a9c7a5',overflowWrap:'anywhere',background:'#10140f',border:'1px solid #344a34',borderRadius:8,padding:9,marginBottom:10}}><strong>محل ذخیره فایل:</strong> Supabase Storage<br/><strong>Bucket:</strong> <code dir="ltr">series3-slides</code><br/><strong>Object path:</strong> <code dir="ltr">poster/series3-main-poster</code></div></>:<p style={{color:'#a9a08e',fontSize:13}}>هنوز پوستری بارگذاری نشده است.</p>}
+          {poster?<><img src={poster.url+'?v='+encodeURIComponent(poster.updated_at||'')} alt="پوستر سری سوم" style={{display:'block',maxWidth:'100%',maxHeight:200,objectFit:'contain',margin:'0 auto 10px'}}/><div dir="rtl" style={{fontSize:11,lineHeight:1.9,color:'#a9c7a5',overflowWrap:'anywhere',background:'#10140f',border:'1px solid #344a34',borderRadius:8,padding:9,marginBottom:10}}><strong>محل ذخیره فایل:</strong> {poster.storage==='r2'?'Cloudflare R2':'Supabase Storage (فایل قدیمی؛ فقط تا زمان بارگذاری در R2)'}<br/>{poster.storage==='r2'?<><strong>Bucket:</strong> <code dir="ltr">plato-land</code><br/><strong>Object key:</strong> <code dir="ltr">plato-land/backgammon/series-3/public-media/poster/main-poster</code><br/><strong>مرجع در Supabase:</strong> <code dir="ltr">plato_land_series3_home_media_settings.poster_storage_path</code></>:<><strong>Bucket:</strong> <code dir="ltr">series3-slides</code><br/><strong>Object path:</strong> <code dir="ltr">poster/series3-main-poster</code></>}</div></>:<p style={{color:'#a9a08e',fontSize:13}}>هنوز پوستری بارگذاری نشده است.</p>}
           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={e=>setPosterSelected(e.target.files?.[0]||null)} style={{width:'100%',color:'#ddd',fontSize:12,margin:'8px 0'}}/>
           <button style={button} disabled={!posterSelected||posterBusy} onClick={()=>void uploadPoster()}>{posterBusy?'در حال ذخیره…':poster?'جایگزینی پوستر':'بارگذاری پوستر'}</button>
           <div style={{borderTop:'1px solid #51452d',margin:'16px 0'}}/>
