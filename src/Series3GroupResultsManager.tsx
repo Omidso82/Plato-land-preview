@@ -136,9 +136,12 @@ export default function Series3GroupResultsManager() {
   async function saveKnockout(match:KnockoutMatch,index:number){
     if(!supabase)return;
     const draft=knockoutDrafts[match.id]||{a:'',b:'',scoreA:'',scoreB:''};
+    const slots=resolvedKnockoutSlots[match.id];
+    if(!slots){setKnockoutError('جایگاه‌های رسمی این مسابقه هنوز قابل محاسبه نیستند.');setKnockoutMessage('');return;}
     const a=draft.a.trim(),b=draft.b.trim(),sa=draft.scoreA.trim(),sb=draft.scoreB.trim();
-    if(!a||!b||a===b){setKnockoutError('Plato ID دقیق هر دو بازیکن را جداگانه وارد کن.');setKnockoutMessage('');return;}
-    if(!knockoutPlayers.includes(a)||!knockoutPlayers.includes(b)){setKnockoutError('هر دو Plato ID باید در فهرست بازیکنان اصلی یا رزرو سری سوم باشند.');setKnockoutMessage('');return;}
+    const slotError=validateSeries3BracketResult(match as any,slots,a,b);
+    if(slotError){setKnockoutError(slotError);setKnockoutMessage('');return;}
+    if(!knockoutPlayers.some(x=>x.toLowerCase()===a.toLowerCase())||!knockoutPlayers.some(x=>x.toLowerCase()===b.toLowerCase())){setKnockoutError('Plato ID باید در فهرست بازیکنان اصلی یا رزرو سری سوم وجود داشته باشد.');setKnockoutMessage('');return;}
     if(Boolean(sa)!==Boolean(sb)){setKnockoutError('هر دو امتیاز را وارد کن یا هر دو را خالی بگذار.');setKnockoutMessage('');return;}
     let scoreA:number|null=null,scoreB:number|null=null;
     let resultStatus:'pending'|'completed'='pending';
@@ -291,7 +294,12 @@ export default function Series3GroupResultsManager() {
       {!knockoutLoaded&&knockoutLoading?<p style={muted}>در حال بارگذاری براکت حذفی…</p>:knockoutMatches.length===0?<p style={muted}>برای این مرحله مسابقه‌ای در براکت رسمی ثبت نشده است.</p>:
         <div style={{display:'grid',gap:8,marginTop:8}}>
           {knockoutMatches.map((match,index)=>{
-            const draft=knockoutDrafts[match.id]||{a:'',b:'',scoreA:'',scoreB:''};
+            const slots=resolvedKnockoutSlots[match.id];
+            const resolvedA=slots?.a.resolved?slots.a.token.label:'';
+            const resolvedB=slots?.b.resolved?slots.b.token.label:'';
+            const draft=knockoutDrafts[match.id]||{a:resolvedA,b:resolvedB,scoreA:'',scoreB:''};
+            const playerA=resolvedA||draft.a;
+            const playerB=resolvedB||draft.b;
             const saved=knockoutSavedMap.get(match.id);
             return <details key={match.id} style={card}>
               <summary style={{cursor:'pointer',display:'flex',justifyContent:'space-between',gap:8,flexWrap:'wrap',color:'#e4c77e'}}>
@@ -299,11 +307,11 @@ export default function Series3GroupResultsManager() {
                 <span style={muted}>{saved?.result_status==='completed'?'نتیجه ثبت شده':saved?'بازیکنان ذخیره شده؛ در انتظار نتیجه':'ثبت نشده'}</span>
               </summary>
               <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:8,marginTop:10}}>
-                <label style={muted}>بازیکن اول · {match.a?.label||'جایگاه اول'}
-                  <input list="series3-knockout-player-ids" dir="ltr" value={draft.a} onChange={e=>changeKnockout(match.id,'a',e.target.value)} placeholder="Plato ID" style={input}/>
+                <label style={muted}>بازیکن اول · {slots?.a.resolved?'جایگاه قطعی شده':slots?.a.pendingReason||match.a?.label||'در انتظار تعیین'}
+                  <input dir="ltr" value={playerA} readOnly disabled={!slots?.a.resolved} placeholder="پس از قطعی‌شدن جایگاه" style={input}/>
                 </label>
-                <label style={muted}>بازیکن دوم · {match.b?.label||'جایگاه دوم'}
-                  <input list="series3-knockout-player-ids" dir="ltr" value={draft.b} onChange={e=>changeKnockout(match.id,'b',e.target.value)} placeholder="Plato ID" style={input}/>
+                <label style={muted}>بازیکن دوم · {slots?.b.resolved?'جایگاه قطعی شده':slots?.b.pendingReason||match.b?.label||'در انتظار تعیین'}
+                  <input dir="ltr" value={playerB} readOnly disabled={!slots?.b.resolved} placeholder="پس از قطعی‌شدن جایگاه" style={input}/>
                 </label>
               </div>
               <div style={{display:'grid',gridTemplateColumns:'minmax(0,1fr) minmax(0,1fr)',gap:8,marginTop:8}}>
@@ -316,13 +324,13 @@ export default function Series3GroupResultsManager() {
               </div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,flexWrap:'wrap',marginTop:9}}>
                 <span style={muted}>{saved?.result_status==='completed'?'نتیجه: '+fa(saved.score_a??0)+' - '+fa(saved.score_b??0):saved?'بازی در انتظار نتیجه':'هنوز ذخیره نشده'}</span>
-                <button type="button" style={primary} disabled={knockoutSaving!==null} onClick={()=>void saveKnockout(match,index)}>{knockoutSaving===match.id?'در حال ذخیره…':'ذخیره نتیجه حذفی'}</button>
+                <button type="button" style={primary} disabled={knockoutSaving!==null||!slots?.a.resolved||!slots?.b.resolved} onClick={()=>void saveKnockout(match,index)}>{knockoutSaving===match.id?'در حال ذخیره…':'ذخیره نتیجه حذفی'}</button>
               </div>
             </details>;
           })}
         </div>}
       <datalist id="series3-knockout-player-ids">{knockoutPlayers.map(id=><option key={id} value={id}/>)}</datalist>
-      <p style={{...muted,marginTop:8}}>نتایج حذفی در جدول مستقل و تاریخچه‌دار ذخیره می‌شوند؛ آمار و امتیازهای گروهی را تغییر نمی‌دهند.</p>
+      <p style={{...muted,marginTop:8}}>بازیکنان از جایگاه رسمی گروه‌ها و برنده مرحله قبل به‌صورت خودکار تعیین می‌شوند؛ ورود دستی Plato ID برای مسابقات حذفی غیرفعال است. نتایج در جدول مستقل و تاریخچه‌دار ذخیره می‌شوند و آمار گروهی را تغییر نمی‌دهند.</p>
     </div>
 
     <p style={{...muted,marginTop:10}}>هر اصلاح، نسخه قبلی را در تاریخچه نگه می‌دارد. برنامه بازی‌ها و جای بازیکنان قابل تغییر نیست.</p>
