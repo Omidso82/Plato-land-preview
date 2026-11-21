@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL, supabase } from './supabase';
+import Series3KnockoutResultsManager from './Series3KnockoutResultsManager';
 
 type SectionOption = { id: string; label: string };
 type PredictionCampaign = { id:string; title:string; description:string; campaign_type:string; status:string; is_open:boolean; opens_at:string|null; closes_at:string|null; questions:Array<{id:string;label:string;type?:string;options?:string[]}>; prize_rules:any };
@@ -333,6 +334,8 @@ export default function Series3TelegramManager() {
         </div>
       </details>)}
     </div>
+
+    <Series3KnockoutResultsManager />
 
     <details open style={{...panel,marginTop:12,padding:12,background:'#111214'}}>
       <summary style={{cursor:'pointer',color:'#f0d99f',fontWeight:800}}>گزارش نتایج پیش‌بینی‌ها · فقط مالک</summary>
