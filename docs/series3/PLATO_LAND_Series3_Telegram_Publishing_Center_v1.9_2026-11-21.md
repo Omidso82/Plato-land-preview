@@ -85,3 +85,13 @@ The existing saved ranking order and win-percentage calculation remain unchanged
 - This layout prevents statistic cards from painting over the Plato ID lane. Ranking order, values, labels, IDs, data source, database, and Telegram send behavior remain unchanged.
 - No message was sent. CI and refreshed preview verification pending.
 - Follow-up implementation commit: `bcdb72bb7b1f3b9d1593f8f80117c298829c7735`.
+
+
+## Follow-up adjustment — v1.9.3 (2026-11-21)
+
+- The third iPhone preview still showed insufficient visual separation between the rightmost statistics card and some Plato IDs.
+- Increased the separation substantially: the ID lane now starts at x=735, has an opaque dark background, and clips ID text within its own lane. The three statistic cards are confined to centers 175, 345, and 515, each 110px wide.
+- ID text remains right-aligned and automatically scales down only if needed to fit the reserved lane.
+- Statistic values remain 36px and row numbers 34px. Ranking order, values, labels, IDs, data source, database, and Telegram send behavior remain unchanged.
+- No message was sent. CI and refreshed preview verification pending.
+- Follow-up implementation commit: `70b3adc99d0ff681ea29636f2080cf27e214eb58`.
