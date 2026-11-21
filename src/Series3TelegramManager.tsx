@@ -130,7 +130,7 @@ export default function Series3TelegramManager() {
 
   async function loadReportVoters(campaignId:string) {
     setReportCampaignId(campaignId); setReportVoters([]); setSelectedReportVoters([]);
-    setPreview([]); setRankingImageData(''); setRankingImageBase64(''); setChampionImageData(''); setReportError('');
+    setPreview([]); setRankingImageData(''); setRankingImageBase64(''); setChampionImageData(''); setChampionImageBase64(''); setReportError('');
     if(!campaignId || !supabase) return;
     setReportLoading(true);
     try {
@@ -171,7 +171,7 @@ export default function Series3TelegramManager() {
     const response=await fetch(SUPABASE_URL+'/functions/v1/plato-land-series3-telegram',{
       method:'POST',
       headers:{Authorization:'Bearer '+token,apikey:SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',Accept:'application/json'},
-      body:JSON.stringify({action,sections:selected,destinations,report_campaign_id:reportCampaignId||undefined,report_voter_ids:options.rankingImage?undefined:(selectedReportVoters.length?selectedReportVoters:undefined),report_ranking_image:options.rankingImage===true||undefined,report_champion_voter_image:options.championImage===true||undefined,ranking_image_base64:options.imageBase64||undefined}),
+      body:JSON.stringify({action,sections:selected,destinations,report_campaign_id:reportCampaignId||undefined,report_voter_ids:(options.rankingImage||options.championImage)?undefined:(selectedReportVoters.length?selectedReportVoters:undefined),report_ranking_image:options.rankingImage===true||undefined,report_champion_voter_image:options.championImage===true||undefined,ranking_image_base64:options.imageBase64||undefined}),
       cache:'no-store',
     });
     const result=await response.json().catch(()=>({}));
@@ -385,7 +385,7 @@ export default function Series3TelegramManager() {
         {id:'test_group',label:'فقط گروه آزمایشی'},
         {id:'main_channel',label:'فقط کانال اصلی'},
       ].map(option=><label key={option.id} style={{display:'flex',gap:9,alignItems:'center',padding:'8px 0',color:'#eee5d4',fontSize:13}}>
-        <input type="checkbox" checked={destinations.includes(option.id)} onChange={()=>{setDestinations(current=>current.includes(option.id)?current.filter(x=>x!==option.id):[...current,option.id]);setPreview([]);setRankingImageData('');setRankingImageBase64('');setNotice('');}} style={{accentColor:'#d6b35f',width:18,height:18}}/>
+        <input type="checkbox" checked={destinations.includes(option.id)} onChange={()=>{setDestinations(current=>current.includes(option.id)?current.filter(x=>x!==option.id):[...current,option.id]);setPreview([]);setRankingImageData('');setRankingImageBase64('');setChampionImageData('');setChampionImageBase64('');setNotice('');}} style={{accentColor:'#d6b35f',width:18,height:18}}/>
         {option.label}
       </label>)}
       {destinations.length===0&&<p style={{color:'#ffc8c8',fontSize:12}}>برای پیش‌نمایش و ارسال، حداقل یک مقصد انتخاب کن.</p>}
