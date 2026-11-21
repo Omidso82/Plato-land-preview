@@ -1,6 +1,6 @@
 # PLATO LAND – Series 3 Telegram Ranking Image Layout
 
-**Version:** 1.10.0  
+**Version:** 1.11.0  
 **Date:** 2026-11-21  
 **Project:** PLATO LAND – Temporary Projects  
 **Status:** New column redesign committed to a review branch; merge and live-panel verification pending.
@@ -36,6 +36,18 @@ The owner supplied a live-panel screenshot showing that the prior arrangement st
 - Existing row height, ranking order, exact Plato IDs, statistics values, labels, title, footer, data source, and delivery flow remain unchanged.
 
 This redesign replaces the previous x=790–1000 ID lane and closely spaced statistic centers. It is intended to make the three zones visually unmistakable on mobile screenshots and Telegram.
+
+## 3.1 Right-to-left column order (v1.11.0)
+
+After review of the generated mobile image, the owner specified the Persian right-to-left reading order. Each row now places the columns, from right to left, as follows:
+
+1. Rank number (01–12) at the far right.
+2. Plato ID immediately to the left of rank.
+3. Incorrect predictions.
+4. Correct predictions.
+5. Remaining predictions at the far left.
+
+The row keeps the same overall dimensions and visual style. Rank and ID remain separate, and the statistics remain individual cards. Only column positions/order are changed; source values, participant order, IDs, and calculation logic are preserved.
 
 ## 4. Data, security, and delivery boundaries
 
