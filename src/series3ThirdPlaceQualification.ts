@@ -80,6 +80,7 @@ export function resolveSeries3ThirdPlaces(
     })).sort(compareOfficial);
 
     // Only a direct, completed head-to-head between exactly the players tied for 3rd/4th resolves this group tie.
+    let thirdPlace = ranked[2];
     if (sameCriteria(ranked[1], ranked[2]) || sameCriteria(ranked[2], ranked[3])) {
       if (sameCriteria(ranked[1], ranked[2]) && sameCriteria(ranked[2], ranked[3]))
         return { status: 'owner_review', reason: 'در گروه ' + group + ' تساوی چندنفره در محدوده رتبه سوم وجود دارد؛ تصمیم مالک لازم است.' };
@@ -94,9 +95,9 @@ export function resolveSeries3ThirdPlaces(
         return { status: 'owner_review', reason: 'نتیجه رودرروی نفرات سوم و چهارم گروه ' + group + ' برای تعیین رتبه معتبر نیست.' };
       const h = h2h[0];
       const winnerId = h.score_a! > h.score_b! ? h.player_a_registration_id : h.player_b_registration_id;
-      if (winnerId !== third.registration_id) return { status: 'owner_review', reason: 'نتیجه رودررو با ترتیب جدول رسمی گروه ' + group + ' تعارض دارد؛ بررسی مالک لازم است.' };
+      thirdPlace = winnerId === third.registration_id ? third : fourth;
     }
-    thirdPlaces.push(ranked[2]);
+    thirdPlaces.push(thirdPlace);
   }
 
   thirdPlaces.sort(compareOfficial);
