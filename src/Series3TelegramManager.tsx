@@ -313,7 +313,7 @@ export default function Series3TelegramManager() {
   async function makePreview() {
     if(selected.length===0 && !(reportCampaignId && selectedReportVoters.length)){setError('حداقل یک مورد یا رأی‌دهنده را برای پیش‌نمایش انتخاب کن.');return;}
     if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
-    setBusy(true);setError('');setNotice('');setPreview([]);setRankingImageData('');setRankingImageBase64('');
+    setBusy(true);setError('');setNotice('');setPreview([]);setRankingImageData('');setRankingImageBase64('');setChampionImageData('');setChampionImageBase64('');
     try{
       const result=await callApi('preview');
       if(!result?.ok||!result.messages?.length)throw new Error(result?.error||'برای انتخاب‌های فعلی پیام قابل تهیه نیست.');
