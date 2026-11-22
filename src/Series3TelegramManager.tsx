@@ -58,6 +58,7 @@ export default function Series3TelegramManager() {
   const [rankingImageBase64, setRankingImageBase64] = useState('');
   const [rankingImageBusy, setRankingImageBusy] = useState(false);
   const [championImageData, setChampionImageData] = useState('');
+  const [championImageBase64, setChampionImageBase64] = useState('');
   const [championImageBusy, setChampionImageBusy] = useState(false);
   const [dailySchedule, setDailySchedule] = useState<any>(null);
   const [dailyResults, setDailyResults] = useState<Array<{match_id:string;result_status:string;score_a:number|null;score_b:number|null}>>([]);
@@ -110,7 +111,7 @@ export default function Series3TelegramManager() {
   }
 
   const selectedCount = selected.length;
-  const previewCount = useMemo(() => preview.length + (rankingImageBase64 ? 1 : 0), [preview, rankingImageBase64]);
+  const previewCount = useMemo(() => preview.length + (rankingImageBase64 || championImageBase64 ? 1 : 0), [preview, rankingImageBase64, championImageBase64]);
   async function refreshCampaigns() {
     if (!supabase) { setPredictionError('اتصال به دیتابیس برقرار نیست.'); return; }
     setPredictionLoading(true); setPredictionError('');
@@ -129,7 +130,7 @@ export default function Series3TelegramManager() {
 
   async function loadReportVoters(campaignId:string) {
     setReportCampaignId(campaignId); setReportVoters([]); setSelectedReportVoters([]);
-    setPreview([]); setRankingImageData(''); setRankingImageBase64(''); setChampionImageData(''); setReportError('');
+    setPreview([]); setRankingImageData(''); setRankingImageBase64(''); setChampionImageData(''); setChampionImageBase64(''); setReportError('');
     if(!campaignId || !supabase) return;
     setReportLoading(true);
     try {
@@ -161,7 +162,7 @@ export default function Series3TelegramManager() {
     setNotice('');
   }
 
-  async function callApi(action:'preview'|'send', options:{rankingImage?:boolean;imageBase64?:string}={}) {
+  async function callApi(action:'preview'|'send', options:{rankingImage?:boolean;championImage?:boolean;imageBase64?:string}={}) {
     if(!supabase){setError('اتصال به حساب مدیریت برقرار نیست.');return null;}
     const {data,error:sessionError}=await supabase.auth.getSession();
     if(sessionError)throw sessionError;
@@ -170,7 +171,7 @@ export default function Series3TelegramManager() {
     const response=await fetch(SUPABASE_URL+'/functions/v1/plato-land-series3-telegram',{
       method:'POST',
       headers:{Authorization:'Bearer '+token,apikey:SUPABASE_PUBLISHABLE_KEY,'Content-Type':'application/json',Accept:'application/json'},
-      body:JSON.stringify({action,sections:selected,destinations,report_campaign_id:reportCampaignId||undefined,report_voter_ids:options.rankingImage?undefined:(selectedReportVoters.length?selectedReportVoters:undefined),report_ranking_image:options.rankingImage===true||undefined,ranking_image_base64:options.imageBase64||undefined}),
+      body:JSON.stringify({action,sections:selected,destinations,report_campaign_id:reportCampaignId||undefined,report_voter_ids:(options.rankingImage||options.championImage)?undefined:(selectedReportVoters.length?selectedReportVoters:undefined),report_ranking_image:options.rankingImage===true||undefined,report_champion_voter_image:options.championImage===true||undefined,ranking_image_base64:options.imageBase64||undefined}),
       cache:'no-store',
     });
     const result=await response.json().catch(()=>({}));
@@ -254,7 +255,7 @@ export default function Series3TelegramManager() {
       setReportError('برای این کمپین پاسخ ثبت‌شده‌ای وجود ندارد.');
       return;
     }
-    setChampionImageBusy(true); setReportError(''); setChampionImageData('');
+    setChampionImageBusy(true); setReportError(''); setChampionImageData(''); setChampionImageBase64('');
     try {
       const rows = reportVoters.map(entry => ({
         voter: String(entry.voter_plato_id || '').trim(),
@@ -303,7 +304,7 @@ export default function Series3TelegramManager() {
       ctx.fillText(new Intl.NumberFormat('fa-IR').format(rows.length)+' پاسخ معتبر',width/2,footerY+38);
       const dataUrl=canvas.toDataURL('image/png');
       if(!dataUrl.startsWith('data:image/png;base64,')) throw new Error('تبدیل تصویر به PNG ناموفق بود.');
-      setChampionImageData(dataUrl);
+      setChampionImageData(dataUrl); setChampionImageBase64(dataUrl.split(',')[1] || '');
     } catch(e) {
       setReportError('ساخت تصویر پیش‌بینی قهرمان ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص'));
     } finally { setChampionImageBusy(false); }
@@ -312,7 +313,7 @@ export default function Series3TelegramManager() {
   async function makePreview() {
     if(selected.length===0 && !(reportCampaignId && selectedReportVoters.length)){setError('حداقل یک مورد یا رأی‌دهنده را برای پیش‌نمایش انتخاب کن.');return;}
     if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
-    setBusy(true);setError('');setNotice('');setPreview([]);setRankingImageData('');setRankingImageBase64('');
+    setBusy(true);setError('');setNotice('');setPreview([]);setRankingImageData('');setRankingImageBase64('');setChampionImageData('');setChampionImageBase64('');
     try{
       const result=await callApi('preview');
       if(!result?.ok||!result.messages?.length)throw new Error(result?.error||'برای انتخاب‌های فعلی پیام قابل تهیه نیست.');
@@ -325,17 +326,18 @@ export default function Series3TelegramManager() {
 
   async function sendSelected() {
     const rankingImageSending=Boolean(reportCampaignId&&rankingImageBase64);
-    if(selected.length===0 && !(reportCampaignId && selectedReportVoters.length) && !rankingImageSending){setError('ابتدا موارد یا رأی‌دهندگان موردنظر را انتخاب کن.');return;}
+    const championImageSending=Boolean(reportCampaignId&&championImageBase64);
+    if(selected.length===0 && !(reportCampaignId && selectedReportVoters.length) && !rankingImageSending && !championImageSending){setError('ابتدا موارد یا رأی‌دهندگان موردنظر را انتخاب کن.');return;}
     if(destinations.length===0){setError('حداقل یک مقصد تلگرام را انتخاب کن.');return;}
-    if(preview.length===0 && !rankingImageBase64){setError('قبل از ارسال، ابتدا پیش‌نمایش را تهیه و بررسی کن.');return;}
+    if(preview.length===0 && !rankingImageBase64 && !championImageBase64){setError('قبل از ارسال، ابتدا پیش‌نمایش را تهیه و بررسی کن.');return;}
     const target=destinations.map(id=>id==='test_group'?'گروه آزمایشی':'کانال اصلی').join(' و ');
-    const reportSending=Boolean((reportCampaignId&&selectedReportVoters.length>0)||rankingImageSending);
-    const warning=rankingImageSending?' این تصویر شامل Plato ID و آمار پیش‌بینی شرکت‌کنندگان است و برای اعضای مقصد قابل مشاهده خواهد بود.':reportSending?' این گزارش‌ها شامل Plato ID و پیش‌بینی هر رأی‌دهنده است و در مقصد انتخاب‌شده برای اعضای آن قابل مشاهده خواهد بود.':'';
+    const reportSending=Boolean((reportCampaignId&&selectedReportVoters.length>0)||rankingImageSending||championImageSending);
+    const warning=championImageSending?' این تصویر شامل Plato ID رأی‌دهندگان و قهرمان انتخابی آن‌هاست و برای اعضای مقصد قابل مشاهده خواهد بود.':rankingImageSending?' این تصویر شامل Plato ID و آمار پیش‌بینی شرکت‌کنندگان است و برای اعضای مقصد قابل مشاهده خواهد بود.':reportSending?' این گزارش‌ها شامل Plato ID و پیش‌بینی هر رأی‌دهنده است و در مقصد انتخاب‌شده برای اعضای آن قابل مشاهده خواهد بود.':'';
     const approved=window.confirm('آیا ارسال '+fa(previewCount)+' مورد به هر مقصد انتخاب‌شده ('+target+') را تأیید می‌کنی؟'+warning);
     if(!approved)return;
     setSending(true);setError('');setNotice('');
     try{
-      const result=await callApi('send',rankingImageSending?{rankingImage:true,imageBase64:rankingImageBase64}:{});
+      const result=await callApi('send',rankingImageSending?{rankingImage:true,imageBase64:rankingImageBase64}:championImageSending?{championImage:true,imageBase64:championImageBase64}:{});
       const perDestination=(result?.destination_results||[]).map((item:any)=>item.label+': '+(item.status==='sent'?'موفق':item.status==='partial'?'ناقص':'ناموفق')+' ('+fa(item.sent_count)+' از '+fa(item.total_count)+')').join('؛ ');
       const historyWarning=result?.history_saved===false?' هشدار: نتیجه ارسال در تاریخچه دیتابیس ذخیره نشد.':'';
       const destinationResults=result?.destination_results||[];
@@ -346,7 +348,7 @@ export default function Series3TelegramManager() {
       if(anyDelivered){
         // Never leave a preview armed for destinations that may already contain messages.
         // A partially delivered destination must not be retried wholesale.
-        setPreview([]);setRankingImageData('');setRankingImageBase64('');
+        setPreview([]);setRankingImageData('');setRankingImageBase64('');setChampionImageData('');setChampionImageBase64('');
         setDestinations(retryableDestinations);
         const retryNote=retryableDestinations.length
           ? ' پیش‌نمایش پاک شد؛ فقط مقصدهای کاملاً ناموفق انتخاب شدند. برای تلاش مجدد، پیش‌نمایش تازه تهیه کن.'
@@ -383,7 +385,7 @@ export default function Series3TelegramManager() {
         {id:'test_group',label:'فقط گروه آزمایشی'},
         {id:'main_channel',label:'فقط کانال اصلی'},
       ].map(option=><label key={option.id} style={{display:'flex',gap:9,alignItems:'center',padding:'8px 0',color:'#eee5d4',fontSize:13}}>
-        <input type="checkbox" checked={destinations.includes(option.id)} onChange={()=>{setDestinations(current=>current.includes(option.id)?current.filter(x=>x!==option.id):[...current,option.id]);setPreview([]);setRankingImageData('');setRankingImageBase64('');setNotice('');}} style={{accentColor:'#d6b35f',width:18,height:18}}/>
+        <input type="checkbox" checked={destinations.includes(option.id)} onChange={()=>{setDestinations(current=>current.includes(option.id)?current.filter(x=>x!==option.id):[...current,option.id]);setPreview([]);setRankingImageData('');setRankingImageBase64('');setChampionImageData('');setChampionImageBase64('');setNotice('');}} style={{accentColor:'#d6b35f',width:18,height:18}}/>
         {option.label}
       </label>)}
       {destinations.length===0&&<p style={{color:'#ffc8c8',fontSize:12}}>برای پیش‌نمایش و ارسال، حداقل یک مقصد انتخاب کن.</p>}
@@ -434,10 +436,10 @@ export default function Series3TelegramManager() {
       </>}
       {rankingImageData&&<div style={{marginTop:12,border:'1px solid #806638',borderRadius:10,padding:8,background:'#0d0e10'}}><strong style={{display:'block',color:'#f0d99f',fontSize:12,marginBottom:8}}>پیش‌نمایش تصویر رتبه‌بندی</strong><img src={rankingImageData} alt="تصویر رتبه‌بندی پیش‌بینی‌کنندگان سری سوم" style={{display:'block',width:'100%',height:'auto',borderRadius:8}}/><button type="button" style={darkButton} onClick={()=>{setRankingImageData('');setRankingImageBase64('');}}>پاک‌کردن تصویر</button></div>}
       {championImageData&&<div style={{marginTop:12,border:'1px solid #806638',borderRadius:10,padding:8,background:'#0d0e10'}}>
-        <strong style={{display:'block',color:'#f0d99f',fontSize:12,marginBottom:8}}>پیش‌نمایش تصویر پیش‌بینی قهرمان · فقط دریافت فایل</strong>
+        <strong style={{display:'block',color:'#f0d99f',fontSize:12,marginBottom:8}}>پیش‌نمایش تصویر پیش‌بینی قهرمان</strong>
         <img src={championImageData} alt="گزارش Plato ID رأی‌دهنده و Plato ID قهرمان انتخاب‌شده" style={{display:'block',width:'100%',height:'auto',borderRadius:8}}/>
         <a href={championImageData} download="PLATO-LAND-Series3-Champion-Predictions.png" style={{...goldButton,display:'inline-block',textDecoration:'none',marginTop:9}}>دریافت تصویر PNG</a>
-        <button type="button" style={{...darkButton,marginInlineStart:8}} onClick={()=>setChampionImageData('')}>پاک‌کردن تصویر</button>
+        <button type="button" style={{...darkButton,marginInlineStart:8}} onClick={()=>{setChampionImageData('');setChampionImageBase64('');}}>پاک‌کردن تصویر</button>
       </div>}
       {reportCampaignId&&<p style={{...muted,marginTop:9}}>وضعیت نتایج از دیتابیس خوانده می‌شود. هر گزارش شامل Plato ID و پیش‌بینی همان رأی‌دهنده است و پس از تأیید Owner به مقصد انتخاب‌شده ارسال می‌شود؛ اعضای آن گروه یا کانال می‌توانند محتوای پیام را ببینند.</p>}
     </details>
@@ -502,7 +504,7 @@ export default function Series3TelegramManager() {
 
     <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:13}}>
       <button type="button" style={goldButton} disabled={busy||sending||(selectedCount===0&&!(reportCampaignId&&selectedReportVoters.length>0))||destinations.length===0} onClick={()=>void makePreview()}>{busy?'در حال آماده‌سازی…':'تهیه پیش‌نمایش پیام‌ها'}</button>
-      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0||destinations.length===0} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':rankingImageBase64?'ارسال تصویر رتبه‌بندی':'ارسال پیام‌های پیش‌نمایش‌شده'}</button>
+      <button type="button" style={darkButton} disabled={busy||sending||previewCount===0||destinations.length===0} onClick={()=>void sendSelected()}>{sending?'در حال ارسال…':championImageBase64?'ارسال تصویر پیش‌بینی قهرمان':rankingImageBase64?'ارسال تصویر رتبه‌بندی':'ارسال پیام‌های پیش‌نمایش‌شده'}</button>
       <button type="button" style={darkButton} disabled={busy||sending} onClick={()=>{setPreview([]);setError('');setNotice('');}}>پاک‌کردن پیش‌نمایش</button>
     </div>
 

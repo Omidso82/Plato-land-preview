@@ -319,10 +319,11 @@ Deno.serve(async (req: Request) => {
     const reportCampaignId = typeof body.report_campaign_id === "string" ? body.report_campaign_id : "";
     const reportVoterIds = Array.isArray(body.report_voter_ids) ? [...new Set(body.report_voter_ids.map((x:unknown)=>String(x)))] : [];
     const reportRankingImage = body.report_ranking_image === true;
+    const reportChampionVoterImage = body.report_champion_voter_image === true;
     const rankingImageBase64 = typeof body.ranking_image_base64 === "string" ? body.ranking_image_base64 : "";
-    const reportMode = Boolean(reportCampaignId || reportVoterIds.length || reportRankingImage);
-    if (reportMode && (!/^[-a-f0-9]{36}$/i.test(reportCampaignId) || (reportRankingImage ? reportVoterIds.length !== 0 : reportVoterIds.length < 1) || reportVoterIds.length > 100)) return json({error:"کمپین یا فهرست رأی‌دهندگان برای گزارش معتبر نیست."},400);
-    if (reportRankingImage && action === "send" && (!rankingImageBase64 || rankingImageBase64.length > 8_000_000)) return json({error:"تصویر رتبه‌بندی نامعتبر یا بزرگ‌تر از حد مجاز است."},400);
+    const reportMode = Boolean(reportCampaignId || reportVoterIds.length || reportRankingImage || reportChampionVoterImage);
+    if (reportMode && (!/^[-a-f0-9]{36}$/i.test(reportCampaignId) || (reportRankingImage || reportChampionVoterImage ? reportVoterIds.length !== 0 : reportVoterIds.length < 1) || reportVoterIds.length > 100 || (reportRankingImage && reportChampionVoterImage))) return json({error:"کمپین یا فهرست رأی‌دهندگان برای گزارش معتبر نیست."},400);
+    if ((reportRankingImage || reportChampionVoterImage) && action === "send" && (!rankingImageBase64 || rankingImageBase64.length > 8_000_000)) return json({error:"تصویر رتبه‌بندی نامعتبر یا بزرگ‌تر از حد مجاز است."},400);
 
     const wantsFixtures = selected.some((id:string)=>id.startsWith("fixtures:day:"));
     const wantsBracket = selected.some((id:string)=>id.startsWith("bracket:"));
@@ -346,7 +347,7 @@ Deno.serve(async (req: Request) => {
         ? admin.from('plato_land_prediction_campaigns').select('id,title,description,campaign_type,status,questions,prize_rules').eq('event_key','series3').eq('id',reportCampaignId).in('status',['published','closed']).maybeSingle()
         : Promise.resolve({data:null,error:null}),
       reportMode
-        ? (reportRankingImage
+        ? (reportRankingImage || reportChampionVoterImage
             ? admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).order('submitted_at',{ascending:true})
             : admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).in('id',reportVoterIds))
         : Promise.resolve({data:[],error:null}),
@@ -397,10 +398,15 @@ Deno.serve(async (req: Request) => {
       if (!reportCampaign || !["published","closed"].includes(reportCampaign.status) || !["champion","match_predictions"].includes(reportCampaign.campaign_type)) return json({error:"کمپین گزارش پیدا نشد یا نوع آن پشتیبانی نمی‌شود."},404);
       const reportEntries = (reportEntriesResult.data || []) as PredictionEntry[];
       if (reportRankingImage) {
+        if (reportCampaign.campaign_type !== "match_predictions") return json({error:"تصویر رتبه‌بندی فقط برای کمپین پیش‌بینی بازی‌ها پشتیبانی می‌شود."},400);
         predictionRanking = buildPredictionRanking(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
       } else {
-        if (reportEntries.length !== reportVoterIds.length) return json({error:"فهرست رأی‌دهندگان با داده‌های کمپین مطابقت ندارد؛ فهرست را تازه‌سازی کن."},409);
-        messages = buildVoterReportMessages(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
+        if (reportChampionVoterImage && reportCampaign.campaign_type !== "champion") return json({error:"ارسال تصویر رأی‌دهندگان فقط برای کمپین پیش‌بینی قهرمان پشتیبانی می‌شود."},400);
+        if (!reportChampionVoterImage) {
+          if (reportEntries.length !== reportVoterIds.length) return json({error:"فهرست رأی‌دهندگان با داده‌های کمپین مطابقت ندارد؛ فهرست را تازه‌سازی کن."},409);
+          messages = buildVoterReportMessages(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
+        }
+
         if (messages.length > 100) return json({error:"تعداد پیام‌های گزارش از سقف مجاز بیشتر است."},400);
       }
     } else {
@@ -442,21 +448,26 @@ Deno.serve(async (req: Request) => {
         ? null
         : "شناسه این مقصد در Secretهای سمت سرور تنظیم نشده است.";
       let failedSection: string|null = failure ? "configuration" : null;
-      if (reportRankingImage) {
+      if (reportChampionVoterImage && failure) {
+        // Preserve the destination-configuration failure; do not call Telegram without a chat ID.
+      } else if (reportRankingImage || reportChampionVoterImage) {
         try {
           const binary = Uint8Array.from(atob(rankingImageBase64), c => c.charCodeAt(0));
           if (binary.length < 8 || binary[0] !== 0x89 || binary[1] !== 0x50 || binary[2] !== 0x4e || binary[3] !== 0x47) throw new Error("فایل تصویر PNG معتبر نیست.");
           const form = new FormData();
           form.append("chat_id", chatIds[destination]);
-          form.append("caption", "♛ PLATO LAND · لیگ تخته‌نرد سری سوم" + String.fromCharCode(10) + "رتبه‌بندی پیش‌بینی‌کنندگان · " + (predictionRanking?.title || "پیش‌بینی بازی‌ها"));
-          form.append("photo", new Blob([binary], {type:"image/png"}), "series3-prediction-ranking.png");
+          const imageCaption = reportChampionVoterImage
+            ? "♛ PLATO LAND · لیگ تخته‌نرد سری سوم" + String.fromCharCode(10) + "گزارش پیش‌بینی قهرمان · " + String(reportCampaignResult.data?.title || "قهرمان سری سوم")
+            : "♛ PLATO LAND · لیگ تخته‌نرد سری سوم" + String.fromCharCode(10) + "رتبه‌بندی پیش‌بینی‌کنندگان · " + (predictionRanking?.title || "پیش‌بینی بازی‌ها");
+          form.append("caption", imageCaption);
+          form.append("photo", new Blob([binary], {type:"image/png"}), reportChampionVoterImage ? "series3-champion-voter-report.png" : "series3-prediction-ranking.png");
           const response = await fetch("https://api.telegram.org/bot"+botToken+"/sendPhoto", {method:"POST", body:form});
           const sent = await response.json().catch(()=>null);
           if (!response.ok || !sent?.ok) throw new Error(String(sent?.description ?? "Telegram photo send failed."));
-          results.push({section_id:"prediction-ranking-image",message_id:Number(sent.result?.message_id ?? 0)});
+          results.push({section_id:reportChampionVoterImage?"champion-voter-image":"prediction-ranking-image",message_id:Number(sent.result?.message_id ?? 0)});
         } catch (sendError) {
           failure = sendError instanceof Error ? sendError.message : "ارسال تصویر به تلگرام ناموفق بود.";
-          failedSection = "prediction-ranking-image";
+          failedSection = reportChampionVoterImage ? "champion-voter-image" : "prediction-ranking-image";
         }
       } else {
         for (const [index, message] of messages.entries()) {
@@ -486,12 +497,12 @@ Deno.serve(async (req: Request) => {
         : "sent";
       const attempt = {
         destination, label:destinationLabels[destination], status,
-        sent_count:results.length, total_count:reportRankingImage ? 1 : messages.length,
+        sent_count:results.length, total_count:(reportRankingImage || reportChampionVoterImage) ? 1 : messages.length,
         failed_section:failedSection, error:failure, results,
       };
       destinationResults.push(attempt);
       const { error:historyError } = await admin.from("plato_land_series3_telegram_delivery_history").insert({
-        destination, status, total_count:reportRankingImage ? 1 : messages.length, sent_count:results.length,
+        destination, status, total_count:(reportRankingImage || reportChampionVoterImage) ? 1 : messages.length, sent_count:results.length,
         failed_section:failedSection, error_message:failure,
         telegram_results:results, sent_by:authData.user.id,
       });
@@ -506,7 +517,7 @@ Deno.serve(async (req: Request) => {
     return json({
       sent:allSent, partial:anySent&&!allSent, destination_results:destinationResults,
       sent_count:destinationResults.reduce((sum,item)=>sum+item.sent_count,0),
-      total_count:(reportRankingImage ? 1 : messages.length)*destinationResults.length,
+      total_count:((reportRankingImage || reportChampionVoterImage) ? 1 : messages.length)*destinationResults.length,
       history_saved: attemptHistorySaved,
     }, allSent?200:502);
   } catch (error) {
