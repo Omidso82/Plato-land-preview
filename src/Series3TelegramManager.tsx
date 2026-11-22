@@ -279,11 +279,20 @@ export default function Series3TelegramManager() {
       ctx.fillText('پیش‌بینی قهرمان سری سوم',width/2,190);
       ctx.fillStyle='#c6b99f'; ctx.font='28px Arial'; ctx.fillText('گزارش انتخاب‌های ثبت‌شده شرکت‌کنندگان',width/2,245);
       const leftX=72, colW=450, gap=36, rightX=leftX+colW+gap;
-      rounded(leftX,top-64,colW,52,12,'#2a2418','#9b783d');
-      rounded(rightX,top-64,colW,52,12,'#2a2418','#9b783d');
-      ctx.direction='rtl'; ctx.textAlign='center'; ctx.fillStyle='#e5c477'; ctx.font='bold 25px Arial';
-      ctx.fillText('Plato ID رأی‌دهنده',leftX+colW/2,top-29);
-      ctx.fillText('Plato ID قهرمان انتخاب‌شده',rightX+colW/2,top-29);
+      // Larger, clearer column headings so viewers can immediately distinguish both Plato ID roles.
+      const headerHeight = 68;
+      const headerY = top - 76;
+      rounded(leftX,headerY,colW,headerHeight,12,'#2a2418','#9b783d');
+      rounded(rightX,headerY,colW,headerHeight,12,'#2a2418','#9b783d');
+      ctx.direction='rtl'; ctx.textAlign='center'; ctx.fillStyle='#e5c477';
+      const drawHeader = (label:string,x:number) => {
+        let size = 36;
+        ctx.font = 'bold '+size+'px Arial';
+        while(ctx.measureText(label).width > colW-36 && size > 28){size--;ctx.font='bold '+size+'px Arial';}
+        ctx.fillText(label,x+colW/2,headerY+45);
+      };
+      drawHeader('Plato ID رأی‌دهنده',leftX);
+      drawHeader('Plato ID قهرمان انتخاب‌شده',rightX);
       rows.forEach((row,index)=>{
         const y=top+index*rowHeight;
         rounded(leftX,y,colW,88,13,index%2===0?'#17191c':'#111315','#4b402c');
