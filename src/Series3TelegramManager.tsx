@@ -245,7 +245,7 @@ export default function Series3TelegramManager() {
     finally {setRankingImageBusy(false);}
   }
 
-  function makeChampionVoterImage() {
+  async function makeChampionVoterImage() {
     const campaign = reportCampaigns.find(item => item.id === reportCampaignId);
     if (!campaign || campaign.campaign_type !== 'champion') {
       setReportError('برای تهیه این تصویر، کمپین قهرمانی سری سوم را انتخاب کن.');
@@ -257,6 +257,9 @@ export default function Series3TelegramManager() {
     }
     setChampionImageBusy(true); setReportError(''); setChampionImageData(''); setChampionImageBase64('');
     try {
+      // Wait for the Persian typeface before drawing text onto the PNG canvas.
+      await document.fonts.load('700 48px Vazirmatn');
+      await document.fonts.load('400 28px Vazirmatn');
       const rows = reportVoters.map(entry => ({
         voter: String(entry.voter_plato_id || '').trim(),
         champion: typeof entry.response?.champion === 'string' ? String(entry.response.champion).trim() : '',
@@ -275,11 +278,11 @@ export default function Series3TelegramManager() {
       rounded(28,28,width-56,height-56,28,'#101113','#8e6b34');
       ctx.textAlign='center'; ctx.direction='ltr'; ctx.fillStyle='#d9b96e'; ctx.font='bold 42px Arial';
       ctx.fillText('♛ PLATO LAND',width/2,105);
-      ctx.direction='rtl'; ctx.fillStyle='#f4e5c4'; ctx.font='bold 48px Arial';
+      ctx.direction='rtl'; ctx.fillStyle='#f4e5c4'; ctx.font='bold 48px Vazirmatn, Tahoma, sans-serif';
       ctx.fillText('پیش‌بینی قهرمان سری سوم',width/2,190);
-      ctx.fillStyle='#c6b99f'; ctx.font='28px Arial'; ctx.fillText('گزارش انتخاب‌های ثبت‌شده شرکت‌کنندگان',width/2,245);
+      ctx.fillStyle='#c6b99f'; ctx.font='28px Vazirmatn, Tahoma, sans-serif'; ctx.fillText('گزارش انتخاب‌های ثبت‌شده شرکت‌کنندگان',width/2,245);
       const leftX=72, colW=450, gap=36, rightX=leftX+colW+gap;
-      // Larger, clearer column headings so viewers can immediately distinguish both Plato ID roles.
+      // Clear, Persian-styled column headings for voter identity and champion prediction.
       const headerHeight = 68;
       const headerY = top - 76;
       rounded(leftX,headerY,colW,headerHeight,12,'#2a2418','#9b783d');
@@ -287,12 +290,12 @@ export default function Series3TelegramManager() {
       ctx.direction='rtl'; ctx.textAlign='center'; ctx.fillStyle='#e5c477';
       const drawHeader = (label:string,x:number) => {
         let size = 36;
-        ctx.font = 'bold '+size+'px Arial';
-        while(ctx.measureText(label).width > colW-36 && size > 28){size--;ctx.font='bold '+size+'px Arial';}
+        ctx.font = 'bold '+size+'px Vazirmatn, Tahoma, sans-serif';
+        while(ctx.measureText(label).width > colW-36 && size > 28){size--;ctx.font='bold '+size+'px Vazirmatn, Tahoma, sans-serif';}
         ctx.fillText(label,x+colW/2,headerY+45);
       };
       drawHeader('Plato ID رأی‌دهنده',leftX);
-      drawHeader('Plato ID قهرمان انتخاب‌شده',rightX);
+      drawHeader('پیش‌بینی قهرمان',rightX);
       rows.forEach((row,index)=>{
         const y=top+index*rowHeight;
         rounded(leftX,y,colW,88,13,index%2===0?'#17191c':'#111315','#4b402c');
@@ -307,7 +310,7 @@ export default function Series3TelegramManager() {
         drawId(row.voter,leftX); drawId(row.champion,rightX);
       });
       const footerY=top+rows.length*rowHeight+58;
-      ctx.direction='rtl'; ctx.textAlign='center'; ctx.fillStyle='#d9b96e'; ctx.font='26px Arial';
+      ctx.direction='rtl'; ctx.textAlign='center'; ctx.fillStyle='#d9b96e'; ctx.font='26px Vazirmatn, Tahoma, sans-serif';
       ctx.fillText('بازی، رقابت، قهرمانی',width/2,footerY);
       ctx.fillStyle='#8e846f'; ctx.font='20px Arial';
       ctx.fillText(new Intl.NumberFormat('fa-IR').format(rows.length)+' پاسخ معتبر',width/2,footerY+38);
