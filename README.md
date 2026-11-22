@@ -116,3 +116,19 @@ npm run dev
 
 ## اصلاحیه مرجع جاری — ۴ نوامبر ۲۰۲۶
 این README نقطه ورود اسناد است. وضعیت معتبر طراحی در حال حاضر A و B برابر `OWNER ACCEPTED` در Preview است؛ بخش C باز است. برای جزئیات و حدود پذیرش به دو گزارش مستقل A/B و الحاقیه‌های جاری Project Status، Implementation Register، Technical Handover و QA مراجعه شود. متن‌های قدیمی‌تر در همین README و Snapshotهای تاریخی، وضعیت زمان ثبت خود را توصیف می‌کنند و در صورت تعارض، این اصلاحیه جدیدتر مرجع است.
+
+
+---
+
+## وضعیت جاری مستندات — PLATO-DOC-SEAL، ۴ نوامبر ۲۰۲۶
+
+این یادداشت، متن‌های تاریخی قدیمی‌تر README را درباره «عدم وجود Staging» یا «Preview صرفاً mock و بدون دیتابیس» به‌روزرسانی می‌کند:
+- Staging Supabase مستقل `vgezfuztgzxbmvkmaoqn` بازسازی شده است.
+- شاخه `cloudflare-preview` با commit `d4dde5f608a915505f82a3f1f3b2a8f875ba1aff` به Staging متصل و در Cloudflare با موفقیت Deploy شده است.
+- URL اختصاصی Deploy: `https://b8205280.plato-land-preview.pages.dev`؛ alias مشاهده‌شده در موبایل: `https://plato-land-preview.pages.dev`.
+- اسکرین‌شات مالک فقط بازشدن و رندر صفحه را تأیید می‌کند؛ browser-to-database request هنوز تست/تأیید نشده است.
+- Staging برای QA کامل آماده نیست؛ پیش‌نیازهای Auth، synthetic users/roles، Edge Functions، security review و migration reconciliation باز هستند.
+- `main` و Production همچنان به Supabase اصلی متصل‌اند و در این اقدام تغییر نکرده‌اند.
+- مرجع تفصیلی: `docs/PLATO_DOC_SEAL_STAGING_PREVIEW_2026-11-04.md`.
+
+متن‌های قدیمی پایین این README به‌عنوان Snapshot تاریخی حفظ شده‌اند و در صورت تعارض، این وضعیت جاری و سند PLATO DOC SEAL مرجع هستند.

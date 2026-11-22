@@ -142,3 +142,16 @@
 - الحاقیه‌های v1.7 و v1.8 و هر متن قبلی که B را باز/منتظر تصمیم معرفی می‌کند، Snapshot تاریخی‌اند؛ v1.10 وضعیت جاری را ثبت می‌کند و v1.9 در همین فایل مرجع جزئیات پذیرش B است.
 - بخش C هنوز بررسی/تأیید نشده است.
 - این الحاقیه فقط مستندسازی است؛ هیچ کد اجرایی، DB، Storage، DNS، main، Production یا Deploy را تغییر نمی‌دهد.
+
+
+---
+
+## الحاقیه v1.11 — ثبت آماده‌سازی Staging و اتصال Preview (۴ نوامبر ۲۰۲۶)
+
+- Staging Supabase مستقل `vgezfuztgzxbmvkmaoqn` بازسازی شد؛ ساختار و محدودیت‌ها در سند `PLATO_DOC_SEAL_STAGING_PREVIEW_2026-11-04.md` آمده است.
+- Preview branch به Staging متصل شد؛ commit: `d4dde5f608a915505f82a3f1f3b2a8f875ba1aff`.
+- Cloudflare Pages deployment موفق: `b8205280`; URL: `https://b8205280.plato-land-preview.pages.dev`; workflow run: `41866856087`.
+- مالک URL alias را روی Safari موبایل باز کرد؛ این شاهد رندر صفحه است، نه تست ارتباط دیتابیس.
+- وضعیت: Staging schema rebuilt / Preview deploy successful / browser-to-DB unverified / Staging readiness PARTIAL.
+- پیش‌نیازهای باز: leaked-password protection، synthetic roles/users، هفت Edge Function، review دو SECURITY DEFINER، migration-source reconciliation و QA فنی.
+- Production و main تغییر نکردند؛ هیچ داده Production به Staging کپی نشد؛ migration اجراشده replay نشود.
