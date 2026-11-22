@@ -448,7 +448,9 @@ Deno.serve(async (req: Request) => {
         ? null
         : "شناسه این مقصد در Secretهای سمت سرور تنظیم نشده است.";
       let failedSection: string|null = failure ? "configuration" : null;
-      if (reportRankingImage || reportChampionVoterImage) {
+      if (reportChampionVoterImage && failure) {
+        // Preserve the destination-configuration failure; do not call Telegram without a chat ID.
+      } else if (reportRankingImage || reportChampionVoterImage) {
         try {
           const binary = Uint8Array.from(atob(rankingImageBase64), c => c.charCodeAt(0));
           if (binary.length < 8 || binary[0] !== 0x89 || binary[1] !== 0x50 || binary[2] !== 0x4e || binary[3] !== 0x47) throw new Error("فایل تصویر PNG معتبر نیست.");
