@@ -282,7 +282,7 @@ export default function Series3TelegramManager() {
       ctx.fillText('پیش‌بینی قهرمان سری سوم',width/2,190);
       ctx.fillStyle='#c6b99f'; ctx.font='28px Vazirmatn, Tahoma, sans-serif'; ctx.fillText('گزارش انتخاب‌های ثبت‌شده شرکت‌کنندگان',width/2,245);
       const leftX=72, colW=450, gap=36, rightX=leftX+colW+gap;
-      // Larger, clearer column headings so viewers can immediately distinguish both Plato ID roles.
+      // Clear, Persian-styled column headings for voter identity and champion prediction.
       const headerHeight = 68;
       const headerY = top - 76;
       rounded(leftX,headerY,colW,headerHeight,12,'#2a2418','#9b783d');
