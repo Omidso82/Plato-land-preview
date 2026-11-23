@@ -31,3 +31,9 @@ Branch: feature/temp-lifecycle-autoarchive-20261123.
 Implementation files include src/temporaryLifecycle.ts, src/temporaryLifecycleSeriesPreflight.ts,
 src/TemporaryLifecycleOwnerPanel.tsx, src/Series2SlidesManager.tsx, and docs/sql/*.
 Separate project scope; do not alter Main Website.
+
+## Additional verified source coverage (2026-11-23)
+- Series 3 public bracket contains 16 round32 + 8 round16 + 4 quarterfinals + 2 semifinals + 1 final = 31 expected knockout matches, with 31 distinct match IDs.
+- Match-ID-and-stage joined completed result coverage is 0/31. Third-place result remains absent.
+- Readiness RPC now reports expected bracket count and draw existence; UI displays these counts without declaring completion.
+- This is a **blocking** preflight, not an official result approval or evidence issuance.
