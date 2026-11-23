@@ -61,3 +61,11 @@ Separate project scope; do not alter Main Website.
 - Both restore and archive RPCs now recheck matching correlation IDs after acquiring the series row lock to handle concurrent retries safely.
 - Live database state rechecked after migrations: Series 3 started/registration closed; Series 4 and 5 planned/registration not_open; evidence=0, transitions=0, holds=0.
 - No production branch merge or website deployment.
+
+## Append-only audit and UI reliability — continuation
+- Applied migration `plato_temp_transitions_append_only_20261123`: UPDATE/DELETE triggers now reject modifications to lifecycle_transitions, preserving actor, reason, timestamp, state changes and correlation ID.
+- Tested inside a rollback-only transaction by inserting a synthetic transition and attempting UPDATE; received expected SQLSTATE 42501, audit mutation denied. No synthetic transition persisted.
+- Tested authenticated role without owner identity calling restore; received SQLSTATE 42501, owner authorization required.
+- Owner panel now shows loading state, handles absent Supabase client, disables refresh while loading and distinguishes empty series from loading.
+- Post-test database check: Series 3 started/registration closed; Series 4 and 5 planned/registration not_open; lifecycle transitions=0.
+- Still no scheduled archive job, no approved evidence writer, no full React build, no merge or publication.
