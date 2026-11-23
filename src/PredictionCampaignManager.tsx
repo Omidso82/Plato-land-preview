@@ -89,7 +89,7 @@ export default function PredictionCampaignManager(){
     setMatchesError('بازی‌های گروهی دریافت شدند؛ قرعه رسمی حذفی سری سوم هنوز در دسترس نیست.');
    }
    setMatchChoices(choices);
-   const refreshedByKey=new Map(choices.map(choice=>[choice.key,choice]));
+   const refreshedByKey=new Map<string,MatchChoice>(choices.map(choice=>[choice.key,choice]));
    setSelectedMatches(current=>current.map(selected=>refreshedByKey.get(selected.key)||selected));
   }catch(e:any){
    setMatchesError(e.message||'دریافت فهرست بازی‌ها ناموفق بود.');
