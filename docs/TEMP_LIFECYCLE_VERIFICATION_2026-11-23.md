@@ -54,3 +54,10 @@ Separate project scope; do not alter Main Website.
 - Full React/Vite build unavailable in this runtime (repository cannot be cloned due to network resolution); no claim of complete typecheck.
 - Actual signed-in owner/non-owner browser JWT tests and UI tests are still outstanding.
 - Evidence issuer, approval flow, and scheduling remain blocked pending source-specific verification and controlled rollout.
+
+## Additional execution and version control
+- Added repeatable `npm run test:lifecycle` command using the project's pinned TypeScript dependency, without new packages.
+- Verified the isolated runner locally: **PASS 22/22**; it cleans up its temporary compiled files.
+- Both restore and archive RPCs now recheck matching correlation IDs after acquiring the series row lock to handle concurrent retries safely.
+- Live database state rechecked after migrations: Series 3 started/registration closed; Series 4 and 5 planned/registration not_open; evidence=0, transitions=0, holds=0.
+- No production branch merge or website deployment.
