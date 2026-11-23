@@ -17,6 +17,7 @@ type Row = {
 export default function Series4TelegramPreview(){
   const [kind,setKind]=useState<ReportKind>('schedule');
   const [date,setDate]=useState('');
+  const [group,setGroup]=useState('ALL');
   const [preview,setPreview]=useState('');
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
@@ -52,7 +53,7 @@ export default function Series4TelegramPreview(){
   }
   async function generate(){
     if(!supabase||busy||(isGroupReport&&!date))return;
-    setBusy(true);setError('');setPreview('');setCopied(false);
+    setBusy(true);setError('');setPreview('');setCopied(false);setSent(false);setReceipt('');
     try{
       if(!isGroupReport){
         const text=await knockoutReport();
@@ -65,7 +66,7 @@ export default function Series4TelegramPreview(){
         .eq('match_date',date).order('group_name').order('match_no');
       if(error)throw error;
       const rows=(data??[]) as Row[];
-      const selected=kind==='results'?rows.filter(row=>row.result_status!=='pending'):rows;
+      const selected=rows.filter(row=>(group==='ALL'||row.group_name===group)&&(kind!=='results'||row.result_status!=='pending'));
       if(!selected.length){setError('برای این تاریخ گزارشی وجود ندارد.');return;}
       const lines=selected.map(row=>{
         const players=row.player_a_plato_id+' — '+row.player_b_plato_id;
@@ -78,23 +79,75 @@ export default function Series4TelegramPreview(){
     }catch{setError('دریافت داده‌های سری چهارم ناموفق بود.');}
     finally{setBusy(false);}
   }
+  const [targets,setTargets]=useState<string[]>([]);
+  const [sending,setSending]=useState(false);
+  const [sent,setSent]=useState(false);
+  const [receipt,setReceipt]=useState('');
+  const [history,setHistory]=useState<Array<{request_id:string;destination:string;status:string;created_at:string}>>([]);
+  const destinationLabel=(value:string)=>value==='test_group'?'گروه آزمایشی تلگرام':'کانال اصلی تلگرام';
+  const statusLabel=(value:string)=>({
+    sent:'ارسال شد',failed:'ناموفق',sending:'در حال ارسال',uncertain:'نیازمند بررسی',unconfigured:'تنظیم نشده',
+  }[value]??value);
+  async function refreshHistory(){
+    if(!supabase)return;
+    try{
+      const {data,error}=await supabase.from('plato_land_series4_telegram_delivery_history')
+        .select('request_id,destination,status,created_at').order('created_at',{ascending:false}).limit(20);
+      if(error)throw error;
+      setHistory(data??[]);
+    }catch{setError('دریافت تاریخچه ارسال‌ها ناموفق بود.');}
+  }
+  async function send(){
+    if(!supabase||sending||sent||!preview||!targets.length)return;
+    if(!window.confirm('این گزارش سری چهارم به '+targets.map(destinationLabel).join(' و ')+' ارسال شود؟'))return;
+    setSending(true);setSent(true);setError('');setReceipt('');
+    try{
+      const {data,error}=await supabase.functions.invoke('plato-land-series4-telegram',{
+        body:{request_id:crypto.randomUUID(),destinations:targets,message:preview},
+      });
+      if(error||!Array.isArray(data?.results))throw new Error();
+      setReceipt(data.results.map((row:{destination:string;status:string})=>destinationLabel(row.destination)+' · '+statusLabel(row.status)).join(' | '));
+      await refreshHistory();
+    }catch{setError('ارسال تأیید نشد. قبل از ساخت پیش‌نمایش دوباره، تاریخچه و مقصد تلگرام را بررسی کن.');}
+    finally{setSending(false);}
+  }
   async function copy(){
     if(!preview)return;
     try{await navigator.clipboard.writeText(preview);setCopied(true);}
     catch{setError('کپی انجام نشد. متن داخل پیش‌نمایش قابل انتخاب است.');}
   }
   return <details dir="rtl" style={{marginTop:14,padding:14,border:'1px solid #8c6a34',borderRadius:13,color:'#f2ead8'}}>
-    <summary style={{cursor:'pointer',color:'#e4c77e'}}>پیش‌نمایش اعلان تلگرام سری چهارم</summary>
+    <summary style={{cursor:'pointer',color:'#e4c77e'}}>مرکز اطلاع‌رسانی تلگرام سری چهارم</summary>
     <div style={{display:'grid',gap:9,marginTop:10}}>
-      <label>نوع گزارش <select value={kind} disabled={busy} onChange={event=>{setKind(event.target.value as typeof kind);setPreview('');}}>
+      <label>نوع گزارش <select value={kind} disabled={busy||sending} onChange={event=>{setKind(event.target.value as typeof kind);setPreview('');}}>
         <option value="schedule">برنامه گروهی</option><option value="results">نتایج گروهی</option>
         <option value="bracket">براکت حذفی</option><option value="knockout">نتایج حذفی</option>
       </select></label>
-      {isGroupReport&&<label>تاریخ <input type="date" value={date} disabled={busy} onChange={event=>{setDate(event.target.value);setPreview('');}}/></label>}
-      <button type="button" disabled={busy||(isGroupReport&&!date)} onClick={()=>void generate()}>{busy?'در حال دریافت…':'ساخت پیش‌نمایش'}</button>
+      {isGroupReport&&<label>تاریخ <input type="date" value={date} disabled={busy||sending} onChange={event=>{setDate(event.target.value);setPreview('');}}/></label>}
+      {isGroupReport&&<label>گروه <select value={group} disabled={busy||sending} onChange={event=>{setGroup(event.target.value);setPreview('');}}>
+        <option value="ALL">همه گروه‌ها</option>
+        {Array.from('ABCDEFGHIJKL').map(letter=><option key={letter} value={letter}>گروه {letter}</option>)}
+      </select></label>}
+      <button type="button" disabled={busy||sending||(isGroupReport&&!date)} onClick={()=>void generate()}>{busy?'در حال دریافت…':'ساخت پیش‌نمایش'}</button>
       {error&&<span role="alert">{error}</span>}
       {preview&&<><textarea aria-label="متن اعلان" rows={10} readOnly value={preview}/>
-        <button type="button" onClick={()=>void copy()}>{copied?'کپی شد':'کپی متن'}</button></>}
+        <button type="button" onClick={()=>void copy()}>{copied?'کپی شد':'کپی متن'}</button>
+        <fieldset><legend>مقصد ارسال</legend>
+          {['test_group','main_channel'].map(target=><label key={target} style={{display:'block'}}>
+            <input type="checkbox" disabled={sending||sent} checked={targets.includes(target)}
+              onChange={()=>setTargets(current=>current.includes(target)?current.filter(item=>item!==target):[...current,target])}/>
+            {destinationLabel(target)}
+          </label>)}
+        </fieldset>
+        <button type="button" disabled={sending||sent||!targets.length} onClick={()=>void send()}>{sending?'در حال ارسال…':'تأیید و ارسال'}</button>
+      </>}
+      {receipt&&<span role="status">{receipt}</span>}
+      <details><summary>تاریخچه ارسال‌ها</summary>
+        <button type="button" onClick={()=>void refreshHistory()}>تازه‌سازی تاریخچه</button>
+        <ul>{history.map(row=><li key={row.request_id+row.destination}>
+          {destinationLabel(row.destination)} · {statusLabel(row.status)} · {new Date(row.created_at).toLocaleString('fa-IR')}
+        </li>)}</ul>
+      </details>
     </div>
   </details>;
 }

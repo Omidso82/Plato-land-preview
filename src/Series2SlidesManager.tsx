@@ -270,10 +270,11 @@ export default function Series2SlidesManager() {
     {managerPage==='series4'&&<>
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
       <h2 style={{...heading,marginTop:18}}>مدیریت سری چهارم مسابقات تخته‌نرد</h2>
+      <Series3SectionBoundary title="تصاویر و تیزر سری چهارم"><Series4MediaManager /></Series3SectionBoundary>
+      <Series3SectionBoundary title="ویدیوی قوانین سری چهارم"><Series4MediaManager rulesOnly /></Series3SectionBoundary>
       <Series3SectionBoundary title="گزارش ثبت‌نام سری چهارم"><Series4RegistrationReport /></Series3SectionBoundary>
       <Series3SectionBoundary title="رتبه‌بندی و قرعه‌کشی سری چهارم"><Series4SeedingManager /></Series3SectionBoundary>
       <Series3SectionBoundary title="نتایج گروهی سری چهارم"><Series4GroupResultsManager /></Series3SectionBoundary>
-      <Series3SectionBoundary title="رسانه سری چهارم"><Series4MediaManager /></Series3SectionBoundary>
       <Series3SectionBoundary title="اعلان تلگرام سری چهارم"><Series4TelegramPreview /></Series3SectionBoundary>
     </>}
     {managerPage==='series2'&&<>

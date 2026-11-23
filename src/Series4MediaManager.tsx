@@ -16,8 +16,11 @@ function mediaUrl(slot:string,key?:string) {
   return url;
 }
 
-export default function Series4MediaManager(){
-  const [slot,setSlot]=useState('poster');
+export default function Series4MediaManager({rulesOnly=false}:{rulesOnly?:boolean}){
+  const [slot,setSlot]=useState(rulesOnly?'rules':'poster');
+  const [file,setFile]=useState<File|null>(null);
+  const [archived,setArchived]=useState<Record<string,boolean>>({});
+  const [preferences,setPreferences]=useState({homepage_slot:'poster',rules_enabled:false});
   const [saved,setSaved]=useState<Record<string,string>>({});
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
@@ -28,10 +31,17 @@ export default function Series4MediaManager(){
     if(!supabase)return;
     let cancelled=false;
     void (async()=>{
-      const {data,error}=await supabase.from('plato_land_series4_media').select('slot,object_key');
+      const [{data,error},settings]=await Promise.all([
+        supabase.from('plato_land_series4_media').select('slot,object_key,is_active'),
+        supabase.from('plato_land_series4_media_preferences').select('homepage_slot,rules_enabled').single(),
+      ]);
       if(cancelled)return;
       if(error)setError('دریافت فهرست رسانه‌ها ناموفق بود.');
-      else setSaved(Object.fromEntries((data??[]).map(row=>[row.slot,row.object_key])));
+      else {
+        setSaved(Object.fromEntries((data??[]).map(row=>[row.slot,row.object_key])));
+        setArchived(Object.fromEntries((data??[]).map(row=>[row.slot,!row.is_active])));
+      }
+      if(settings.data)setPreferences(settings.data);
     })();
     return()=>{cancelled=true;};
   },[]);
@@ -65,10 +75,12 @@ export default function Series4MediaManager(){
       if(!head.ok||Number(head.headers.get('content-length'))!==file.size||
         head.headers.get('content-type')?.split(';')[0]!==file.type)throw new Error('فایل آپلود شد، ولی بررسی رسانه موفق نبود.');
       const {error:saveError}=await supabase.from('plato_land_series4_media').upsert({
-        slot,object_key:uploaded.key,updated_at:new Date().toISOString(),updated_by:data.session.user.id,
+        slot,object_key:uploaded.key,is_active:true,updated_at:new Date().toISOString(),updated_by:data.session.user.id,
       });
       if(saveError)throw new Error('فایل آپلود شد، اما ذخیره مرجع رسانه ناموفق بود.');
       setSaved(previous=>({...previous,[slot]:uploaded.key}));
+      setArchived(previous=>({...previous,[slot]:false}));
+      setFile(null);
       setPreview('');
       setMessage('رسانه ذخیره و تأیید شد.');
     }catch(error){
@@ -76,15 +88,64 @@ export default function Series4MediaManager(){
     }finally{setBusy(false);}
   }
 
+  async function savePreferences(next:typeof preferences) {
+    if(!supabase||busy)return;
+    setBusy(true);setError('');setMessage('');
+    try{
+      const {data,error}=await supabase.from('plato_land_series4_media_preferences')
+        .update(next).eq('singleton',true).select('homepage_slot,rules_enabled').single();
+      if(error)throw error;
+      setPreferences(data);
+      setMessage('تنظیم رسانه ذخیره شد.');
+    }catch{setError('ذخیره تنظیم رسانه ناموفق بود.');}
+    finally{setBusy(false);}
+  }
+
+  async function toggleArchive() {
+    if(!supabase||busy||!saved[slot])return;
+    const removing=!archived[slot];
+    if(removing&&!window.confirm('رسانه از انتخاب‌های فعال کنار گذاشته شود؟ فایل در بایگانی می‌ماند.'))return;
+    setBusy(true);setError('');setMessage('');
+    try{
+      const {data:session,error:authError}=await supabase.auth.getSession();
+      if(authError||!session.session)throw new Error();
+      const {error}=await supabase.from('plato_land_series4_media').update({
+        is_active:!removing,updated_at:new Date().toISOString(),updated_by:session.session.user.id,
+      }).eq('slot',slot).eq('object_key',saved[slot]).select('slot').single();
+      if(error)throw error;
+      setArchived(previous=>({...previous,[slot]:removing}));
+      setMessage(removing?'رسانه بایگانی شد.':'رسانه دوباره فعال شد.');
+    }catch{setError('تغییر وضعیت رسانه ناموفق بود.');}
+    finally{setBusy(false);}
+  }
+
   return <details dir="rtl" style={{marginTop:14,padding:14,border:'1px solid #8c6a34',borderRadius:13,color:'#f2ead8'}}>
-    <summary style={{cursor:'pointer',color:'#e4c77e'}}>تصاویر، تیزر و ویدیوی قوانین سری چهارم</summary>
+    <summary style={{cursor:'pointer',color:'#e4c77e'}}>{rulesOnly ? 'مدیریت ویدیوی قوانین سری چهارم' : 'مدیریت تصاویر و تیزر سری چهارم'}</summary>
     <div style={{display:'grid',gap:10,marginTop:12}}>
-      <label>رسانه <select value={slot} disabled={busy} onChange={event=>{setSlot(event.target.value);setPreview('');setError('');setMessage('');}}>
-        {slots.map(item=><option key={item.id} value={item.id}>{item.label}{saved[item.id]?' ✓':''}</option>)}
-      </select></label>
-      <label>بارگذاری فایل <input key={slot} type="file" accept={video?'video/mp4':'image/jpeg,image/png,image/webp'}
-        disabled={busy} onChange={event=>{const file=event.target.files?.[0];event.target.value='';if(file)void operate(file);}}/></label>
+      {!rulesOnly&&<>
+        <strong>رسانه ترجیحی صفحه اول</strong>
+        <div style={{display:'flex',flexWrap:'wrap',gap:8}}>
+          <button type="button" disabled={busy||preferences.homepage_slot==='poster'} onClick={()=>void savePreferences({...preferences,homepage_slot:'poster'})}>پوستر ثابت</button>
+          <button type="button" disabled={busy||!saved.teaser||archived.teaser||preferences.homepage_slot==='teaser'} onClick={()=>void savePreferences({...preferences,homepage_slot:'teaser'})}>ویدیوی تیزر</button>
+        </div>
+        <span>انتخاب فعلی: {preferences.homepage_slot==='poster'?'پوستر ثابت':'ویدیوی تیزر'}</span>
+        <label>رسانه <select value={slot} disabled={busy} onChange={event=>{setSlot(event.target.value);setFile(null);setPreview('');setError('');setMessage('');}}>
+          {slots.filter(item=>item.id!=='rules').map(item=><option key={item.id} value={item.id}>{item.label}{archived[item.id]?' · بایگانی':saved[item.id]?' ✓':''}</option>)}
+        </select></label>
+      </>}
+      <label>انتخاب فایل <input key={slot} type="file" accept={video?'video/mp4':'image/jpeg,image/png,image/webp'}
+        disabled={busy} onChange={event=>{setFile(event.target.files?.[0]??null);event.target.value='';}}/></label>
+      {file&&<span><bdi>{file.name}</bdi> · {(file.size/1024/1024).toFixed(1)} MB</span>}
+      <button type="button" disabled={busy||!file} onClick={()=>{if(file)void operate(file);}}>
+        {saved[slot]?'جایگزینی فایل':'بارگذاری فایل'}
+      </button>
       <button type="button" disabled={busy||!saved[slot]} onClick={()=>void operate()}>پیش‌نمایش رسانه ذخیره‌شده</button>
+      {rulesOnly&&<button type="button" disabled={busy||(!preferences.rules_enabled&&(!saved.rules||archived.rules))}
+        onClick={()=>void savePreferences({...preferences,rules_enabled:!preferences.rules_enabled})}>
+        {preferences.rules_enabled?'غیرفعال‌کردن ویدیوی قوانین':'فعال‌کردن ویدیوی قوانین در تنظیمات سری'}
+      </button>}
+      {saved[slot]&&<><small style={{overflowWrap:'anywhere'}}>Cloudflare R2 · <bdi>{saved[slot]}</bdi></small>
+        <button type="button" disabled={busy} onClick={()=>void toggleArchive()}>{archived[slot]?'بازگرداندن رسانه':'بایگانی رسانه'}</button></>}
       {busy&&<span role="status">در حال انجام…</span>}
       {message&&<span role="status">{message}</span>}
       {error&&<span role="alert">{error}</span>}
