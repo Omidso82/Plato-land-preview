@@ -1,4 +1,4 @@
--- Installed on main Supabase; owner-only restore with request-scoped idempotency.
+-- Installed main Supabase; idempotent retry after row lock.
 CREATE OR REPLACE FUNCTION public.plato_temp_owner_restore_active(p_series_number integer, p_reason text, p_correlation_id uuid DEFAULT gen_random_uuid())
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -21,7 +21,15 @@ begin
  end if;
  select * into v_series from public.plato_land_league_series where series_number=p_series_number for update;
  if not found then raise exception 'series not found'; end if;
- if v_series.lifecycle_status<>'archived' then raise exception 'series must be archived to restore'; end if;
+ if v_series.lifecycle_status<>'archived' then
+  select * into v_existing from plato_temp_internal.lifecycle_transitions where correlation_id=p_correlation_id;
+  if found and v_existing.actor_kind='manager' and v_existing.actor_id=v_actor
+     and v_existing.series_id=v_series.id and v_existing.from_status='archived'
+     and v_existing.to_status='started' and v_existing.reason=p_reason then
+    return jsonb_build_object('already_processed',true,'transition_id',v_existing.id);
+  end if;
+  raise exception 'series must be archived to restore';
+ end if;
  select evidence_version into v_evidence from plato_temp_internal.lifecycle_evidence where series_id=v_series.id order by evaluated_at desc limit 1;
  update public.plato_land_league_series set lifecycle_status='started' where id=v_series.id;
  insert into plato_temp_internal.lifecycle_archive_holds(series_id,evidence_version,reason,created_by)
