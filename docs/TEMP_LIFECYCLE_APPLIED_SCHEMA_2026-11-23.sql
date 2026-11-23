@@ -1,0 +1,6 @@
+-- Applied to primary Supabase via migration plato_temp_lifecycle_metadata_20261123.
+-- Schema-only, non-destructive. See database migration history for canonical SQL.
+-- Internal schema: plato_temp_internal
+-- Tables: lifecycle_evidence, lifecycle_archive_holds, lifecycle_transitions
+-- All three have RLS enabled and no direct anon/authenticated privileges.
+-- No lifecycle state updates or automatic jobs are included.
