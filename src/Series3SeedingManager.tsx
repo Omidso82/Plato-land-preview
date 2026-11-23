@@ -563,13 +563,7 @@ export default function Series3SeedingManager() {
               <button type="button" style={secondaryButton} disabled={bracketLoading} onClick={()=>setBracketConfirm(false)}>انصراف</button>
             </div>}
         </> : <>
-          <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:8}}>
-            {!bracketReplaceConfirm ? <button type="button" style={secondaryButton} onClick={()=>setBracketReplaceConfirm(true)}>ثبت قرعه تصادفی تأییدشده کاربر (حفظ نسخه قبلی)</button> :
-              <>
-                <button type="button" style={button} disabled={bracketLoading} onClick={()=>void runApprovedBracketReplacement()}>{bracketLoading?'در حال ثبت قرعه تأییدشده…':'تأیید و ثبت قرعه نهایی کاربر'}</button>
-                <button type="button" style={secondaryButton} disabled={bracketLoading} onClick={()=>setBracketReplaceConfirm(false)}>انصراف</button>
-              </>}
-          </div>
+          <p style={{...muted,color:'#efb27b'}}>قرعه‌کشی رسمی این سری قفل است. جایگزینی مجدد قرعه از این بخش غیرفعال شده تا مسیر مسابقات تغییر نکند؛ ثبت هشت نفر سوم فقط از بخش نتایج گروهی و با تأیید مالک انجام می‌شود.</p>
           <p style={{...muted,color:'#b8dfa9'}}>قرعه ثبت شده و ثابت است · {new Date(savedBracket.created_at).toLocaleString('fa-IR')}</p>
           {([
             ['یک‌شانزدهم نهایی · ۱۶ بازی',savedBracket.bracket_snapshot.round32],
