@@ -1,0 +1,42 @@
+name: Validate isolated temporary manager build
+
+on:
+  pull_request:
+    paths:
+      - 'manager-only.html'
+      - 'vite.manager.config.ts'
+      - 'src/manager-only.tsx'
+      - 'src/Series2SlidesManager.tsx'
+      - 'src/Series3SeedingManager.tsx'
+      - 'src/Series3GroupResultsManager.tsx'
+      - '.github/workflows/validate-temp-manager.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-manager-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - name: Build only existing temporary manager
+        run: npx vite build --config vite.manager.config.ts
+      - name: Verify output and route isolation
+        run: |
+          test -f dist-manager/series2-slides-manager/index.html
+          test -d dist-manager/series2-slides-manager/assets
+          test ! -e dist-manager/index.html
+          test ! -e dist-manager/series3/index.html
+          test ! -e dist-manager/index.html
+          grep -q 'series2-slides-manager/assets/' dist-manager/series2-slides-manager/index.html
+          if find dist-manager -type f | grep -v '^dist-manager/series2-slides-manager/'; then
+            echo 'Unexpected output outside the manager route' >&2
+            exit 1
+          fi
