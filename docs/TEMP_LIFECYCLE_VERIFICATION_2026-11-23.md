@@ -69,3 +69,11 @@ Separate project scope; do not alter Main Website.
 - Owner panel now shows loading state, handles absent Supabase client, disables refresh while loading and distinguishes empty series from loading.
 - Post-test database check: Series 3 started/registration closed; Series 4 and 5 planned/registration not_open; lifecycle transitions=0.
 - Still no scheduled archive job, no approved evidence writer, no full React build, no merge or publication.
+
+## Strict Series 3 source reconciliation
+- Applied internal read-only `plato_temp_internal.series3_completion_preflight()`: checks exact official bracket shape (16+8+4+2+1 knockout matches, 1 third-place match), distinct match IDs, joined completed result coverage, no extra result IDs, group resolution, third-place outcome.
+- Live verified output: group_total=72, group_pending=0, expected_knockout=31, matched_knockout=0, extra_results=0, third_place_completed=0, ready_for_approval=false.
+- The service archive gate now additionally requires strict source preflight to pass, in addition to fresh approved evidence and fingerprint matching.
+- Added owner-only read RPC `plato_temp_owner_series3_completion_preflight()`; authenticated caller without owner identity was denied (42501).
+- Existing temporary manager lifecycle panel shows strict reconciliation counts. No new route or standalone page.
+- Still missing: owner approval workflow, trusted evidence issuance, automated scheduling, full UI/build verification. Do not claim automatic archiving is live.
