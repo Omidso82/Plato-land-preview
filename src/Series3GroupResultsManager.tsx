@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 import { resolveLockedGroupPlacements, resolveSeries3BracketSlots, validateSeries3BracketResult } from './series3BracketProgression';
 import { resolveSeries3ThirdPlaces, type Series3PlayoffRecord } from './series3ThirdPlaceQualification';
 import { SERIES3_OFFICIAL_OWNER_REASON, type Series3OwnerThirdDecision } from './series3OwnerThirdPlaceDecision';
+import { assignThirdPlaceQualifiers, type Series3BracketSnapshot } from './series3KnockoutBracket';
 
 type ResultStatus = 'pending' | 'completed' | 'double_no_show';
 type MatchResult = {
@@ -92,6 +93,7 @@ export default function Series3GroupResultsManager() {
   const [knockoutSaving,setKnockoutSaving]=useState<string|null>(null);
   const [knockoutError,setKnockoutError]=useState('');
   const [knockoutMessage,setKnockoutMessage]=useState('');
+  const [thirdAssignmentSaving,setThirdAssignmentSaving]=useState(false);
   const [ownerDecisions,setOwnerDecisions]=useState<Series3OwnerThirdDecision[]>([]);
   const [ownerDecisionError,setOwnerDecisionError]=useState('');
   const [ownerDecisionSaving,setOwnerDecisionSaving]=useState<string|null>(null);
@@ -244,6 +246,37 @@ export default function Series3GroupResultsManager() {
     finally{setKnockoutSaving(null);}
   }
 
+  async function confirmThirdPlaceAssignment(){
+    if(!supabase||thirdAssignmentSaving||!knockoutLoaded||knockoutLoading||!ownerDecisionLoaded||knockoutRows.length!==0)return;
+    const resolution=resolveSeries3ThirdPlaces(rows,knockoutPlayoff,ownerDecisions);
+    if(resolution.status!=='ready'){setKnockoutError('هشت سهمیه هنوز قطعی نیست.');return;}
+    if(!knockoutBracket.tokens||knockoutBracket.tokens.filter(t=>t.source==='third'&&!t.group).length!==8){
+      setKnockoutError('براکت دیگر دارای هشت جایگاه موقت نیست؛ صفحه را تازه‌سازی کنید.');return;
+    }
+    const qualifiers=resolution.qualifiers.map(p=>({id:'THIRD-'+p.registration_id,label:p.plato_id,source:'third' as const,group:p.group}));
+    let next:Series3BracketSnapshot;
+    try{next=assignThirdPlaceQualifiers(knockoutBracket as Series3BracketSnapshot,qualifiers);}
+    catch(e){setKnockoutError('تخصیص بدون برخورد هم‌گروهی ممکن نشد: '+(e instanceof Error?e.message:'خطا'));return;}
+    if(!window.confirm('فقط هشت جایگاه موقت نفرات سوم در براکت رسمی تکمیل شوند؟ قرعه‌کشی سایر مسابقات ثابت می‌ماند.'))return;
+    setThirdAssignmentSaving(true);setKnockoutError('');setKnockoutMessage('');
+    try{
+      const {data:current,error:currentError}=await supabase.from('plato_land_series3_knockout_draws').select('draw_fingerprint').eq('event_key','series3').single();
+      if(currentError||current?.draw_fingerprint!=='798df9fa4dec8449aceab58f0efe3361da194da94642c4e5f7bd81daac5ac206')
+        throw new Error('نسخه براکت از زمان بررسی تغییر کرده است؛ عملیات متوقف شد.');
+      const source=JSON.stringify({entrants:next.tokens,bracket:next});
+      const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(source));
+      const fingerprint=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
+      const {data,error}=await supabase.rpc('replace_series3_knockout_draw',{
+        p_entrants_snapshot:next.tokens,p_bracket_snapshot:next,p_draw_fingerprint:fingerprint,
+        p_archive_reason:'Owner-confirmed assignment of eight official Series 3 third-place qualifiers; existing match pairings preserved',
+      });
+      if(error||!data?.success)throw new Error(error?.message||'ثبت براکت از سرور تأیید نشد.');
+      await loadKnockout();
+      setKnockoutMessage('ثبت هشت نفر سوم انجام شد؛ برای اطمینان، براکت دوباره از دیتابیس خوانده شد.');
+    }catch(e){setKnockoutError('ثبت جایگاه‌ها تأیید نشد: '+(e instanceof Error?e.message:'خطا'));}
+    finally{setThirdAssignmentSaving(false);}
+  }
+
   // Read-only preview: opening the panel must never change the official bracket.
   const thirdPlacePreview=useMemo(()=>{
     const unresolved=knockoutBracket.tokens?.filter(token=>token.source==='third'&&!token.group).length||0;
@@ -388,6 +421,7 @@ export default function Series3GroupResultsManager() {
       {knockoutError&&<p role="alert" style={{color:'#efaaaa',fontSize:12}}>{knockoutError}</p>}
       {knockoutMessage&&<p role="status" style={{color:'#b8dfa9',fontSize:12}}>{knockoutMessage}</p>}
       {thirdPlacePreview&&<p role="status" style={{...muted,color:'#e4c77e'}}>{thirdPlacePreview}</p>}
+      {thirdPlacePreview?.startsWith('پیش‌نمایش بدون ذخیره:')&&<button type="button" style={primary} disabled={thirdAssignmentSaving||knockoutLoading||!knockoutLoaded||!ownerDecisionLoaded||knockoutRows.length>0} onClick={()=>void confirmThirdPlaceAssignment()}>{thirdAssignmentSaving?'در حال ثبت…':'تأیید مالک و ثبت هشت نفر سوم در براکت'}</button>}
       <section aria-label="تصمیم رسمی نفر سوم گروه‌های C و I" style={{...card,marginTop:10}}>
         <strong style={{color:'#e4c77e'}}>تصمیم رسمی مدیریت · گروه‌های C و I</strong>
         <p style={muted}>ثبت تصمیم فقط با حساب مالک و پس از بررسی سرور انجام می‌شود. این عملیات نتایج مسابقات یا براکت را تغییر نمی‌دهد.</p>
