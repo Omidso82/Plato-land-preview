@@ -273,8 +273,10 @@ export default function Series3GroupResultsManager() {
       if(error||!data?.success)throw new Error(error?.message||'ثبت براکت از سرور تأیید نشد.');
       const {data:readback,error:readbackError}=await supabase.from('plato_land_series3_knockout_draws')
         .select('draw_fingerprint,bracket_snapshot').eq('event_key','series3').single();
+      const slotSignature=(matches:KnockoutMatch[])=>matches.map(m=>[m.id,m.a.id,m.a.group||'',m.b.id,m.b.group||''].join('|')).join(';');
       if(readbackError||readback?.draw_fingerprint!==fingerprint||
-        JSON.stringify(readback?.bracket_snapshot?.round32)!==JSON.stringify(next.round32))
+        !Array.isArray(readback?.bracket_snapshot?.round32)||
+        slotSignature(readback.bracket_snapshot.round32)!==slotSignature(next.round32))
         throw new Error('ثبت انجام شده اما بازخوانی مستقل براکت با داده مورد انتظار یکسان نیست؛ بررسی دستی لازم است.');
       await loadKnockout();
       setKnockoutMessage('هشت نفر سوم در دیتابیس ثبت و با بازخوانی مستقل تأیید شدند.');
