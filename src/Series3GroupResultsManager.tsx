@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
 import { resolveLockedGroupPlacements, resolveSeries3BracketSlots, validateSeries3BracketResult } from './series3BracketProgression';
 import { resolveSeries3ThirdPlaces, type Series3PlayoffRecord } from './series3ThirdPlaceQualification';
-import type { Series3OwnerThirdDecision } from './series3OwnerThirdPlaceDecision';
+import { SERIES3_OFFICIAL_OWNER_REASON, type Series3OwnerThirdDecision } from './series3OwnerThirdPlaceDecision';
 
 type ResultStatus = 'pending' | 'completed' | 'double_no_show';
 type MatchResult = {
@@ -143,8 +143,10 @@ export default function Series3GroupResultsManager() {
     const {data,error}=await supabase.rpc('get_series3_owner_third_decisions');
     if(error){setOwnerDecisions([]);setOwnerDecisionError('دریافت تصمیم‌های رسمی مدیریت ممکن نشد: '+error.message);return;}
     if(!Array.isArray(data)){setOwnerDecisions([]);setOwnerDecisionError('پاسخ تصمیم‌های رسمی معتبر نیست.');return;}
-    const officialReason='تساوی کامل در معیارهای رتبه‌بندی و عدم حضور دوطرفه در مسابقه رودررو؛ تعیین رتبه با تصمیم رسمی مدیریت';
-    if(data.some((d:Series3OwnerThirdDecision)=>d.event_key!=='series3'||!['C','I'].includes(d.group_name)||d.decision_version!==1||d.reason!==officialReason)){
+    if(data.length>2||new Set(data.map((d:Series3OwnerThirdDecision)=>d.group_name)).size!==data.length){
+      setOwnerDecisions([]);setOwnerDecisionError('تصمیم‌های رسمی تکراری یا خارج از محدوده هستند.');return;
+    }
+    if(data.some((d:Series3OwnerThirdDecision)=>d.event_key!=='series3'||!['C','I'].includes(d.group_name)||d.decision_version!==1||d.reason!==SERIES3_OFFICIAL_OWNER_REASON)){
       setOwnerDecisions([]);setOwnerDecisionError('پاسخ تصمیم‌های رسمی با قرارداد اعتبارسنجی مطابقت ندارد.');return;
     }
     setOwnerDecisions(data as Series3OwnerThirdDecision[]);
@@ -171,7 +173,7 @@ export default function Series3GroupResultsManager() {
       if(error)throw error;
       if(!data?.success)throw new Error('تأیید ثبت تصمیم از سرور دریافت نشد.');
       const {data:verified,error:verifyError}=await supabase.rpc('get_series3_owner_third_decisions');
-      if(verifyError||!Array.isArray(verified)||!verified.some((d:Series3OwnerThirdDecision)=>d.group_name===groupName&&d.selected_registration_id===registrationId))
+      if(verifyError||!Array.isArray(verified)||!verified.some((d:Series3OwnerThirdDecision)=>d.group_name===groupName&&d.selected_registration_id===registrationId&&d.selected_plato_id===platoId&&d.decision_version===1&&d.reason===SERIES3_OFFICIAL_OWNER_REASON))
         throw new Error('ثبت انجام شده اما بازخوانی تأییدی ناموفق بود؛ پیش از تکرار، وضعیت را تازه‌سازی کنید.');
       await loadOwnerDecisions();
       setOwnerDecisionMessage('تصمیم گروه '+groupName+' برای '+platoId+' ثبت و بازخوانی شد.');
