@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
 import { resolveLockedGroupPlacements, resolveSeries3BracketSlots, validateSeries3BracketResult } from './series3BracketProgression';
 import { resolveSeries3ThirdPlaces, type Series3PlayoffRecord } from './series3ThirdPlaceQualification';
+import type { Series3OwnerThirdDecision } from './series3OwnerThirdPlaceDecision';
 
 type ResultStatus = 'pending' | 'completed' | 'double_no_show';
 type MatchResult = {
@@ -91,6 +92,11 @@ export default function Series3GroupResultsManager() {
   const [knockoutSaving,setKnockoutSaving]=useState<string|null>(null);
   const [knockoutError,setKnockoutError]=useState('');
   const [knockoutMessage,setKnockoutMessage]=useState('');
+  const [ownerDecisions,setOwnerDecisions]=useState<Series3OwnerThirdDecision[]>([]);
+  const [ownerDecisionError,setOwnerDecisionError]=useState('');
+  const [ownerDecisionSaving,setOwnerDecisionSaving]=useState<string|null>(null);
+  const [ownerDecisionLoaded,setOwnerDecisionLoaded]=useState(false);
+  const [ownerDecisionMessage,setOwnerDecisionMessage]=useState('');
   const load=useCallback(async()=>{
     if(!supabase){setError('اتصال به دیتابیس اصلی در دسترس نیست.');setLoading(false);return;}
     setLoading(true);setError('');
@@ -130,7 +136,45 @@ export default function Series3GroupResultsManager() {
     }catch(e){setKnockoutError('دریافت براکت یا نتایج حذفی ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص'));}
     finally{setKnockoutLoading(false);}
   },[]);
-  useEffect(()=>{void load();void loadKnockout();},[load,loadKnockout]);
+  const loadOwnerDecisions=useCallback(async()=>{
+    if(!supabase)return;
+    setOwnerDecisionError('');
+    setOwnerDecisionLoaded(false);
+    const {data,error}=await supabase.rpc('get_series3_owner_third_decisions');
+    if(error){setOwnerDecisions([]);setOwnerDecisionError('دریافت تصمیم‌های رسمی مدیریت ممکن نشد: '+error.message);return;}
+    if(!Array.isArray(data)){setOwnerDecisions([]);setOwnerDecisionError('پاسخ تصمیم‌های رسمی معتبر نیست.');return;}
+    setOwnerDecisions(data as Series3OwnerThirdDecision[]);
+    setOwnerDecisionLoaded(true);
+  },[]);
+  useEffect(()=>{void load();void loadKnockout();void loadOwnerDecisions();},[load,loadKnockout,loadOwnerDecisions]);
+
+  async function recordOwnerDecision(groupName:'C'|'I',platoId:string){
+    if(!supabase||ownerDecisionSaving||!ownerDecisionLoaded)return;
+    const matchId=groupName==='C'?'S3-C-R2-M1':'S3-I-R3-M1';
+    const match=rows.find(r=>r.match_id===matchId);
+    if(!match||match.result_status!=='double_no_show'||match.score_a!==null||match.score_b!==null){
+      setOwnerDecisionError('وضعیت بازی رودررو برای ثبت تصمیم معتبر نیست.');return;
+    }
+    const registrationId=match.player_a_plato_id===platoId?match.player_a_registration_id:
+      match.player_b_plato_id===platoId?match.player_b_registration_id:null;
+    if(!registrationId){setOwnerDecisionError('شناسه بازیکن با نتیجه رسمی تطبیق ندارد.');return;}
+    if(!window.confirm('ثبت تصمیم رسمی گروه '+groupName+' به نفع '+platoId+'؟ این تصمیم در سوابق ثبت می‌شود و بدون بررسی رسمی قابل تغییر نیست.'))return;
+    setOwnerDecisionSaving(groupName);setOwnerDecisionError('');setOwnerDecisionMessage('');
+    try{
+      const {data,error}=await supabase.rpc('record_series3_owner_third_decision',{
+        p_group:groupName,p_selected_registration_id:registrationId,p_expected_match_version:match.version,
+      });
+      if(error)throw error;
+      if(!data?.success)throw new Error('تأیید ثبت تصمیم از سرور دریافت نشد.');
+      await loadOwnerDecisions();
+      if(!supabase)throw new Error('اتصال قطع شده است.');
+      const {data:verified,error:verifyError}=await supabase.rpc('get_series3_owner_third_decisions');
+      if(verifyError||!Array.isArray(verified)||!verified.some((d:Series3OwnerThirdDecision)=>d.group_name===groupName&&d.selected_registration_id===registrationId))
+        throw new Error('ثبت انجام شده اما بازخوانی تأییدی ناموفق بود؛ پیش از تکرار، وضعیت را تازه‌سازی کنید.');
+      setOwnerDecisionMessage('تصمیم گروه '+groupName+' برای '+platoId+' ثبت و بازخوانی شد.');
+    }catch(e){setOwnerDecisionError('ثبت یا تأیید تصمیم ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص'));}
+    finally{setOwnerDecisionSaving(null);}
+  }
   const knockoutMatches=useMemo(()=>{
     if(knockoutStage==='thirdPlace'&&!Array.isArray(knockoutBracket.thirdPlace))
       return [{id:'TP-1',a:{id:'L-SF-1',label:'بازنده نیمه‌نهایی ۱',source:'loser'},b:{id:'L-SF-2',label:'بازنده نیمه‌نهایی ۲',source:'loser'}}] as KnockoutMatch[];
@@ -202,11 +246,12 @@ export default function Series3GroupResultsManager() {
     if(!knockoutLoaded||unresolved===0)return null;
     if(!closed)return 'نتایج گروهی هنوز کامل بسته نشده‌اند.';
     if(knockoutRows.length>0)return 'به‌دلیل وجود نتایج حذفی، تخصیص نفرات سوم متوقف است.';
-    const result=resolveSeries3ThirdPlaces(rows as any,knockoutPlayoff);
+    if(!ownerDecisionLoaded)return 'تصمیم‌های رسمی مدیریت هنوز از سرور تأیید نشده‌اند.';
+    const result=resolveSeries3ThirdPlaces(rows as any,knockoutPlayoff,ownerDecisions);
     if(result.status==='owner_review')return 'نیازمند تصمیم رسمی مدیریت: '+result.reason;
     if(result.status!=='ready')return 'تعیین سهمیه هشتم هنوز نهایی نشده است.';
     return 'پیش‌نمایش بدون ذخیره: '+result.qualifiers.map(p=>p.plato_id).join('، ')+'. تخصیص تنها با تأیید صریح مدیریت و کنترل سرور مجاز است.';
-  },[rows,knockoutBracket,knockoutRows,knockoutPlayoff,knockoutLoaded]);
+  },[rows,knockoutBracket,knockoutRows,knockoutPlayoff,knockoutLoaded,ownerDecisions,ownerDecisionLoaded]);
 
   useEffect(()=>{
     if(!supabase)return;
@@ -336,6 +381,24 @@ export default function Series3GroupResultsManager() {
       {knockoutError&&<p role="alert" style={{color:'#efaaaa',fontSize:12}}>{knockoutError}</p>}
       {knockoutMessage&&<p role="status" style={{color:'#b8dfa9',fontSize:12}}>{knockoutMessage}</p>}
       {thirdPlacePreview&&<p role="status" style={{...muted,color:'#e4c77e'}}>{thirdPlacePreview}</p>}
+      <section aria-label="تصمیم رسمی نفر سوم گروه‌های C و I" style={{...card,marginTop:10}}>
+        <strong style={{color:'#e4c77e'}}>تصمیم رسمی مدیریت · گروه‌های C و I</strong>
+        <p style={muted}>ثبت تصمیم فقط با حساب مالک و پس از بررسی سرور انجام می‌شود. این عملیات نتایج مسابقات یا براکت را تغییر نمی‌دهد.</p>
+        {ownerDecisionError&&<p role="alert" style={{color:'#efaaaa',fontSize:12}}>{ownerDecisionError}</p>}
+        {ownerDecisionMessage&&<p role="status" style={{color:'#b8dfa9',fontSize:12}}>{ownerDecisionMessage}</p>}
+        {(['C','I'] as const).map(groupName=>{
+          const selected=groupName==='C'?'Amin_2717':'ivaz1';
+          const decision=ownerDecisions.find(d=>d.group_name===groupName);
+          return <div key={groupName} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap',marginTop:10}}>
+            <span style={muted}>گروه {groupName} · <b dir="ltr">{selected}</b> {decision?'· ثبت‌شده: '+decision.selected_plato_id:'· در انتظار ثبت رسمی'}</span>
+            <button type="button" style={secondary}
+              disabled={!ownerDecisionLoaded||!!decision||ownerDecisionSaving!==null||knockoutRows.length>0}
+              onClick={()=>void recordOwnerDecision(groupName,selected)}>
+              {ownerDecisionSaving===groupName?'در حال ثبت…':decision?'ثبت‌شده':'ثبت تصمیم رسمی'}
+            </button>
+          </div>;
+        })}
+      </section>
       {!knockoutLoaded&&knockoutLoading?<p style={muted}>در حال بارگذاری براکت حذفی…</p>:knockoutMatches.length===0?<p style={muted}>برای این مرحله مسابقه‌ای در براکت رسمی ثبت نشده است.</p>:
         <div style={{display:'grid',gap:8,marginTop:8}}>
           {knockoutMatches.map((match,index)=>{
