@@ -30,7 +30,8 @@ The review-branch change reuses the existing official progression logic from `sr
 - `resolveLockedGroupPlacements` derives mathematically locked first- and second-place group positions from official Series 3 group results. Unresolved ties/positions remain placeholders; no alphabetical fallback is introduced.
 - `resolveSeries3BracketSlots` resolves the bracket recursively using the official saved bracket, assigned third-place qualifiers, and completed knockout results.
 - The prediction manager reads the official draw from `plato_land_series3_knockout_draws`, group results from `plato_land_series3_group_match_results`, and knockout results from `plato_land_series3_knockout_match_results`.
-- All bracket stages, including third place when present, use resolved Plato IDs where determinable and retain the official placeholder label where not yet determinable.
+- All bracket stages, including the derived third-place match `TP-1` when absent from the stored snapshot, use resolved Plato IDs where determinable and retain the official placeholder label where not yet determinable.
+- The prediction scoring report now also reads official knockout match results, so knockout predictions can be evaluated once completed, without changing the scoring rules.
 - Refreshing the game list also refreshes the label/options of already-selected match keys without changing the selected match identities.
 
 ## 4. Preserved data and rules
@@ -38,7 +39,7 @@ The review-branch change reuses the existing official progression logic from `sr
 - The official bracket snapshot, match IDs, draw order, and pairings are read-only inputs. No redraw or bracket replacement is performed.
 - No group results, knockout results, player registrations, prediction entries, or campaign records are written by the loader.
 - Existing selected match identities are preserved by stable stage/match keys.
-- Campaign creation/edit/save behavior, prediction scoring rules, and public submission behavior are otherwise unchanged.
+- Campaign creation/edit/save behavior, prediction scoring rules, and public submission behavior are otherwise unchanged. Existing saved campaigns are not automatically rewritten; refreshed labels/options apply in the manager and only persist if the owner explicitly saves the campaign.
 - No database schema, RLS, RPC, Edge Function, Telegram, or PLATO LAND – Main Website changes are included.
 
 ## 5. Primary database read-only audit (2026-11-23)
@@ -63,7 +64,7 @@ No database migration or Edge Function deployment is part of this change.
 
 ## 7. Verification and release gate
 
-- Build and TypeScript checks: pending.
+- Build and TypeScript checks passed for the previous PR head; final checks must be rerun for the additional scoring and third-place adjustments.
 - Manual verification in the existing iPhone-used owner panel: pending after production deployment.
 - No merge or production deployment has been performed from this review branch.
 - The owner must separately approve merge/release after reviewing the PR checks.
