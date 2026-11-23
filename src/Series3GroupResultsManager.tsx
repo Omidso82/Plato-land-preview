@@ -155,7 +155,7 @@ export default function Series3GroupResultsManager() {
   useEffect(()=>{void load();void loadKnockout();void loadOwnerDecisions();},[load,loadKnockout,loadOwnerDecisions]);
 
   async function recordOwnerDecision(groupName:'C'|'I',platoId:string){
-    if(!supabase||ownerDecisionSaving||!ownerDecisionLoaded||knockoutRows.length>0)return;
+    if(!supabase||ownerDecisionSaving||!ownerDecisionLoaded||!knockoutLoaded||knockoutLoading||knockoutRows.length>0)return;
     const matchId=groupName==='C'?'S3-C-R2-M1':'S3-I-R3-M1';
     const match=rows.find(r=>r.match_id===matchId);
     if(!match||match.result_status!=='double_no_show'||match.score_a!==null||match.score_b!==null){
@@ -399,7 +399,7 @@ export default function Series3GroupResultsManager() {
           return <div key={groupName} style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flexWrap:'wrap',marginTop:10}}>
             <span style={muted}>گروه {groupName} · <b dir="ltr">{selected}</b> {decision?'· ثبت‌شده: '+decision.selected_plato_id:'· در انتظار ثبت رسمی'}</span>
             <button type="button" style={secondary}
-              disabled={!ownerDecisionLoaded||!!decision||ownerDecisionSaving!==null||knockoutRows.length>0}
+              disabled={!ownerDecisionLoaded||!knockoutLoaded||knockoutLoading||!!decision||ownerDecisionSaving!==null||knockoutRows.length>0}
               onClick={()=>void recordOwnerDecision(groupName,selected)}>
               {ownerDecisionSaving===groupName?'در حال ثبت…':decision?'ثبت‌شده':'ثبت تصمیم رسمی'}
             </button>
