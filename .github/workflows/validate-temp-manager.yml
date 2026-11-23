@@ -39,3 +39,10 @@ jobs:
             echo 'Unexpected output outside the manager route' >&2
             exit 1
           fi
+      - name: Save isolated manager build for inspection (no deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: temporary-manager-only
+          path: dist-manager/series2-slides-manager/
+          if-no-files-found: error
+          retention-days: 7
