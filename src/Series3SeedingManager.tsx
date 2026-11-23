@@ -592,7 +592,7 @@ export default function Series3SeedingManager() {
             <div style={{...card,marginTop:12,borderColor:'#806638'}}>
               <strong style={{color:'#e4c77e'}}>جایگزینی جایگاه‌های موقت نفرات سوم</strong>
               <p style={muted}>معیارها: امتیاز، تفاضل ست و ست برده‌شده. تساوی سوم/چهارم هر گروه با رودررو و تساوی دو نفر در مرز هشتم/نهم با پلی‌آف تعیین می‌شود؛ تساوی چندنفره برای بررسی مالک متوقف خواهد شد.</p>
-              <button type="button" style={button} disabled={thirdsLoading} onClick={()=>void runThirdPlaceAssignment()}>{thirdsLoading?'در حال محاسبه…':'محاسبه و ثبت هشت نفر سوم رسمی'}</button>
+              <p style={muted}>برای ثبت هشت نفر سوم، از بخش «نتایج گروهی و حذفی سری سوم» در بالای همین پنل استفاده کنید. دکمه قدیمی برای جلوگیری از ثبت تکراری یا بدون تأیید غیرفعال شده است.</p>
               {playoffCandidates && <div style={{...card,marginTop:10,borderColor:'#b18a45'}}>
                 <strong style={{color:'#f0d79e'}}>مسابقه پلی‌آف برای تعیین نفر هشتم</strong>
                 <p style={muted}>{playoffCandidates[0].plato_id} (گروه {playoffCandidates[0].group}) در برابر {playoffCandidates[1].plato_id} (گروه {playoffCandidates[1].group})</p>
