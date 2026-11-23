@@ -260,9 +260,18 @@ export default function Series3GroupResultsManager() {
     if(!window.confirm('فقط هشت جایگاه موقت نفرات سوم در براکت رسمی تکمیل شوند؟ قرعه‌کشی سایر مسابقات ثابت می‌ماند.'))return;
     setThirdAssignmentSaving(true);setKnockoutError('');setKnockoutMessage('');
     try{
-      const {data:current,error:currentError}=await supabase.from('plato_land_series3_knockout_draws').select('draw_fingerprint').eq('event_key','series3').single();
+      const [{data:current,error:currentError},{data:liveKnockoutRows,error:liveKnockoutError}]=await Promise.all([
+        supabase.from('plato_land_series3_knockout_draws').select('draw_fingerprint,bracket_snapshot').eq('event_key','series3').single(),
+        supabase.from('plato_land_series3_knockout_match_results').select('match_id').eq('event_key','series3').limit(1),
+      ]);
       if(currentError||current?.draw_fingerprint!=='798df9fa4dec8449aceab58f0efe3361da194da94642c4e5f7bd81daac5ac206')
         throw new Error('نسخه براکت از زمان بررسی تغییر کرده است؛ عملیات متوقف شد.');
+      if(liveKnockoutError||!Array.isArray(liveKnockoutRows)||liveKnockoutRows.length>0)
+        throw new Error('نتایج حذفی در سرور وجود دارد یا وضعیت آن قابل تأیید نیست؛ عملیات متوقف شد.');
+      const signature=(matches:KnockoutMatch[])=>matches.map(m=>[m.id,m.a.id,m.a.group||'',m.b.id,m.b.group||''].join('|')).join(';');
+      if(!Array.isArray(current.bracket_snapshot?.round32)||
+        signature(current.bracket_snapshot.round32)!==signature(knockoutBracket.round32 as KnockoutMatch[]))
+        throw new Error('جایگاه‌های براکت رسمی با نسخه نمایش‌داده‌شده تفاوت دارند؛ عملیات متوقف شد.');
       const source=JSON.stringify({entrants:next.tokens,bracket:next});
       const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(source));
       const fingerprint=Array.from(new Uint8Array(digest)).map(b=>b.toString(16).padStart(2,'0')).join('');
@@ -273,10 +282,10 @@ export default function Series3GroupResultsManager() {
       if(error||!data?.success)throw new Error(error?.message||'ثبت براکت از سرور تأیید نشد.');
       const {data:readback,error:readbackError}=await supabase.from('plato_land_series3_knockout_draws')
         .select('draw_fingerprint,bracket_snapshot').eq('event_key','series3').single();
-      const slotSignature=(matches:KnockoutMatch[])=>matches.map(m=>[m.id,m.a.id,m.a.group||'',m.b.id,m.b.group||''].join('|')).join(';');
+
       if(readbackError||readback?.draw_fingerprint!==fingerprint||
         !Array.isArray(readback?.bracket_snapshot?.round32)||
-        slotSignature(readback.bracket_snapshot.round32)!==slotSignature(next.round32))
+        signature(readback.bracket_snapshot.round32)!==signature(next.round32))
         throw new Error('ثبت انجام شده اما بازخوانی مستقل براکت با داده مورد انتظار یکسان نیست؛ بررسی دستی لازم است.');
       await loadKnockout();
       setKnockoutMessage('هشت نفر سوم در دیتابیس ثبت و با بازخوانی مستقل تأیید شدند.');
