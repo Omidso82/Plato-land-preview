@@ -77,3 +77,10 @@ Separate project scope; do not alter Main Website.
 - Added owner-only read RPC `plato_temp_owner_series3_completion_preflight()`; authenticated caller without owner identity was denied (42501).
 - Existing temporary manager lifecycle panel shows strict reconciliation counts. No new route or standalone page.
 - Still missing: owner approval workflow, trusted evidence issuance, automated scheduling, full UI/build verification. Do not claim automatic archiving is live.
+
+## Explicit final approval — continuation
+- Installed `public.plato_temp_owner_approve_series3_final(text)` in primary Supabase. Owner identity and exact explicit confirmation token required; series must be marked completed, strict Series 3 source reconciliation must pass, no active archive hold. Only then records/refreshes approved fingerprint-bound evidence; it never changes series lifecycle, registration, bracket, or results.
+- The existing owner lifecycle panel displays an explicit confirmation button only when Series 3 is completed and strict preflight passes. Browser confirmation required before invoking RPC.
+- Tested authenticated role without owner identity: SQLSTATE 42501, denied.
+- Current Series 3 remains started and strict preflight is false (0/31 knockout results); therefore approval is not available, and no evidence was created.
+- Scheduler and end-to-end signed-in browser tests remain outstanding. No publication.
