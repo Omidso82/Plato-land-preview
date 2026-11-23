@@ -175,7 +175,9 @@ export default function Series3GroupResultsManager() {
       const {data:verified,error:verifyError}=await supabase.rpc('get_series3_owner_third_decisions');
       if(verifyError||!Array.isArray(verified)||!verified.some((d:Series3OwnerThirdDecision)=>d.group_name===groupName&&d.selected_registration_id===registrationId&&d.selected_plato_id===platoId&&d.decision_version===1&&d.reason===SERIES3_OFFICIAL_OWNER_REASON))
         throw new Error('ثبت انجام شده اما بازخوانی تأییدی ناموفق بود؛ پیش از تکرار، وضعیت را تازه‌سازی کنید.');
-      await loadOwnerDecisions();
+      setOwnerDecisions(verified as Series3OwnerThirdDecision[]);
+      setOwnerDecisionLoaded(true);
+      setOwnerDecisionError('');
       setOwnerDecisionMessage('تصمیم گروه '+groupName+' برای '+platoId+' ثبت و بازخوانی شد.');
     }catch(e){setOwnerDecisionLoaded(false);setOwnerDecisions([]);setOwnerDecisionError('ثبت یا تأیید تصمیم ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص')+'؛ قبل از اقدام دوباره صفحه را تازه‌سازی کنید.');}
     finally{setOwnerDecisionSaving(null);}
@@ -261,11 +263,11 @@ export default function Series3GroupResultsManager() {
   useEffect(()=>{
     if(!supabase)return;
     const channel=supabase.channel('series3-owner-bracket-progression')
-      .on('postgres_changes',{event:'*',schema:'public',table:'plato_land_series3_group_match_results'},()=>{void load();void loadKnockout();})
+      .on('postgres_changes',{event:'*',schema:'public',table:'plato_land_series3_group_match_results'},()=>{void load();void loadKnockout();void loadOwnerDecisions();})
       .on('postgres_changes',{event:'*',schema:'public',table:'plato_land_series3_third_place_playoff'},()=>{void loadKnockout();})
       .subscribe();
     return()=>{void supabase.removeChannel(channel)};
-  },[load,loadKnockout]);
+  },[load,loadKnockout,loadOwnerDecisions]);
 
   const days=useMemo(()=>[...new Set(rows.map(r=>r.match_date))].sort(),[rows]);
   const visible=useMemo(()=>rows.filter(r=>(day==='ALL'||r.match_date===day)&&(group==='ALL'||r.group_name===group)),[rows,day,group]);
