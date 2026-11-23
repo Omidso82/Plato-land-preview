@@ -37,3 +37,20 @@ Separate project scope; do not alter Main Website.
 - Match-ID-and-stage joined completed result coverage is 0/31. Third-place result remains absent.
 - Readiness RPC now reports expected bracket count and draw existence; UI displays these counts without declaring completion.
 - This is a **blocking** preflight, not an official result approval or evidence issuance.
+
+## Verified execution and hardening — continuation
+- Compiled the pure lifecycle TypeScript modules with TypeScript 5.8.3 and executed all 22 assertions in Node 22.16.0: **PASS 22/22**. This is a focused local test, not a full Vite build.
+- Tested anonymous execution of archive RPC under database role anon: **permission denied (42501)**.
+- Tested owner overview RPC with authenticated role and no owner identity: **owner authorization required (42501)**.
+- Tested archive RPC with service_role database role but without service JWT claim: **service role only (42501)**.
+- Tested archive RPC with simulated service role claim inside a rollback-only transaction, Series 3 still started: **archived=false, reason=series_not_completed**.
+- Owner restore RPC now rejects reusing a correlation ID for a different actor, series, reason or transition.
+- System archive RPC now rejects reusing a correlation ID for a different series/evidence/transition.
+- Series 3 source fingerprint is derived from the current public bracket, group outcomes, knockout results and third-place result. Archive RPC requires evidence_version to match `series3:<current fingerprint>` before transition. Changed source data therefore invalidates old evidence.
+- Archive RPC fails closed for series other than Series 3 until their own source-specific verifiers are implemented.
+- No evidence issued, no automatic job configured, no series status changed, no site deployment.
+
+## Remaining validation
+- Full React/Vite build unavailable in this runtime (repository cannot be cloned due to network resolution); no claim of complete typecheck.
+- Actual signed-in owner/non-owner browser JWT tests and UI tests are still outstanding.
+- Evidence issuer, approval flow, and scheduling remain blocked pending source-specific verification and controlled rollout.
