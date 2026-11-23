@@ -7,15 +7,18 @@ export default function TemporaryLifecycleOwnerPanel(){
  const [readiness,setReadiness]=useState<ReadinessRow[]>([]);
  const [reason,setReason]=useState<Record<number,string>>({});
  const [busy,setBusy]=useState(false);
+ const [loading,setLoading]=useState(true);
  const [error,setError]=useState('');
  const [notice,setNotice]=useState('');
  const refresh=useCallback(async()=>{
-  if(!supabase)return;
+  if(!supabase){setError('اتصال دیتابیس در دسترس نیست.');setLoading(false);return;}
+  setLoading(true);
   const [overview,preflight]=await Promise.all([supabase.rpc('plato_temp_owner_lifecycle_overview'),supabase.rpc('plato_temp_owner_lifecycle_readiness')]);
-  if(overview.error||preflight.error){setError(overview.error?.message||preflight.error?.message||'خطا در دریافت اطلاعات');return;}
+  if(overview.error||preflight.error){setError(overview.error?.message||preflight.error?.message||'خطا در دریافت اطلاعات');setLoading(false);return;}
   setError('');
   setRows(Array.isArray(overview.data)?overview.data as SeriesRow:[]);
   setReadiness(Array.isArray(preflight.data)?preflight.data as ReadinessRow:[]);
+  setLoading(false);
  },[]);
  useEffect(()=>{void refresh()},[refresh]);
  async function restore(series:SeriesRow){
@@ -34,9 +37,11 @@ export default function TemporaryLifecycleOwnerPanel(){
  return <section dir="rtl" style={{padding:16,border:'1px solid #b18b45',borderRadius:14,background:'#161513',color:'#f6e8c5'}}>
   <h3 style={{marginTop:0}}>چرخه عمر مسابقات</h3>
   <p style={{fontSize:13,color:'#c9c0ad'}}>وضعیت رسمی هر سری مستقل از باز یا بسته بودن ثبت‌نام است. بازگردانی فقط برای سری‌های آرشیوشده فعال می‌شود.</p>
-  <button type="button" onClick={()=>void refresh()} disabled={busy}>به‌روزرسانی وضعیت</button>
+  <button type="button" onClick={()=>void refresh()} disabled={busy||loading}>به‌روزرسانی وضعیت</button>
+  {loading&&<p role="status">در حال دریافت وضعیت معتبر مسابقات…</p>}
   {error&&<p role="alert" style={{color:'#ffaaa4'}}>{error}</p>}
   {notice&&<p role="status">{notice}</p>}
+  {!loading&&!error&&rows.length===0&&<p>سری ثبت‌شده‌ای پیدا نشد.</p>}
   {rows.map(s=><div key={s.series_number} style={{padding:'12px 0',borderBottom:'1px solid #574a32'}}>
    <strong>{s.series_name}</strong>
    <p style={{margin:'6px 0',fontSize:13}}>وضعیت: {s.lifecycle_status} · ثبت‌نام: {s.registration_status}{s.has_hold?' · توقف آرشیو خودکار':''}</p>
