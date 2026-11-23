@@ -1,10 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase';
 type SeriesRow={series_number:number;series_name:string;lifecycle_status:string;registration_status:string;has_hold:boolean};
+type Series3StrictPreflight={ready_for_approval:boolean;matched_knockout:number;expected_knockout:number;third_place_completed:number;extra_results:number;reason:string};
 type ReadinessRow={series_number:number;group_total:number;group_pending:number;knockout_result_count:number;knockout_expected:number|null;knockout_draw_exists:boolean;third_place_result_count:number|null;ready_for_archive:boolean;reason:string};
 export default function TemporaryLifecycleOwnerPanel(){
  const [rows,setRows]=useState<SeriesRow[]>([]);
  const [readiness,setReadiness]=useState<ReadinessRow[]>([]);
+ const [series3Strict,setSeries3Strict]=useState<Series3StrictPreflight|null>(null);
  const [reason,setReason]=useState<Record<number,string>>({});
  const [busy,setBusy]=useState(false);
  const [loading,setLoading]=useState(true);
@@ -13,11 +15,12 @@ export default function TemporaryLifecycleOwnerPanel(){
  const refresh=useCallback(async()=>{
   if(!supabase){setError('اتصال دیتابیس در دسترس نیست.');setLoading(false);return;}
   setLoading(true);
-  const [overview,preflight]=await Promise.all([supabase.rpc('plato_temp_owner_lifecycle_overview'),supabase.rpc('plato_temp_owner_lifecycle_readiness')]);
-  if(overview.error||preflight.error){setError(overview.error?.message||preflight.error?.message||'خطا در دریافت اطلاعات');setLoading(false);return;}
+  const [overview,preflight,strict]=await Promise.all([supabase.rpc('plato_temp_owner_lifecycle_overview'),supabase.rpc('plato_temp_owner_lifecycle_readiness'),supabase.rpc('plato_temp_owner_series3_completion_preflight')]);
+  if(overview.error||preflight.error||strict.error){setError(overview.error?.message||preflight.error?.message||strict.error?.message||'خطا در دریافت اطلاعات');setLoading(false);return;}
   setError('');
   setRows(Array.isArray(overview.data)?overview.data as SeriesRow:[]);
   setReadiness(Array.isArray(preflight.data)?preflight.data as ReadinessRow:[]);
+  setSeries3Strict(strict.data && typeof strict.data==='object' && !Array.isArray(strict.data)?strict.data as Series3StrictPreflight:null);
   setLoading(false);
  },[]);
  useEffect(()=>{void refresh()},[refresh]);
@@ -46,6 +49,7 @@ export default function TemporaryLifecycleOwnerPanel(){
    <strong>{s.series_name}</strong>
    <p style={{margin:'6px 0',fontSize:13}}>وضعیت: {s.lifecycle_status} · ثبت‌نام: {s.registration_status}{s.has_hold?' · توقف آرشیو خودکار':''}</p>
    {readiness.filter(r=>r.series_number===s.series_number).map(r=><p key={r.series_number} style={{margin:'6px 0',fontSize:12,color:'#c9c0ad'}}>گروهی: {r.group_total} بازی، {r.group_pending} تعیین‌تکلیف‌نشده · براکت: {r.knockout_draw_exists?'ثبت‌شده':'ثبت‌نشده'} · نتایج حذفی: {r.knockout_result_count}{r.knockout_expected===null?'':` از ${r.knockout_expected}`} · رده‌بندی: {r.third_place_result_count??'نیازمند بررسی'} · آرشیو خودکار: غیرفعال تا تأیید نهایی</p>)}
+   {s.series_number===3&&series3Strict&&<p style={{margin:'6px 0',fontSize:12,color:'#c9c0ad'}}>تطبیق رسمی براکت و نتایج: {series3Strict.matched_knockout}/{series3Strict.expected_knockout} · رده‌بندی تأییدشده: {series3Strict.third_place_completed} · نتایج خارج از براکت: {series3Strict.extra_results} · آمادگی بررسی نهایی: {series3Strict.ready_for_approval?'آماده بررسی مدیر':'هنوز ناقص'}</p>}
    {s.lifecycle_status==='archived'&&<div style={{display:'grid',gap:8}}>
     <label htmlFor={'restore-reason-'+s.series_number}>دلیل بازگردانی</label>
     <textarea id={'restore-reason-'+s.series_number} rows={2} value={reason[s.series_number]||''} onChange={e=>setReason(v=>({...v,[s.series_number]:e.target.value}))} />
