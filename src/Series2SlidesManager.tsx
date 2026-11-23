@@ -9,6 +9,11 @@ import PlatoIdScannerApp from './PlatoIdScannerApp';
 import { Series3SlidesPanel } from './Series3SlidesPanel';
 import { Series3VideoManager } from './Series3VideoManager';
 import Series3RegistrationReport from './Series3RegistrationReport';
+import Series4TelegramPreview from './Series4TelegramPreview';
+import Series4MediaManager from './Series4MediaManager';
+import Series4GroupResultsManager from './Series4GroupResultsManager';
+import Series4SeedingManager from './Series4SeedingManager';
+import Series4RegistrationReport from './Series4RegistrationReport';
 import Series3SeedingManager from './Series3SeedingManager';
 import Series3TelegramManager from './Series3TelegramManager';
 import PredictionCampaignManager from './PredictionCampaignManager';
@@ -40,7 +45,7 @@ export default function Series2SlidesManager() {
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
   const [scannerOpen,setScannerOpen] = useState(false);
-  const [managerPage,setManagerPage] = useState<'home'|'series3'|'series2'|'predictions'|'players'>('home');
+  const [managerPage,setManagerPage] = useState<'home'|'series3'|'series4'|'series2'|'predictions'|'players'>('home');
 
   async function verifyOwner() {
     if (!supabase) { setMessage('اتصال به سرویس اصلی برقرار نیست.'); setChecking(false); return; }
@@ -228,6 +233,10 @@ export default function Series2SlidesManager() {
         <strong style={{display:'block',fontSize:20,marginBottom:8}}>مدیریت سری سوم تخته‌نرد</strong>
         <span style={{fontSize:13,lineHeight:1.9,color:'#c9c0ad'}}>مدیریت پوستر و ۱۷ قانون تصویری، به‌همراه گزارش ثبت‌نام‌کنندگان و Plato IDها</span>
       </button>
+      <button type="button" onClick={()=>setManagerPage('series4')} style={{textAlign:'right',padding:20,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#2b2113,#121315)',color:'#f6e8c5',cursor:'pointer'}}>
+        <strong style={{display:'block',fontSize:20,marginBottom:8}}>مدیریت سری چهارم تخته‌نرد</strong>
+        <span style={{fontSize:13,lineHeight:1.9,color:'#c9c0ad'}}>گزارش ثبت‌نام‌کنندگان و Plato IDها</span>
+      </button>
       <button type="button" onClick={()=>setManagerPage('predictions')} style={{textAlign:'right',padding:20,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#302313,#121315)',color:'#f6e8c5',cursor:'pointer'}}>
         <strong style={{display:'block',fontSize:20,marginBottom:8}}>مدیریت پیش‌بینی‌ها</strong>
         <span style={{fontSize:13,lineHeight:1.9,color:'#c9c0ad'}}>ساخت پیش‌بینی‌های مستقل، تنظیم جایزه و مهلت، انتشار و کنترل باز یا بسته بودن</span>
@@ -257,6 +266,15 @@ export default function Series2SlidesManager() {
       <Series3SectionBoundary title="گزارش ثبت‌نام سری سوم"><Series3RegistrationReport /></Series3SectionBoundary>
       <Series3SectionBoundary title="سیدبندی و نتایج سری سوم"><Series3SeedingManager /></Series3SectionBoundary>
       <Series3SectionBoundary title="گزارش‌ها و مدیریت تلگرام سری سوم"><Series3TelegramManager /></Series3SectionBoundary>
+    </>}
+    {managerPage==='series4'&&<>
+      <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
+      <h2 style={{...heading,marginTop:18}}>مدیریت سری چهارم مسابقات تخته‌نرد</h2>
+      <Series3SectionBoundary title="گزارش ثبت‌نام سری چهارم"><Series4RegistrationReport /></Series3SectionBoundary>
+      <Series3SectionBoundary title="رتبه‌بندی و قرعه‌کشی سری چهارم"><Series4SeedingManager /></Series3SectionBoundary>
+      <Series3SectionBoundary title="نتایج گروهی سری چهارم"><Series4GroupResultsManager /></Series3SectionBoundary>
+      <Series3SectionBoundary title="رسانه سری چهارم"><Series4MediaManager /></Series3SectionBoundary>
+      <Series3SectionBoundary title="اعلان تلگرام سری چهارم"><Series4TelegramPreview /></Series3SectionBoundary>
     </>}
     {managerPage==='series2'&&<>
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
