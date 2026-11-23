@@ -1,4 +1,4 @@
--- Installed main Supabase; idempotent retry after row lock.
+-- Installed in primary Supabase; source-based strict preflight.
 CREATE OR REPLACE FUNCTION public.plato_temp_system_archive_verified(p_series_number integer, p_evidence_version text, p_correlation_id uuid DEFAULT gen_random_uuid())
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -73,6 +73,9 @@ begin
  or (select count(*) from public.plato_land_series3_knockout_match_results where event_key='series3' and result_status='completed')<>v_expected
  or (select count(*) from public.plato_land_series3_third_place_playoff where event_key='series3' and result_status='completed')<>1 then
   return jsonb_build_object('archived',false,'reason','official_knockout_or_third_place_unresolved');
+ end if;
+ if coalesce((plato_temp_internal.series3_completion_preflight()->>'ready_for_approval')::boolean,false) is not true then
+  return jsonb_build_object('archived',false,'reason','strict_series3_source_preflight_failed');
  end if;
  update public.plato_land_league_series set lifecycle_status='archived' where id=v_series.id;
  insert into plato_temp_internal.lifecycle_transitions
