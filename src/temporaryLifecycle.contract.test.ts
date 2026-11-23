@@ -21,5 +21,14 @@ export function runTemporaryLifecycleContractTests() {
   check(canManagerRestore({lifecycle:'archived',authorized:true,reason:'اشتباه در نتیجه'}), 'restore allowed');
   check(!canManagerRestore({lifecycle:'archived',authorized:false,reason:'اشتباه در نتیجه'}), 'unauthorized blocked');
   check(!canManagerRestore({lifecycle:'archived',authorized:true,reason:'  '}), 'reason required');
-  return 13;
+  check(assessCompletion({...base,finalResultsConsistent:false}).verdict === 'needs_review', 'inconsistent final');
+  check(assessCompletion({...base,evidenceVersion:''}).verdict === 'needs_review', 'missing version');
+  check(assessCompletion({...base,seriesNumber:0}).verdict === 'needs_review', 'invalid series');
+  check(assessCompletion({...base,requiredStagesResolved:false,finalResultsApproved:false}).verdict === 'not_ready', 'unfinished stages take precedence');
+  check(!canAutoArchive({lifecycle:'archived',assessment,evidenceFresh:true,managerHold:false}), 'already archived blocked');
+  check(!canAutoArchive({lifecycle:'cancelled',assessment,evidenceFresh:true,managerHold:false}), 'cancelled blocked');
+  check(!canAutoArchive({lifecycle:'planned',assessment,evidenceFresh:true,managerHold:false}), 'planned blocked');
+  check(!canAutoArchive({lifecycle:'completed',assessment:{...assessment,verdict:'needs_review'},evidenceFresh:true,managerHold:false}), 'review required blocked');
+  check(!canManagerRestore({lifecycle:'completed',authorized:true,reason:'دلیل معتبر'}), 'restore only archived');
+  return 22;
 }
