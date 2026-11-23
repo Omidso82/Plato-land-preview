@@ -271,8 +271,13 @@ export default function Series3GroupResultsManager() {
         p_archive_reason:'Owner-confirmed assignment of eight official Series 3 third-place qualifiers; existing match pairings preserved',
       });
       if(error||!data?.success)throw new Error(error?.message||'ثبت براکت از سرور تأیید نشد.');
+      const {data:readback,error:readbackError}=await supabase.from('plato_land_series3_knockout_draws')
+        .select('draw_fingerprint,bracket_snapshot').eq('event_key','series3').single();
+      if(readbackError||readback?.draw_fingerprint!==fingerprint||
+        JSON.stringify(readback?.bracket_snapshot?.round32)!==JSON.stringify(next.round32))
+        throw new Error('ثبت انجام شده اما بازخوانی مستقل براکت با داده مورد انتظار یکسان نیست؛ بررسی دستی لازم است.');
       await loadKnockout();
-      setKnockoutMessage('ثبت هشت نفر سوم انجام شد؛ برای اطمینان، براکت دوباره از دیتابیس خوانده شد.');
+      setKnockoutMessage('هشت نفر سوم در دیتابیس ثبت و با بازخوانی مستقل تأیید شدند.');
     }catch(e){setKnockoutError('ثبت جایگاه‌ها تأیید نشد: '+(e instanceof Error?e.message:'خطا'));}
     finally{setThirdAssignmentSaving(false);}
   }
