@@ -135,7 +135,7 @@ export default function Series3TelegramManager() {
     setReportLoading(true);
     try {
       const {data,error}=await supabase.from('plato_land_prediction_entries')
-        .select('id,voter_plato_id,response').eq('campaign_id',campaignId).order('submitted_at',{ascending:true});
+        .select('id,voter_plato_id,response,result_status').eq('campaign_id',campaignId).or('result_status.is.null,result_status.neq.disqualified').order('submitted_at',{ascending:true});
       if(error) throw error;
       setReportVoters((data||[]) as ReportVoter[]);
     } catch(e) {
