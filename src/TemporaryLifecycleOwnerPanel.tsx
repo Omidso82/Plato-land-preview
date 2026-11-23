@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { supabase } from './supabase';
 type SeriesRow={series_number:number;series_name:string;lifecycle_status:string;registration_status:string;has_hold:boolean};
-type ReadinessRow={series_number:number;group_total:number;group_pending:number;knockout_result_count:number;third_place_result_count:number;ready_for_archive:boolean;reason:string};
+type ReadinessRow={series_number:number;group_total:number;group_pending:number;knockout_result_count:number;knockout_expected:number|null;knockout_draw_exists:boolean;third_place_result_count:number|null;ready_for_archive:boolean;reason:string};
 export default function TemporaryLifecycleOwnerPanel(){
  const [rows,setRows]=useState<SeriesRow[]>([]);
  const [readiness,setReadiness]=useState<ReadinessRow[]>([]);
@@ -40,7 +40,7 @@ export default function TemporaryLifecycleOwnerPanel(){
   {rows.map(s=><div key={s.series_number} style={{padding:'12px 0',borderBottom:'1px solid #574a32'}}>
    <strong>{s.series_name}</strong>
    <p style={{margin:'6px 0',fontSize:13}}>وضعیت: {s.lifecycle_status} · ثبت‌نام: {s.registration_status}{s.has_hold?' · توقف آرشیو خودکار':''}</p>
-   {readiness.filter(r=>r.series_number===s.series_number).map(r=><p key={r.series_number} style={{margin:'6px 0',fontSize:12,color:'#c9c0ad'}}>گروهی: {r.group_total} بازی، {r.group_pending} تعیین‌تکلیف‌نشده · نتایج حذفی: {r.knockout_result_count} · رده‌بندی: {r.third_place_result_count} · آرشیو خودکار: غیرفعال تا تأیید نهایی</p>)}
+   {readiness.filter(r=>r.series_number===s.series_number).map(r=><p key={r.series_number} style={{margin:'6px 0',fontSize:12,color:'#c9c0ad'}}>گروهی: {r.group_total} بازی، {r.group_pending} تعیین‌تکلیف‌نشده · براکت: {r.knockout_draw_exists?'ثبت‌شده':'ثبت‌نشده'} · نتایج حذفی: {r.knockout_result_count}{r.knockout_expected===null?'':` از ${r.knockout_expected}`} · رده‌بندی: {r.third_place_result_count??'نیازمند بررسی'} · آرشیو خودکار: غیرفعال تا تأیید نهایی</p>)}
    {s.lifecycle_status==='archived'&&<div style={{display:'grid',gap:8}}>
     <label htmlFor={'restore-reason-'+s.series_number}>دلیل بازگردانی</label>
     <textarea id={'restore-reason-'+s.series_number} rows={2} value={reason[s.series_number]||''} onChange={e=>setReason(v=>({...v,[s.series_number]:e.target.value}))} />
