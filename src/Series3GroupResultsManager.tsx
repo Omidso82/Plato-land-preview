@@ -197,7 +197,7 @@ export default function Series3GroupResultsManager() {
 
   useEffect(()=>{
     const hasUnassignedThirds=knockoutBracket.tokens?.some(token=>token.source==='third'&&!token.group);
-    const allGroupResultsComplete=rows.length===72&&rows.every(row=>row.result_status==='completed'&&row.score_a!==null&&row.score_b!==null);
+    const allGroupResultsComplete=rows.length===72&&rows.every(row=>row.result_status==='double_no_show'?(row.score_a===null&&row.score_b===null):(row.result_status==='completed'&&row.score_a!==null&&row.score_b!==null));
     if(!knockoutLoaded||!hasUnassignedThirds||!allGroupResultsComplete||autoThirdAssignment.current)return;
     autoThirdAssignment.current=true;
     (async()=>{

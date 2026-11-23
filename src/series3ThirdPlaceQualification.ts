@@ -48,11 +48,14 @@ export function resolveSeries3ThirdPlaces(
   playoff: Series3PlayoffRecord | null,
 ): Series3ThirdPlaceResolution {
   if (rows.length !== 72 || rows.some(row =>
-    row.result_status !== 'completed' || row.score_a === null || row.score_b === null ||
-    !Number.isInteger(row.score_a) || !Number.isInteger(row.score_b) ||
-    row.score_a < 0 || row.score_b < 0 || row.score_a === row.score_b
+    (row.result_status !== 'completed' && row.result_status !== 'double_no_show') ||
+    (row.result_status === 'double_no_show'
+      ? row.score_a !== null || row.score_b !== null
+      : row.score_a === null || row.score_b === null ||
+        !Number.isInteger(row.score_a) || !Number.isInteger(row.score_b) ||
+        row.score_a < 0 || row.score_b < 0 || row.score_a === row.score_b)
   ))
-    return { status: 'owner_review', reason: 'برای تعیین نفرات سوم، نتیجه معتبر و غیرمساوی هر ۷۲ بازی گروهی لازم است.' };
+    return { status: 'owner_review', reason: 'برای تعیین نفرات سوم، تمام ۷۲ بازی باید با نتیجه معتبر یا عدم حضور دوطرفه بدون امتیاز بسته شده باشند.' };
 
   const thirdPlaces: Series3ThirdPlacePlayer[] = [];
   for (const group of GROUPS) {
@@ -70,6 +73,8 @@ export function resolveSeries3ThirdPlaces(
       const a = ensure(row.player_a_registration_id, row.player_a_plato_id);
       const b = ensure(row.player_b_registration_id, row.player_b_plato_id);
       a.played++; b.played++;
+      // Double no-show closes the fixture without awarding wins, points or sets.
+      if (row.result_status === 'double_no_show') continue;
       a.setsFor += row.score_a!; a.setsAgainst += row.score_b!;
       b.setsFor += row.score_b!; b.setsAgainst += row.score_a!;
       if (row.score_a! > row.score_b!) { a.wins++; a.points += 3; }
