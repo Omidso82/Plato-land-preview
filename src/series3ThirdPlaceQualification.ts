@@ -58,6 +58,7 @@ export function resolveSeries3ThirdPlaces(
     return { status: 'owner_review', reason: 'برای تعیین نفرات سوم، تمام ۷۲ بازی باید با نتیجه معتبر یا عدم حضور دوطرفه بدون امتیاز بسته شده باشند.' };
 
   const thirdPlaces: Series3ThirdPlacePlayer[] = [];
+  const unresolvedNonAdvancingTies: Array<[Series3ThirdPlacePlayer,Series3ThirdPlacePlayer]> = [];
   for (const group of GROUPS) {
     const groupRows = rows.filter(row => row.group_name === group);
     if (groupRows.length !== 6) return { status: 'owner_review', reason: 'تعداد بازی‌های گروه ' + group + ' کامل نیست.' };
@@ -100,16 +101,23 @@ export function resolveSeries3ThirdPlaces(
         (row.player_a_registration_id === third.registration_id && row.player_b_registration_id === fourth.registration_id) ||
         (row.player_a_registration_id === fourth.registration_id && row.player_b_registration_id === third.registration_id)
       );
-      if (h2h.length !== 1 || h2h[0].result_status !== 'completed' || h2h[0].score_a === h2h[0].score_b)
-        return { status: 'owner_review', reason: 'نتیجه رودرروی نفرات سوم و چهارم گروه ' + group + ' برای تعیین رتبه معتبر نیست.' };
+      if (h2h.length !== 1) return { status: 'owner_review', reason: 'مسابقه رودرروی گروه ' + group + ' یکتا نیست.' };
       const h = h2h[0];
-      const winnerId = h.score_a! > h.score_b! ? h.player_a_registration_id : h.player_b_registration_id;
-      thirdPlace = winnerId === third.registration_id ? third : fourth;
+      if (h.result_status === 'double_no_show') {
+        unresolvedNonAdvancingTies.push([third, fourth]);
+      } else {
+        if (h.result_status !== 'completed' || h.score_a === h.score_b)
+          return { status: 'owner_review', reason: 'نتیجه رودرروی نفرات سوم و چهارم گروه ' + group + ' معتبر نیست.' };
+        const winnerId = h.score_a! > h.score_b! ? h.player_a_registration_id : h.player_b_registration_id;
+        thirdPlace = winnerId === third.registration_id ? third : fourth;
+      }
     }
     thirdPlaces.push(thirdPlace);
   }
 
   thirdPlaces.sort(compareOfficial);
+  if (unresolvedNonAdvancingTies.some(([a,b]) => !sameCriteria(a,b) || compareOfficial(a,thirdPlaces[7]) <= 0))
+    return { status: 'owner_review', reason: 'تساوی حل‌نشده بر هشت سهمیه تأثیر دارد؛ تصمیم مالک لازم است.' };
   const eighth = thirdPlaces[7], ninth = thirdPlaces[8];
   if (sameCriteria(eighth, ninth)) {
     const tied = thirdPlaces.filter(player => sameCriteria(player, eighth));
