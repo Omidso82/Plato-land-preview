@@ -1,0 +1,7 @@
+-- Applied to primary Supabase: plato_temp_owner_restore_active_20261123
+-- Owner-only, audited Archive -> started restoration. Does not reopen registration.
+-- Security: SECURITY DEFINER, empty search_path, authenticated EXECUTE only;
+-- internal owner check via current_user_role() and auth.uid().
+-- This file records the installed function signature and behavioral contract.
+-- Full authoritative function definition can be inspected with pg_get_functiondef.
+-- Important: no production UI button or automatic archiving has been deployed.
