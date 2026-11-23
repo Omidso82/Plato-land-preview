@@ -137,19 +137,23 @@ export default function Series3GroupResultsManager() {
     finally{setKnockoutLoading(false);}
   },[]);
   const loadOwnerDecisions=useCallback(async()=>{
-    if(!supabase)return;
+    if(!supabase){setOwnerDecisionLoaded(false);setOwnerDecisions([]);setOwnerDecisionError('اتصال به دیتابیس اصلی در دسترس نیست.');return;}
     setOwnerDecisionError('');
     setOwnerDecisionLoaded(false);
     const {data,error}=await supabase.rpc('get_series3_owner_third_decisions');
     if(error){setOwnerDecisions([]);setOwnerDecisionError('دریافت تصمیم‌های رسمی مدیریت ممکن نشد: '+error.message);return;}
     if(!Array.isArray(data)){setOwnerDecisions([]);setOwnerDecisionError('پاسخ تصمیم‌های رسمی معتبر نیست.');return;}
+    const officialReason='تساوی کامل در معیارهای رتبه‌بندی و عدم حضور دوطرفه در مسابقه رودررو؛ تعیین رتبه با تصمیم رسمی مدیریت';
+    if(data.some((d:Series3OwnerThirdDecision)=>d.event_key!=='series3'||!['C','I'].includes(d.group_name)||d.decision_version!==1||d.reason!==officialReason)){
+      setOwnerDecisions([]);setOwnerDecisionError('پاسخ تصمیم‌های رسمی با قرارداد اعتبارسنجی مطابقت ندارد.');return;
+    }
     setOwnerDecisions(data as Series3OwnerThirdDecision[]);
     setOwnerDecisionLoaded(true);
   },[]);
   useEffect(()=>{void load();void loadKnockout();void loadOwnerDecisions();},[load,loadKnockout,loadOwnerDecisions]);
 
   async function recordOwnerDecision(groupName:'C'|'I',platoId:string){
-    if(!supabase||ownerDecisionSaving||!ownerDecisionLoaded)return;
+    if(!supabase||ownerDecisionSaving||!ownerDecisionLoaded||knockoutRows.length>0)return;
     const matchId=groupName==='C'?'S3-C-R2-M1':'S3-I-R3-M1';
     const match=rows.find(r=>r.match_id===matchId);
     if(!match||match.result_status!=='double_no_show'||match.score_a!==null||match.score_b!==null){
@@ -166,13 +170,12 @@ export default function Series3GroupResultsManager() {
       });
       if(error)throw error;
       if(!data?.success)throw new Error('تأیید ثبت تصمیم از سرور دریافت نشد.');
-      await loadOwnerDecisions();
-      if(!supabase)throw new Error('اتصال قطع شده است.');
       const {data:verified,error:verifyError}=await supabase.rpc('get_series3_owner_third_decisions');
       if(verifyError||!Array.isArray(verified)||!verified.some((d:Series3OwnerThirdDecision)=>d.group_name===groupName&&d.selected_registration_id===registrationId))
         throw new Error('ثبت انجام شده اما بازخوانی تأییدی ناموفق بود؛ پیش از تکرار، وضعیت را تازه‌سازی کنید.');
+      await loadOwnerDecisions();
       setOwnerDecisionMessage('تصمیم گروه '+groupName+' برای '+platoId+' ثبت و بازخوانی شد.');
-    }catch(e){setOwnerDecisionError('ثبت یا تأیید تصمیم ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص'));}
+    }catch(e){setOwnerDecisionLoaded(false);setOwnerDecisions([]);setOwnerDecisionError('ثبت یا تأیید تصمیم ناموفق بود: '+(e instanceof Error?e.message:'خطای نامشخص')+'؛ قبل از اقدام دوباره صفحه را تازه‌سازی کنید.');}
     finally{setOwnerDecisionSaving(null);}
   }
   const knockoutMatches=useMemo(()=>{
