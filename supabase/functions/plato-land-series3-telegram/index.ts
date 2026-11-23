@@ -348,8 +348,8 @@ Deno.serve(async (req: Request) => {
         : Promise.resolve({data:null,error:null}),
       reportMode
         ? (reportRankingImage || reportChampionVoterImage
-            ? admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).order('submitted_at',{ascending:true})
-            : admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).in('id',reportVoterIds))
+            ? admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).or('result_status.is.null,result_status.neq.disqualified').order('submitted_at',{ascending:true})
+            : admin.from('plato_land_prediction_entries').select('id,voter_plato_id,response,result_status').eq('campaign_id',reportCampaignId).in('id',reportVoterIds).or('result_status.is.null,result_status.neq.disqualified'))
         : Promise.resolve({data:[],error:null}),
       reportMode
         ? admin.from('plato_land_series3_group_match_results').select('match_id,result_status,score_a,score_b,player_a_plato_id,player_b_plato_id').eq('event_key','series3')
