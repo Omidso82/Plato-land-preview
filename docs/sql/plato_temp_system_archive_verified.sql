@@ -1,4 +1,4 @@
--- Installed main Supabase; source-derived fingerprint invalidates stale evidence.
+-- Installed main Supabase; idempotent retry after row lock.
 CREATE OR REPLACE FUNCTION public.plato_temp_system_archive_verified(p_series_number integer, p_evidence_version text, p_correlation_id uuid DEFAULT gen_random_uuid())
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -23,7 +23,15 @@ begin
  end if;
  select * into v_series from public.plato_land_league_series where series_number=p_series_number for update;
  if not found then raise exception 'series not found'; end if;
- if v_series.lifecycle_status<>'completed' then return jsonb_build_object('archived',false,'reason','series_not_completed'); end if;
+ if v_series.lifecycle_status<>'completed' then
+  select * into v_transition from plato_temp_internal.lifecycle_transitions where correlation_id=p_correlation_id;
+  if found and v_transition.actor_kind='system' and v_transition.series_id=v_series.id
+    and v_transition.from_status='completed' and v_transition.to_status='archived'
+    and v_transition.evidence_version is not distinct from p_evidence_version then
+   return jsonb_build_object('already_processed',true,'transition_id',v_transition.id);
+  end if;
+  return jsonb_build_object('archived',false,'reason','series_not_completed');
+ end if;
  select * into v_evidence from plato_temp_internal.lifecycle_evidence
  where series_id=v_series.id and evidence_version=p_evidence_version order by evaluated_at desc limit 1;
  if not found or v_evidence.verdict<>'verified_complete' or v_evidence.approved_by is null
