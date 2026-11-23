@@ -2,6 +2,8 @@ import React,{useCallback,useEffect,useState} from 'react';
 import {supabase} from './supabase';
 import {isoToJalaliInput,jalaliInputToIso} from './predictionDateTime';
 import JalaliDateTimePicker from './JalaliDateTimePicker';
+import {resolveLockedGroupPlacements,resolveSeries3BracketSlots} from './series3BracketProgression';
+import type {Series3GroupFixture,Series3KnockoutResult} from './series3BracketProgression';
 
 type Campaign={id:string;slug:string;title:string;description:string;campaign_type:'champion'|'match_predictions'|'custom';event_key:string;status:'draft'|'published'|'closed'|'archived';is_open:boolean;opens_at:string|null;closes_at:string|null;questions:any[];prize_rules:any;scoring_rules:any;winner_rules:any;public_config:any;created_at:string;};
 type QuestionDraft={label:string;optionsText:string;};
@@ -25,7 +27,76 @@ export default function PredictionCampaignManager(){
  const load=useCallback(async()=>{if(!supabase){L(false);E('اتصال سامانه در دسترس نیست.');return;}L(true);E('');const r=await supabase.from('plato_land_prediction_campaigns').select('*').order('created_at',{ascending:false});if(r.error)E(r.error.message);else setRows((r.data||[]) as Campaign[]);L(false)},[]);
  useEffect(()=>{void load()},[load]);
  useEffect(()=>{if(kind==='champion')void loadRoster();if(kind==='match_predictions')void loadMatchChoices()},[kind]);
- async function loadMatchChoices(){if(!supabase)return;setMatchesLoading(true);setMatchesError('');try{const [fixtures,bracket]=await Promise.all([supabase.from('plato_land_series3_public_fixtures').select('match_id,match_date,round_no,group_name,match_no,player_a_plato_id,player_b_plato_id').eq('event_key','series3').order('match_date').order('round_no').order('group_name').order('match_no'),supabase.from('plato_land_series3_public_bracket').select('bracket_snapshot').eq('event_key','series3').maybeSingle()]);if(fixtures.error)throw fixtures.error;const choices:MatchChoice[]=(fixtures.data||[]).map((m:any)=>({key:'group_'+m.match_id,matchId:m.match_id,stage:'مرحله گروهی',roundNo:Number(m.round_no),matchDate:m.match_date,label:'دور '+(['','اول','دوم','سوم'][Number(m.round_no)]||m.round_no)+' · گروه '+m.group_name+' · بازی '+m.match_no+' · '+m.player_a_plato_id+' مقابل '+m.player_b_plato_id,options:[m.player_a_plato_id,m.player_b_plato_id]}));if(!bracket.error&&bracket.data?.bracket_snapshot){const snap=bracket.data.bracket_snapshot;const rounds:[string,string,string][]=[['round32','یک‌شانزدهم نهایی','round32'],['round16','یک‌هشتم نهایی','round16'],['quarterfinals','یک‌چهارم نهایی','quarterfinals'],['semifinals','نیمه‌نهایی','semifinals'],['final','فینال','final']];for(const [key,title,prop] of rounds){const list=Array.isArray(snap[prop])?snap[prop]:[];list.forEach((m:any,index:number)=>{const a=m?.a?.label,b=m?.b?.label;if(a&&b)choices.push({key:key+'_'+m.id,stage:title,matchDate:null,label:title+' · بازی '+(index+1)+' · '+a+' مقابل '+b,options:[a,b]});});}}else if(bracket.error){setMatchesError('بازی‌های گروهی دریافت شدند؛ قرعه حذفی هنوز قابل خواندن نیست.');}setMatchChoices(choices);}catch(e:any){setMatchesError(e.message||'دریافت فهرست بازی‌ها ناموفق بود.');}finally{setMatchesLoading(false);}}
+ async function loadMatchChoices(){
+  if(!supabase)return;
+  setMatchesLoading(true);setMatchesError('');
+  try{
+   const [fixtures,bracket,groupResults,knockoutResults]=await Promise.all([
+    supabase.from('plato_land_series3_public_fixtures')
+     .select('match_id,match_date,round_no,group_name,match_no,player_a_plato_id,player_b_plato_id')
+     .eq('event_key','series3').order('match_date').order('round_no').order('group_name').order('match_no'),
+    supabase.from('plato_land_series3_knockout_draws')
+     .select('bracket_snapshot').eq('event_key','series3').maybeSingle(),
+    supabase.from('plato_land_series3_group_match_results')
+     .select('match_id,group_name,player_a_registration_id,player_a_plato_id,player_b_registration_id,player_b_plato_id,result_status,score_a,score_b')
+     .eq('event_key','series3'),
+    supabase.from('plato_land_series3_knockout_match_results')
+     .select('match_id,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status')
+     .eq('event_key','series3'),
+   ]);
+   if(fixtures.error)throw fixtures.error;
+   if(bracket.error)throw bracket.error;
+   if(groupResults.error)throw groupResults.error;
+   if(knockoutResults.error)throw knockoutResults.error;
+   const choices:MatchChoice[]=(fixtures.data||[]).map((m:any)=>({
+    key:'group_'+m.match_id,matchId:m.match_id,stage:'مرحله گروهی',roundNo:Number(m.round_no),matchDate:m.match_date,
+    label:'دور '+(['','اول','دوم','سوم'][Number(m.round_no)]||m.round_no)+' · گروه '+m.group_name+' · بازی '+m.match_no+' · '+m.player_a_plato_id+' مقابل '+m.player_b_plato_id,
+    options:[m.player_a_plato_id,m.player_b_plato_id],
+   }));
+   const snap=bracket.data?.bracket_snapshot;
+   if(snap){
+    const placements=resolveLockedGroupPlacements((groupResults.data||[]) as Series3GroupFixture[]);
+    const actualThirdQualifiers=(Array.isArray(snap.tokens)?snap.tokens:[])
+     .filter((token:any)=>token.source==='third'&&Boolean(token.group)&&!String(token.id).startsWith('3-BEST-'));
+    const resolvedSlots=resolveSeries3BracketSlots(
+     snap,
+     placements,
+     actualThirdQualifiers,
+     (knockoutResults.data||[]) as Series3KnockoutResult[],
+    );
+    const rounds:[string,string,string][]=[
+     ['round32','یک‌شانزدهم نهایی','round32'],
+     ['round16','یک‌هشتم نهایی','round16'],
+     ['quarterfinals','یک‌چهارم نهایی','quarterfinals'],
+     ['semifinals','نیمه‌نهایی','semifinals'],
+     ['thirdPlace','رده‌بندی','thirdPlace'],
+     ['final','فینال','final'],
+    ];
+    for(const [key,title,prop] of rounds){
+     const list=Array.isArray(snap[prop])?snap[prop]:[];
+     list.forEach((m:any,index:number)=>{
+      const resolved=resolvedSlots[m.id];
+      const a=resolved?.a?.token?.label||m?.a?.label;
+      const b=resolved?.b?.token?.label||m?.b?.label;
+      if(a&&b)choices.push({
+       key:key+'_'+m.id,stage:title,matchDate:null,
+       label:title+' · بازی '+(index+1)+' · '+a+' مقابل '+b,
+       options:[a,b],matchId:m.id,
+      });
+     });
+    }
+   }else{
+    setMatchesError('بازی‌های گروهی دریافت شدند؛ قرعه رسمی حذفی سری سوم هنوز در دسترس نیست.');
+   }
+   setMatchChoices(choices);
+   const refreshedByKey=new Map(choices.map(choice=>[choice.key,choice]));
+   setSelectedMatches(current=>current.map(selected=>refreshedByKey.get(selected.key)||selected));
+  }catch(e:any){
+   setMatchesError(e.message||'دریافت فهرست بازی‌ها ناموفق بود.');
+  }finally{
+   setMatchesLoading(false);
+  }
+ }
  async function loadRoster(){if(!supabase)return;setRosterLoading(true);setRosterError('');try{const q=await supabase.from('plato_land_series3_registration_requests').select('plato_id').eq('registration_status','main').order('created_at',{ascending:true});if(q.error)throw q.error;const ids=[...new Set((q.data||[]).map((x:any)=>String(x.plato_id||'').trim()).filter(Boolean))];setRoster(ids);setSelectedCandidates(current=>current.length?current:ids);}catch(e:any){setRosterError(e.message||'دریافت بازیکنان فعال ناموفق بود.');}finally{setRosterLoading(false);}}
  function clearForm(){setId('');setTitle('');setDescription('');setKind('champion');setStatus('draft');setIsOpen(false);setOpensAt('');setClosesAt('');setPrize('');setQuestions([freshQuestion()]);setAnswerType('select');setSelectedCandidates([]);setSelectedMatches([]);setMatchStageFilter('all');setGroupRoundFilter('all');E('');}
  function edit(r:Campaign){const qs=(r.questions||[]).filter((q:any)=>q.id!=='champion');setId(r.id);setTitle(r.title||'');setDescription(r.description||'');setKind(r.campaign_type);setStatus(r.status);setIsOpen(r.is_open);setOpensAt(isoToJalaliInput(r.opens_at));setClosesAt(isoToJalaliInput(r.closes_at));setPrize(typeof r.prize_rules?.description==='string'?r.prize_rules.description:'');setQuestions(qs.length?qs.filter((q:any)=>!q.match).map((q:any)=>({label:q.label||'',optionsText:Array.isArray(q.options)?q.options.join('\n'):''})):[freshQuestion()]);setAnswerType(qs[0]?.type==='text'||qs[0]?.type==='number'?qs[0].type:'select');const champion=(r.questions||[]).find((q:any)=>q.id==='champion');setSelectedCandidates(Array.isArray(champion?.options)?champion.options:[]);setSelectedMatches(qs.filter((q:any)=>q.match).map((q:any)=>({key:q.match.key,stage:q.match.stage,matchDate:q.match.matchDate||null,label:q.label,options:q.options||[],matchId:q.match.matchId||undefined,roundNo:q.match.roundNo||undefined})));if(r.campaign_type==='match_predictions')void loadMatchChoices();E('');N('');}
