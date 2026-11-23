@@ -1,4 +1,4 @@
--- Installed main Supabase archive gate; fail-closed for unsupported series.
+-- Installed main Supabase; source-derived fingerprint invalidates stale evidence.
 CREATE OR REPLACE FUNCTION public.plato_temp_system_archive_verified(p_series_number integer, p_evidence_version text, p_correlation_id uuid DEFAULT gen_random_uuid())
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -37,6 +37,9 @@ begin
  end if;
  if p_series_number<>3 then
   return jsonb_build_object('archived',false,'reason','series_specific_final_verifier_not_implemented');
+ end if;
+ if p_evidence_version is distinct from ('series3:'||plato_temp_internal.series3_source_fingerprint()) then
+  return jsonb_build_object('archived',false,'reason','source_fingerprint_changed_or_unverified');
  end if;
  if not exists(select 1 from public.plato_land_series3_public_bracket where event_key='series3') then
   return jsonb_build_object('archived',false,'reason','missing_official_bracket');
