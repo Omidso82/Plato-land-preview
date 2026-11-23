@@ -113,7 +113,13 @@ export function resolveSeries3ThirdPlaces(
           // Preserve the unresolved official group placement. Both candidates have identical
           // ranking criteria, so eligibility can still be decided if neither reaches top eight.
           unresolvedNonAdvancingTies.push([third, fourth]);
-        } else thirdPlace = selected;
+        } else {
+          // The decision helper returns identity and score, not the group field.
+          // Retain the fully typed candidate from the verified current standings.
+          const chosen = [third, fourth].find(candidate => candidate.registration_id === selected.registration_id);
+          if (!chosen) return { status: 'owner_review', reason: 'شناسه تصمیم رسمی با بازیکنان فعلی گروه ' + group + ' مطابقت ندارد.' };
+          thirdPlace = chosen;
+        }
       } else {
         if (h.result_status !== 'completed' || h.score_a === h.score_b)
           return { status: 'owner_review', reason: 'نتیجه رودرروی نفرات سوم و چهارم گروه ' + group + ' برای تعیین رتبه معتبر نیست.' };
