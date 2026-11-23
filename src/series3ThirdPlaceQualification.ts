@@ -1,3 +1,4 @@
+import { resolveSeries3OwnerThirdTie, type Series3OwnerThirdDecision } from './series3OwnerThirdPlaceDecision';
 export type Series3GroupResultRow = {
   match_id: string;
   group_name: string;
@@ -46,6 +47,7 @@ const compareOfficial = (a: Series3ThirdPlacePlayer, b: Series3ThirdPlacePlayer)
 export function resolveSeries3ThirdPlaces(
   rows: Series3GroupResultRow[],
   playoff: Series3PlayoffRecord | null,
+  serverVerifiedOwnerDecisions: readonly Series3OwnerThirdDecision[] = [],
 ): Series3ThirdPlaceResolution {
   if (rows.length !== 72 || rows.some(row =>
     (row.result_status !== 'completed' && row.result_status !== 'double_no_show') ||
@@ -100,11 +102,21 @@ export function resolveSeries3ThirdPlaces(
         (row.player_a_registration_id === third.registration_id && row.player_b_registration_id === fourth.registration_id) ||
         (row.player_a_registration_id === fourth.registration_id && row.player_b_registration_id === third.registration_id)
       );
-      if (h2h.length !== 1 || h2h[0].result_status !== 'completed' || h2h[0].score_a === h2h[0].score_b)
-        return { status: 'owner_review', reason: 'نتیجه رودرروی نفرات سوم و چهارم گروه ' + group + ' برای تعیین رتبه معتبر نیست.' };
+      if (h2h.length !== 1)
+        return { status: 'owner_review', reason: 'مسابقه رودرروی نفرات سوم و چهارم گروه ' + group + ' یکتا نیست.' };
       const h = h2h[0];
-      const winnerId = h.score_a! > h.score_b! ? h.player_a_registration_id : h.player_b_registration_id;
-      thirdPlace = winnerId === third.registration_id ? third : fourth;
+      if (h.result_status === 'double_no_show') {
+        // Only a server-verified decision may resolve this exact 3rd/4th tie.
+        const selected = resolveSeries3OwnerThirdTie(group, third, fourth, h.result_status, serverVerifiedOwnerDecisions);
+        if (!selected)
+          return { status: 'owner_review', reason: 'تصمیم رسمی تأییدشده مدیریت برای تساوی نفرات سوم و چهارم گروه ' + group + ' لازم است.' };
+        thirdPlace = selected;
+      } else {
+        if (h.result_status !== 'completed' || h.score_a === h.score_b)
+          return { status: 'owner_review', reason: 'نتیجه رودرروی نفرات سوم و چهارم گروه ' + group + ' برای تعیین رتبه معتبر نیست.' };
+        const winnerId = h.score_a! > h.score_b! ? h.player_a_registration_id : h.player_b_registration_id;
+        thirdPlace = winnerId === third.registration_id ? third : fourth;
+      }
     }
     thirdPlaces.push(thirdPlace);
   }
