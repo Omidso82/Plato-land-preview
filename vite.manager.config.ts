@@ -10,7 +10,7 @@ import react from '@vitejs/plugin-react';
  * independently from the main site's shared assets and index.
  */
 export default defineConfig({
-  base: '/series2-slides-manager/',
+  base: '/',
   plugins: [
     react(),
     {
@@ -26,6 +26,7 @@ export default defineConfig({
   ],
   build: {
     outDir: 'dist-manager',
+    assetsDir: 'series2-slides-manager/assets',
     emptyOutDir: true,
     rollupOptions: { input: resolve(process.cwd(), 'manager-only.html') },
   },
