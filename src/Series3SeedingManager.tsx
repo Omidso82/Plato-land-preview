@@ -275,8 +275,8 @@ export default function Series3SeedingManager() {
   }
 
 
-  async function runBracketDraw(replaceExisting = false) {
-    if (!supabase || !savedDraw || (savedBracket && !replaceExisting) || bracketLoading) return;
+  async function runBracketDraw() {
+    if (!supabase || !savedDraw || savedBracket || bracketLoading) return;
     setBracketLoading(true); setError(''); setMessage('');
     try {
       const { data: userResult, error: userError } = await supabase.auth.getUser();
