@@ -3,7 +3,7 @@ import { supabase } from './supabase';
 import Series3FixturesSchedule from './Series3FixturesSchedule';
 import Series3GroupResultsManager from './Series3GroupResultsManager';
 import { resolveSeries3ThirdPlaces, type Series3PlayoffRecord, type Series3ThirdPlacePlayer } from './series3ThirdPlaceQualification';
-import { buildProtectedRound32, assignThirdPlaceQualifiers, buildOwnerApprovedSeries3Bracket } from './series3KnockoutBracket';
+import { buildProtectedRound32, assignThirdPlaceQualifiers } from './series3KnockoutBracket';
 
 type Registration = { id: string; plato_id: string; registration_status: 'main' | 'waitlist' | 'withdrawn' };
 type Stats = { request_id: string; games_played: number; games_won: number };
@@ -102,7 +102,6 @@ export default function Series3SeedingManager() {
   const [savedBracket, setSavedBracket] = useState<SavedBracket | null>(null);
   const [bracketExpanded, setBracketExpanded] = useState(true);
   const [bracketConfirm, setBracketConfirm] = useState(false);
-  const [bracketReplaceConfirm, setBracketReplaceConfirm] = useState(false);
   const [thirdsLoading, setThirdsLoading] = useState(false);
   const [playoffCandidates, setPlayoffCandidates] = useState<[Series3ThirdPlacePlayer, Series3ThirdPlacePlayer] | null>(null);
   const [playoffScoreA, setPlayoffScoreA] = useState('');
@@ -317,7 +316,6 @@ export default function Series3SeedingManager() {
         throw new Error('پاسخ ذخیره‌سازی کامل نبود؛ وضعیت رکورد باید جداگانه بررسی شود.');
       setSavedBracket({ bracket_snapshot: data.bracket_snapshot, created_at: data.created_at } as SavedBracket);
       setBracketConfirm(false);
-      setBracketReplaceConfirm(false);
       setMessage('قرعه کامل مسیر حذفی تا فینال در دیتابیس اصلی ذخیره و قفل شد.');
     } catch(e) {
       console.error('Series 3 knockout draw failed:',e);
@@ -325,36 +323,6 @@ export default function Series3SeedingManager() {
     } finally {setBracketLoading(false);}
   }
 
-
-  async function runApprovedBracketReplacement() {
-    if (!supabase || !savedDraw || !savedBracket || bracketLoading) return;
-    setBracketLoading(true); setError(''); setMessage('');
-    try {
-      const { data:userResult, error:userError } = await supabase.auth.getUser();
-      if (userError) throw userError;
-      if (!userResult.user) throw new Error('نشست مالک معتبر نیست؛ دوباره وارد پنل شو.');
-      const groupNames = savedDraw.groups_snapshot.map(group => group.name).sort();
-      if (groupNames.join('') !== 'ABCDEFGHIJKL') throw new Error('گروه‌های ذخیره‌شده با ساختار رسمی A تا L مطابقت ندارند.');
-      const bracket_snapshot = buildOwnerApprovedSeries3Bracket(groupNames);
-      const drawSource = JSON.stringify({ entrants: bracket_snapshot.tokens, bracket: bracket_snapshot });
-      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(drawSource));
-      const draw_fingerprint = Array.from(new Uint8Array(digest)).map(byte => byte.toString(16).padStart(2,'0')).join('');
-      const { data, error:saveError } = await supabase.rpc('replace_series3_knockout_draw', {
-        p_entrants_snapshot: bracket_snapshot.tokens,
-        p_bracket_snapshot: bracket_snapshot,
-        p_draw_fingerprint: draw_fingerprint,
-        p_archive_reason: 'Replaced prior Series 3 bracket with the exact owner-approved randomized R32-to-final path',
-      });
-      if (saveError) throw saveError;
-      if (!data?.success || !data?.bracket_snapshot || !data?.created_at) throw new Error('پاسخ ثبت براکت کامل نبود؛ وضعیت باید جداگانه بررسی شود.');
-      setSavedBracket({ bracket_snapshot:data.bracket_snapshot, created_at:data.created_at } as SavedBracket);
-      setBracketReplaceConfirm(false);
-      setMessage('قرعه تأییدشده مالک با حفظ نسخه قبلی در تاریخچه ثبت شد.');
-    } catch(e) {
-      console.error('Approved Series 3 bracket replacement failed:',e);
-      setError('ثبت قرعه تأییدشده انجام نشد: '+(e instanceof Error?e.message:'خطای ناشناخته'));
-    } finally { setBracketLoading(false); }
-  }
 
   async function runThirdPlaceAssignment() {
     if (!supabase || !savedBracket || thirdsLoading) return;
