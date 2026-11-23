@@ -1,0 +1,60 @@
+name: Validate isolated temporary manager build
+
+on:
+  pull_request:
+    paths:
+      - 'manager-only.html'
+      - 'vite.manager.config.ts'
+      - 'src/manager-only.tsx'
+      - 'src/Series2SlidesManager.tsx'
+      - 'src/Series3SeedingManager.tsx'
+      - 'src/Series3GroupResultsManager.tsx'
+      - '.github/workflows/validate-temp-manager.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  isolated-manager-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm install --no-package-lock
+      - run: npm run typecheck
+      - name: Build only existing temporary manager
+        run: npx vite build --config vite.manager.config.ts
+      - name: Verify output and route isolation
+        run: |
+          test -f dist-manager/series2-slides-manager/index.html
+          test -d dist-manager/series2-slides-manager/assets
+          test ! -e dist-manager/index.html
+          test ! -e dist-manager/series3/index.html
+          grep -q 'series2-slides-manager/assets/' dist-manager/series2-slides-manager/index.html
+          if find dist-manager -type f | grep -v '^dist-manager/series2-slides-manager/'; then
+            echo 'Unexpected output outside the manager route' >&2
+            exit 1
+          fi
+      - name: Record exact manager-only files and checksums
+        run: |
+          cd dist-manager
+          find series2-slides-manager -type f -print0 | sort -z | xargs -0 sha256sum > manager-files.sha256
+          test "$(wc -l < manager-files.sha256)" -ge 3
+          cat manager-files.sha256
+      - name: Save isolated manager checksums (no deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: temporary-manager-checksums
+          path: dist-manager/manager-files.sha256
+          if-no-files-found: error
+          retention-days: 7
+      - name: Save isolated manager build for inspection (no deployment)
+        uses: actions/upload-artifact@v4
+        with:
+          name: temporary-manager-only
+          path: dist-manager/series2-slides-manager/
+          if-no-files-found: error
+          retention-days: 7

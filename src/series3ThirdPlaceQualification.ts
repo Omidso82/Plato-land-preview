@@ -1,3 +1,4 @@
+import { resolveSeries3OwnerThirdTie, type Series3OwnerThirdDecision } from './series3OwnerThirdPlaceDecision';
 export type Series3GroupResultRow = {
   match_id: string;
   group_name: string;
@@ -46,6 +47,7 @@ const compareOfficial = (a: Series3ThirdPlacePlayer, b: Series3ThirdPlacePlayer)
 export function resolveSeries3ThirdPlaces(
   rows: Series3GroupResultRow[],
   playoff: Series3PlayoffRecord | null,
+  serverVerifiedOwnerDecisions: readonly Series3OwnerThirdDecision[] = [],
 ): Series3ThirdPlaceResolution {
   if (rows.length !== 72 || rows.some(row =>
     (row.result_status !== 'completed' && row.result_status !== 'double_no_show') ||
@@ -58,6 +60,7 @@ export function resolveSeries3ThirdPlaces(
     return { status: 'owner_review', reason: 'برای تعیین نفرات سوم، تمام ۷۲ بازی باید با نتیجه معتبر یا عدم حضور دوطرفه بدون امتیاز بسته شده باشند.' };
 
   const thirdPlaces: Series3ThirdPlacePlayer[] = [];
+  const unresolvedNonAdvancingTies: Array<[Series3ThirdPlacePlayer,Series3ThirdPlacePlayer]> = [];
   for (const group of GROUPS) {
     const groupRows = rows.filter(row => row.group_name === group);
     if (groupRows.length !== 6) return { status: 'owner_review', reason: 'تعداد بازی‌های گروه ' + group + ' کامل نیست.' };
@@ -100,16 +103,40 @@ export function resolveSeries3ThirdPlaces(
         (row.player_a_registration_id === third.registration_id && row.player_b_registration_id === fourth.registration_id) ||
         (row.player_a_registration_id === fourth.registration_id && row.player_b_registration_id === third.registration_id)
       );
-      if (h2h.length !== 1 || h2h[0].result_status !== 'completed' || h2h[0].score_a === h2h[0].score_b)
-        return { status: 'owner_review', reason: 'نتیجه رودرروی نفرات سوم و چهارم گروه ' + group + ' برای تعیین رتبه معتبر نیست.' };
+      if (h2h.length !== 1)
+        return { status: 'owner_review', reason: 'مسابقه رودرروی نفرات سوم و چهارم گروه ' + group + ' یکتا نیست.' };
       const h = h2h[0];
-      const winnerId = h.score_a! > h.score_b! ? h.player_a_registration_id : h.player_b_registration_id;
-      thirdPlace = winnerId === third.registration_id ? third : fourth;
+      if (h.result_status === 'double_no_show') {
+        // Only a server-verified decision may resolve this exact 3rd/4th tie.
+        const selected = resolveSeries3OwnerThirdTie(group, third, fourth, h.result_status, serverVerifiedOwnerDecisions);
+        if (!selected) {
+          // Preserve the unresolved official group placement. Both candidates have identical
+          // ranking criteria, so eligibility can still be decided if neither reaches top eight.
+          unresolvedNonAdvancingTies.push([third, fourth]);
+        } else {
+          // The decision helper returns identity and score, not the group field.
+          // Retain the fully typed candidate from the verified current standings.
+          const chosen = [third, fourth].find(candidate => candidate.registration_id === selected.registration_id);
+          if (!chosen) return { status: 'owner_review', reason: 'شناسه تصمیم رسمی با بازیکنان فعلی گروه ' + group + ' مطابقت ندارد.' };
+          thirdPlace = chosen;
+        }
+      } else {
+        if (h.result_status !== 'completed' || h.score_a === h.score_b)
+          return { status: 'owner_review', reason: 'نتیجه رودرروی نفرات سوم و چهارم گروه ' + group + ' برای تعیین رتبه معتبر نیست.' };
+        const winnerId = h.score_a! > h.score_b! ? h.player_a_registration_id : h.player_b_registration_id;
+        thirdPlace = winnerId === third.registration_id ? third : fourth;
+      }
     }
     thirdPlaces.push(thirdPlace);
   }
 
   thirdPlaces.sort(compareOfficial);
+  // An unresolved group third/fourth tie is irrelevant only when the group's
+  // best possible third-place score is strictly below the eighth-place score.
+  // Otherwise the official owner decision is mandatory before any assignment.
+  if (unresolvedNonAdvancingTies.some(([a,b]) =>
+    !sameCriteria(a,b) || compareOfficial(a,thirdPlaces[7]) <= 0))
+    return { status:'owner_review',reason:'تساوی حل‌نشده در رتبه سوم می‌تواند بر هشت سهمیه تأثیر بگذارد؛ تصمیم رسمی مالک لازم است.' };
   const eighth = thirdPlaces[7], ninth = thirdPlaces[8];
   if (sameCriteria(eighth, ninth)) {
     const tied = thirdPlaces.filter(player => sameCriteria(player, eighth));
