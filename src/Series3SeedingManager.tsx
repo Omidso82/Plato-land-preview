@@ -594,7 +594,7 @@ export default function Series3SeedingManager() {
               <p style={muted}>معیارها: امتیاز، تفاضل ست و ست برده‌شده. تساوی سوم/چهارم هر گروه با رودررو و تساوی دو نفر در مرز هشتم/نهم با پلی‌آف تعیین می‌شود؛ تساوی چندنفره برای بررسی مالک متوقف خواهد شد.</p>
               <button type="button" style={button} disabled={thirdsLoading} onClick={()=>void runThirdPlaceAssignment()}>{thirdsLoading?'در حال محاسبه…':'محاسبه و ثبت هشت نفر سوم رسمی'}</button>
               {error && <p role="alert" style={{color:'#ffb6b6',background:'#3c1515',border:'1px solid #b64c4c',borderRadius:8,padding:12,fontSize:14,whiteSpace:'pre-wrap'}}>{error}</p>}
-              {message && <p role="status" style={{color:'#b8dfa9',padding:10,fontSize:14}}>{message}</p>
+              {message && <p role="status" style={{color:'#b8dfa9',padding:10,fontSize:14}}>{message}</p>}
               {playoffCandidates && <div style={{...card,marginTop:10,borderColor:'#b18a45'}}>
                 <strong style={{color:'#f0d79e'}}>مسابقه پلی‌آف برای تعیین نفر هشتم</strong>
                 <p style={muted}>{playoffCandidates[0].plato_id} (گروه {playoffCandidates[0].group}) در برابر {playoffCandidates[1].plato_id} (گروه {playoffCandidates[1].group})</p>
