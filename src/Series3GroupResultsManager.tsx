@@ -1,8 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from './supabase';
 import { resolveLockedGroupPlacements, resolveSeries3BracketSlots, validateSeries3BracketResult } from './series3BracketProgression';
 import { resolveSeries3ThirdPlaces, type Series3PlayoffRecord } from './series3ThirdPlaceQualification';
-import { assignThirdPlaceQualifiers, type Series3BracketSnapshot } from './series3KnockoutBracket';
 
 type ResultStatus = 'pending' | 'completed' | 'double_no_show';
 type MatchResult = {
@@ -85,7 +84,6 @@ export default function Series3GroupResultsManager() {
   const [knockoutBracket,setKnockoutBracket]=useState<KnockoutSnapshot>({tokens:[]});
   const [knockoutRows,setKnockoutRows]=useState<KnockoutResult[]>([]);
   const [knockoutPlayoff,setKnockoutPlayoff]=useState<Series3PlayoffRecord|null>(null);
-  const autoThirdAssignment=useRef(false);
   const [knockoutPlayers,setKnockoutPlayers]=useState<string[]>([]);
   const [knockoutDrafts,setKnockoutDrafts]=useState<Record<string,KnockoutDraft>>({});
   const [knockoutLoading,setKnockoutLoading]=useState(false);
@@ -195,43 +193,19 @@ export default function Series3GroupResultsManager() {
     finally{setKnockoutSaving(null);}
   }
 
-  useEffect(()=>{
-    const hasUnassignedThirds=knockoutBracket.tokens?.some(token=>token.source==='third'&&!token.group);
-    const allGroupResultsComplete=rows.length===72&&rows.every(row=>row.result_status==='double_no_show'?(row.score_a===null&&row.score_b===null):(row.result_status==='completed'&&row.score_a!==null&&row.score_b!==null));
-    if(!knockoutLoaded||!hasUnassignedThirds||!allGroupResultsComplete||autoThirdAssignment.current)return;
-    autoThirdAssignment.current=true;
-    (async()=>{
-      try{
-        const resolution=resolveSeries3ThirdPlaces(rows as any,knockoutPlayoff);
-        if(resolution.status==='owner_review'){
-          setKnockoutMessage('تخصیص نفرات سوم متوقف شد: '+resolution.reason);
-          return;
-        }
-        if(resolution.status==='playoff_required'||resolution.status==='playoff_pending'){
-          setKnockoutMessage('تساوی در مرز سهمیه هشتم وجود دارد؛ پس از ثبت نتیجه پلی‌آف و تازه‌سازی، تخصیص خودکار ادامه می‌یابد.');
-          return;
-        }
-        if(knockoutRows.length>0){
-          setKnockoutMessage('نتایج حذفی قبلاً ثبت شده‌اند؛ تغییر جایگاه نفرات سوم برای حفظ نتایج نیازمند بررسی مالک است.');
-          return;
-        }
-        const qualifiers=resolution.qualifiers.map(player=>({id:'THIRD-'+player.registration_id,label:player.plato_id,source:'third' as const,group:player.group}));
-        const nextSnapshot=assignThirdPlaceQualifiers(knockoutBracket as Series3BracketSnapshot,qualifiers);
-        const source=JSON.stringify({entrants:nextSnapshot.tokens,bracket:nextSnapshot});
-        const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(source));
-        const fingerprint=Array.from(new Uint8Array(digest)).map(byte=>byte.toString(16).padStart(2,'0')).join('');
-        const {data,error}=await supabase!.rpc('replace_series3_knockout_draw',{
-          p_entrants_snapshot:nextSnapshot.tokens,p_bracket_snapshot:nextSnapshot,p_draw_fingerprint:fingerprint,
-          p_archive_reason:'Automatically assigned the eight official Series 3 third-place qualifiers after all 72 group results and tie rules were resolved',
-        });
-        if(error)throw error;
-        if(!data?.success||!data?.bracket_snapshot)throw new Error('پاسخ RPC برای ثبت نفرات سوم کامل نبود.');
-        setKnockoutBracket(data.bracket_snapshot as KnockoutSnapshot);
-        setKnockoutMessage('هشت نفر سوم واجد شرایط به‌صورت خودکار در جایگاه‌های ثابت براکت قرار گرفتند.');
-      }catch(e){
-        setKnockoutError('تخصیص خودکار نفرات سوم انجام نشد: '+(e instanceof Error?e.message:'خطای نامشخص'));
-      }finally{autoThirdAssignment.current=false;}
-    })();
+  // Read-only preview: opening the panel must never change the official bracket.
+  const thirdPlacePreview=useMemo(()=>{
+    const unresolved=knockoutBracket.tokens?.filter(token=>token.source==='third'&&!token.group).length||0;
+    const closed=rows.length===72&&rows.every(row=>row.result_status==='double_no_show'
+      ? row.score_a===null&&row.score_b===null
+      : row.result_status==='completed'&&row.score_a!==null&&row.score_b!==null);
+    if(!knockoutLoaded||unresolved===0)return null;
+    if(!closed)return 'نتایج گروهی هنوز کامل بسته نشده‌اند.';
+    if(knockoutRows.length>0)return 'به‌دلیل وجود نتایج حذفی، تخصیص نفرات سوم متوقف است.';
+    const result=resolveSeries3ThirdPlaces(rows as any,knockoutPlayoff);
+    if(result.status==='owner_review')return 'نیازمند تصمیم رسمی مدیریت: '+result.reason;
+    if(result.status!=='ready')return 'تعیین سهمیه هشتم هنوز نهایی نشده است.';
+    return 'پیش‌نمایش بدون ذخیره: '+result.qualifiers.map(p=>p.plato_id).join('، ')+'. تخصیص تنها با تأیید صریح مدیریت و کنترل سرور مجاز است.';
   },[rows,knockoutBracket,knockoutRows,knockoutPlayoff,knockoutLoaded]);
 
   useEffect(()=>{
@@ -361,6 +335,7 @@ export default function Series3GroupResultsManager() {
       </div>
       {knockoutError&&<p role="alert" style={{color:'#efaaaa',fontSize:12}}>{knockoutError}</p>}
       {knockoutMessage&&<p role="status" style={{color:'#b8dfa9',fontSize:12}}>{knockoutMessage}</p>}
+      {thirdPlacePreview&&<p role="status" style={{...muted,color:'#e4c77e'}}>{thirdPlacePreview}</p>}
       {!knockoutLoaded&&knockoutLoading?<p style={muted}>در حال بارگذاری براکت حذفی…</p>:knockoutMatches.length===0?<p style={muted}>برای این مرحله مسابقه‌ای در براکت رسمی ثبت نشده است.</p>:
         <div style={{display:'grid',gap:8,marginTop:8}}>
           {knockoutMatches.map((match,index)=>{
