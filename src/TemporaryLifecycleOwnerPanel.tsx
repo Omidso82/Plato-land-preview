@@ -24,6 +24,19 @@ export default function TemporaryLifecycleOwnerPanel(){
   setLoading(false);
  },[]);
  useEffect(()=>{void refresh()},[refresh]);
+ async function approveSeries3Final(){
+  if(!supabase||busy||!series3Strict?.ready_for_approval||!rows.some(s=>s.series_number===3&&s.lifecycle_status==='completed'))return;
+  if(!window.confirm('نتایج نهایی سری سوم را به‌صورت رسمی تأیید می‌کنید؟ این کار فقط شواهد آرشیو را ثبت می‌کند و وضعیت مسابقه را تغییر نمی‌دهد.'))return;
+  setBusy(true);setError('');setNotice('');
+  try {
+   const {data,error:e}=await supabase.rpc('plato_temp_owner_approve_series3_final',{p_confirm:'APPROVE_SERIES3_FINAL_RESULTS'});
+   if(e){setError(e.message);}
+   else if(data&&typeof data==='object'&&!Array.isArray(data)&&data.approved===true){
+    setNotice('تأیید رسمی نتایج سری سوم در سوابق ثبت شد. آرشیو خودکار هنوز نیازمند اجرای سروری است.');
+   }else{setError('تأیید انجام نشد؛ وضعیت مراحل یا مسابقه دوباره بررسی شود.');}
+   await refresh();
+  } finally {setBusy(false);}
+ }
  async function restore(series:SeriesRow){
   const why=(reason[series.series_number]||'').trim();
   if(why.length<5){setError('دلیل بازگردانی باید حداقل پنج نویسه باشد.');return;}
@@ -50,6 +63,7 @@ export default function TemporaryLifecycleOwnerPanel(){
    <p style={{margin:'6px 0',fontSize:13}}>وضعیت: {s.lifecycle_status} · ثبت‌نام: {s.registration_status}{s.has_hold?' · توقف آرشیو خودکار':''}</p>
    {readiness.filter(r=>r.series_number===s.series_number).map(r=><p key={r.series_number} style={{margin:'6px 0',fontSize:12,color:'#c9c0ad'}}>گروهی: {r.group_total} بازی، {r.group_pending} تعیین‌تکلیف‌نشده · براکت: {r.knockout_draw_exists?'ثبت‌شده':'ثبت‌نشده'} · نتایج حذفی: {r.knockout_result_count}{r.knockout_expected===null?'':` از ${r.knockout_expected}`} · رده‌بندی: {r.third_place_result_count??'نیازمند بررسی'} · آرشیو خودکار: غیرفعال تا تأیید نهایی</p>)}
    {s.series_number===3&&series3Strict&&<p style={{margin:'6px 0',fontSize:12,color:'#c9c0ad'}}>تطبیق رسمی براکت و نتایج: {series3Strict.matched_knockout}/{series3Strict.expected_knockout} · رده‌بندی تأییدشده: {series3Strict.third_place_completed} · نتایج خارج از براکت: {series3Strict.extra_results} · آمادگی بررسی نهایی: {series3Strict.ready_for_approval?'آماده بررسی مدیر':'هنوز ناقص'}</p>}
+   {s.series_number===3&&s.lifecycle_status==='completed'&&series3Strict?.ready_for_approval&&<button type="button" disabled={busy||loading} onClick={()=>void approveSeries3Final()}>تأیید رسمی نتایج نهایی سری سوم</button>}
    {s.lifecycle_status==='archived'&&<div style={{display:'grid',gap:8}}>
     <label htmlFor={'restore-reason-'+s.series_number}>دلیل بازگردانی</label>
     <textarea id={'restore-reason-'+s.series_number} rows={2} value={reason[s.series_number]||''} onChange={e=>setReason(v=>({...v,[s.series_number]:e.target.value}))} />
