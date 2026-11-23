@@ -113,7 +113,7 @@ export default function Series3GroupResultsManager() {
 
   const loadKnockout=useCallback(async()=>{
     if(!supabase){setKnockoutError('اتصال به دیتابیس اصلی در دسترس نیست.');return;}
-    setKnockoutLoading(true);setKnockoutError('');
+    setKnockoutLoaded(false);setKnockoutLoading(true);setKnockoutError('');
     try{
       const [drawResult,resultResult,playersResult,playoffResult]=await Promise.all([
         supabase.from('plato_land_series3_knockout_draws').select('bracket_snapshot').eq('event_key','series3').maybeSingle(),
