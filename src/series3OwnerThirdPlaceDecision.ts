@@ -3,6 +3,8 @@
  * This is a pure validation helper, NOT a source of authority.
  * Production decisions must be validated and persisted by an owner-only server RPC.
  */
+export const SERIES3_OFFICIAL_OWNER_REASON = 'تساوی کامل در معیارهای رتبه‌بندی و عدم حضور دوطرفه در مسابقه رودررو؛ تعیین رتبه با تصمیم رسمی مدیریت';
+
 export type Series3OwnerThirdDecision = {
   event_key: 'series3';
   group_name: 'C' | 'I';
@@ -34,7 +36,7 @@ export function resolveSeries3OwnerThirdTie(
   const matching = verifiedDecisions.filter(d => d.event_key === 'series3' && d.group_name === group);
   if (matching.length !== 1) return null;
   const decision = matching[0];
-  if (!decision.reason.trim() || !Number.isInteger(decision.decision_version) || decision.decision_version < 1) return null;
+  if (decision.reason !== SERIES3_OFFICIAL_OWNER_REASON || !Number.isInteger(decision.decision_version) || decision.decision_version !== 1) return null;
   const exactPair =
     (decision.selected_registration_id === third.registration_id && decision.rejected_registration_id === fourth.registration_id
       && decision.selected_plato_id === third.plato_id && decision.rejected_plato_id === fourth.plato_id) ||
