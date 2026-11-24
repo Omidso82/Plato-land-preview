@@ -18,6 +18,7 @@ import Series3SeedingManager from './Series3SeedingManager';
 import Series3TelegramManager from './Series3TelegramManager';
 import PredictionCampaignManager from './PredictionCampaignManager';
 import TemporaryPlayerBank from './TemporaryPlayerBank';
+import {BlackFridayAdmin} from './BlackFridayRegistration';
 
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
 
@@ -45,7 +46,7 @@ export default function Series2SlidesManager() {
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
   const [scannerOpen,setScannerOpen] = useState(false);
-  const [managerPage,setManagerPage] = useState<'home'|'series3'|'series4'|'series2'|'predictions'|'players'>('home');
+  const [managerPage,setManagerPage] = useState<'home'|'series3'|'series4'|'series2'|'predictions'|'players'|'blackFriday'>('home');
 
   async function verifyOwner() {
     if (!supabase) { setMessage('اتصال به سرویس اصلی برقرار نیست.'); setChecking(false); return; }
@@ -229,6 +230,7 @@ export default function Series2SlidesManager() {
       <button style={secondary} onClick={signOut}>خروج از پنل</button>
     </div>
     {managerPage==='home'&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))',gap:14,marginTop:18}}>
+      <button type="button" style={primary} onClick={()=>setManagerPage('blackFriday')}>مدیریت تورنمنت بلک فرایدی</button>
       <button type="button" onClick={()=>setManagerPage('series3')} style={{textAlign:'right',padding:20,border:'1px solid #b18b45',borderRadius:14,background:'linear-gradient(145deg,#2b2113,#121315)',color:'#f6e8c5',cursor:'pointer'}}>
         <strong style={{display:'block',fontSize:20,marginBottom:8}}>مدیریت سری سوم تخته‌نرد</strong>
         <span style={{fontSize:13,lineHeight:1.9,color:'#c9c0ad'}}>مدیریت پوستر و ۱۷ قانون تصویری، به‌همراه گزارش ثبت‌نام‌کنندگان و Plato IDها</span>
@@ -250,6 +252,7 @@ export default function Series2SlidesManager() {
         <span style={{fontSize:13,lineHeight:1.9,color:'#c9c0ad'}}>جست‌وجوی Plato ID و مشاهده سابقه ثبت‌نام، برد، باخت و حریفان در سری دوم و سوم</span>
       </button>
     </div>}
+    {managerPage==='blackFriday'&&<><button style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت</button><BlackFridayAdmin/></>}
     {managerPage==='players'&&<>
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
       <TemporaryPlayerBank />
