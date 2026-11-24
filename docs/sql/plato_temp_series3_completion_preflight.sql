@@ -8,7 +8,7 @@ declare v_bracket jsonb; v_expected integer; v_distinct integer; v_matched integ
 v_group_total integer; v_group_pending integer; v_third integer; v_bad_ids integer;
 begin
  select bracket_snapshot into v_bracket from public.plato_land_series3_public_bracket where event_key='series3';
- select count(*),count(*) filter(where result_status is null or result_status not in ('completed','double_no_show'))
+ select count(*),count(*) filter(where result_status is null or result_status not in ('completed','double_no_show') or (result_status='double_no_show' and (score_a is not null or score_b is not null)) or (result_status='completed' and (score_a is null or score_b is null or score_a<0 or score_b<0 or score_a=score_b)))
  into v_group_total,v_group_pending from public.plato_land_series3_group_match_results where event_key='series3';
  if v_bracket is null then
   return jsonb_build_object('series_number',3,'ready_for_approval',false,'reason','missing_official_bracket',
@@ -30,7 +30,7 @@ begin
   from expected e left join public.plato_land_series3_knockout_match_results r
   on r.event_key='series3' and r.stage_key=e.stage and r.match_id=e.match_id
  )
- select count(*),count(distinct match_id),count(id) filter(where result_status='completed' and score_a is not null and score_b is not null and score_a<>score_b),
+ select count(*),count(distinct match_id),count(id) filter(where result_status='completed' and score_a is not null and score_b is not null and score_a<>score_b and score_a>=0 and score_b>=0),
  count(*) filter(where match_id is null or length(btrim(match_id))=0)
  into v_expected,v_distinct,v_matched,v_bad_ids from matched;
  with expected as (
@@ -43,7 +43,7 @@ begin
  select count(*) into v_extra from public.plato_land_series3_knockout_match_results r
  where r.event_key='series3' and not exists(select 1 from expected e where e.stage=r.stage_key and e.match_id=r.match_id) and not (r.stage_key='thirdPlace' and r.match_id=v_bracket->'thirdPlace'->0->>'id');
  select count(*) into v_third from public.plato_land_series3_knockout_match_results
- where event_key='series3' and stage_key='thirdPlace' and match_id=v_bracket->'thirdPlace'->0->>'id' and result_status='completed' and score_a is not null and score_b is not null and score_a<>score_b;
+ where event_key='series3' and stage_key='thirdPlace' and match_id=v_bracket->'thirdPlace'->0->>'id' and result_status='completed' and score_a is not null and score_b is not null and score_a<>score_b and score_a>=0 and score_b>=0;
  return jsonb_build_object(
   'series_number',3,'group_total',v_group_total,'group_pending',v_group_pending,
   'expected_knockout',v_expected,'distinct_match_ids',v_distinct,'matched_knockout',v_matched,
