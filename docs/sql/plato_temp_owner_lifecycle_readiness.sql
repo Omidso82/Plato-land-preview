@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION public.plato_temp_owner_lifecycle_readiness()
 AS $function$
 declare v_series3_expected integer; v_series3_bracket boolean;
 begin
- if auth.uid() is null or public.current_user_role()<>'owner' then
+ if auth.uid() is null or public.current_user_role() is distinct from 'owner' then
   raise exception 'owner authorization required' using errcode='42501';
  end if;
  select coalesce(
