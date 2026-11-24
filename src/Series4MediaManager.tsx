@@ -129,9 +129,15 @@ export default function Series4MediaManager({rulesOnly=false}:{rulesOnly?:boolea
           <button type="button" disabled={busy||!saved.teaser||archived.teaser||preferences.homepage_slot==='teaser'} onClick={()=>void savePreferences({...preferences,homepage_slot:'teaser'})}>ویدیوی تیزر</button>
         </div>
         <span>انتخاب فعلی: {preferences.homepage_slot==='poster'?'پوستر ثابت':'ویدیوی تیزر'}</span>
-        <label>رسانه <select value={slot} disabled={busy} onChange={event=>{setSlot(event.target.value);setFile(null);setPreview('');setError('');setMessage('');}}>
-          {slots.filter(item=>item.id!=='rules').map(item=><option key={item.id} value={item.id}>{item.label}{archived[item.id]?' · بایگانی':saved[item.id]?' ✓':''}</option>)}
-        </select></label>
+        <div aria-label="جایگاه‌های رسانه" style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(115px,1fr))',gap:6}}>
+          {slots.filter(item=>item.id!=='rules').map(item=><button key={item.id} type="button"
+            disabled={busy} aria-pressed={slot===item.id}
+            style={{padding:8,borderRadius:8,border:'1px solid #8c6a34',color:'#f2ead8',background:slot===item.id?'#594526':'#231d14'}}
+            onClick={()=>{setSlot(item.id);setFile(null);setPreview('');setError('');setMessage('');}}>
+            {item.label}<br/><small>{archived[item.id]?'بایگانی‌شده':saved[item.id]?'ثبت‌شده':'خالی'}</small>
+          </button>)}
+        </div>
+        <strong>{slots.find(item=>item.id===slot)?.label}</strong>
       </>}
       <label>انتخاب فایل <input key={slot} type="file" accept={video?'video/mp4':'image/jpeg,image/png,image/webp'}
         disabled={busy} onChange={event=>{setFile(event.target.files?.[0]??null);event.target.value='';}}/></label>

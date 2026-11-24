@@ -1,8 +1,9 @@
 import React,{useState} from 'react';
 import {supabase} from './supabase';
-import type {buildSeries4Knockout} from './series4Knockout';
+import {resolveSeries4Matches,type buildSeries4Knockout} from './series4Knockout';
+import Series4PredictionReport from './Series4PredictionReport';
 
-type ReportKind='schedule'|'results'|'bracket'|'knockout';
+type ReportKind='schedule'|'results'|'bracket'|'knockout'|'ranking'|'pots'|'groups';
 
 type Row = {
   match_date:string;
@@ -32,18 +33,7 @@ export default function Series4TelegramPreview(){
     if(draw.error||results.error)throw Error('دریافت نتایج حذفی ناموفق بود.');
     const bracket=draw.data?.bracket as ReturnType<typeof buildSeries4Knockout>|undefined;
     if(!bracket)return '';
-    const scored=new Map((results.data??[]).map(row=>[row.match_id,row]));
-    const participants=new Map<string,[string|undefined,string|undefined]>();
-    for(const match of bracket.firstRound)participants.set(match.id,[match.a.plato_id,match.b.plato_id]);
-    function advance(id:string,loser=false) {
-      const score=scored.get(id);
-      return score?participants.get(id)?.[(score.score_a>score.score_b)!==loser?0:1]:undefined;
-    }
-    for(const round of bracket.laterRounds) {
-      for(const match of round)participants.set(match.id,[advance(match.fromA),advance(match.fromB)]);
-    }
-    const third=bracket.thirdPlace;
-    participants.set(third.id,[advance(third.fromA,true),advance(third.fromB,true)]);
+    const {players:participants,byId:scored}=resolveSeries4Matches(bracket,results.data??[]);
     return [...participants].flatMap(([id,[a,b]])=>{
       const score=scored.get(id);
       if(kind==='knockout'&&(!a||!b||!score))return [];
@@ -51,14 +41,33 @@ export default function Series4TelegramPreview(){
         (score?' · '+score.score_a+'–'+score.score_b:'')];
     }).join('\n');
   }
+  async function drawReport() {
+    if(!supabase)return '';
+    const {data,error}=await supabase.from('plato_land_series4_seeding_draws')
+      .select('ranking_snapshot,pots_snapshot,groups_snapshot').maybeSingle();
+    if(error)throw error;
+    if(!data)return '';
+    type Player={plato_id:string;games_played:number|null;games_won:number|null};
+    if(kind==='ranking')return (data.ranking_snapshot as Player[]).map((player,index)=>{
+      const percent=player.games_played&&player.games_won!==null
+        ? (100*player.games_won/player.games_played).toLocaleString('fa-IR',{maximumFractionDigits:2})+'٪'
+        : '—';
+      return (index+1).toLocaleString('fa-IR')+'. '+player.plato_id+' · '+percent;
+    }).join('\n');
+    if(kind==='pots')return (data.pots_snapshot as Player[][]).map((players,index)=>
+      'سید '+(index+1).toLocaleString('fa-IR')+': '+players.map(player=>player.plato_id).join('، ')).join('\n');
+    return (data.groups_snapshot as {name:string;players:Player[]}[]).map(group=>
+      'گروه '+group.name+': '+group.players.map(player=>player.plato_id).join('، ')).join('\n');
+  }
   async function generate(){
     if(!supabase||busy||(isGroupReport&&!date))return;
     setBusy(true);setError('');setPreview('');setCopied(false);setSent(false);setReceipt('');
     try{
       if(!isGroupReport){
-        const text=await knockoutReport();
+        const titles={bracket:'براکت حذفی',knockout:'نتایج حذفی',ranking:'رتبه‌بندی بازیکنان',pots:'سیدبندی',groups:'قرعه‌کشی گروهی'};
+        const text=kind==='bracket'||kind==='knockout'?await knockoutReport():await drawReport();
         if(!text){setError('برای این بخش گزارشی وجود ندارد.');return;}
-        setPreview('PLATO LAND | سری چهارم تخته‌نرد\n'+(kind==='bracket'?'براکت حذفی':'نتایج حذفی')+'\n\n'+text);
+        setPreview('PLATO LAND | سری چهارم تخته‌نرد\n'+titles[kind]+'\n\n'+text);
         return;
       }
       const {data,error}=await supabase.from('plato_land_series4_group_match_results')
@@ -120,6 +129,7 @@ export default function Series4TelegramPreview(){
     <summary style={{cursor:'pointer',color:'#e4c77e'}}>مرکز اطلاع‌رسانی تلگرام سری چهارم</summary>
     <div style={{display:'grid',gap:9,marginTop:10}}>
       <label>نوع گزارش <select value={kind} disabled={busy||sending} onChange={event=>{setKind(event.target.value as typeof kind);setPreview('');}}>
+        <option value="ranking">رتبه‌بندی بازیکنان</option><option value="pots">سیدبندی</option><option value="groups">قرعه‌کشی گروهی</option>
         <option value="schedule">برنامه گروهی</option><option value="results">نتایج گروهی</option>
         <option value="bracket">براکت حذفی</option><option value="knockout">نتایج حذفی</option>
       </select></label>
@@ -142,6 +152,7 @@ export default function Series4TelegramPreview(){
         <button type="button" disabled={sending||sent||!targets.length} onClick={()=>void send()}>{sending?'در حال ارسال…':'تأیید و ارسال'}</button>
       </>}
       {receipt&&<span role="status">{receipt}</span>}
+      <Series4PredictionReport />
       <details><summary>تاریخچه ارسال‌ها</summary>
         <button type="button" onClick={()=>void refreshHistory()}>تازه‌سازی تاریخچه</button>
         <ul>{history.map(row=><li key={row.request_id+row.destination}>

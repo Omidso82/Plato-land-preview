@@ -73,3 +73,22 @@ export function buildSeries4Knockout(qualifiers: Series4Qualifier[]) {
   const semifinals=laterRounds.at(-2)!;
   return {firstRound,laterRounds,thirdPlace:{id:'THIRD-1',fromA:semifinals[0].id,fromB:semifinals[1].id}};
 }
+
+export function resolveSeries4Matches(
+  bracket:ReturnType<typeof buildSeries4Knockout>,
+  scores:Array<{match_id:string;score_a:number;score_b:number}>,
+) {
+  const byId=new Map(scores.map(score=>[score.match_id,score]));
+  const players=new Map<string,[string|undefined,string|undefined]>();
+  for(const match of bracket.firstRound)players.set(match.id,[match.a.plato_id,match.b.plato_id]);
+  function advance(id:string,loser=false) {
+    const score=byId.get(id);
+    return score?players.get(id)?.[(score.score_a>score.score_b)!==loser?0:1]:undefined;
+  }
+  for(const round of bracket.laterRounds) {
+    for(const match of round)players.set(match.id,[advance(match.fromA),advance(match.fromB)]);
+  }
+  const third=bracket.thirdPlace;
+  players.set(third.id,[advance(third.fromA,true),advance(third.fromB,true)]);
+  return {players,byId};
+}

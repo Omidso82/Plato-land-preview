@@ -53,3 +53,7 @@ The owner card was released on platoland.org in commit `a0cceccd9765f768a9b7499b
 ## Series 4 media and Telegram update — 2026-11-23
 
 Compared sections inside the Series 3 and Series 4 owner cards. The local Series 4 card now separates images/teaser from rules video and provides explicit upload/replace, preview, archive/restore, home-media preference and rules preference controls. Archived R2 files are retained. Telegram adds group filtering, manual confirmation, the existing test-group and main-channel destination labels, duplicate-attempt protection and a separate delivery history. Migration `20261123160448_series4_panel_media_telegram` was applied to the primary project after owner approval. The Series 4 Telegram Edge Function v1 is active with JWT verification. No Telegram messages were sent. Prediction scoring reports and public rules-video view analytics are not part of this update. The public Series 4 page stays disabled.
+
+## Series 4 owner-card parity release — 2026-11-24
+
+Owner approved publication of the media slot status buttons, official group schedule, Telegram ranking/seeding/draw previews, and prediction response and scoring report inside the temporary Series 4 panel. No database migration, public activation, or Telegram send is included. The prediction report requires Series 4 campaigns and entries to show live scoring data.

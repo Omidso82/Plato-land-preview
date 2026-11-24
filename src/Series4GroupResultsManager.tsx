@@ -247,6 +247,21 @@ export default function Series4GroupResultsManager() {
         {creating?'در حال ذخیره…':'ذخیره برنامه گروهی'}
       </button>
     </div>}
+    <details style={{...card,marginTop:12}}>
+      <summary style={{cursor:'pointer',color:'#e4c77e',fontWeight:800}}>برنامه رسمی مسابقات گروهی</summary>
+      {!loading&&days.length===0&&<p style={muted}>برنامه گروهی هنوز ذخیره نشده است.</p>}
+      {days.map(date=><details key={date} style={{...card,marginTop:8}}>
+        <summary>{new Date(date+'T12:00:00').toLocaleDateString('fa-IR',{dateStyle:'long'})}
+          {' · '+fa(rows.filter(row=>row.match_date===date).length)+' بازی'}</summary>
+        <ul style={{paddingInlineStart:20}}>
+          {rows.filter(row=>row.match_date===date).map(row=><li key={row.match_id}>
+            گروه {row.group_name} · دور {fa(row.round_no)} · بازی {fa(row.match_no)}
+            {' · '}<bdi>{row.player_a_plato_id}</bdi> در برابر <bdi>{row.player_b_plato_id}</bdi>
+          </li>)}
+        </ul>
+        <button type="button" style={secondary} onClick={()=>{setDay(date);setGroup('ALL');}}>فیلتر نتایج همین روز</button>
+      </details>)}
+    </details>
     <div style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:7,marginTop:12}}>
       {[['کل بازی‌ها',rows.length],['ثبت نتیجه',done],['عدم حضور دوطرفه',noShows],['در انتظار',pending]].map(([label,value])=><div key={String(label)} style={{...card,padding:8}}><div style={{...muted,fontSize:10}}>{label}</div><strong style={{fontSize:20,color:'#e4c77e'}}>{loading?'—':fa(Number(value))}</strong></div>)}
     </div>
