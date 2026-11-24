@@ -2,6 +2,7 @@ import React,{useState} from 'react';
 import {supabase} from './supabase';
 import {resolveSeries4Matches,type buildSeries4Knockout} from './series4Knockout';
 import Series4PredictionReport from './Series4PredictionReport';
+import PredictionCampaignManager from './PredictionCampaignManager';
 
 const HEADER='PLATO LAND | سری چهارم تخته‌نرد';
 const TELEGRAM_LIMIT=4096;
@@ -19,6 +20,7 @@ type Row = {
 };
 
 export default function Series4TelegramPreview(){
+  const [showCampaigns,setShowCampaigns]=useState(false);
   const [kind,setKind]=useState<ReportKind>('schedule');
   const [date,setDate]=useState('');
   const [group,setGroup]=useState('ALL');
@@ -34,18 +36,21 @@ export default function Series4TelegramPreview(){
   const isGroupReport=kind==='schedule'||kind==='results';
   async function knockoutReport() {
     if(!supabase)return '';
-    const [draw,results]=await Promise.all([
+    const [draw,results,schedule]=await Promise.all([
       supabase.from('plato_land_series4_knockout_draw').select('bracket').maybeSingle(),
       supabase.from('plato_land_series4_knockout_scores').select('match_id,score_a,score_b'),
+      supabase.from('plato_land_series4_knockout_schedule').select('dates').maybeSingle(),
     ]);
-    if(draw.error||results.error)throw Error('دریافت نتایج حذفی ناموفق بود.');
+    if(draw.error||results.error||schedule.error)throw Error('دریافت نتایج حذفی ناموفق بود.');
     const bracket=draw.data?.bracket as ReturnType<typeof buildSeries4Knockout>|undefined;
     if(!bracket)return '';
     const {players:participants,byId:scored}=resolveSeries4Matches(bracket,results.data??[]);
     return [...participants].flatMap(([id,[a,b]])=>{
       const score=scored.get(id);
       if(kind==='knockout'&&(!a||!b||!score))return [];
-      return [id+' · '+(a??'در انتظار صعود')+' — '+(b??'در انتظار صعود')+
+      const scheduled=schedule.data?.dates?.[id.split('-')[0]];
+      const dateLabel=scheduled?' · '+new Date(scheduled+'T12:00:00').toLocaleDateString('fa-IR'):'';
+      return [id+dateLabel+' · '+(a??'در انتظار صعود')+' — '+(b??'در انتظار صعود')+
         (score?' · '+score.score_a+'–'+score.score_b:'')];
     }).join('\n');
   }
@@ -176,7 +181,11 @@ export default function Series4TelegramPreview(){
         <button type="button" disabled={busy||sending||sent||overLimit||!targets.length} onClick={()=>void send()}>{sending?'در حال ارسال…':'تأیید و ارسال'}</button>
       </>}
       {receipt&&<span role="status">{receipt}</span>}
-      <Series4PredictionReport />
+      <details onToggle={event=>setShowCampaigns(event.currentTarget.open)}>
+        <summary>مدیریت پیش‌بینی‌های سری چهارم</summary>
+        {showCampaigns&&<PredictionCampaignManager series4 />}
+      </details>
+      <Series4PredictionReport onDelivery={refreshHistory} />
       <details><summary>تاریخچه ارسال‌ها</summary>
         <button type="button" onClick={()=>void refreshHistory()}>تازه‌سازی تاریخچه</button>
         <ul>{history.map(row=><li key={row.request_id+row.destination}>
