@@ -57,3 +57,7 @@ Compared sections inside the Series 3 and Series 4 owner cards. The local Series
 ## Series 4 owner-card parity release — 2026-11-24
 
 Owner approved publication of the media slot status buttons, official group schedule, Telegram ranking/seeding/draw previews, and prediction response and scoring report inside the temporary Series 4 panel. No database migration, public activation, or Telegram send is included. The prediction report requires Series 4 campaigns and entries to show live scoring data.
+
+## Series 4 combined Telegram announcement and prediction PNG — 2026-11-24
+
+The owner approved releasing the combined text announcement and paginated prediction PNG preview/download in the existing temporary Series 4 panel. The current Telegram endpoint handles one combined message up to 4096 UTF-16 units. Larger previews remain available to copy. There are no database or public activation changes and no Telegram send during deployment.

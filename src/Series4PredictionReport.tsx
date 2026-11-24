@@ -1,9 +1,10 @@
-import React,{useState} from 'react';
+import React,{useEffect,useState} from 'react';
+import {series4PredictionPageCount,series4PredictionPng} from './series4PredictionImage';
 import {supabase} from './supabase';
 import {resolveSeries4Matches,type buildSeries4Knockout} from './series4Knockout';
 
 type Campaign={id:string;title:string;status:string;campaign_type:string;questions:{id:string;label:string;match?:{matchId?:string}}[]};
-type Answer={question:string;prediction:string;actual?:string;status:string};
+type Answer={questionId:string;question:string;prediction:string;actual?:string;status:string};
 type Report={id:string;player:string;answers:Answer[];correct:number};
 const normalize=(value:string)=>value.trim().toLowerCase();
 
@@ -13,6 +14,27 @@ export default function Series4PredictionReport(){
   const [reports,setReports]=useState<Report[]>([]);
   const [error,setError]=useState('');
   const [busy,setBusy]=useState(false);
+  const [imagePage,setImagePage]=useState(0);
+  const [imageUrl,setImageUrl]=useState('');
+  const [imageBusy,setImageBusy]=useState(false);
+  const campaign=campaigns?.find(item=>item.id===selected);
+  const imageRows=campaign?.campaign_type==='champion'
+    ? reports.flatMap(report=>{
+        const answer=report.answers.find(item=>item.questionId==='champion'&&item.prediction);
+        return answer?[{player:report.player,value:answer.prediction}]:[];
+      })
+    : campaign?.campaign_type==='match_predictions'
+      ? reports.map(report=>({player:report.player,value:report.correct.toLocaleString('fa-IR')+' پاسخ درست'}))
+      : [];
+  const imagePages=series4PredictionPageCount(imageRows.length);
+  useEffect(()=>()=>{if(imageUrl)URL.revokeObjectURL(imageUrl);},[imageUrl]);
+  async function previewImage(){
+    if(!campaign||!imagePages||imageBusy)return;
+    setImageBusy(true);setError('');setImageUrl('');
+    try{setImageUrl(URL.createObjectURL(await series4PredictionPng(campaign.title,imageRows,imagePage)));}
+    catch(error){setError(error instanceof Error?error.message:'ساخت تصویر ناموفق بود.');}
+    finally{setImageBusy(false);}
+  }
   async function loadCampaigns(){
     if(!supabase||busy)return;
     setBusy(true);setError('');
@@ -22,13 +44,13 @@ export default function Series4PredictionReport(){
         .in('status',['published','closed']).order('created_at',{ascending:false});
       if(error)throw error;
       setCampaigns(data??[]);
-      setSelected('');setReports([]);
+      setSelected('');setReports([]);setImagePage(0);setImageUrl('');
     }catch{setError('دریافت فهرست پیش‌بینی‌های سری چهارم ناموفق بود.');}
     finally{setBusy(false);}
   }
   async function loadReport(id:string){
     const campaign=campaigns?.find(item=>item.id===id);
-    setSelected(id);setReports([]);setError('');
+    setSelected(id);setReports([]);setError('');setImagePage(0);setImageUrl('');
     if(!supabase||!campaign||busy)return;
     setBusy(true);
     try{
@@ -65,7 +87,7 @@ export default function Series4PredictionReport(){
           const status=id&&excluded.has(id)?'حذف‌شده از امتیازدهی':
             !actual?'در انتظار ارزیابی':!prediction?'بدون پاسخ':
             normalize(prediction)===normalize(actual)?'درست':'نادرست';
-          return {question:question.label,prediction,actual,status};
+          return {questionId:question.id,question:question.label,prediction,actual,status};
         });
         return {id:entry.id,player:entry.voter_plato_id,answers,correct:answers.filter(answer=>answer.status==='درست').length};
       }).sort((a,b)=>b.correct-a.correct||a.player.localeCompare(b.player)));
@@ -74,14 +96,22 @@ export default function Series4PredictionReport(){
   }
   return <details style={{marginTop:10}}>
     <summary>گزارش پیش‌بینی‌های سری چهارم</summary>
-    <button type="button" disabled={busy} onClick={()=>void loadCampaigns()}>دریافت فهرست پیش‌بینی‌ها</button>
+    <button type="button" disabled={busy||imageBusy} onClick={()=>void loadCampaigns()}>دریافت فهرست پیش‌بینی‌ها</button>
     {error&&<p role="alert">{error}</p>}
     {campaigns?.length===0&&<p>پیش‌بینی منتشرشده یا بسته‌شده‌ای برای سری چهارم وجود ندارد.</p>}
-    {!!campaigns?.length&&<label>انتخاب پیش‌بینی <select value={selected} disabled={busy} onChange={event=>void loadReport(event.target.value)}>
+    {!!campaigns?.length&&<label>انتخاب پیش‌بینی <select value={selected} disabled={busy||imageBusy} onChange={event=>void loadReport(event.target.value)}>
       <option value="">انتخاب کن</option>
       {campaigns.map(campaign=><option key={campaign.id} value={campaign.id}>{campaign.title} · {campaign.status==='closed'?'بسته‌شده':'منتشرشده'}</option>)}
     </select></label>}
     {selected&&!busy&&!error&&reports.length===0&&<p>پاسخی برای این پیش‌بینی ثبت نشده است.</p>}
+    {imagePages>0&&<div>
+      {imagePages>1&&<label>صفحه تصویر <select disabled={imageBusy} value={imagePage} onChange={event=>{setImagePage(Number(event.target.value));setImageUrl('');}}>
+        {Array.from({length:imagePages},(_,i)=><option key={i} value={i}>{(i+1).toLocaleString('fa-IR')}</option>)}
+      </select></label>}
+      <button type="button" disabled={busy||imageBusy} onClick={()=>void previewImage()}>{imageBusy?'در حال ساخت…':'پیش‌نمایش تصویر PNG'}</button>
+      {imageUrl&&<><img src={imageUrl} alt="تصویر گزارش پیش‌بینی سری چهارم" style={{display:'block',maxWidth:'100%'}}/>
+        <a href={imageUrl} download={'plato-series4-predictions-'+(imagePage+1)+'.png'}>دانلود PNG</a></>}
+    </div>}
     {reports.map(report=><details key={report.id}>
       <summary><bdi>{report.player}</bdi>{campaigns?.find(item=>item.id===selected)?.campaign_type==='match_predictions'&&
         ' · '+report.correct.toLocaleString('fa-IR')+' پاسخ درست'}</summary>

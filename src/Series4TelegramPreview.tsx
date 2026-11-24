@@ -3,6 +3,9 @@ import {supabase} from './supabase';
 import {resolveSeries4Matches,type buildSeries4Knockout} from './series4Knockout';
 import Series4PredictionReport from './Series4PredictionReport';
 
+const HEADER='PLATO LAND | سری چهارم تخته‌نرد';
+const TELEGRAM_LIMIT=4096;
+
 type ReportKind='schedule'|'results'|'bracket'|'knockout'|'ranking'|'pots'|'groups';
 
 type Row = {
@@ -20,9 +23,14 @@ export default function Series4TelegramPreview(){
   const [date,setDate]=useState('');
   const [group,setGroup]=useState('ALL');
   const [preview,setPreview]=useState('');
+  const [sections,setSections]=useState<string[]>([]);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   const [copied,setCopied]=useState(false);
+  const announcement=sections.length
+    ? HEADER+'\n'+sections.map(section=>section.slice(HEADER.length+1)).join('\n\n────────\n\n')
+    : preview;
+  const overLimit=announcement.length>TELEGRAM_LIMIT;
   const isGroupReport=kind==='schedule'||kind==='results';
   async function knockoutReport() {
     if(!supabase)return '';
@@ -61,7 +69,7 @@ export default function Series4TelegramPreview(){
   }
   async function generate(){
     if(!supabase||busy||(isGroupReport&&!date))return;
-    setBusy(true);setError('');setPreview('');setCopied(false);setSent(false);setReceipt('');
+    setBusy(true);setError('');setPreview('');setCopied(false);if(!sections.length){setSent(false);setReceipt('');}
     try{
       if(!isGroupReport){
         const titles={bracket:'براکت حذفی',knockout:'نتایج حذفی',ranking:'رتبه‌بندی بازیکنان',pots:'سیدبندی',groups:'قرعه‌کشی گروهی'};
@@ -107,12 +115,12 @@ export default function Series4TelegramPreview(){
     }catch{setError('دریافت تاریخچه ارسال‌ها ناموفق بود.');}
   }
   async function send(){
-    if(!supabase||sending||sent||!preview||!targets.length)return;
+    if(!supabase||sending||sent||!announcement||overLimit||!targets.length)return;
     if(!window.confirm('این گزارش سری چهارم به '+targets.map(destinationLabel).join(' و ')+' ارسال شود؟'))return;
     setSending(true);setSent(true);setError('');setReceipt('');
     try{
       const {data,error}=await supabase.functions.invoke('plato-land-series4-telegram',{
-        body:{request_id:crypto.randomUUID(),destinations:targets,message:preview},
+        body:{request_id:crypto.randomUUID(),destinations:targets,message:announcement},
       });
       if(error||!Array.isArray(data?.results))throw new Error();
       setReceipt(data.results.map((row:{destination:string;status:string})=>destinationLabel(row.destination)+' · '+statusLabel(row.status)).join(' | '));
@@ -121,8 +129,8 @@ export default function Series4TelegramPreview(){
     finally{setSending(false);}
   }
   async function copy(){
-    if(!preview)return;
-    try{await navigator.clipboard.writeText(preview);setCopied(true);}
+    if(!announcement)return;
+    try{await navigator.clipboard.writeText(announcement);setCopied(true);}
     catch{setError('کپی انجام نشد. متن داخل پیش‌نمایش قابل انتخاب است.');}
   }
   return <details dir="rtl" style={{marginTop:14,padding:14,border:'1px solid #8c6a34',borderRadius:13,color:'#f2ead8'}}>
@@ -140,7 +148,23 @@ export default function Series4TelegramPreview(){
       </select></label>}
       <button type="button" disabled={busy||sending||(isGroupReport&&!date)} onClick={()=>void generate()}>{busy?'در حال دریافت…':'ساخت پیش‌نمایش'}</button>
       {error&&<span role="alert">{error}</span>}
-      {preview&&<><textarea aria-label="متن اعلان" rows={10} readOnly value={preview}/>
+      {preview&&<>
+        <textarea aria-label="پیش‌نمایش بخش فعلی" rows={6} readOnly value={preview}/>
+        <button type="button" disabled={busy||sending||sections.includes(preview)} onClick={()=>{
+          setSections(previous=>previous.includes(preview)?previous:[...previous,preview]);setCopied(false);setSent(false);setReceipt('');
+        }}>افزودن به اعلان ترکیبی</button>
+      </>}
+      {sections.length>0&&<ul aria-label="بخش‌های اعلان ترکیبی">
+        {sections.map(section=><li key={section}>{section.split('\n')[1]}
+          {' '}<button type="button" disabled={busy||sending} onClick={()=>{
+            setSections(previous=>previous.filter(item=>item!==section));setCopied(false);setSent(false);setReceipt('');
+          }}>برداشتن از اعلان</button>
+        </li>)}
+      </ul>}
+      {announcement&&<>
+        {sections.length>0&&<textarea aria-label="متن نهایی اعلان ترکیبی" rows={10} readOnly value={announcement}/>}
+        {overLimit&&<p role="alert">متن از حد مجاز تلگرام طولانی‌تر است. بخشی را بردار یا متن را کپی کن.</p>}
+
         <button type="button" onClick={()=>void copy()}>{copied?'کپی شد':'کپی متن'}</button>
         <fieldset><legend>مقصد ارسال</legend>
           {['test_group','main_channel'].map(target=><label key={target} style={{display:'block'}}>
@@ -149,7 +173,7 @@ export default function Series4TelegramPreview(){
             {destinationLabel(target)}
           </label>)}
         </fieldset>
-        <button type="button" disabled={sending||sent||!targets.length} onClick={()=>void send()}>{sending?'در حال ارسال…':'تأیید و ارسال'}</button>
+        <button type="button" disabled={busy||sending||sent||overLimit||!targets.length} onClick={()=>void send()}>{sending?'در حال ارسال…':'تأیید و ارسال'}</button>
       </>}
       {receipt&&<span role="status">{receipt}</span>}
       <Series4PredictionReport />
