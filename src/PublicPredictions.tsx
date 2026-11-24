@@ -2,7 +2,7 @@ import React,{useEffect,useState} from 'react';
 import {supabase} from './supabase';
 import {formatTehranJalali} from './predictionDateTime';
 import TemporaryPageHeader from './TemporaryPageHeader';
-type Question={id:string;label:string;type?:'text'|'select'|'number';options?:string[];required?:boolean;match?:{matchId?:string}};
+type Question={id:string;label:string;type?:'text'|'select'|'number';options?:string[];required?:boolean;match?:{matchId?:string;stage?:string}};
 type Pair={a:string;b:string};
 const displayQuestion=(q:Question,pairs:Record<string,Pair>)=>{const pair=q.match?.matchId?pairs[q.match.matchId]:undefined;if(!pair||q.options?.length!==2)return {label:q.label,names:q.options||[]};const [oldA,oldB]=q.options;const names=[pair.a||oldA,pair.b||oldB];const suffix=oldA+' مقابل '+oldB;return {label:q.label.endsWith(suffix)?q.label.slice(0,-suffix.length)+names[0]+' مقابل '+names[1]:q.label,names};};
 type Campaign={id:string;title:string;description:string;campaign_type:string;status:string;is_open:boolean;opens_at:string|null;closes_at:string|null;questions:Question[];prize_rules:any;public_config:any;};
