@@ -1,6 +1,7 @@
 import React from 'react';
 import {createRoot} from 'react-dom/client';
 import App from './App';
+import BlackFridayRegistration from './BlackFridayRegistration';
 import Series2SlidesManager from './Series2SlidesManager';
 import Series3Gallery from './Series3Gallery';
 import Series3Registration from './Series3Registration';
@@ -22,7 +23,7 @@ const retiredPaths = new Set([
 ]);
 const retiredResultsQuery = (path==='/' || path==='/index.html') && page==='series2-results-manager';
 
-if(path==='/series2-archive' || ((path==='/' || path==='/index.html') && page==='series2-archive')) {
+if((path==='/' || path==='/index.html') && page==='black-friday') { root.render(<BlackFridayRegistration/>); } else if(path==='/series2-archive' || ((path==='/' || path==='/index.html') && page==='series2-archive')) {
   root.render(<React.StrictMode><Series2Archive/></React.StrictMode>);
 } else if(path==='/predictions') {
   root.render(<React.StrictMode><PublicPredictions/></React.StrictMode>);
