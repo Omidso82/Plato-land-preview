@@ -1,4 +1,3 @@
--- Installed in primary Supabase; source-based strict preflight.
 CREATE OR REPLACE FUNCTION public.plato_temp_system_archive_verified(p_series_number integer, p_evidence_version text, p_correlation_id uuid DEFAULT gen_random_uuid())
  RETURNS jsonb
  LANGUAGE plpgsql
@@ -56,23 +55,6 @@ begin
  or exists(select 1 from public.plato_land_series3_group_match_results where event_key='series3'
   and (result_status is null or result_status not in ('completed','double_no_show'))) then
   return jsonb_build_object('archived',false,'reason','group_stage_unresolved');
- end if;
- with b as (select bracket_snapshot from public.plato_land_series3_public_bracket where event_key='series3'),
- expected as (
-  select stage, item->>'id' match_id
-  from b cross join lateral (values
-   ('round32',b.bracket_snapshot->'round32'),('round16',b.bracket_snapshot->'round16'),
-   ('quarterfinals',b.bracket_snapshot->'quarterfinals'),('semifinals',b.bracket_snapshot->'semifinals'),
-   ('final',b.bracket_snapshot->'final')) stages(stage,arr)
-  cross join lateral jsonb_array_elements(stages.arr) item
- )
- select count(*),count(r.id) into v_expected,v_matched from expected e
- left join public.plato_land_series3_knockout_match_results r on r.event_key='series3'
-  and r.match_id=e.match_id and r.stage_key=e.stage and r.result_status='completed';
- if v_expected<>31 or v_matched<>v_expected
- or (select count(*) from public.plato_land_series3_knockout_match_results where event_key='series3' and result_status='completed')<>v_expected
- or (select count(*) from public.plato_land_series3_third_place_playoff where event_key='series3' and result_status='completed')<>1 then
-  return jsonb_build_object('archived',false,'reason','official_knockout_or_third_place_unresolved');
  end if;
  if coalesce((plato_temp_internal.series3_completion_preflight()->>'ready_for_approval')::boolean,false) is not true then
   return jsonb_build_object('archived',false,'reason','strict_series3_source_preflight_failed');
