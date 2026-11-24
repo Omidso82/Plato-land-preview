@@ -8,7 +8,7 @@ AS $function$
 declare v_actor uuid; v_series public.plato_land_league_series%rowtype; v_existing plato_temp_internal.lifecycle_transitions%rowtype; v_evidence text;
 begin
  v_actor:=auth.uid();
- if v_actor is null or public.current_user_role()<>'owner' then raise exception 'owner authorization required' using errcode='42501'; end if;
+ if v_actor is null or public.current_user_role() is distinct from 'owner' then raise exception 'owner authorization required' using errcode='42501'; end if;
  if length(btrim(coalesce(p_reason,'')))<5 then raise exception 'reason must contain at least 5 characters'; end if;
  if p_correlation_id is null then raise exception 'correlation id required'; end if;
  select * into v_existing from plato_temp_internal.lifecycle_transitions where correlation_id=p_correlation_id;
