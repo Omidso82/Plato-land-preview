@@ -1,0 +1,5 @@
+# Series 3 prediction draw winner — v1.0
+Date: 2026-11-24
+Owner confirmed public site corrected and task closed.
+Campaign: 058ab302-35f4-477b-850b-003bef546a6b. Tied leaders EHS_000 and Mijul-keepup, 10 correct, 6 wrong, 11 participants, 176 predictions. Owner conducted draw; EHS_000 sole prize winner, ۱۰ پیپ. Guarded update added public_config.result.prize_winner_plato_id; other result values preserved.
+PR #337 merged at 2d32c98843f697d897bb8d9483a633f9b710c27b. Changed src/PublicPredictions.tsx and src/PredictionCampaignManager.tsx only. Public heading stage metadata, tied leaders and separate prize winner card; existing owner publication action prompts for selection among eligible tied leaders. No automated draw. Initial TS stage type error corrected; build/typecheck and deployment build checks passed on d0448afee1c1630d57d5f5ff143cfbf22ce13ca0. Owner confirmed live site correct. Authenticated admin selection not independently live-tested. No schema changes or changes to votes/scores. No remaining requested work.
