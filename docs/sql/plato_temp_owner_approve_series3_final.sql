@@ -8,7 +8,7 @@ AS $function$
 declare v_actor uuid; v_series public.plato_land_league_series%rowtype; v_preflight jsonb; v_version text; v_id uuid;
 begin
  v_actor:=auth.uid();
- if v_actor is null or public.current_user_role()<>'owner' then
+ if v_actor is null or public.current_user_role() is distinct from 'owner' then
   raise exception 'owner authorization required' using errcode='42501';
  end if;
  if p_confirm is distinct from 'APPROVE_SERIES3_FINAL_RESULTS' then
