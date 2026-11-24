@@ -357,7 +357,7 @@ Deno.serve(async (req: Request) => {
       wantsFixtures
         ? admin.from('plato_land_series3_group_match_results').select('match_id,result_status,score_a,score_b,player_a_plato_id,player_b_plato_id').eq('event_key','series3')
         : Promise.resolve({data:[],error:null}),
-      wantsBracket
+      (wantsBracket || reportMode)
         ? admin.from('plato_land_series3_knockout_match_results').select('match_id,stage_key,match_no,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status').eq('event_key','series3')
         : Promise.resolve({data:[],error:null}),
     ]);
@@ -397,14 +397,15 @@ Deno.serve(async (req: Request) => {
       const reportCampaign = reportCampaignResult.data as PredictionCampaign | null;
       if (!reportCampaign || !["published","closed"].includes(reportCampaign.status) || !["champion","match_predictions"].includes(reportCampaign.campaign_type)) return json({error:"کمپین گزارش پیدا نشد یا نوع آن پشتیبانی نمی‌شود."},404);
       const reportEntries = (reportEntriesResult.data || []) as PredictionEntry[];
+      const reportResults: MatchResult[] = [...(reportMatchesResult.data || []), ...(knockoutMatchResultsResult.data || [])];
       if (reportRankingImage) {
         if (reportCampaign.campaign_type !== "match_predictions") return json({error:"تصویر رتبه‌بندی فقط برای کمپین پیش‌بینی بازی‌ها پشتیبانی می‌شود."},400);
-        predictionRanking = buildPredictionRanking(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
+        predictionRanking = buildPredictionRanking(reportCampaign, reportEntries, reportResults);
       } else {
         if (reportChampionVoterImage && reportCampaign.campaign_type !== "champion") return json({error:"ارسال تصویر رأی‌دهندگان فقط برای کمپین پیش‌بینی قهرمان پشتیبانی می‌شود."},400);
         if (!reportChampionVoterImage) {
           if (reportEntries.length !== reportVoterIds.length) return json({error:"فهرست رأی‌دهندگان با داده‌های کمپین مطابقت ندارد؛ فهرست را تازه‌سازی کن."},409);
-          messages = buildVoterReportMessages(reportCampaign, reportEntries, (reportMatchesResult.data || []) as MatchResult[]);
+          messages = buildVoterReportMessages(reportCampaign, reportEntries, reportResults);
         }
 
         if (messages.length > 100) return json({error:"تعداد پیام‌های گزارش از سقف مجاز بیشتر است."},400);
