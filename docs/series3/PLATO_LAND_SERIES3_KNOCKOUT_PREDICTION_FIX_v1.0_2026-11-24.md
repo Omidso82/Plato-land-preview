@@ -1,2 +1,5 @@
 # Series 3 knockout prediction report fix v1.0 — 2026-11-24
 Owner approved release after successful checks. PR #328 merged c2136ea29ac9fee1201ff7264ffc73e895883e49. Root cause: Telegram reports read only group results. Fix includes official knockout results in ranking and individual reports. Build/typecheck and deploy workflow passed. Supabase function plato-land-series3-telegram v32 replaced by v33 ACTIVE; deployed source matches main, JWT unchanged. Read-only SQL verified 11 voters, 9 completed matches, 7 remaining per voter. No tournament data, schema, votes or Telegram messages changed. Existing scoring and tie rules preserved. Authenticated live UI image regeneration remains to be verified by owner; no live Telegram send performed. Scope: Series 3 temporary Telegram reporting only.
+
+## Closure — v1.1, 2026-11-24
+Owner confirmed the live panel fix works. Incident closed. No further functional changes requested.
