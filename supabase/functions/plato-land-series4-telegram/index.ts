@@ -26,12 +26,33 @@ Deno.serve(async request=>{
   if(userError||!user.user)return reply({error:"Unauthorized."},401);
   const {data:role,error:roleError}=await auth.rpc("current_user_role");
   if(roleError||(role!=="owner"&&role!=="مالک کل"))return reply({error:"Owner access required."},403);
-  const body=await request.json().catch(()=>null);
-  if(!body || !/^[0-9a-f-]{36}$/i.test(body.request_id??"") || typeof body.message!=="string" ||
-      !body.message.startsWith("PLATO LAND | سری چهارم تخته‌نرد\n") || body.message.length>4096 ||
+  const isPhoto=(request.headers.get("Content-Type")??"").startsWith("multipart/form-data;");
+  const maxPhotoSize=8*1024*1024;
+  if(isPhoto&&Number(request.headers.get("Content-Length"))>maxPhotoSize+16384)
+    return reply({error:"Photo is too large."},413);
+  const form=isPhoto?await request.formData().catch(()=>null):null;
+  const caption=form?.get("message");
+  const body=isPhoto?(form&&{
+    request_id:form.get("request_id"),
+    message:typeof caption==="string"?caption.replace(/\r\n/g,"\n"):null,
+    destinations:form.getAll("destinations"),
+  }):await request.json().catch(()=>null);
+  if(!body || typeof body.request_id!=="string" ||
+      !/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(body.request_id) || typeof body.message!=="string" ||
+      !body.message.startsWith("PLATO LAND | سری چهارم تخته‌نرد\n") || body.message.length>(isPhoto?1024:4096) ||
       !Array.isArray(body.destinations)||!body.destinations.length||body.destinations.length>2||
       body.destinations.some((destination:unknown)=>destination!=="test_group"&&destination!=="main_channel")) {
     return reply({error:"Invalid Series 4 report."},400);
+  }
+  const photo=form?.get("photo");
+  if(isPhoto){
+    if(!(photo instanceof File)||photo.type!=="image/png"||photo.size<24||photo.size>maxPhotoSize)
+      return reply({error:"Invalid PNG image."},400);
+    const header=new DataView(await photo.slice(0,24).arrayBuffer());
+    const width=header.getUint32(16),height=header.getUint32(20);
+    if(header.getUint32(0)!==0x89504e47||header.getUint32(4)!==0x0d0a1a0a||header.getUint32(12)!==0x49484452||
+        !width||!height||width+height>10000||Math.max(width,height)>20*Math.min(width,height))
+      return reply({error:"Invalid PNG dimensions."},400);
   }
   const destinations=[...new Set<string>(body.destinations)];
   const keys:Record<string,string>={
@@ -56,9 +77,17 @@ Deno.serve(async request=>{
     let status="uncertain";
     let messageId=null;
     try{
-      const response=await fetch("https://api.telegram.org/bot"+bot+"/sendMessage",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({chat_id:chat,text:body.message}),
+      const photoForm=photo instanceof File?new FormData():null;
+      if(photoForm&&photo instanceof File){
+        photoForm.set("chat_id",chat);
+        photoForm.set("caption",body.message);
+        photoForm.set("photo",photo,"plato-land-series4-predictions.png");
+      }
+      const method=photoForm?"sendPhoto":"sendMessage";
+      const response=await fetch("https://api.telegram.org/bot"+bot+"/"+method,{
+        method:"POST",
+        headers:photoForm?undefined:{"Content-Type":"application/json"},
+        body:photoForm??JSON.stringify({chat_id:chat,text:body.message}),
         signal:AbortSignal.timeout(12000),
       });
       const result=await response.json().catch(()=>null);

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from './supabase';
-import { buildSeries4Knockout, selectSeries4Qualifiers } from './series4Knockout';
+import { buildSeries4Knockout, selectSeries4Qualifiers, Series4PlayoffRequired, series4KnockoutStages, type Series4Playoff } from './series4Knockout';
 type ResultStatus = 'pending' | 'completed' | 'double_no_show';
 type MatchResult = {
   match_id: string; match_date: string; round_no: number; group_name: string; match_no: number;
@@ -138,18 +138,93 @@ export default function Series4GroupResultsManager() {
     setKnockoutError('');
   },[]);
   useEffect(()=>{void loadKnockout();},[loadKnockout]);
+  const [playoff,setPlayoff]=useState<Series4Playoff|null>(null);
+  const [playoffScore,setPlayoffScore]=useState('');
+  const [stageDates,setStageDates]=useState<Record<string,string>>({});
+  const [scheduleVersion,setScheduleVersion]=useState(0);
+  const [extrasReady,setExtrasReady]=useState(false);
+  const [extrasMessage,setExtrasMessage]=useState('');
+  const loadExtras=useCallback(async()=>{
+    if(!supabase)return;
+    const [schedule,tie]=await Promise.all([
+      supabase.from('plato_land_series4_knockout_schedule').select('dates,version').maybeSingle(),
+      supabase.from('plato_land_series4_cutoff_playoff').select('player_a,player_b,score_a,score_b,group_versions').maybeSingle(),
+    ]);
+    if(schedule.error||tie.error){
+      setExtrasReady(false);
+      setExtrasMessage('دریافت تاریخ‌های حذفی یا نتیجه پلی‌آف ناموفق بود.');
+      return;
+    }
+    setStageDates(schedule.data?.dates??{});
+    setScheduleVersion(schedule.data?.version??0);
+    setPlayoff(tie.data);
+    setExtrasReady(true);
+    setExtrasMessage('');
+  },[]);
+  useEffect(()=>{void loadExtras();},[loadExtras]);
+  const groupVersions=Object.fromEntries(rows.map(row=>[row.match_id,row.version]));
   const groupStageComplete=standings.length>0 && pending===0 &&
     standings.every(({group,players})=>players.length===4 && rows.filter(row=>row.group_name===group).length===6);
+  let qualificationError='';
+  let qualifiers:ReturnType<typeof selectSeries4Qualifiers>=[];
+  let playoffPlayers:Series4PlayoffRequired['players']|undefined;
+  const currentPlayoff=playoff&&Object.keys(playoff.group_versions).length===rows.length&&
+    rows.every(row=>playoff.group_versions[row.match_id]===row.version)?playoff:null;
+  if(groupStageComplete&&!locked){
+    try{
+      qualifiers=selectSeries4Qualifiers(standings.map(({group,players})=>
+        players.map(player=>({...player,group,rank:player.rank!}))),currentPlayoff);
+    }catch(error){
+      qualificationError=(error as Error).message;
+      if(error instanceof Series4PlayoffRequired)playoffPlayers=error.players;
+    }
+  }
   function previewKnockout() {
     try {
       setKnockoutError('');
-      const qualifiers=selectSeries4Qualifiers(standings.map(({group,players})=>
-        players.map(player=>({...player,group,rank:player.rank!}))));
       setKnockout(buildSeries4Knockout(qualifiers));
     } catch(error) {
       setKnockout(null);
       setKnockoutError((error as Error).message);
     }
+  }
+  async function savePlayoff(){
+    if(!supabase||!playoffPlayers||!extrasReady||knockoutBusy)return;
+    if(!/^(5-[0-4]|[0-4]-5)$/.test(playoffScore.trim())){
+      setExtrasMessage('نتیجه را مانند 5-3 وارد کن.');return;
+    }
+    const [scoreA,scoreB]=playoffScore.trim().split('-').map(Number);
+    setKnockoutBusy(true);
+    try{
+      const {error}=await supabase.rpc('series4_owner_save_cutoff_playoff',{
+        p_player_a:playoffPlayers[0].plato_id,p_player_b:playoffPlayers[1].plato_id,
+        p_score_a:scoreA,p_score_b:scoreB,p_group_versions:groupVersions,
+      });
+      if(error)throw error;
+      await loadExtras();
+      setPlayoffScore('');
+      setKnockout(null);
+    }catch{setExtrasMessage('ذخیره نتیجه پلی‌آف انجام نشد. نتایج گروهی و پلی‌آف را تازه‌سازی کن.');}
+    finally{setKnockoutBusy(false);}
+  }
+  const stageKeys=knockout?[...new Set([
+    knockout.firstRound[0].id.split('-')[0],
+    ...knockout.laterRounds.map(stage=>stage[0].id.split('-')[0]),'THIRD',
+  ])]:[];
+  const formatStageDate=(stage:string)=>stageDates[stage]
+    ? new Date(stageDates[stage]+'T12:00:00').toLocaleDateString('fa-IR',{dateStyle:'long'})
+    : 'تاریخ تعیین نشده';
+  async function saveStageDates(){
+    if(!supabase||!locked||knockoutBusy||!extrasReady)return;
+    setKnockoutBusy(true);setExtrasMessage('');
+    try{
+      const dates=Object.fromEntries(stageKeys.filter(stage=>stageDates[stage]).map(stage=>[stage,stageDates[stage]]));
+      const {data,error}=await supabase.rpc('series4_owner_save_knockout_schedule',{p_dates:dates,p_version:scheduleVersion});
+      if(error)throw error;
+      setScheduleVersion(data);
+      setExtrasMessage('تاریخ مراحل حذفی ذخیره شد.');
+    }catch{setExtrasMessage('ذخیره تاریخ‌ها انجام نشد. تاریخ مراحل باید به ترتیب باشد. اگر تغییر دیگری ثبت شده، برنامه را تازه‌سازی کن.');}
+    finally{setKnockoutBusy(false);}
   }
   async function persistKnockout() {
     if(!supabase||!knockout||locked||knockoutBusy||!groupStageComplete)return;
@@ -157,7 +232,7 @@ export default function Series4GroupResultsManager() {
     setKnockoutBusy(true);
     try {
       const {error}=await supabase.rpc('series4_owner_save_knockout',{
-        p_bracket:knockout,p_group_versions:Object.fromEntries(rows.map(row=>[row.match_id,row.version])),
+        p_bracket:knockout,p_group_versions:groupVersions,
       });
       if(error)throw error;
       await loadKnockout();
@@ -337,10 +412,33 @@ export default function Series4GroupResultsManager() {
     <details style={{...card,marginTop:12}}>
       <summary>مرحله حذفی سری چهارم</summary>
       <p style={muted}>پس از تکمیل نتایج گروهی، مسیر صعود و بازی‌های حذفی قابل پیش‌نمایش است.</p>
-      {!locked&&<button type="button" style={primary} disabled={loading||knockoutBusy||!groupStageComplete} onClick={previewKnockout}>ساخت پیش‌نمایش براکت</button>}
+      {!locked&&<button type="button" style={primary} disabled={loading||knockoutBusy||!qualifiers.length} onClick={previewKnockout}>ساخت پیش‌نمایش براکت</button>}
       {!locked&&knockout&&<button type="button" style={secondary} disabled={knockoutBusy||!groupStageComplete} onClick={()=>void persistKnockout()}>ذخیره قطعی قرعه</button>}
       <button type="button" style={secondary} disabled={knockoutBusy} onClick={()=>void loadKnockout()}>تازه‌سازی براکت</button>
       {knockoutError&&<p role="alert">{knockoutError}</p>}
+      {qualificationError&&<p role="status">{qualificationError}</p>}
+      {playoffPlayers&&<div style={card}>
+        <strong>پلی‌آف تعیین سهمیه نفرات سوم</strong>
+        <p><bdi>{playoffPlayers[0].plato_id}</bdi> در برابر <bdi>{playoffPlayers[1].plato_id}</bdi></p>
+        <label>نتیجه <input dir="ltr" placeholder="5-3" value={playoffScore}
+          onChange={event=>setPlayoffScore(event.target.value)} /></label>
+        <button type="button" style={secondary} disabled={knockoutBusy||!extrasReady}
+          onClick={()=>void savePlayoff()}>ثبت نتیجه پلی‌آف</button>
+      </div>}
+      {(currentPlayoff||locked&&playoff)&&playoff&&<p>نتیجه پلی‌آف · <bdi>{playoff.player_a}</bdi>
+        {' · '}<bdi>{playoff.score_a}–{playoff.score_b}</bdi>{' · '}<bdi>{playoff.player_b}</bdi></p>}
+      {extrasMessage&&<p role="status">{extrasMessage}</p>}
+      {locked&&<details style={card}>
+        <summary>زمان‌بندی مرحله حذفی</summary>
+        {stageKeys.map(stage=><label key={stage} style={{display:'block',margin:'8px 0'}}>
+          {series4KnockoutStages[stage]} · {formatStageDate(stage)}
+          <input type="date" style={input} value={stageDates[stage]??''} disabled={knockoutBusy||!extrasReady}
+            onChange={event=>setStageDates(previous=>({...previous,[stage]:event.target.value}))}/>
+        </label>)}
+        <button type="button" style={secondary} disabled={knockoutBusy||!extrasReady} onClick={()=>void saveStageDates()}>ذخیره تاریخ‌ها</button>
+        <button type="button" style={secondary} disabled={knockoutBusy} onClick={()=>void loadExtras()}>تازه‌سازی</button>
+      </details>}
+
       {knockout&&<>
         <ul>{knockout.firstRound.map(match=><li key={match.id}>
           <bdi>{match.id}</bdi> · <bdi>{match.a.plato_id}</bdi> در برابر <bdi>{match.b.plato_id}</bdi>{scoreForm(match.id)}

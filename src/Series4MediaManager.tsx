@@ -26,6 +26,14 @@ export default function Series4MediaManager({rulesOnly=false}:{rulesOnly?:boolea
   const [error,setError]=useState('');
   const [message,setMessage]=useState('');
   const [preview,setPreview]=useState('');
+  const [videoOpens,setVideoOpens]=useState<number|null>(null);
+  const [analyticsError,setAnalyticsError]=useState('');
+  async function refreshAnalytics(){
+    if(!supabase||!rulesOnly)return;
+    const {data,error}=await supabase.from('plato_land_series4_video_analytics').select('modal_opens').single();
+    setVideoOpens(error?null:data.modal_opens);
+    setAnalyticsError(error?'دریافت آمار باز شدن ویدیو ناموفق بود.':'');
+  }
   const video=slot==='teaser'||slot==='rules';
   useEffect(()=>{
     if(!supabase)return;
@@ -152,6 +160,12 @@ export default function Series4MediaManager({rulesOnly=false}:{rulesOnly?:boolea
       </button>}
       {saved[slot]&&<><small style={{overflowWrap:'anywhere'}}>Cloudflare R2 · <bdi>{saved[slot]}</bdi></small>
         <button type="button" disabled={busy} onClick={()=>void toggleArchive()}>{archived[slot]?'بازگرداندن رسانه':'بایگانی رسانه'}</button></>}
+      {rulesOnly&&<details>
+        <summary>آمار تماشای ویدیو</summary>
+        <button type="button" onClick={()=>void refreshAnalytics()}>دریافت آمار</button>
+        {analyticsError&&<p role="alert">{analyticsError}</p>}
+        {videoOpens!==null&&<p>تعداد دفعات باز شدن پنجره ویدیوی عمومی · {videoOpens.toLocaleString('fa-IR')}</p>}
+      </details>}
       {busy&&<span role="status">در حال انجام…</span>}
       {message&&<span role="status">{message}</span>}
       {error&&<span role="alert">{error}</span>}

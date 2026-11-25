@@ -7,7 +7,29 @@ export type Series4Qualifier = {
   setsFor: number;
 };
 
-export function selectSeries4Qualifiers(groups: Series4Qualifier[][]): Series4Qualifier[] {
+export type Series4Playoff = {
+  player_a: string;
+  player_b: string;
+  score_a: number;
+  score_b: number;
+  group_versions: Record<string,number>;
+};
+
+export class Series4PlayoffRequired extends Error {
+  constructor(public players:[Series4Qualifier,Series4Qualifier]) {
+    super('رتبه هشتم و نهم نفرات سوم برابر است. نتیجه پلی‌آف را ثبت کن.');
+  }
+}
+
+export const series4KnockoutStages:Record<string,string>={
+  R32:'یک‌شانزدهم نهایی',R16:'یک‌هشتم نهایی',R8:'یک‌چهارم نهایی',
+  R4:'نیمه‌نهایی',R2:'فینال',THIRD:'رده‌بندی',
+};
+
+export function selectSeries4Qualifiers(
+  groups: Series4Qualifier[][],
+  playoff?:Series4Playoff|null,
+): Series4Qualifier[] {
   if (![8,12].includes(groups.length) || groups.some(group=>group.length!==4)) {
     throw new Error('تعداد گروه‌ها یا بازیکنان کامل نیست.');
   }
@@ -21,7 +43,15 @@ export function selectSeries4Qualifiers(groups: Series4Qualifier[][]): Series4Qu
   if (places===2) return direct;
   const compare = (a:Series4Qualifier,b:Series4Qualifier) => b.points-a.points || b.diff-a.diff || b.setsFor-a.setsFor;
   const thirds=groups.map(group=>group[2]).sort(compare);
-  if(compare(thirds[7],thirds[8])===0) throw new Error('رتبه هشتم و نهم نفرات سوم برابر است. ابتدا وضعیت صعود باید تعیین شود.');
+  if(compare(thirds[7],thirds[8])===0) {
+    const [a,b]=[thirds[7],thirds[8]];
+    if(compare(thirds[6],a)===0||compare(b,thirds[9])===0)
+      throw new Error('بیش از دو نفر در مرز صعود هم‌رتبه‌اند. صعود تا تعیین تکلیف متوقف است.');
+    if(!playoff||!([playoff.player_a,playoff.player_b].includes(a.plato_id)
+      &&[playoff.player_a,playoff.player_b].includes(b.plato_id)))throw new Series4PlayoffRequired([a,b]);
+    const winner=playoff.score_a>playoff.score_b?playoff.player_a:playoff.player_b;
+    return [...direct,...thirds.slice(0,7),winner===a.plato_id?a:b];
+  }
   return [...direct,...thirds.slice(0,8)];
 }
 
