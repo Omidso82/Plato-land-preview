@@ -11,7 +11,10 @@ const shell:React.CSSProperties={minHeight:'100vh',background:'radial-gradient(e
 const panel:React.CSSProperties={maxWidth:720,margin:'0 auto',padding:16,border:'1px solid #715a31',borderRadius:16,background:'#151516',boxShadow:'0 16px 48px #0007'};
 const gold:React.CSSProperties={background:'linear-gradient(120deg,#a98239,#e4c77e)',border:'1px solid #e3c77d',borderRadius:10,color:'#17130b',padding:'12px 18px',fontWeight:800,cursor:'pointer'};
 const muted:React.CSSProperties={color:'#c6b99f',fontSize:13,lineHeight:1.9};
-export default function Series3Registration(){
+export default function Series3Registration({series=3}:{series?:3|4}={}){
+ const isSeries4=series===4;
+ const seriesName=isSeries4?'سری چهارم':'سری سوم';
+ const [loadedSlides,setLoadedSlides]=useState<number[]>([]);
  const [slides,setSlides]=useState<Slide[]>([]);
  const [loading,setLoading]=useState(true);
  const [loadError,setLoadError]=useState('');
@@ -23,11 +26,28 @@ export default function Series3Registration(){
  const [done,setDone]=useState(false);
  const [resultStatus,setResultStatus]=useState<'main'|'waitlist'|null>(null);
  const [queuePosition,setQueuePosition]=useState<number|null>(null);
- const [registrationOpen,setRegistrationOpen]=useState(true);
+ const [registrationOpen,setRegistrationOpen]=useState(!isSeries4);
  useEffect(()=>{
   let active=true;
   async function load(){
    if(!supabase){setLoadError('اتصال به سرویس ثبت‌نام در دسترس نیست.');setLoading(false);return;}
+   if(isSeries4){
+    const status=await supabase.rpc('series4_registration_status');
+    if(!active)return;
+    if(status.error){setLoadError('دریافت وضعیت ثبت‌نام ناموفق بود. صفحه را دوباره بارگذاری کن.');setLoading(false);return;}
+    if(status.data!==true){setLoading(false);return;}
+    const rules=await supabase.rpc('series4_registration_rule_slides');
+    if(!active)return;
+    if(rules.error){setLoadError('دریافت قوانین ثبت‌نام ناموفق بود. صفحه را دوباره بارگذاری کن.');setLoading(false);return;}
+    setSlides((rules.data??[]).map((item:{slot:string})=>({
+     number:Number(item.slot.slice(-2)),
+     url:'https://plato-land-media-pages.pages.dev/api/series4-media?registration=1&asset='+encodeURIComponent(item.slot),
+     updated_at:'',
+    })));
+    setRegistrationOpen(true);
+    setLoading(false);
+    return;
+   }
    const storage=supabase.storage.from('series3-slides');
    const [slideResult,statusResult]=await Promise.all([storage.list('slides',{limit:60,sortBy:{column:'name',order:'asc'}}),supabase.rpc('series3_registration_status')]);
    const {data,error}=slideResult;
@@ -46,20 +66,26 @@ export default function Series3Registration(){
   }
   void load();
   return ()=>{active=false};
- },[]);
+ },[isSeries4]);
  const current=useMemo(()=>slides.find(x=>x.number===step),[slides,step]);
  const missing=TOTAL_RULE_SLIDES-slides.length;
+ const allRulesReady=missing===0&&(!isSeries4||loadedSlides.length===TOTAL_RULE_SLIDES);
  const validId=/^[A-Za-z0-9_]{2,30}$/.test(platoId.trim());
  async function submit(){
-  if(!supabase||busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES)return;
+  if(!supabase||busy||!accepted||!validId||!allRulesReady)return;
   setBusy(true);setMessage('');
   try{
-   const {data,error}=await supabase.rpc('series3_register_request',{p_plato_id:platoId.trim(),p_rules_accepted:accepted});
-   if(error)throw error;
+   const {data,error}=await supabase.rpc(isSeries4?'series4_register_request':'series3_register_request',{p_plato_id:platoId.trim(),p_rules_accepted:accepted});
+   if(error){
+    if(isSeries4&&error.code==='55000'){setRegistrationOpen(false);return;}
+    if(isSeries4&&error.code==='23514'){setMessage('ظرفیت فهرست اصلی و انتظار تکمیل شده است.');return;}
+    if(isSeries4&&error.code==='P0001'){setMessage(error.message||'در این سری امکان ثبت‌نام برای این شناسه وجود ندارد.');return;}
+    throw error;
+   }
    const result=(Array.isArray(data)?data[0]:data) as RegistrationResult|null;
    if(!result||!['main','waitlist','duplicate'].includes(result.status))throw new Error('پاسخ سرویس ثبت‌نام معتبر نیست.');
    if(result.status==='duplicate'){
-    setMessage('این Plato ID قبلاً برای ثبت‌نام سری سوم استفاده شده است.');
+    setMessage('این Plato ID قبلاً برای ثبت‌نام '+seriesName+' استفاده شده است.');
     return;
    }
    setResultStatus(result.status);
@@ -67,7 +93,7 @@ export default function Series3Registration(){
    setDone(true);
    setMessage(result.status==='main'
     ?'درخواست شما با موفقیت در فهرست اصلی ثبت شد.'
-    :'ظرفیت اصلی ثبت‌نام مسابقات سری سوم لیگ تخته‌نرد PLATO LAND (۳۲ نفر) تکمیل شده است. درخواست ثبت‌نام شما با موفقیت دریافت شد و در فهرست انتظار (رزرو) قرار گرفت. در صورت انصراف هر یک از بازیکنان اصلی، جایگزینی بر اساس نوبت ثبت‌نام و ترتیب فهرست انتظار انجام خواهد شد. این امکان تا پیش از شروع مسابقات در روز شنبه ۳۰ آبان برقرار است. از علاقه و همراهی شما با PLATO LAND سپاسگزاریم.');
+    :isSeries4?'درخواست شما در فهرست انتظار ثبت شد.': 'ظرفیت اصلی ثبت‌نام مسابقات سری سوم لیگ تخته‌نرد PLATO LAND (۳۲ نفر) تکمیل شده است. درخواست ثبت‌نام شما با موفقیت دریافت شد و در فهرست انتظار (رزرو) قرار گرفت. در صورت انصراف هر یک از بازیکنان اصلی، جایگزینی بر اساس نوبت ثبت‌نام و ترتیب فهرست انتظار انجام خواهد شد. این امکان تا پیش از شروع مسابقات در روز شنبه ۳۰ آبان برقرار است. از علاقه و همراهی شما با PLATO LAND سپاسگزاریم.');
   }catch(error){
    console.error('Series 3 registration failed:',error);
    setMessage('ثبت درخواست انجام نشد. لطفاً دوباره تلاش کن.');
@@ -75,9 +101,9 @@ export default function Series3Registration(){
  }
  return <main dir="rtl" style={shell}>
   <div style={{maxWidth:720,margin:'0 auto'}}>
-   <TemporaryPageHeader backHref="/series3" backLabel="بازگشت به صفحه سری سوم"/>
+   <TemporaryPageHeader backHref={isSeries4?"/":"/series3"} backLabel={isSeries4?"بازگشت به صفحه اصلی":"بازگشت به صفحه سری سوم"}/>
    <header dir="rtl" style={{textAlign:'center',padding:'0 8px 18px'}}>
-    <h1 style={{fontSize:22,margin:'0 0 5px'}}>فرایند ثبت‌نام سری سوم</h1>
+    <h1 style={{fontSize:22,margin:'0 0 5px'}}>فرایند ثبت‌نام {seriesName}</h1>
     <p style={{...muted,margin:0}}>تصاویر قوانین را به‌ترتیب مطالعه کن و در پایان ثبت‌نامت را تکمیل کن.</p>
    </header>
    <section style={panel}>
@@ -89,6 +115,7 @@ export default function Series3Registration(){
        {resultStatus==='waitlist'&&queuePosition!==null&&<p style={{...muted,color:'#f1d99e'}}>جایگاه فعلی در صف انتظار: {fa(queuePosition)}</p>}
        <p style={{...muted,direction:'ltr'}}>{platoId.trim()}</p>
       </div>
+    :isSeries4&&missing>0?<p role="status" style={muted}>تصاویر قوانین ثبت‌نام هنوز کامل نیستند.</p>
     :<>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:8,marginBottom:10}}>
        <strong style={{color:'#f0d99f'}}>قانون و تصویر {fa(step)} از ۱۷</strong>
@@ -97,7 +124,9 @@ export default function Series3Registration(){
       <div style={{height:7,background:'#35302a',borderRadius:20,overflow:'hidden',marginBottom:14}}>
        <div style={{height:'100%',width:(step/TOTAL_RULE_SLIDES*100)+'%',background:'linear-gradient(90deg,#9f7836,#e6ca82)',transition:'width .2s'}}/>
       </div>
-      {current?<img src={current.url} alt={'قانون تصویری '+step+' سری سوم'} style={{display:'block',width:'100%',maxHeight:'68vh',objectFit:'contain',background:'#090a0c',borderRadius:10}}/>:
+      {current?<img key={current.number} src={current.url} alt={'قانون تصویری '+step+' '+seriesName}
+       onLoad={isSeries4?()=>setLoadedSlides(items=>items.includes(current.number)?items:[...items,current.number]):undefined}
+       onError={isSeries4?()=>{setLoadedSlides(items=>items.filter(number=>number!==current.number));setLoadError("بارگیری تصویر قانون ناموفق بود. صفحه را دوباره بارگذاری کن.");}:undefined} style={{display:'block',width:'100%',maxHeight:'68vh',objectFit:'contain',background:'#090a0c',borderRadius:10}}/>:
        <div style={{minHeight:250,display:'grid',placeItems:'center',textAlign:'center',padding:20,border:'1px dashed #8b7040',borderRadius:10,color:'#c6b99f'}}>تصویر {fa(step)} هنوز بارگذاری نشده است.</div>}
       {step===TOTAL_RULE_SLIDES&&<div style={{marginTop:16,padding:14,border:'1px solid #8b7040',borderRadius:10,background:'#201b12'}}>
        <label style={{display:'flex',alignItems:'flex-start',gap:10,color:'#f2e6c9',fontSize:14,lineHeight:1.9}}>
@@ -111,14 +140,14 @@ export default function Series3Registration(){
       </div>}
       <div style={{display:'flex',justifyContent:'space-between',gap:10,marginTop:16}}>
        <button type="button" disabled={step===1||busy} onClick={()=>{setStep(s=>Math.max(1,s-1));setMessage('');}} style={{...gold,background:'#292720',border:'1px solid #6e6044',color:'#f2e6c9',opacity:step===1?.45:1}}><ChevronRight size={16} style={{verticalAlign:'middle'}}/> قبلی</button>
-       {step<TOTAL_RULE_SLIDES?<button type="button" disabled={busy} onClick={()=>{setStep(s=>Math.min(TOTAL_RULE_SLIDES,s+1));setMessage('');}} style={gold}>بعدی <ChevronLeft size={16} style={{verticalAlign:'middle'}}/></button>:
-        <button type="button" disabled={busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES} onClick={()=>void submit()} style={{...gold,opacity:busy||!accepted||!validId||slides.length!==TOTAL_RULE_SLIDES?.5:1}}>{busy?'در حال ثبت…':'تأیید و ثبت‌نام'}</button>}
+       {step<TOTAL_RULE_SLIDES?<button type="button" disabled={busy||(isSeries4&&!loadedSlides.includes(step))} onClick={()=>{setStep(s=>Math.min(TOTAL_RULE_SLIDES,s+1));setMessage('');}} style={gold}>بعدی <ChevronLeft size={16} style={{verticalAlign:'middle'}}/></button>:
+        <button type="button" disabled={busy||!accepted||!validId||!allRulesReady} onClick={()=>void submit()} style={{...gold,opacity:busy||!accepted||!validId||!allRulesReady?.5:1}}>{busy?'در حال ثبت…':'تأیید و ثبت‌نام'}</button>}
       </div>
       {step===TOTAL_RULE_SLIDES&&missing>0&&<p role="status" style={{...muted,color:'#e7bd78'}}>برای فعال‌شدن ثبت‌نام، هنوز {fa(missing)} تصویر از ۱۷ تصویر قوانین باید بارگذاری شود.</p>}
       {message&&<p role="status" style={{...muted,color:'#f1d99e'}}>{message}</p>}
      </>}
    </section>
-   <p style={{textAlign:'center',color:'#8f836d',fontSize:11,marginTop:18}}>PLATO LAND · SERIES 3</p>
+   <p style={{textAlign:'center',color:'#8f836d',fontSize:11,marginTop:18}}>PLATO LAND · SERIES {series}</p>
   </div>
  </main>;
 }
