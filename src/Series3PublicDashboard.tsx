@@ -31,7 +31,7 @@ function standingsFor(group:string,fixtures:Fixture[]):Standing[]{
  return [...map.values()].map(x=>({...x,diff:x.for-x.against})).sort((a,b)=>b.points-a.points||b.diff-a.diff||b.for-a.for||a.plato_id.localeCompare(b.plato_id,'en'));
 }
 const stages:[keyof Bracket,string][]=[['round32','یک‌شانزدهم نهایی'],['round16','یک‌هشتم نهایی'],['quarterfinals','یک‌چهارم نهایی'],['semifinals','نیمه‌نهایی'],['thirdPlace','رده‌بندی (مقام سوم و چهارم)'],['final','فینال']];
-export default function Series3PublicDashboard(){
+export default function Series3PublicDashboard({ archived = false }: { archived?: boolean }){
  const [draw,setDraw]=useState<Draw|null>(null);
  const [fixtures,setFixtures]=useState<Fixture[]>([]);
  const [bracket,setBracket]=useState<Bracket|null>(null);
@@ -87,7 +87,7 @@ export default function Series3PublicDashboard(){
  const td:React.CSSProperties={padding:'7px 5px',borderBottom:'1px solid #30291d',textAlign:'center',fontSize:11,whiteSpace:'nowrap'};
  return <section dir="rtl" style={panel} aria-label="داشبورد عمومی مسابقات سری سوم">
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
-   <div><div style={{fontSize:19,fontWeight:900,color:'#f3dfad'}}>مسیر قهرمانی · سری سوم</div><div style={{...muted,marginTop:3}}>رتبه‌بندی رسمی، گروه‌ها، نتایج و جدول حذفی</div></div>
+   <div><div style={{fontSize:19,fontWeight:900,color:'#f3dfad'}}>{archived ? 'آرشیو مسابقات · سری سوم' : 'مسیر قهرمانی · سری سوم'}</div><div style={{...muted,marginTop:3}}>رتبه‌بندی رسمی، گروه‌ها، نتایج و جدول حذفی</div></div>
    <span style={{border:'1px solid #806638',borderRadius:30,padding:'6px 11px',fontSize:11,color:gold}}>۴۸ بازیکن · ۱۲ گروه</span>
   </div>
   <nav aria-label="بخش‌های داشبورد" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:5,marginTop:14}}>

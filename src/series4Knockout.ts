@@ -105,7 +105,9 @@ export function buildSeries4Knockout(qualifiers: Series4Qualifier[]) {
 }
 
 export function resolveSeries4Matches(
-  bracket:ReturnType<typeof buildSeries4Knockout>,
+  bracket: Pick<ReturnType<typeof buildSeries4Knockout>, 'laterRounds' | 'thirdPlace'> & {
+    firstRound: Array<{id:string; a:Pick<Series4Qualifier, 'plato_id'>; b:Pick<Series4Qualifier, 'plato_id'>}>;
+  },
   scores:Array<{match_id:string;score_a:number;score_b:number}>,
 ) {
   const byId=new Map(scores.map(score=>[score.match_id,score]));

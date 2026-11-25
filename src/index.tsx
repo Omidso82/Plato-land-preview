@@ -7,6 +7,7 @@ import Series3Gallery from './Series3Gallery';
 import Series3Registration from './Series3Registration';
 import Series3Home from './Series3Home';
 import Series2Archive from './Series2Archive';
+import Series4PublicArchive from './Series4PublicArchive';
 import PublicPredictions from './PublicPredictions';
 import './styles.css';
 import './Series2Registration.css';
@@ -25,6 +26,8 @@ const retiredResultsQuery = (path==='/' || path==='/index.html') && page==='seri
 
 if((path==='/' || path==='/index.html') && page==='black-friday') { root.render(<BlackFridayRegistration/>); } else if(path==='/series2-archive' || ((path==='/' || path==='/index.html') && page==='series2-archive')) {
   root.render(<React.StrictMode><Series2Archive/></React.StrictMode>);
+} else if(path==='/series4-archive') {
+  root.render(<React.StrictMode><Series4PublicArchive/></React.StrictMode>);
 } else if(path==='/predictions') {
   root.render(<React.StrictMode><PublicPredictions/></React.StrictMode>);
 } else if(path==='/series3') {
