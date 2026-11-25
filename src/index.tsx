@@ -31,6 +31,8 @@ if((path==='/' || path==='/index.html') && page==='black-friday') { root.render(
   root.render(<React.StrictMode><Series3Gallery/></React.StrictMode>);
 } else if(path==='/series3-registration') {
   root.render(<React.StrictMode><Series3Registration/></React.StrictMode>);
+} else if(path==='/series4-registration') {
+  root.render(<React.StrictMode><Series3Registration series={4}/></React.StrictMode>);
 } else if(path==='/series2-slides-manager') {
   root.render(<React.StrictMode><Series2SlidesManager/></React.StrictMode>);
 } else if(path==='/' || path==='/index.html' || retiredPaths.has(path) || retiredResultsQuery) {
