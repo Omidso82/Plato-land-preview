@@ -91,12 +91,37 @@ function parseRange(value: string, size: number): { start: number; end: number }
   return { start, end: Math.min(end, size - 1) };
 }
 
+async function registrationSlide(request:Request,bucket:R2Bucket,slot:string):Promise<Response> {
+  if (!/^slide-(0[1-9]|1[0-7])$/.test(slot)) return json({error:"Unknown rule slide."},404);
+  if (request.method !== "GET" && request.method !== "HEAD") return json({error:"Method not allowed."},405);
+  const manifest = await fetch(SUPABASE_URL + "/rest/v1/rpc/series4_registration_rule_slides", {
+    method:"POST",
+    headers:{apikey:SUPABASE_PUBLISHABLE_KEY,"Content-Type":"application/json"},
+    body:"{}",
+  });
+  if (!manifest.ok) return json({error:"Rule slides unavailable."},503);
+  const slides = await manifest.json() as Array<{slot:string;object_key:string}>;
+  const key = slides.find(slide=>slide.slot===slot)?.object_key;
+  const prefix = PREFIX + slot + "/";
+  if (!key || !key.startsWith(prefix) || !/^[a-f0-9-]{36}$/.test(key.slice(prefix.length))) {
+    return json({error:"Rule slide not found."},404);
+  }
+  const head = await bucket.head(key);
+  const type = head?.httpMetadata?.contentType;
+  if (!head || head.size<=0 || !type || !IMAGE_TYPES.has(type)) return json({error:"Rule slide not found."},404);
+  const headers = mediaHeaders(head.size,type,head.httpEtag);
+  if (request.method === "HEAD") return new Response(null,{headers});
+  const object = await bucket.get(key);
+  return object ? new Response(object.body,{headers}) : json({error:"Rule slide not found."},404);
+}
+
 async function handleRequest({ request, env }: Context): Promise<Response> {
   const bucket = env.PLATO_MEDIA_BUCKET;
   if (!bucket) return json({ error: "R2 media binding unavailable." }, 503);
   const url = new URL(request.url);
   const assetName = url.searchParams.get("asset") || "";
   if (!/^(poster|teaser|rules|slide-(0[1-9]|1[0-7]))$/.test(assetName)) return json({error:"Unknown Series 4 media slot."},404);
+  if (url.searchParams.get("registration") === "1") return registrationSlide(request,bucket,assetName);
   if (!(await isOwner(request))) return json({error:"Owner authorization required."},403);
   const video = assetName === "rules" || assetName === "teaser";
   const maxSize = video ? MAX_VIDEO : MAX_IMAGE;
