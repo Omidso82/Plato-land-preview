@@ -19,6 +19,7 @@ import Series3TelegramManager from './Series3TelegramManager';
 import PredictionCampaignManager from './PredictionCampaignManager';
 import CentralSuspensionManager from './CentralSuspensionManager';
 import TemporaryPlayerBank from './TemporaryPlayerBank';
+import TemporaryLifecycleOwnerPanel from './TemporaryLifecycleOwnerPanel';
 import {BlackFridayAdmin} from './BlackFridayRegistration';
 
 type ScannerAccess = { user_id:string; email:string; status:'pending'|'approved'|'suspended'; requested_at:string };
@@ -267,6 +268,7 @@ export default function Series2SlidesManager() {
     {managerPage==='series3'&&<>
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
       <h2 style={{...heading,marginTop:18}}>مدیریت سری سوم مسابقات تخته‌نرد</h2>
+      <Series3SectionBoundary title="آرشیو هوشمند"><TemporaryLifecycleOwnerPanel seriesNumber={3} /></Series3SectionBoundary>
       <Series3SectionBoundary title="مدیریت تصاویر و تیزر سری سوم"><Series3SlidesPanel /></Series3SectionBoundary>
       <Series3SectionBoundary title="مدیریت ویدیوی قوانین سری سوم"><Series3VideoManager /></Series3SectionBoundary>
       <Series3SectionBoundary title="گزارش ثبت‌نام سری سوم"><Series3RegistrationReport /></Series3SectionBoundary>
@@ -276,6 +278,7 @@ export default function Series2SlidesManager() {
     {managerPage==='series4'&&<>
       <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
       <h2 style={{...heading,marginTop:18}}>مدیریت سری چهارم مسابقات تخته‌نرد</h2>
+      <Series3SectionBoundary title="آرشیو هوشمند"><TemporaryLifecycleOwnerPanel seriesNumber={4} /></Series3SectionBoundary>
       <Series3SectionBoundary title="تصاویر و تیزر سری چهارم"><Series4MediaManager /></Series3SectionBoundary>
       <Series3SectionBoundary title="ویدیوی قوانین سری چهارم"><Series4MediaManager rulesOnly /></Series3SectionBoundary>
       <Series3SectionBoundary title="گزارش ثبت‌نام سری چهارم"><Series4RegistrationReport /></Series3SectionBoundary>
