@@ -33,15 +33,21 @@ const statusText = {
 };
 
 function Matches({ matches }: { matches: Match[] }) {
-  return <ul className="s1-matches">{matches.map((match, index) =>
-    <li key={index}>
-      <bdi>{match.a ?? '—'}</bdi>
-      <strong>{match.status === 'completed' && match.score_a != null && match.score_b != null
-        ? <bdi>{fa(match.score_a)}–{fa(match.score_b)}</bdi>
-        : statusText[match.status]}</strong>
-      <bdi>{match.b ?? '—'}</bdi>
-    </li>
-  )}</ul>;
+  return <ul className="s1-matches">{matches.map((match, index) => {
+    const { score_a: scoreA, score_b: scoreB } = match;
+    const hasScore = match.status === 'completed' && scoreA != null && scoreB != null;
+    return <li key={index} className={hasScore ? 's1-scored-match' : undefined}>
+      <span className="s1-match-player">
+        <bdi dir="ltr">{match.a ?? '—'}</bdi>
+        {hasScore && <strong>{fa(scoreA)}</strong>}
+      </span>
+      {!hasScore && <strong>{statusText[match.status]}</strong>}
+      <span className="s1-match-player">
+        <bdi dir="ltr">{match.b ?? '—'}</bdi>
+        {hasScore && <strong>{fa(scoreB)}</strong>}
+      </span>
+    </li>;
+  })}</ul>;
 }
 
 export default function Series1PublicArchive() {
