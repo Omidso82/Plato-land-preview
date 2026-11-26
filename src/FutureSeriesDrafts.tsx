@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { supabase } from './supabase';
+import Series5RegistrationPreview from './Series5RegistrationPreview';
 
 type DraftSeries = {
   series_number: number;
@@ -47,20 +48,23 @@ function DraftForm({ series }: { series: DraftSeries }) {
     }
   }
 
-  return <form onSubmit={save} style={{display:'grid', gap:10, border:'1px solid #8c6a34', borderRadius:12, padding:14}}>
-    <h3 style={{margin:0}}>{series.series_name}</h3>
-    <label style={{display:'grid', gap:5}}>ظرفیت پیشنهادی
-      <input type="number" min={1} max={2147483647} step={1} required value={capacity}
-        onChange={event => setCapacity(event.target.value)} disabled={busy}/>
-    </label>
-    <label style={{display:'grid', gap:5}}>نسخهٔ قوانین
-      <input type="text" maxLength={80} required value={version}
-        onChange={event => setVersion(event.target.value)} disabled={busy}/>
-    </label>
-    <button type="submit" disabled={busy || !capacity || !version.trim()}>ذخیرهٔ پیش‌نویس</button>
-    {notice && <p role="status">{notice}</p>}
-    {error && <p role="alert">{error}</p>}
-  </form>;
+  return <article style={{border:'1px solid #8c6a34', borderRadius:12, padding:14}}>
+    <form onSubmit={save} style={{display:'grid', gap:10}}>
+      <h3 style={{margin:0}}>{series.series_name}</h3>
+      <label style={{display:'grid', gap:5}}>ظرفیت پیشنهادی
+        <input type="number" min={1} max={2147483647} step={1} required value={capacity}
+          onChange={event => setCapacity(event.target.value)} disabled={busy}/>
+      </label>
+      <label style={{display:'grid', gap:5}}>نسخهٔ قوانین
+        <input type="text" maxLength={80} required value={version}
+          onChange={event => setVersion(event.target.value)} disabled={busy}/>
+      </label>
+      <button type="submit" disabled={busy || !capacity || !version.trim()}>ذخیرهٔ پیش‌نویس</button>
+      {notice && <p role="status">{notice}</p>}
+      {error && <p role="alert">{error}</p>}
+    </form>
+    {series.series_number === 5 && <Series5RegistrationPreview key={revision} draftRevision={revision} />}
+  </article>;
 }
 
 export default function FutureSeriesDrafts() {
