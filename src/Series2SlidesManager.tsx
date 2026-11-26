@@ -18,6 +18,7 @@ import Series3SeedingManager from './Series3SeedingManager';
 import Series3TelegramManager from './Series3TelegramManager';
 import PredictionCampaignManager from './PredictionCampaignManager';
 import SiteVisitDashboard from './SiteVisitDashboard';
+import FutureSeriesDrafts from './FutureSeriesDrafts';
 import CentralSuspensionManager from './CentralSuspensionManager';
 import TemporaryPlayerBank from './TemporaryPlayerBank';
 import TemporaryLifecycleOwnerPanel from './TemporaryLifecycleOwnerPanel';
@@ -49,7 +50,7 @@ export default function Series2SlidesManager() {
   const [busy,setBusy] = useState(false);
   const [message,setMessage] = useState('');
   const [scannerOpen,setScannerOpen] = useState(false);
-  const [managerPage,setManagerPage] = useState<'home'|'series3'|'series4'|'series2'|'predictions'|'players'|'blackFriday'|'suspensions'|'siteVisits'>('home');
+  const [managerPage,setManagerPage] = useState<'home'|'series3'|'series4'|'series2'|'predictions'|'players'|'blackFriday'|'suspensions'|'siteVisits'|'futureSeries'>('home');
 
   async function verifyOwner() {
     if (!supabase) { setMessage('اتصال به سرویس اصلی برقرار نیست.'); setChecking(false); return; }
@@ -233,6 +234,7 @@ export default function Series2SlidesManager() {
       <button style={secondary} onClick={signOut}>خروج از پنل</button>
     </div>
     {managerPage==='home'&&<div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(230px,1fr))',gap:14,marginTop:18}}>
+      <button type="button" style={primary} onClick={()=>setManagerPage('futureSeries')}>پیش‌نویس سری‌های آینده</button>
       <button type="button" style={primary} onClick={()=>setManagerPage('siteVisits')}>آمار بازدید سایت</button>
       <button type="button" style={primary} onClick={()=>setManagerPage('suspensions')}>مدیریت محرومیت بازیکنان</button>
       <button type="button" style={primary} onClick={()=>setManagerPage('blackFriday')}>مدیریت تورنمنت بلک فرایدی</button>
@@ -257,6 +259,10 @@ export default function Series2SlidesManager() {
         <span style={{fontSize:13,lineHeight:1.9,color:'#c9c0ad'}}>جست‌وجوی Plato ID و مشاهده سابقه ثبت‌نام، برد، باخت و حریفان در سری دوم و سوم</span>
       </button>
     </div>}
+    {managerPage==='futureSeries'&&<>
+      <button type="button" style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت به انتخاب بخش‌ها</button>
+      <FutureSeriesDrafts />
+    </>}
     {managerPage==='siteVisits'&&<><button style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت</button><Series3SectionBoundary title="آمار بازدید سایت"><SiteVisitDashboard/></Series3SectionBoundary></>}
     {managerPage==='suspensions'&&<><button style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت</button><Series3SectionBoundary title="مدیریت محرومیت"><CentralSuspensionManager/></Series3SectionBoundary></>}
     {managerPage==='blackFriday'&&<><button style={secondary} onClick={()=>setManagerPage('home')}>← بازگشت</button><BlackFridayAdmin/></>}
