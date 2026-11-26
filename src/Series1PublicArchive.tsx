@@ -14,7 +14,7 @@ type Match = {
 };
 
 const stages = [
-  ['final', 'فینال'], ['third_place', 'رده‌بندی'], ['semi', 'نیمه‌نهایی'],
+  ['semi', 'نیمه‌نهایی'],
   ['quarter', 'یک‌چهارم نهایی'], ['round16', 'یک‌هشتم نهایی'], ['round32', 'یک‌شانزدهم نهایی'],
 ] as const;
 
@@ -70,34 +70,69 @@ export default function Series1PublicArchive() {
   }, []);
 
   const grouped = matches?.filter(match => match.stage === 'group') ?? [];
+  const featured = ([
+    ['final', 'فینال'],
+    ['third_place', 'رده‌بندی'],
+  ] as const).map(([stage, label]) => ({ stage, label, matches: matches?.filter(match => match.stage === stage) ?? [] }))
+    .filter(round => round.matches.length > 0);
   const groupNames = [...new Set(grouped.map(match => match.group).filter(Boolean))].sort();
 
   return <main className="s1-archive" dir="rtl">
     <TemporaryPageHeader backHref="/" backLabel="بازگشت به صفحه مسابقات" />
-    <h1>آرشیو سری اول تخته‌نرد</h1>
+    <div className="s1-hero">
+      <h1>آرشیو سری اول تخته‌نرد</h1>
+      {!!matches?.length && <p className="s1-overview">
+        <span><strong>{fa(matches.length)}</strong> بازی</span>
+        <span><strong>{fa(groupNames.length)}</strong> گروه</span>
+      </p>}
+    </div>
     {failed && <p role="alert">دریافت آرشیو ممکن نشد. لطفاً صفحه را دوباره بارگذاری کنید.</p>}
     {!failed && matches === null && <p role="status">در حال دریافت نتایج…</p>}
     {matches?.length === 0 && <p role="status">نتایج آرشیو فعلاً در دسترس نیست.</p>}
     {!!matches?.length && <>
-      <h2>سکو و جوایز</h2>
-      <ul className="s1-podium">{podium.map(player => <li key={player.id}>
-        <span>{player.rank}</span>
-        <strong>{player.name}</strong>
-        <bdi>{player.id}</bdi>
-        <span>{fa(player.prize)} آیتم پلاتو</span>
-      </li>)}</ul>
-      <h2>مسیر حذفی</h2>
-      {stages.map(([stage, label]) => {
-        const stageMatches = matches.filter(match => match.stage === stage);
-        return stageMatches.length > 0 && <details key={stage} open={stage === 'final'}>
-          <summary>{label}</summary><Matches matches={stageMatches} />
-        </details>;
-      })}
-      <h2>نتایج گروهی</h2>
-      {groupNames.map(group => <details key={group}>
-        <summary>گروه <bdi>{group}</bdi></summary>
-        <Matches matches={grouped.filter(match => match.group === group)} />
-      </details>)}
+      <nav className="s1-jump" aria-label="بخش‌های آرشیو">
+        <a href="#series1-podium">سکو و جوایز</a>
+        <a href="#series1-knockout">مسیر حذفی</a>
+        <a href="#series1-groups">نتایج گروهی</a>
+      </nav>
+      <section className="s1-section" id="series1-podium">
+        <h2>سکو و جوایز</h2>
+        <ol className="s1-podium">{podium.map((player) => <li key={player.id}>
+          <span className="s1-rank">{player.rank}</span>
+          <div className="s1-podium-player">
+            <strong>{player.name}</strong>
+            <bdi dir="ltr">{player.id}</bdi>
+          </div>
+          <span className="s1-prize"><strong>{fa(player.prize)}</strong> آیتم پلاتو</span>
+        </li>)}</ol>
+      </section>
+      <section className="s1-section" id="series1-knockout">
+        <h2>مسیر حذفی</h2>
+        <div className="s1-featured">
+          {featured.map(round => <section key={round.stage} className={`s1-feature s1-feature--${round.stage}`}>
+            <h3>{round.label}</h3>
+            <Matches matches={round.matches} />
+          </section>)}
+        </div>
+        <div className="s1-rounds">
+          {stages.map(([stage, label]) => {
+            const stageMatches = matches.filter(match => match.stage === stage);
+            return stageMatches.length > 0 && <details key={stage}>
+              <summary>{label}</summary>
+              <Matches matches={stageMatches} />
+            </details>;
+          })}
+        </div>
+      </section>
+      <section className="s1-section" id="series1-groups">
+        <h2>نتایج گروهی</h2>
+        <div className="s1-group-grid">
+          {groupNames.map(group => <details key={group}>
+            <summary>گروه <bdi dir="ltr">{group}</bdi></summary>
+            <Matches matches={grouped.filter(match => match.group === group)} />
+          </details>)}
+        </div>
+      </section>
     </>}
   </main>;
 }
