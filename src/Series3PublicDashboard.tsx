@@ -1,5 +1,6 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {supabase} from './supabase';
+import PublicTournamentArchive, { podiumFromMatches, type ArchiveMatch } from './PublicTournamentArchive';
 import {resolveLockedGroupPlacements,resolveSeries3BracketSlots} from './series3BracketProgression';
 
 type Player={plato_id:string;games_played:number|null;games_won:number|null};
@@ -85,7 +86,7 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
  const tabs:[typeof tab,string][]=[['overview','خلاصه مسابقات'],['ranking','رتبه‌بندی و سیدها'],['groups','گروه‌ها و نتایج'],['bracket','مسیر قهرمانی']];
  const th:React.CSSProperties={padding:'7px 5px',borderBottom:'1px solid #67532f',whiteSpace:'nowrap',textAlign:'center',fontSize:10,color:'#e6d3a7'};
  const td:React.CSSProperties={padding:'7px 5px',borderBottom:'1px solid #30291d',textAlign:'center',fontSize:11,whiteSpace:'nowrap'};
- return <section dir="rtl" style={panel} aria-label="داشبورد عمومی مسابقات سری سوم">
+ const dashboard = <section dir="rtl" style={panel} aria-label="داشبورد عمومی مسابقات سری سوم">
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
    <div><div style={{fontSize:19,fontWeight:900,color:'#f3dfad'}}>{archived ? 'آرشیو مسابقات · سری سوم' : 'مسیر قهرمانی · سری سوم'}</div><div style={{...muted,marginTop:3}}>رتبه‌بندی رسمی، گروه‌ها، نتایج و جدول حذفی</div></div>
    <span style={{border:'1px solid #806638',borderRadius:30,padding:'6px 11px',fontSize:11,color:gold}}>۴۸ بازیکن · ۱۲ گروه</span>
@@ -113,4 +114,36 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
    </div>}
   </>}
  </section>;
+ if(!archived) return dashboard;
+ const stageKeys = {
+  round32:'round32', round16:'round16', quarterfinals:'quarter',
+  semifinals:'semi', thirdPlace:'third_place', final:'final',
+ } as const;
+ const archiveMatches: ArchiveMatch[] = [
+  ...fixtures.map(row=>({
+   stage:'group', group:row.group_name, a:row.player_a_plato_id, b:row.player_b_plato_id,
+   score_a:row.score_a, score_b:row.score_b, status:row.result_status,
+  })),
+  ...Object.entries(stageKeys).flatMap(([key,stage])=>(bracket?.[key as keyof typeof stageKeys] ?? []).map(match=>{
+   const result=knockoutResults.find(row=>row.match_id===match.id && row.result_status==='completed');
+   const slots=resolvedBracketSlots[match.id];
+   return {
+    stage, group:null,
+    a:result?.player_a_plato_id ?? slots?.a?.token.label ?? match.a.label,
+    b:result?.player_b_plato_id ?? slots?.b?.token.label ?? match.b.label,
+    score_a:result?.score_a ?? null, score_b:result?.score_b ?? null,
+    status:result ? 'completed' as const : 'pending' as const,
+   };
+  })),
+ ];
+ return <>
+  <PublicTournamentArchive title="آرشیو سری سوم تخته‌نرد" prefix="series3" showHeader={false}
+   matches={loading ? null : archiveMatches} failed={Boolean(error && !archiveMatches.length)}
+   podium={podiumFromMatches(archiveMatches)} />
+  <details>
+   <summary className="tarchive-history-summary">رتبه‌بندی، سیدبندی و سوابق سری سوم</summary>
+   {dashboard}
+  </details>
+ </>;
+
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { resolveSeries4Matches, series4KnockoutStages } from './series4Knockout';
+import { resolveSeries4Matches } from './series4Knockout';
 import { supabase } from './supabase';
+import PublicTournamentArchive, { podiumFromMatches, type ArchiveMatch } from './PublicTournamentArchive';
 
 type GroupMatch = {
   match_id: string;
@@ -16,14 +17,28 @@ type Archive = {
   scores: Parameters<typeof resolveSeries4Matches>[1];
   groups: GroupMatch[];
 };
-const fa = (n: number) => n.toLocaleString('fa-IR');
+const stages: Record<string, string> = {
+  R32: 'round32', R16: 'round16', R8: 'quarter', R4: 'semi', R2: 'final', THIRD: 'third_place',
+};
 
-function Result({ a, b, score }: { a?: string; b?: string; score: string }) {
-  return <li style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 10, padding: '8px 0', borderBottom: '1px solid #493a22' }}>
-    <bdi style={{ overflowWrap: 'anywhere' }}>{a ?? '—'}</bdi>
-    <strong>{score}</strong>
-    <bdi style={{ overflowWrap: 'anywhere' }}>{b ?? '—'}</bdi>
-  </li>;
+function archiveMatches(archive: Archive): ArchiveMatch[] {
+  const { players, byId } = resolveSeries4Matches(archive.bracket, archive.scores);
+  const rounds = [archive.bracket.firstRound, ...archive.bracket.laterRounds, [archive.bracket.thirdPlace]];
+  return [
+    ...archive.groups.map(match => ({
+      stage: 'group', group: match.group_name, a: match.player_a, b: match.player_b,
+      score_a: match.score_a, score_b: match.score_b, status: match.result_status,
+    })),
+    ...rounds.flatMap(round => round.map(match => {
+      const [a, b] = players.get(match.id) ?? [];
+      const result = byId.get(match.id);
+      return {
+        stage: stages[match.id.split('-')[0]], group: null, a: a ?? null, b: b ?? null,
+        score_a: result?.score_a ?? null, score_b: result?.score_b ?? null,
+        status: result ? 'completed' as const : 'pending' as const,
+      };
+    })),
+  ];
 }
 
 export default function Series4PublicArchive() {
@@ -55,35 +70,7 @@ export default function Series4PublicArchive() {
     };
   }, []);
 
-  const hydrated = archive && resolveSeries4Matches(archive.bracket, archive.scores);
-  const rounds = archive && [archive.bracket.firstRound, ...archive.bracket.laterRounds, [archive.bracket.thirdPlace]];
-  const groupNames = archive ? [...new Set(archive.groups.map(match => match.group_name))] : [];
-  return <main dir="rtl" style={{ maxWidth: 840, margin: 'auto', padding: 18, color: '#f0d99f', background: '#171513' }}>
-    <a href="/" style={{ color: 'inherit' }}>بازگشت به مسابقات</a>
-    <h1>آرشیو سری چهارم تخته‌نرد</h1>
-    {archive === undefined && <p role="status">در حال دریافت آرشیو…</p>}
-    {archive === null && <p role="status">{failed ? 'دریافت آرشیو ممکن نشد.' : 'آرشیو این سری فعلاً در دسترس نیست.'}</p>}
-    {archive && hydrated && rounds && <>
-      <h2>مسیر قهرمانی</h2>
-      {rounds.map(round => {
-        const stage = round[0].id.split('-')[0];
-        return <details key={stage} open={stage === 'R2' || stage === 'THIRD'} style={{ padding: 12, borderBottom: '1px solid #59472a' }}>
-          <summary>{series4KnockoutStages[stage]}</summary>
-          <ul style={{ listStyle: 'none', padding: 0 }}>{round.map(match => {
-            const [a,b] = hydrated.players.get(match.id) ?? [];
-            const result = hydrated.byId.get(match.id);
-            return <Result key={match.id} a={a} b={b} score={result ? fa(result.score_a) + ' : ' + fa(result.score_b) : '—'} />;
-          })}</ul>
-        </details>;
-      })}
-      <h2>نتایج گروهی</h2>
-      {groupNames.map(group => <details key={group} style={{ padding: 12, borderBottom: '1px solid #59472a' }}>
-        <summary>گروه <bdi>{group}</bdi></summary>
-        <ul style={{ listStyle: 'none', padding: 0 }}>{archive.groups.filter(match => match.group_name === group).map(match =>
-          <Result key={match.match_id} a={match.player_a} b={match.player_b}
-            score={match.score_a != null && match.score_b != null ? fa(match.score_a) + ' : ' + fa(match.score_b) : 'عدم حضور دوطرفه'} />
-        )}</ul>
-      </details>)}
-    </>}
-  </main>;
+  const matches = archive ? archiveMatches(archive) : archive === undefined ? null : [];
+  return <main><PublicTournamentArchive title="آرشیو سری چهارم تخته‌نرد" prefix="series4"
+    matches={matches} failed={failed} podium={matches ? podiumFromMatches(matches) : []} /></main>;
 }
