@@ -18,21 +18,27 @@ export default function Series4RegistrationReport(){
  const [isOpen,setIsOpen]=useState(false);
  const [capacity,setCapacity]=useState(32);
  const [canOpen,setCanOpen]=useState(false);
+ const [activeRuleSlides,setActiveRuleSlides]=useState<number|null>(null);
+ const [publicEnabled,setPublicEnabled]=useState(false);
 
  const load=useCallback(async()=>{
   if(!supabase){setError('اتصال به دیتابیس در دسترس نیست.');setLoading(false);return;}
   setLoading(true);setError('');
   try{
-   const [list,status]=await Promise.all([
+   const [list,status,readiness]=await Promise.all([
     supabase.from('plato_land_series4_registration_requests').select('id,plato_id,rules_accepted,created_at,registration_status').order('created_at',{ascending:true}).order('id',{ascending:true}),
-    supabase.rpc('series4_owner_registration_settings').single()
+    supabase.rpc('series4_owner_registration_settings').single(),
+    supabase.rpc('series4_owner_registration_readiness').single()
    ]);
    if(list.error)throw list.error;
    if(status.error)throw status.error;
    const settings=status.data as {registration_open:boolean;capacity:number;public_enabled:boolean};
    setIsOpen(settings.registration_open);
    setCapacity(settings.capacity);
-   setCanOpen(settings.public_enabled);
+   setPublicEnabled(settings.public_enabled);
+   const readinessState=readiness.data as {can_open:boolean;active_rule_slides:number}|null;
+   setCanOpen(!readiness.error&&readinessState?.can_open===true);
+   setActiveRuleSlides(readiness.error?null:readinessState?.active_rule_slides??null);
    setRows((list.data||[]).map((r:any)=>({id:String(r.id),plato_id:String(r.plato_id||''),rules_accepted:r.rules_accepted===true,created_at:String(r.created_at||''),registration_status:r.registration_status})));
   }catch(e){console.error('Series 4 owner report load failed',e);setError(e instanceof Error?e.message:'خطای ناشناخته در دریافت گزارش');}
   finally{setLoading(false);}
@@ -42,14 +48,18 @@ export default function Series4RegistrationReport(){
  async function setRegistrationOpen(next:boolean){
   if(!supabase||busy||(next&&!canOpen))return;
   const verb=next?'بازکردن':'بستن';
-  if(!window.confirm('ثبت‌نام سری چهارم '+verb+' شود؟'))return;
+  const confirmation=next&&!publicEnabled
+    ?'نمایش عمومی سری چهارم فعال و ثبت‌نام رسماً باز شود؟'
+    :'ثبت‌نام سری چهارم '+verb+' شود؟';
+  if(!window.confirm(confirmation))return;
   setBusy(true);setMessage('');setError('');
   try{
    const {data,error}=await supabase.rpc('series4_owner_set_registration_open',{p_open:next});
    if(error)throw error;
    setIsOpen(data===true);
+   await load();
    setMessage(next?'ثبت‌نام باز شد.':'ثبت‌نام بسته شد.');
-  }catch(e){setError(e instanceof Error?e.message:'تغییر وضعیت ثبت‌نام ناموفق بود.');}
+  }catch(e){setError(e&&typeof e==='object'&&'message' in e?String(e.message):'تغییر وضعیت ثبت‌نام ناموفق بود.');}
   finally{setBusy(false);}
  }
  async function withdraw(row:Registration){
@@ -111,6 +121,8 @@ export default function Series4RegistrationReport(){
    {[{t:'اصلی',n:main.length},{t:'رزرو',n:wait.length},{t:'خارج‌شده',n:withdrawn.length}].map(x=><div key={x.t} style={{background:'#211b12',border:'1px solid #66512d',borderRadius:10,padding:'9px 14px',minWidth:95}}><div style={muted}>{x.t}</div><strong style={{fontSize:23,color:'#f1d99e'}}>{loading?'—':fa(x.n)}</strong></div>)}
    <div style={{background:'#171513',border:'1px solid #51452d',borderRadius:10,padding:'9px 14px',minWidth:120}}><div style={muted}>وضعیت ثبت‌نام</div><strong style={{color:isOpen?'#9ed6a3':'#f0aaaa'}}>{loading?'…':isOpen?'باز':'بسته'}</strong></div>
   </div>
+  <p style={muted}>{activeRuleSlides===null?'وضعیت تصاویر قوانین در دسترس نیست.':
+    fa(activeRuleSlides)+' از ۱۷ تصویر قوانین فعال است.'}</p>
   <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:14}}>
    <button style={button} disabled={busy||loading||isOpen||!canOpen} onClick={()=>void setRegistrationOpen(true)}>بازکردن ثبت‌نام</button>
    <button style={secondary} disabled={busy||loading||!isOpen} onClick={()=>void setRegistrationOpen(false)}>بستن ثبت‌نام</button>
