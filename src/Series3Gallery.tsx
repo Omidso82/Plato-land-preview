@@ -123,6 +123,7 @@ export default function Series3Gallery({activeCompetitions}:{activeCompetitions?
     <a href="/predictions" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px 15px',border:'1px solid #b18b45',borderRadius:9,color:'#17130b',background:'linear-gradient(120deg,#b48b43,#e4c77e)',textDecoration:'none',fontSize:12,fontWeight:900,whiteSpace:'nowrap'}}>مشاهده پیش‌بینی‌ها <ArrowLeft size={15}/></a>
    </section>
    <Series3PublicDashboard archived={archiveStatus.series3} />
+   <p><a href="/series1-archive/" style={{color:'#f0d99f'}}>آرشیو مسابقات سری اول</a></p>
    {archiveStatus.series4 && <p><a href="/series4-archive/" style={{color:'#f0d99f'}}>آرشیو مسابقات سری چهارم</a></p>}
    <section style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'13px 16px',margin:'16px 0 0',border:'1px solid rgba(140,106,52,.65)',borderRadius:12,background:'linear-gradient(110deg,rgba(42,33,20,.88),rgba(20,20,22,.96))'}}>
     <div style={{display:'flex',alignItems:'center',gap:10,minWidth:0}}><span style={{width:34,height:34,display:'grid',placeItems:'center',borderRadius:9,background:'rgba(214,180,109,.12)',flexShrink:0}}><Archive size={18} color="#d6b46d"/></span><div><div style={{fontSize:13,fontWeight:800,color:'#f0d99f'}}>آرشیو مسابقات سری دوم</div><div style={{fontSize:11,color:'#b7a27b',marginTop:3}}>مشاهده نتایج و سوابق دوره گذشته</div></div></div>
