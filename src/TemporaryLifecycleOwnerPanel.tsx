@@ -10,6 +10,16 @@ type Review = {
   expected_knockout?: number;
 };
 
+type StartReview = { started: boolean; ready: boolean; reason: string };
+
+const startReasons: Record<string, string> = {
+  registration_not_finished: 'ابتدا ثبت‌نام رسمی را انجام بده و سپس آن را ببند.',
+  group_draw_missing: 'ابتدا قرعه‌کشی گروهی را ثبت کن.',
+  group_schedule_missing: 'ابتدا برنامهٔ کامل بازی‌های گروهی را ذخیره کن.',
+  series_not_planned: 'شروع رسمی برای وضعیت فعلی این سری در دسترس نیست.',
+  ready: 'آمادهٔ ثبت شروع رسمی',
+};
+
 const reasons: Record<string, string> = {
   missing_official_bracket: 'براکت رسمی هنوز ثبت نشده است.',
   group_stage_unresolved: 'نتایج گروهی یا نسخه براکت نیاز به بررسی دارد.',
@@ -24,6 +34,8 @@ const reasons: Record<string, string> = {
 
 export default function TemporaryLifecycleOwnerPanel({ seriesNumber }: { seriesNumber: 3 | 4 }) {
   const [review, setReview] = useState<Review | null>(null);
+  const [start, setStart] = useState<StartReview | null>(null);
+  const [startError, setStartError] = useState(false);
   const [generation, setGeneration] = useState(0);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -46,8 +58,45 @@ export default function TemporaryLifecycleOwnerPanel({ seriesNumber }: { seriesN
     return () => { current = false; };
   }, [generation, seriesNumber]);
 
+  useEffect(() => {
+    if (!supabase || seriesNumber !== 4) return;
+    let current = true;
+    const client = supabase;
+    void (async () => {
+      try {
+        const { data, error } = await client.rpc('plato_temp_owner_series4_start', { p_confirm_start: false });
+        if (error || !data) throw new Error('Start review unavailable');
+        if (current) setStart(data as StartReview);
+      } catch {
+        if (current) setStartError(true);
+      }
+    })();
+    return () => { current = false; };
+  }, [generation, seriesNumber]);
+
+  async function confirmStart() {
+    if (!supabase || busy || !start?.ready ||
+        !window.confirm('شروع رسمی مسابقات سری چهارم ثبت شود؟')) return;
+    setBusy(true);
+    setNotice('');
+    setStartError(false);
+    try {
+      const { data, error } = await supabase.rpc('plato_temp_owner_series4_start', { p_confirm_start: true });
+      if (error || !data) throw new Error('Start confirmation unavailable');
+      refresh();
+      if (data.started === true) setNotice('شروع رسمی سری چهارم ثبت شد.');
+      else setError(startReasons[data.reason] ?? 'شروع رسمی ثبت نشد.');
+    } catch {
+      setStartError(true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function refresh() {
     setReview(null);
+    setStart(null);
+    setStartError(false);
     setError('');
     setGeneration(value => value + 1);
   }
@@ -102,6 +151,15 @@ export default function TemporaryLifecycleOwnerPanel({ seriesNumber }: { seriesN
   return <section dir="rtl" aria-label="آرشیو هوشمند" style={{ marginTop: 18, padding: 16, border: '1px solid #b18b45', borderRadius: 14 }}>
     <h3>آرشیو هوشمند</h3>
     <button type="button" onClick={refresh} disabled={busy}>به‌روزرسانی وضعیت</button>
+    {seriesNumber === 4 && (review?.lifecycle_status === 'planned' || start?.started) &&
+      <div style={{ marginBlock: 10 }}>
+        <strong>شروع رسمی مسابقات</strong>
+        {startError && <p role="alert">بررسی یا ثبت شروع رسمی انجام نشد. وضعیت را به‌روز کن.</p>}
+        {!start && !startError && <p role="status">در حال بررسی آمادگی شروع…</p>}
+        {start?.started && <p>شروع رسمی ثبت شده است.</p>}
+        {start && !start.started && <p>{startReasons[start.reason]}</p>}
+        {start?.ready && <button type="button" disabled={busy} onClick={() => void confirmStart()}>ثبت شروع رسمی سری چهارم</button>}
+      </div>}
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
     {!review && !error && <p role="status">در حال دریافت وضعیت…</p>}
