@@ -11,3 +11,5 @@
 .s1-matches li{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;align-items:center;text-align:center;padding:8px 0;border-top:1px solid #473923}
 .s1-matches bdi{overflow-wrap:anywhere}
 .s1-matches strong{font-size:.82rem}
+.s1-matches li.s1-scored-match{grid-template-columns:repeat(2,minmax(0,1fr))}
+.s1-match-player{display:grid;gap:3px;min-width:0}
