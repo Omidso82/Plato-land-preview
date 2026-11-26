@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Crown, Trophy, Sparkles } from 'lucide-react';
 import { supabase } from './supabase';
-import TemporaryPageHeader from './TemporaryPageHeader';
+import PublicTournamentArchive, { podiumFromMatches, type ArchiveMatch } from './PublicTournamentArchive';
 import Series2Prediction from './Series2Prediction';
 import Series2FinalistPrediction from './Series2FinalistPrediction';
 
@@ -110,6 +110,26 @@ const buildGroupStandings = (group: any, allFixtures: any[]): GroupStandingRow[]
 const fa = (value: number) => value.toLocaleString('fa-IR');
 const percent = (value: number) =>
   value.toLocaleString('fa-IR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + '٪';
+
+type Series2ArchiveMatch = {
+  group?: string;
+  player1?: string;
+  player2?: string;
+  score1?: number | null;
+  score2?: number | null;
+  winner?: string;
+  result_status?: string;
+};
+
+function series2ArchiveMatch(match: Series2ArchiveMatch, stage: string): ArchiveMatch {
+  const completed = Boolean(match.winner && [match.player1, match.player2].includes(match.winner)
+    && Number.isInteger(match.score1) && Number.isInteger(match.score2));
+  return {
+    stage, group: match.group ?? null, a: match.player1 ?? null, b: match.player2 ?? null,
+    score_a: match.score1 ?? null, score_b: match.score2 ?? null,
+    status: match.result_status === 'double_no_show' ? 'double_no_show' : completed ? 'completed' : 'pending',
+  };
+}
 
 export default function Series2Registration({ showSeries3Entry = true, showSeriesLabel = true, showArchiveHeader = false }: { showSeries3Entry?: boolean; showSeriesLabel?: boolean; showArchiveHeader?: boolean }) {
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
@@ -244,11 +264,19 @@ export default function Series2Registration({ showSeries3Entry = true, showSerie
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [stageViewerOpen]);
 
+  const archiveMatches = showArchiveHeader && progression ? [
+    ...(progression.group_fixtures as Series2ArchiveMatch[] ?? []).map(match => series2ArchiveMatch(match, 'group')),
+    ...Object.entries(progression.brackets ?? {}).flatMap(([stage, round]) =>
+      (round as Series2ArchiveMatch[]).map(match => series2ArchiveMatch(match, stage))),
+  ] : [];
+  const History = showArchiveHeader ? 'details' : React.Fragment;
+
   return (
     <main className="s2leaderboard" dir="rtl">
       <div className="s2leaderboard-shell">
         {showArchiveHeader ? (
-          <TemporaryPageHeader showBack={false} />
+          <PublicTournamentArchive title="آرشیو سری دوم تخته‌نرد" prefix="series2"
+            matches={progressionLoading ? null : archiveMatches} podium={podiumFromMatches(archiveMatches)} />
         ) : (
           <header className="s2brand-header">
             <div className="s2brand-emblem" aria-hidden="true"><Crown size={30} strokeWidth={1.6} /></div>
@@ -261,15 +289,8 @@ export default function Series2Registration({ showSeries3Entry = true, showSerie
           </header>
         )}
 
-        {showArchiveHeader && (
-          <section aria-label="آرشیو رسمی سری دوم" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',margin:'0 0 16px',padding:'10px 4px 14px',borderBottom:'1px solid rgba(140,106,52,.55)'}}>
-            <div style={{display:'flex',alignItems:'center',gap:9,color:'#f2e5c5',textAlign:'right'}}>
-              <strong style={{fontSize:18,fontWeight:900}}>آرشیو رسمی سری دوم</strong>
-            </div>
-            <a href="/" style={{display:'inline-flex',alignItems:'center',gap:7,padding:'8px 12px',border:'1px solid #8c6a34',borderRadius:8,color:'#f0d99f',textDecoration:'none',fontSize:12,fontWeight:800,whiteSpace:'nowrap'}}>بازگشت به صفحه اصلی</a>
-          </section>
-        )}
-
+        <History>
+        {showArchiveHeader && <summary className="tarchive-history-summary">رتبه‌بندی، سیدبندی و سوابق سری دوم</summary>}
         {showSeries3Entry && (
         <section className="s2-series3-entry" aria-label="ورود به سری سوم لیگ تخته‌نرد">
           <div className="s2-series3-entry-copy">
@@ -430,6 +451,7 @@ export default function Series2Registration({ showSeries3Entry = true, showSerie
             <span>بازی، رقابت، قهرمانی</span>
           </footer>
         </section>
+        </History>
       </div>
     </main>
   );
