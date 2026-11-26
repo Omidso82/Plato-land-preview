@@ -122,7 +122,19 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
   const assetName = url.searchParams.get("asset") || "";
   if (!/^(poster|teaser|rules|slide-(0[1-9]|1[0-7]))$/.test(assetName)) return json({error:"Unknown Series 4 media slot."},404);
   if (url.searchParams.get("registration") === "1") return registrationSlide(request,bucket,assetName);
-  if (!(await isOwner(request))) return json({error:"Owner authorization required."},403);
+  const publicRulesVideo=url.searchParams.get("rules-video")==="1";
+  let publicKey:string|null=null;
+  if(publicRulesVideo){
+    if(assetName!=="rules")return json({error:"Unknown rules video."},404);
+    if(request.method!=="GET"&&request.method!=="HEAD")return json({error:"Method not allowed."},405);
+    const response=await fetch(SUPABASE_URL+"/rest/v1/rpc/series4_public_rules_video_key",{
+      method:"POST",headers:{apikey:SUPABASE_PUBLISHABLE_KEY,"Content-Type":"application/json"},body:"{}",
+    });
+    if(!response.ok)return json({error:"Rules video unavailable."},503);
+    const data=await response.json();
+    if(typeof data!=="string")return json({error:"Rules video not found."},404);
+    publicKey=data;
+  }else if (!(await isOwner(request))) return json({error:"Owner authorization required."},403);
   const video = assetName === "rules" || assetName === "teaser";
   const maxSize = video ? MAX_VIDEO : MAX_IMAGE;
   const slotPrefix = PREFIX + assetName + "/";
@@ -152,7 +164,7 @@ async function handleRequest({ request, env }: Context): Promise<Response> {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return new Response("Method not allowed", { status: 405, headers: { Allow: "GET, HEAD, POST" } });
   }
-  const objectKey = url.searchParams.get("key") || "";
+  const objectKey = publicKey ?? (url.searchParams.get("key") || "");
   if (!objectKey.startsWith(slotPrefix) || !/^[a-f0-9-]{36}$/.test(objectKey.slice(slotPrefix.length))) {
     return json({error:"Invalid Series 4 media key."},400);
   }
