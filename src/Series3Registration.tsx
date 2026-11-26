@@ -2,6 +2,7 @@ import React,{useEffect,useMemo,useState} from 'react';
 import {Crown,ChevronLeft,ChevronRight,CheckCircle2,Clock} from 'lucide-react';
 import {supabase} from './supabase';
 import TemporaryPageHeader from './TemporaryPageHeader';
+import Series4PublicFeatures from './Series4PublicFeatures';
 
 type Slide={number:number,url:string,updated_at:string};
 type RegistrationResult={status:'main'|'waitlist'|'duplicate';queue_position?:number;main_count?:number};
@@ -106,6 +107,7 @@ export default function Series3Registration({series=3}:{series?:3|4}={}){
     <h1 style={{fontSize:22,margin:'0 0 5px'}}>فرایند ثبت‌نام {seriesName}</h1>
     <p style={{...muted,margin:0}}>تصاویر قوانین را به‌ترتیب مطالعه کن و در پایان ثبت‌نامت را تکمیل کن.</p>
    </header>
+   {isSeries4&&<Series4PublicFeatures/>}
    <section style={panel}>
     {loading?<p style={{...muted,textAlign:'center'}}>در حال دریافت تصاویر قوانین…</p>:loadError?<p role="alert" style={{...muted,color:'#f0aaaa'}}>{loadError}</p>:!registrationOpen?<div style={{textAlign:'center',padding:'34px 10px'}}><Clock size={46} color='#e4c77e'/><h2 style={{color:'#f3d995'}}>ثبت‌نام فعلاً بسته است</h2><p style={muted}>زمان بازگشایی ثبت‌نام توسط مدیریت اعلام خواهد شد.</p></div>:done?
       <div style={{textAlign:'center',padding:'28px 8px'}}>

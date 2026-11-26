@@ -33,6 +33,8 @@ if((path==='/' || path==='/index.html') && page==='black-friday') { root.render(
   root.render(<React.StrictMode><Series4PublicArchive/></React.StrictMode>);
 } else if(path==='/predictions') {
   root.render(<React.StrictMode><PublicPredictions/></React.StrictMode>);
+} else if(path==='/series4-predictions') {
+  root.render(<React.StrictMode><PublicPredictions series={4}/></React.StrictMode>);
 } else if(path==='/series3') {
   root.render(<React.StrictMode><Series3Gallery/></React.StrictMode>);
 } else if(path==='/series3-registration') {

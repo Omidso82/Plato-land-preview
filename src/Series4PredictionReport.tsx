@@ -7,7 +7,7 @@ type ResultDraft={winner_plato_ids:string[];prize_winner_plato_id:string;correct
   total_questions:number;wrong_count:number;total_participants:number;prize_description:string};
 type Campaign={id:string;title:string;status:string;campaign_type:string;updated_at:string;
   questions:{id:string;label:string;match?:{matchId?:string}}[];
-  prize_rules?:{description?:string};public_config?:{result_draft?:ResultDraft}};
+  prize_rules?:{description?:string};public_config?:{result_draft?:ResultDraft;result?:ResultDraft&{status:'published'}}};
 const destinations={test_group:'گروه آزمایشی تلگرام',main_channel:'کانال اصلی تلگرام'} as const;
 type Answer={questionId:string;question:string;prediction:string;actual?:string;status:string};
 type Report={id:string;player:string;answers:Answer[];correct:number};
@@ -15,6 +15,15 @@ const normalize=(value:string)=>value.trim().toLowerCase();
 
 export default function Series4PredictionReport({onDelivery}:{onDelivery:()=>Promise<void>}){
   const [campaigns,setCampaigns]=useState<Campaign[]|null>(null);
+  const [publicEnabled,setPublicEnabled]=useState(false);
+  useEffect(()=>{
+    if(!supabase)return;
+    let active=true;
+    void supabase.rpc('series4_public_features_status').then(({data,error})=>{
+      if(active)setPublicEnabled(!error&&data===true);
+    });
+    return ()=>{active=false;};
+  },[]);
   const [selected,setSelected]=useState('');
   const [reports,setReports]=useState<Report[]>([]);
   const [error,setError]=useState('');
@@ -45,10 +54,11 @@ export default function Series4PredictionReport({onDelivery}:{onDelivery:()=>Pro
     reports.every(report=>report.answers.some(answer=>answer.actual)&&
       report.answers.every(answer=>answer.actual||answer.status==='حذف‌شده از امتیازدهی'));
   const winners=resultReady?reports.filter(report=>report.correct===reports[0].correct).map(report=>report.player):[];
-  async function saveResultDraft(){
+  async function saveResultDraft(publish=false){
     if(!supabase||!campaign||!resultReady||busy||imageBusy||!winners.length)return;
     const winner=winners.length===1?winners[0]:prizeWinner;
     if(!winners.includes(winner))return;
+    if(publish&&(!publicEnabled||campaign.status!=='closed'||!window.confirm('نتیجهٔ پیش‌بینی سری چهارم برای همه منتشر شود؟')))return;
     setBusy(true);setError('');setResultNotice('');
     try{
       const total=reports[0].answers.filter(answer=>answer.actual).length;
@@ -58,12 +68,15 @@ export default function Series4PredictionReport({onDelivery}:{onDelivery:()=>Pro
         prize_description:campaign.prize_rules?.description??'',
       };
       const {data,error}=await supabase.from('plato_land_prediction_campaigns')
-        .update({public_config:{...campaign.public_config,result_draft:resultDraft},updated_at:new Date().toISOString()})
+        .update({public_config:{
+          ...campaign.public_config,result_draft:resultDraft,
+          ...(publish?{result:{...resultDraft,status:'published'}}:{}),
+        },updated_at:new Date().toISOString()})
         .eq('event_key','series4').eq('id',campaign.id).eq('updated_at',campaign.updated_at)
         .select('public_config,updated_at').single();
       if(error)throw error;
       setCampaigns(previous=>previous?.map(item=>item.id===campaign.id?{...item,public_config:data.public_config,updated_at:data.updated_at}:item)??null);
-      setResultNotice('پیش‌نویس نتیجه برای نمایش در زمان انتشار ذخیره شد.');
+      setResultNotice(publish?'نتیجهٔ پیش‌بینی منتشر شد.':'پیش‌نویس نتیجه ذخیره شد.');
     }catch{setError('ذخیره پیش‌نویس نتیجه ناموفق بود.');}
     finally{setBusy(false);}
   }
@@ -184,6 +197,9 @@ export default function Series4PredictionReport({onDelivery}:{onDelivery:()=>Pro
       </select></label>}
       <button type="button" disabled={busy||imageBusy||winners.length>1&&!winners.includes(prizeWinner)}
         onClick={()=>void saveResultDraft()}>ذخیره پیش‌نویس نتیجه</button>
+      {publicEnabled&&campaign.status==='closed'&&<button type="button"
+        disabled={busy||imageBusy||winners.length>1&&!winners.includes(prizeWinner)}
+        onClick={()=>void saveResultDraft(true)}>انتشار نتیجه</button>}
       {resultNotice&&<p role="status">{resultNotice}</p>}
     </details>}
     {imagePages>0&&<div>
