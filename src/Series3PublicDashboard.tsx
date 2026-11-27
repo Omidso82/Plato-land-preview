@@ -1,5 +1,6 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {supabase} from './supabase';
+import ActiveTournamentSchedule, { type ScheduledStage } from './ActiveTournamentSchedule';
 import PublicTournamentArchive, { podiumFromMatches, type ArchiveMatch } from './PublicTournamentArchive';
 import {resolveLockedGroupPlacements,resolveSeries3BracketSlots} from './series3BracketProgression';
 
@@ -33,13 +34,7 @@ function standingsFor(group:string,fixtures:Fixture[]):Standing[]{
 }
 const stages:[keyof Bracket,string][]=[['round32','یک‌شانزدهم نهایی'],['round16','یک‌هشتم نهایی'],['quarterfinals','یک‌چهارم نهایی'],['semifinals','نیمه‌نهایی'],['thirdPlace','رده‌بندی (مقام سوم و چهارم)'],['final','فینال']];
 // Approved Series 3 quarterfinal slot, from the official Series 3 schedule snapshot.
-const quarterfinalStart = new Date('2026-11-28T21:00:00+03:30');
-const quarterfinalDate = new Intl.DateTimeFormat('fa-IR', {
- weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Tehran',
-}).format(quarterfinalStart);
-const quarterfinalTehranTime = new Intl.DateTimeFormat('fa-IR', {
- hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Tehran',
-}).format(quarterfinalStart);
+const announcedQuarterfinal = [{key: 'quarterfinals', starts_at: '2026-11-28T21:00:00+03:30'}];
 
 function recentResults(fixtures: Fixture[], knockoutResults: KnockoutResult[]) {
  const matches = [
@@ -57,7 +52,11 @@ function recentResults(fixtures: Fixture[], knockoutResults: KnockoutResult[]) {
   .slice(0, 5);
 }
 
-export default function Series3PublicDashboard({ archived = false }: { archived?: boolean }){
+export default function Series3PublicDashboard({ archived = false, activeStatus, officialStages }: {
+ archived?: boolean;
+ activeStatus?: boolean;
+ officialStages?: {key: string; starts_at: string}[];
+}){
  const [draw,setDraw]=useState<Draw|null>(null);
  const [fixtures,setFixtures]=useState<Fixture[]>([]);
  const [bracket,setBracket]=useState<Bracket|null>(null);
@@ -115,20 +114,41 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
  const thirdQualifiers=useMemo(()=>bracket?.tokens.filter(token=>token.source==='third'&&Boolean(token.group)&&!token.id.startsWith('3-BEST-'))||[],[bracket]);
  const resolvedBracketSlots=useMemo(()=>bracket?resolveSeries3BracketSlots(bracket,lockedPlacements,thirdQualifiers as any,knockoutResults):{},[bracket,lockedPlacements,thirdQualifiers,knockoutResults]);
  const tabs:[typeof tab,string][]=[['overview','خلاصه مسابقات'],['ranking','رتبه‌بندی و سیدها'],['groups','گروه‌ها و نتایج'],['bracket','مسیر قهرمانی']];
- const upcomingQuarterfinals = (bracket?.quarterfinals ?? []).flatMap(match => {
-  const slots = resolvedBracketSlots[match.id];
-  if (!slots?.a.resolved || !slots.b.resolved
-   || knockoutResults.some(result => result.match_id === match.id && result.result_status === 'completed')) return [];
-  return [{ id: match.id, a: slots.a.token.label, b: slots.b.token.label }];
- });
- const quarterfinalsUpcoming = Date.now() < quarterfinalStart.getTime() && upcomingQuarterfinals.length > 0;
+ const schedules = activeStatus === false ? [] : (officialStages ?? announcedQuarterfinal);
+ const upcomingStage: ScheduledStage | undefined = schedules
+  .filter(slot => Date.parse(slot.starts_at) > Date.now())
+  .sort((a, b) => Date.parse(a.starts_at) - Date.parse(b.starts_at))
+  .map(slot => {
+   const finalDay = slot.key === 'third_place_and_final';
+   const stage = stages.find(([key]) => key === slot.key);
+   const label = finalDay ? 'رده‌بندی و فینال' : stage?.[1];
+   if (!label) return null;
+   const scheduledMatches = stage ? bracket?.[stage[0]] : undefined;
+   const matches = finalDay
+    ? [...(bracket?.thirdPlace ?? []), ...(bracket?.final ?? [])]
+    : (scheduledMatches as Match[] | undefined) ?? [];
+   return {
+    label,
+    startsAt: slot.starts_at,
+    matches: matches.flatMap(match => {
+     const sides = resolvedBracketSlots[match.id];
+     if (!sides?.a.resolved || !sides.b.resolved
+      || knockoutResults.some(result => result.match_id === match.id && result.result_status === 'completed')) return [];
+     return [{ id: match.id, a: sides.a.token.label, b: sides.b.token.label }];
+    }).slice(0, 5),
+   };
+  })
+  .find((stage): stage is ScheduledStage => Boolean(stage?.matches.length));
  const th:React.CSSProperties={padding:'7px 5px',borderBottom:'1px solid #67532f',whiteSpace:'nowrap',textAlign:'center',fontSize:10,color:'#e6d3a7'};
  const td:React.CSSProperties={padding:'7px 5px',borderBottom:'1px solid #30291d',textAlign:'center',fontSize:11,whiteSpace:'nowrap'};
- const dashboard = <section dir="rtl" style={panel} aria-label="داشبورد عمومی مسابقات سری سوم">
+ const dashboard = <section id="series3-dashboard" dir="rtl" style={panel} aria-label="داشبورد عمومی مسابقات سری سوم">
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap'}}>
    <div><div style={{fontSize:19,fontWeight:900,color:'#f3dfad'}}>{archived ? 'آرشیو مسابقات · سری سوم' : 'مسیر قهرمانی · سری سوم'}</div><div style={{...muted,marginTop:3}}>رتبه‌بندی رسمی، گروه‌ها، نتایج و جدول حذفی</div></div>
    <span style={{border:'1px solid #806638',borderRadius:30,padding:'6px 11px',fontSize:11,color:gold}}>۴۸ بازیکن · ۱۲ گروه</span>
   </div>
+  {!archived && activeStatus && <p style={{ color: gold, marginBottom: 0 }}>
+   در حال برگزاری{upcomingStage ? ' · مرحلهٔ بعد طبق برنامه: ' + upcomingStage.label : ''}
+  </p>}
   <nav aria-label="بخش‌های داشبورد" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:5,marginTop:14}}>
    {tabs.map(([key,label])=><button key={key} ref={node => { if (node) sectionButtons.current[key] = node; else delete sectionButtons.current[key]; }} type="button" aria-pressed={tab === key} onClick={()=>setTab(key)} style={{minWidth:0,padding:'9px 3px',borderRadius:8,border:'1px solid '+(tab===key?'#e4c77e':'#57472d'),background:tab===key?'linear-gradient(120deg,#a98239,#e4c77e)':'#151515',color:tab===key?'#17130b':'#e8d8b6',fontWeight:800,fontSize:11,cursor:'pointer'}}>{label}</button>)}
   </nav>
@@ -160,25 +180,7 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
        </button>
       </div>
      </section>
-     <section aria-labelledby="series3-upcoming-matches" style={card}>
-      <h2 id="series3-upcoming-matches" style={{ margin: 0, fontSize: 16, color: gold }}>بازی‌های پیش‌رو</h2>
-      {quarterfinalsUpcoming ? <>
-       <p style={{ ...muted, fontSize: 13, marginBlock: '8px 12px' }}>
-        یک‌چهارم نهایی · {quarterfinalDate} · ساعت <bdi>{quarterfinalTehranTime}</bdi> به وقت تهران
-       </p>
-       <ul style={{ listStyle: 'none', display: 'grid', gap: 8, margin: 0, padding: 0 }}>
-        {upcomingQuarterfinals.map(match => <li key={match.id} style={{
-         display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
-         alignItems: 'center', textAlign: 'center', gap: 8, padding: 8,
-         border: '1px solid #493c28', borderRadius: 8, fontSize: 13,
-        }}>
-         <bdi dir="ltr" style={{ overflowWrap: 'anywhere' }}>{match.a}</bdi>
-         <span style={{ color: gold }}>مقابل</span>
-         <bdi dir="ltr" style={{ overflowWrap: 'anywhere' }}>{match.b}</bdi>
-        </li>)}
-       </ul>
-      </> : <p style={{ ...muted, marginBottom: 0 }}>بازی زمان‌بندی‌شدهٔ بعدی برای نمایش وجود ندارد.</p>}
-     </section>
+     <ActiveTournamentSchedule stage={upcomingStage}/>
     </>}
     <div style={card}><strong style={{color:gold}}>مرحله گروهی</strong><p style={muted}>۴۸ بازیکن در ۱۲ گروه چهار‌نفره · ۷۲ بازی برنامه‌ریزی‌شده · هر برد ۳ امتیاز · بازی پنج‌امتیازی</p><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{groups.map(g=><span key={g} style={{border:'1px solid #5c4a2d',borderRadius:7,padding:'4px 8px',fontSize:11,color:'#ead7ac'}}>گروه {g}</span>)}</div></div>
     <div style={card}><strong style={{color:gold}}>مراحل حذفی</strong><div style={{display:'grid',gap:7,marginTop:8}}>{stages.map(([key,label])=><div key={key} style={{display:'flex',justifyContent:'space-between',gap:8,borderBottom:'1px solid #30291d',paddingBottom:6}}><span style={{fontSize:12}}>{label}</span><span style={{...muted,color:gold}}>{bracket?.[key]?.length||0} مسابقه</span></div>)}</div></div>
@@ -220,7 +222,7 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
    };
   })),
  ];
- return <>
+ return <div id="series3-archive">
   <PublicTournamentArchive title="آرشیو سری سوم تخته‌نرد" prefix="series3" showHeader={false}
    matches={loading ? null : archiveMatches} failed={Boolean(error && !archiveMatches.length)}
    podium={podiumFromMatches(archiveMatches)} />
@@ -228,6 +230,6 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
    <summary className="tarchive-history-summary">رتبه‌بندی، سیدبندی و سوابق سری سوم</summary>
    {dashboard}
   </details>
- </>;
+ </div>;
 
 }
