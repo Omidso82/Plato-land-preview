@@ -35,9 +35,8 @@ export default function Series3Home() {
     };
   },[]);
 
-  return <Series3Gallery activeCompetitions={showRegistration&&
-    <section aria-labelledby="series4-active-title" style={{marginBottom:18,padding:16,border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(115deg,#322714,#141416)'}}>
-      <h2 id="series4-active-title" style={{margin:'0 0 12px',color:'#f0d99f',fontSize:17}}>مسابقات فعال</h2>
+  return <Series3Gallery showTournamentEntry activeCompetitions={showRegistration&&
+    <section aria-label="ثبت‌نام سری چهارم" style={{marginBottom:18,padding:16,border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(115deg,#322714,#141416)'}}>
       <a href="/series4-registration/" style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8,padding:12,borderRadius:9,background:'linear-gradient(120deg,#b48b43,#e4c77e)',color:'#17130b',fontWeight:900,textDecoration:'none'}}>
         ثبت‌نام سری چهارم تخته‌نرد <ArrowLeft size={16} aria-hidden="true"/>
       </a>
