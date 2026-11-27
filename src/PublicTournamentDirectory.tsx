@@ -53,9 +53,10 @@ function viewFromHash(): DirectoryView {
   return directoryTabs.find(tab => window.location.hash === '#temporary-' + tab.key)?.key ?? 'active';
 }
 
-export function TournamentDirectoryEntry({ entries, activePending }: {
+export function TournamentDirectoryEntry({ entries, activePending, activeContent }: {
   entries: readonly PublicTournamentEntry[];
   activePending: boolean;
+  activeContent?: React.ReactNode;
 }) {
   const [view, setView] = useState(viewFromHash);
   const tabList = useRef<HTMLDivElement>(null);
@@ -121,6 +122,7 @@ export function TournamentDirectoryEntry({ entries, activePending }: {
       tabIndex={0}
     >
       {lists[key].length > 0 ? <TournamentCards entries={lists[key]} /> : <p>{empty[key]}</p>}
+      {key === 'active' && view === 'active' && activeContent}
     </section>)}
   </section>;
 }
