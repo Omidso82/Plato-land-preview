@@ -20,6 +20,8 @@ export default function Series3Gallery({tournamentEntries = [], showTournamentEn
  tournamentEntries?: readonly PublicTournamentEntry[];
  showTournamentEntry?: boolean;
 } = {}){
+ const [bfArchived,setBfArchived]=useState<boolean|null>(null);
+ useEffect(()=>{let alive=true;async function refresh(){try{const r=await fetch('https://dfrppbapaaydbjeflozw.supabase.co/functions/v1/plato-land-black-friday-registration',{cache:'no-store'});const d=await r.json();if(alive&&r.ok&&typeof d.archived==='boolean')setBfArchived(d.archived);}catch{}}void refresh();window.addEventListener('focus',refresh);return()=>{alive=false;window.removeEventListener('focus',refresh)}},[]);
  const [series3StatusPending,setSeries3StatusPending]=useState(true);
  const [series3Status,setSeries3Status]=useState<PublicSeries3Status | null>(null);
  const [archiveStatus,setArchiveStatus]=useState({series3:false,series4:false});
@@ -142,6 +144,7 @@ export default function Series3Gallery({tournamentEntries = [], showTournamentEn
   ...tournamentEntries.filter(entry=>entry.id!=='series4'||!archiveStatus.series4),
   ...backgammonArchiveEntries,
  ];
+ if(bfArchived===true)entries.unshift({id:'black-friday',title:'تورنمنت حذفی بلک فرایدی',game:'تخته‌نرد',state:'archive',href:'/?page=black-friday',format:'تیمی · ۵ و ۶ آذر ۱۴۰۵'});
  if(archiveStatus.series3){
   entries.push({id:'series3',title:'آرشیو مسابقات سری سوم',game:'تخته‌نرد',state:'archive',href:'/series3/#series3-archive'});
  }else if(series3Status?.active){
@@ -156,7 +159,7 @@ export default function Series3Gallery({tournamentEntries = [], showTournamentEn
    {showTournamentEntry ? <PublicSiteHeader current="tournaments"/> : <TemporaryPageHeader showBack={false}/>}
    {showTournamentEntry && <TournamentDirectoryEntry entries={entries} activePending={series3StatusPending}/>}
    {heroMode==='video'&&teaserVideo&&!heroVideoFailed?<section style={{position:'relative',marginBottom:16}}><video ref={teaserElement} key={teaserVideo} src={teaserVideo} crossOrigin="anonymous" autoPlay muted={teaserMuted} loop playsInline preload="auto" onCanPlay={()=>{if(teaserElement.current){teaserElement.current.muted=teaserMuted;void teaserElement.current.play().catch(()=>{});}}} onError={()=>setHeroVideoFailed(true)} aria-label="تیزر مسابقات سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',background:'#08090b'}}/><button type="button" onClick={()=>{const nextMuted=!teaserMuted;setTeaserMuted(nextMuted);if(teaserElement.current){teaserElement.current.muted=nextMuted;if(!nextMuted){teaserElement.current.volume=1;void teaserElement.current.play().catch(()=>{});}}}} aria-label={teaserMuted?'فعال‌کردن صدای تیزر':'قطع صدای تیزر'} style={{position:'absolute',bottom:12,right:12,zIndex:2,display:'inline-flex',alignItems:'center',justifyContent:'center',padding:6,border:0,borderRadius:6,background:'rgba(0,0,0,.28)',color:'#f4dfad',cursor:'pointer',boxShadow:'none'}}>{teaserMuted?<VolumeX size={16}/>:<Volume2 size={16}/>}</button></section>:heroMode==='poster'&&poster?<section style={{background:'transparent',border:0,borderRadius:0,padding:0,marginBottom:16}}><img src={poster} alt="پوستر اصلی سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10}}/></section>:null}
-   <section style={{margin:'0 0 18px',padding:16,border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(115deg,#322714,#141416)'}}><div style={{display:'flex',alignItems:'center',gap:10}}><Crown size={24} color="#d6b46d"/><strong style={{color:'#f0d99f',fontSize:17}}>تورنمنت بلک فرایدی</strong></div><p style={{fontSize:13,color:'#c8b58c',lineHeight:1.8}}>مسابقات حذفی تیمی تخته‌نرد · ۱۶ بازیکن · جایزه ۵۰ پیپ</p><a href="/?page=black-friday" style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8,padding:12,borderRadius:9,background:'linear-gradient(120deg,#b48b43,#e4c77e)',color:'#17130b',fontWeight:900,textDecoration:'none'}}>ورود به تورنمنت <ArrowLeft size={16}/></a></section>
+   {bfArchived===false&&<section style={{margin:'0 0 18px',padding:16,border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(115deg,#322714,#141416)'}}><div style={{display:'flex',alignItems:'center',gap:10}}><Crown size={24} color="#d6b46d"/><strong style={{color:'#f0d99f',fontSize:17}}>تورنمنت بلک فرایدی</strong></div><p style={{fontSize:13,color:'#c8b58c',lineHeight:1.8}}>مسابقات حذفی تیمی تخته‌نرد · ۱۶ بازیکن · جایزه ۵۰ پیپ</p><a href="/?page=black-friday" style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8,padding:12,borderRadius:9,background:'linear-gradient(120deg,#b48b43,#e4c77e)',color:'#17130b',fontWeight:900,textDecoration:'none'}}>ورود به تورنمنت <ArrowLeft size={16}/></a></section>}
    {rulesVideo&&<button type="button" onClick={openRulesVideo} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'16px',marginBottom:18,border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(120deg,#2a2114,#151416)',color:'#f0d99f',fontSize:15,fontWeight:900,cursor:'pointer'}}><PlayCircle size={23}/> قوانین مهم سری سوم</button>}
    <section style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'15px 16px',margin:'0 0 18px',border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(115deg,rgba(50,39,20,.96),rgba(20,20,22,.98))'}}>
     <div style={{display:'flex',alignItems:'center',gap:11,minWidth:0}}><span style={{width:38,height:38,display:'grid',placeItems:'center',borderRadius:10,background:'rgba(214,180,109,.14)',flexShrink:0}}><Crown size={20} color="#d6b46d"/></span><div><div style={{fontSize:15,fontWeight:900,color:'#f0d99f'}}>پیش‌بینی‌های سری سوم</div><div style={{fontSize:11,color:'#c8b58c',marginTop:4}}></div></div></div>
@@ -164,7 +167,7 @@ export default function Series3Gallery({tournamentEntries = [], showTournamentEn
    </section>
    <Series3PublicDashboard archived={archiveStatus.series3} activeStatus={series3Status?.active} officialStages={series3Status?.stages}/>
    {!showTournamentEntry &&
-   <section id="temporary-archive" aria-label="آرشیو مسابقات">
+   <section id="temporary-archive" aria-label="آرشیو مسابقات">{bfArchived===true&&<p><a href="/?page=black-friday" style={{color:"#f0d99f"}}>آرشیو تورنمنت بلک فرایدی</a></p>}
    <p><a href="/series1-archive/" style={{color:'#f0d99f'}}>آرشیو مسابقات سری اول</a></p>
    {archiveStatus.series4 && <p><a href="/series4-archive/" style={{color:'#f0d99f'}}>آرشیو مسابقات سری چهارم</a></p>}
    <section style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,flexWrap:'wrap',padding:'13px 16px',margin:'16px 0 0',border:'1px solid rgba(140,106,52,.65)',borderRadius:12,background:'linear-gradient(110deg,rgba(42,33,20,.88),rgba(20,20,22,.96))'}}>
