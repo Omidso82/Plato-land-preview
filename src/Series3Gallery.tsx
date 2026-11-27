@@ -154,10 +154,7 @@ export default function Series3Gallery({tournamentEntries = [], showTournamentEn
   entries.push({id:'series4',title:'آرشیو مسابقات سری چهارم',game:'تخته‌نرد',state:'archive',href:'/series4-archive/'});
  }
 
- return <main dir="rtl" style={{minHeight:'100vh',background:'radial-gradient(ellipse at top,#2a2112 0%,#101114 48%,#08090b 100%)',color:'#f4ead2',padding:'24px 14px 48px',fontFamily:'inherit'}}>
-  <div style={{maxWidth:920,margin:'0 auto'}}>
-   {showTournamentEntry ? <PublicSiteHeader current="tournaments"/> : <TemporaryPageHeader showBack={false}/>}
-   {showTournamentEntry && <TournamentDirectoryEntry entries={entries} activePending={series3StatusPending}/>}
+ const activeContent = <>
    {heroMode==='video'&&teaserVideo&&!heroVideoFailed?<section style={{position:'relative',marginBottom:16}}><video ref={teaserElement} key={teaserVideo} src={teaserVideo} crossOrigin="anonymous" autoPlay muted={teaserMuted} loop playsInline preload="auto" onCanPlay={()=>{if(teaserElement.current){teaserElement.current.muted=teaserMuted;void teaserElement.current.play().catch(()=>{});}}} onError={()=>setHeroVideoFailed(true)} aria-label="تیزر مسابقات سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',background:'#08090b'}}/><button type="button" onClick={()=>{const nextMuted=!teaserMuted;setTeaserMuted(nextMuted);if(teaserElement.current){teaserElement.current.muted=nextMuted;if(!nextMuted){teaserElement.current.volume=1;void teaserElement.current.play().catch(()=>{});}}}} aria-label={teaserMuted?'فعال‌کردن صدای تیزر':'قطع صدای تیزر'} style={{position:'absolute',bottom:12,right:12,zIndex:2,display:'inline-flex',alignItems:'center',justifyContent:'center',padding:6,border:0,borderRadius:6,background:'rgba(0,0,0,.28)',color:'#f4dfad',cursor:'pointer',boxShadow:'none'}}>{teaserMuted?<VolumeX size={16}/>:<Volume2 size={16}/>}</button></section>:heroMode==='poster'&&poster?<section style={{background:'transparent',border:0,borderRadius:0,padding:0,marginBottom:16}}><img src={poster} alt="پوستر اصلی سری سوم" style={{width:'100%',maxHeight:420,objectFit:'contain',display:'block',borderRadius:10}}/></section>:null}
    {bfArchived===false&&<section style={{margin:'0 0 18px',padding:16,border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(115deg,#322714,#141416)'}}><div style={{display:'flex',alignItems:'center',gap:10}}><Crown size={24} color="#d6b46d"/><strong style={{color:'#f0d99f',fontSize:17}}>تورنمنت بلک فرایدی</strong></div><p style={{fontSize:13,color:'#c8b58c',lineHeight:1.8}}>مسابقات حذفی تیمی تخته‌نرد · ۱۶ بازیکن · جایزه ۵۰ پیپ</p><a href="/?page=black-friday" style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8,padding:12,borderRadius:9,background:'linear-gradient(120deg,#b48b43,#e4c77e)',color:'#17130b',fontWeight:900,textDecoration:'none'}}>ورود به تورنمنت <ArrowLeft size={16}/></a></section>}
    {rulesVideo&&<button type="button" onClick={openRulesVideo} style={{width:'100%',display:'flex',alignItems:'center',justifyContent:'center',gap:10,padding:'16px',marginBottom:18,border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(120deg,#2a2114,#151416)',color:'#f0d99f',fontSize:15,fontWeight:900,cursor:'pointer'}}><PlayCircle size={23}/> قوانین مهم سری سوم</button>}
@@ -166,6 +163,11 @@ export default function Series3Gallery({tournamentEntries = [], showTournamentEn
     <a href="/predictions" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,padding:'10px 15px',border:'1px solid #b18b45',borderRadius:9,color:'#17130b',background:'linear-gradient(120deg,#b48b43,#e4c77e)',textDecoration:'none',fontSize:12,fontWeight:900,whiteSpace:'nowrap'}}>مشاهده پیش‌بینی‌ها <ArrowLeft size={15}/></a>
    </section>
    <Series3PublicDashboard archived={archiveStatus.series3} activeStatus={series3Status?.active} officialStages={series3Status?.stages}/>
+ </>;
+ return <main dir="rtl" style={{minHeight:'100vh',background:'radial-gradient(ellipse at top,#2a2112 0%,#101114 48%,#08090b 100%)',color:'#f4ead2',padding:'24px 14px 48px',fontFamily:'inherit'}}>
+  <div style={{maxWidth:920,margin:'0 auto'}}>
+   {showTournamentEntry ? <PublicSiteHeader current="tournaments"/> : <TemporaryPageHeader showBack={false}/>}
+   {showTournamentEntry ? <TournamentDirectoryEntry entries={entries} activePending={series3StatusPending} activeContent={activeContent}/> : activeContent}
    {!showTournamentEntry &&
    <section id="temporary-archive" aria-label="آرشیو مسابقات">{bfArchived===true&&<p><a href="/?page=black-friday" style={{color:"#f0d99f"}}>آرشیو تورنمنت بلک فرایدی</a></p>}
    <p><a href="/series1-archive/" style={{color:'#f0d99f'}}>آرشیو مسابقات سری اول</a></p>
