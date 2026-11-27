@@ -1,4 +1,4 @@
-import React,{useEffect,useMemo,useState} from 'react';
+import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {supabase} from './supabase';
 import PublicTournamentArchive, { podiumFromMatches, type ArchiveMatch } from './PublicTournamentArchive';
 import {resolveLockedGroupPlacements,resolveSeries3BracketSlots} from './series3BracketProgression';
@@ -6,11 +6,11 @@ import {resolveLockedGroupPlacements,resolveSeries3BracketSlots} from './series3
 type Player={plato_id:string;games_played:number|null;games_won:number|null};
 type Group={name:string;players:Player[]};
 type Draw={ranking_snapshot:Player[];pots_snapshot:Player[][];groups_snapshot:Group[]};
-type Fixture={match_id:string;match_date:string;round_no:number;group_name:string;match_no:number;player_a_plato_id:string;player_b_plato_id:string;result_status:'pending'|'completed'|'double_no_show';score_a:number|null;score_b:number|null};
+type Fixture={match_id:string;updated_at:string;match_date:string;round_no:number;group_name:string;match_no:number;player_a_plato_id:string;player_b_plato_id:string;result_status:'pending'|'completed'|'double_no_show';score_a:number|null;score_b:number|null};
 type Token={id:string;label:string;source:'first'|'second'|'third'|'winner'|'loser';group?:string};
 type Match={id:string;a:Token;b:Token};
 type Bracket={tokens:Token[];round32:Match[];round16:Match[];quarterfinals:Match[];semifinals:Match[];final:Match[];thirdPlace?:Match[]};
-type KnockoutResult={match_id:string;player_a_plato_id:string;player_b_plato_id:string;score_a:number|null;score_b:number|null;result_status:'pending'|'completed'};
+type KnockoutResult={match_id:string;stage_key:keyof Bracket;updated_at:string;player_a_plato_id:string;player_b_plato_id:string;score_a:number|null;score_b:number|null;result_status:'pending'|'completed'};
 type Standing={plato_id:string;played:number;wins:number;losses:number;points:number;for:number;against:number;diff:number};
 const fa=(n:number)=>n.toLocaleString('fa-IR');
 const groups='ABCDEFGHIJKL'.split('');
@@ -32,12 +32,29 @@ function standingsFor(group:string,fixtures:Fixture[]):Standing[]{
  return [...map.values()].map(x=>({...x,diff:x.for-x.against})).sort((a,b)=>b.points-a.points||b.diff-a.diff||b.for-a.for||a.plato_id.localeCompare(b.plato_id,'en'));
 }
 const stages:[keyof Bracket,string][]=[['round32','یک‌شانزدهم نهایی'],['round16','یک‌هشتم نهایی'],['quarterfinals','یک‌چهارم نهایی'],['semifinals','نیمه‌نهایی'],['thirdPlace','رده‌بندی (مقام سوم و چهارم)'],['final','فینال']];
+function recentResults(fixtures: Fixture[], knockoutResults: KnockoutResult[]) {
+ const matches = [
+  ...fixtures.map(match => ({ ...match, key: 'group:' + match.match_id, label: 'گروه ' + match.group_name })),
+  ...knockoutResults.map(match => ({
+   ...match,
+   key: 'knockout:' + match.match_id,
+   label: stages.find(([key]) => key === match.stage_key)?.[1] ?? 'مرحله حذفی',
+  })),
+ ];
+ return matches
+  .filter(match => match.result_status === 'completed' && match.score_a !== null && match.score_b !== null
+   && Number.isFinite(Date.parse(match.updated_at)))
+  .sort((a, b) => Date.parse(b.updated_at) - Date.parse(a.updated_at) || a.key.localeCompare(b.key))
+  .slice(0, 5);
+}
+
 export default function Series3PublicDashboard({ archived = false }: { archived?: boolean }){
  const [draw,setDraw]=useState<Draw|null>(null);
  const [fixtures,setFixtures]=useState<Fixture[]>([]);
  const [bracket,setBracket]=useState<Bracket|null>(null);
  const [knockoutResults,setKnockoutResults]=useState<KnockoutResult[]>([]);
  const [tab,setTab]=useState<'overview'|'ranking'|'groups'|'bracket'>('overview');
+ const sectionButtons = useRef<Partial<Record<typeof tab, HTMLButtonElement>>>({});
  const [loading,setLoading]=useState(true);
  const [refreshTick,setRefreshTick]=useState(0);
  const [error,setError]=useState('');
@@ -45,9 +62,9 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
   if(!supabase){setError('اتصال به اطلاعات مسابقات در دسترس نیست.');setLoading(false);return;}
   const [d,f,b,k]=await Promise.all([
    supabase.from('plato_land_series3_public_draw').select('ranking_snapshot,pots_snapshot,groups_snapshot').eq('event_key','series3').maybeSingle(),
-   supabase.from('plato_land_series3_public_fixtures').select('match_id,match_date,round_no,group_name,match_no,player_a_plato_id,player_b_plato_id,result_status,score_a,score_b').eq('event_key','series3').order('match_date').order('group_name').order('match_no'),
+   supabase.from('plato_land_series3_public_fixtures').select('match_id,match_date,round_no,group_name,match_no,player_a_plato_id,player_b_plato_id,result_status,score_a,score_b,updated_at').eq('event_key','series3').order('match_date').order('group_name').order('match_no'),
    supabase.from('plato_land_series3_public_bracket').select('bracket_snapshot,created_at').eq('event_key','series3').maybeSingle(),
-   supabase.from('plato_land_series3_public_knockout_results').select('match_id,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status').eq('event_key','series3').order('stage_key').order('match_no')
+   supabase.from('plato_land_series3_public_knockout_results').select('match_id,stage_key,player_a_plato_id,player_b_plato_id,score_a,score_b,result_status,updated_at').eq('event_key','series3').order('stage_key').order('match_no')
   ]);
   if(!active)return;
   const failure=d.error||f.error||b.error||(k.error&&k.error.code!=='42P01'?k.error:null);
@@ -56,7 +73,7 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
    setDraw(d.data as Draw|null);setFixtures((f.data||[]) as Fixture[]);
    setBracket((b.data?.bracket_snapshot||null) as Bracket|null);
    setKnockoutResults((k.data||[]) as KnockoutResult[]);
-   if(!d.data||!b.data)setError('اطلاعات قرعه‌کشی هنوز کامل در دسترس نیست.');
+   setError(!d.data||!b.data ? 'اطلاعات قرعه‌کشی هنوز کامل در دسترس نیست.' : '');
   }
   setLoading(false);
  })();return()=>{active=false}},[refreshTick]);
@@ -68,6 +85,11 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
    .subscribe();
   return()=>{void supabase.removeChannel(channel)};
  },[]);
+ const recent = useMemo(() => archived ? [] : recentResults(fixtures, knockoutResults), [archived, fixtures, knockoutResults]);
+ function openResults(nextTab: 'groups' | 'bracket') {
+  setTab(nextTab);
+  sectionButtons.current[nextTab]?.focus();
+ }
  const ranking=draw?.ranking_snapshot||[];
  const pots=draw?.pots_snapshot||[];
  const groupDraw=draw?.groups_snapshot||[];
@@ -92,10 +114,41 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
    <span style={{border:'1px solid #806638',borderRadius:30,padding:'6px 11px',fontSize:11,color:gold}}>۴۸ بازیکن · ۱۲ گروه</span>
   </div>
   <nav aria-label="بخش‌های داشبورد" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:5,marginTop:14}}>
-   {tabs.map(([key,label])=><button key={key} type="button" onClick={()=>setTab(key)} style={{minWidth:0,padding:'9px 3px',borderRadius:8,border:'1px solid '+(tab===key?'#e4c77e':'#57472d'),background:tab===key?'linear-gradient(120deg,#a98239,#e4c77e)':'#151515',color:tab===key?'#17130b':'#e8d8b6',fontWeight:800,fontSize:11,cursor:'pointer'}}>{label}</button>)}
+   {tabs.map(([key,label])=><button key={key} ref={node => { if (node) sectionButtons.current[key] = node; else delete sectionButtons.current[key]; }} type="button" aria-pressed={tab === key} onClick={()=>setTab(key)} style={{minWidth:0,padding:'9px 3px',borderRadius:8,border:'1px solid '+(tab===key?'#e4c77e':'#57472d'),background:tab===key?'linear-gradient(120deg,#a98239,#e4c77e)':'#151515',color:tab===key?'#17130b':'#e8d8b6',fontWeight:800,fontSize:11,cursor:'pointer'}}>{label}</button>)}
   </nav>
   {loading?<p style={muted}>در حال دریافت اطلاعات رسمی مسابقات…</p>:error?<p role="status" style={{color:'#e9c98a',fontSize:12,lineHeight:1.9}}>{error}</p>:<>
    {tab==='overview'&&<div style={{display:'grid',gap:9,marginTop:12}}>
+    {!archived && <>
+     <section aria-labelledby="series3-recent-results" style={card}>
+      <h2 id="series3-recent-results" style={{ margin: 0, fontSize: 16, color: gold }}>آخرین نتایج ثبت‌شده</h2>
+      {recent.length === 0 ? <p style={muted}>هنوز نتیجه‌ای برای نمایش ثبت نشده است.</p> :
+       <ul style={{ listStyle: 'none', display: 'grid', gap: 8, margin: '12px 0', padding: 0 }}>
+        {recent.map(match => <li key={match.key} style={{ border: '1px solid #493c28', borderRadius: 8, padding: 8 }}>
+         <div style={{ ...muted, marginBottom: 5 }}>{match.label}</div>
+         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+          {[[match.player_a_plato_id, match.score_a], [match.player_b_plato_id, match.score_b]].map(([id, score]) =>
+           <div key={id} style={{ display: 'grid', gap: 4, textAlign: 'center', alignContent: 'start' }}>
+            <bdi dir="ltr" style={{ overflowWrap: 'anywhere', fontSize: 13 }}>{id}</bdi>
+            <strong style={{ color: gold }}>{typeof score === 'number' ? fa(score) : '—'}</strong>
+           </div>
+          )}
+         </div>
+        </li>)}
+       </ul>}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+       <button type="button" onClick={() => openResults('groups')} style={{ ...card, minHeight: 44, color: gold, cursor: 'pointer' }}>
+        همهٔ نتایج گروهی
+       </button>
+       <button type="button" onClick={() => openResults('bracket')} style={{ ...card, minHeight: 44, color: gold, cursor: 'pointer' }}>
+        همهٔ نتایج حذفی
+       </button>
+      </div>
+     </section>
+     <section aria-labelledby="series3-upcoming-matches" style={card}>
+      <h2 id="series3-upcoming-matches" style={{ margin: 0, fontSize: 16, color: gold }}>بازی‌های پیش‌رو</h2>
+      <p style={{ ...muted, marginBottom: 0 }}>برنامهٔ عمومی در دسترس نیست.</p>
+     </section>
+    </>}
     <div style={card}><strong style={{color:gold}}>مرحله گروهی</strong><p style={muted}>۴۸ بازیکن در ۱۲ گروه چهار‌نفره · ۷۲ بازی برنامه‌ریزی‌شده · هر برد ۳ امتیاز · بازی پنج‌امتیازی</p><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{groups.map(g=><span key={g} style={{border:'1px solid #5c4a2d',borderRadius:7,padding:'4px 8px',fontSize:11,color:'#ead7ac'}}>گروه {g}</span>)}</div></div>
     <div style={card}><strong style={{color:gold}}>مراحل حذفی</strong><div style={{display:'grid',gap:7,marginTop:8}}>{stages.map(([key,label])=><div key={key} style={{display:'flex',justifyContent:'space-between',gap:8,borderBottom:'1px solid #30291d',paddingBottom:6}}><span style={{fontSize:12}}>{label}</span><span style={{...muted,color:gold}}>{bracket?.[key]?.length||0} مسابقه</span></div>)}</div></div>
    </div>}
