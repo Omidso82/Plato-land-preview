@@ -11,6 +11,9 @@ import Series2Archive from './Series2Archive';
 import Series1PublicArchive from './Series1PublicArchive';
 import Series4PublicArchive from './Series4PublicArchive';
 import PublicPredictions from './PublicPredictions';
+import PublicSiteHeader from './PublicSiteHeader';
+import NewsCenter from './NewsCenter';
+import SitePages from './SitePages';
 import './styles.css';
 import './Series2Registration.css';
 
@@ -44,6 +47,13 @@ if((path==='/' || path==='/index.html') && page==='black-friday') { root.render(
   root.render(<React.StrictMode><Series3Registration series={4}/></React.StrictMode>);
 } else if(path==='/series2-slides-manager') {
   root.render(<React.StrictMode><Series2SlidesManager/></React.StrictMode>);
+} else if((path==='/' || path==='/index.html') && (page==='news' || page==='guide' || page==='about')) {
+  root.render(<React.StrictMode><main className="public-site-content" dir="rtl">
+    <PublicSiteHeader current={page}/>
+    {page==='news' ? <NewsCenter/> : <SitePages slug={page}/>}
+  </main></React.StrictMode>);
+} else if(path==='/account') {
+  root.render(<React.StrictMode><App publicAccountEntry/></React.StrictMode>);
 } else if(path==='/' || path==='/index.html' || retiredPaths.has(path) || retiredResultsQuery) {
   if(retiredPaths.has(path) || retiredResultsQuery) window.history.replaceState(null,'','/');
   root.render(<React.StrictMode><Series3Home/></React.StrictMode>);
@@ -54,7 +64,7 @@ import './typography-overrides.css';
 
  // Public page views only; never transmit query strings, account IDs or IP addresses.
  if(location.hostname==='platoland.org' && path!=='/series2-slides-manager' && supabase){
- const record=()=>{const p=location.pathname.replace(/\/+$/,'')||'/';const safe=p==='/index.html'?'/':p;const q=new URLSearchParams(location.search).get('page');const label=safe==='/'&&q&&['black-friday','series2-archive'].includes(q)?'/'+q:safe;
+ const record=()=>{const p=location.pathname.replace(/\/+$/,'')||'/';const safe=p==='/index.html'?'/':p;const q=new URLSearchParams(location.search).get('page');const label=safe==='/'&&q&&['black-friday','series2-archive','news','guide','about'].includes(q)?'/'+q:safe;
  if(/^\/[a-zA-Z0-9/_-]{0,159}$/.test(label)&&label!=='/series2-slides-manager')void supabase?.rpc('plato_land_record_site_visit',{p_page:['/','/series3','/series3-registration','/series4-registration','/series2-archive','/series4-archive','/predictions','/black-friday','/competitions','/news','/about','/guide'].includes(label)?label:'/other',p_device:'desktop'}).then(()=>{},()=>{});};
  let last=location.pathname+location.search;
  for(const method of ['pushState','replaceState'] as const){const original=history[method];history[method]=function(...args:Parameters<History[typeof method]>){original.apply(this,args);const next=location.pathname+location.search;if(next!==last){last=next;record()}}}

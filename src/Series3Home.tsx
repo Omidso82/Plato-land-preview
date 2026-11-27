@@ -1,5 +1,4 @@
 import React,{useEffect,useState} from 'react';
-import {ArrowLeft} from 'lucide-react';
 import Series3Gallery from './Series3Gallery';
 import {supabase} from './supabase';
 
@@ -35,11 +34,11 @@ export default function Series3Home() {
     };
   },[]);
 
-  return <Series3Gallery showTournamentEntry activeCompetitions={showRegistration&&
-    <section aria-label="ثبت‌نام سری چهارم" style={{marginBottom:18,padding:16,border:'1px solid #b18b45',borderRadius:13,background:'linear-gradient(115deg,#322714,#141416)'}}>
-      <a href="/series4-registration/" style={{display:'flex',justifyContent:'center',alignItems:'center',gap:8,padding:12,borderRadius:9,background:'linear-gradient(120deg,#b48b43,#e4c77e)',color:'#17130b',fontWeight:900,textDecoration:'none'}}>
-        ثبت‌نام سری چهارم تخته‌نرد <ArrowLeft size={16} aria-hidden="true"/>
-      </a>
-    </section>
-  }/>;
+  return <Series3Gallery showTournamentEntry tournamentEntries={showRegistration ? [{
+    id:'series4',
+    title:'سری چهارم تخته‌نرد',
+    game:'تخته‌نرد',
+    state:'registration',
+    href:'/series4-registration/',
+  }] : []}/>;
 }
