@@ -1,0 +1,110 @@
+.public-site-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: .5rem;
+  max-width: 920px;
+  margin: 0 auto 1.15rem;
+  padding: 0 0 .75rem;
+  border-bottom: 1px solid #6f5632;
+}
+
+.public-site-header__brand,
+.public-site-header__actions,
+.public-site-header__control {
+  display: flex;
+  align-items: center;
+  gap: .35rem;
+}
+
+.public-site-header__brand {
+  white-space: nowrap;
+  color: #f8efda;
+  text-decoration: none;
+}
+
+.public-site-header__brand strong {
+  font-family: Georgia, serif;
+  font-size: clamp(.9rem, 4vw, 1.25rem);
+  letter-spacing: .04em;
+}
+
+.public-site-header__brand em {
+  color: #efcd84;
+  font-style: normal;
+}
+
+.public-site-header__brand > span {
+  display: grid;
+  place-items: center;
+  width: 35px;
+  height: 35px;
+  border: 1px solid #8d6c36;
+  border-radius: 9px;
+  background: #cda55320;
+  color: #f2d28d;
+}
+
+.public-site-header__control {
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: .2rem .5rem;
+  border: 1px solid #775d36;
+  border-radius: .6rem;
+  background: transparent;
+  color: #efcd84;
+  font: inherit;
+  font-size: .875rem;
+  text-decoration: none;
+}
+
+.public-site-header__control[aria-expanded="true"] {
+  background: #edc982;
+  color: #22180d;
+}
+
+.public-site-header nav {
+  position: absolute;
+  z-index: 6;
+  inset: calc(100% - 3px) 0 auto;
+  padding: .35rem;
+  border: 1px solid #876737;
+  border-radius: .85rem;
+  background: #211b15;
+  box-shadow: 0 16px 25px #0007;
+}
+
+.public-site-header nav[hidden] { display: none; }
+
+.public-site-header nav a {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: .4rem .7rem;
+  border-radius: .45rem;
+  color: #f2e2bd;
+  text-decoration: none;
+}
+
+.public-site-header nav a:hover,
+.public-site-header nav a[aria-current="page"] {
+  background: #e6bb6d22;
+  color: #f5d28a;
+}
+
+.public-site-header :is(a, button):focus-visible {
+  outline: 2px solid #f5d28a;
+  outline-offset: 2px;
+}
+
+.public-site-content {
+  max-width: 920px;
+  margin-inline: auto;
+  padding: 18px 14px 48px;
+}
+
+@media (min-width: 630px) {
+  .public-site-header nav { inset-inline-start: auto; width: 15rem; }
+}
