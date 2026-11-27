@@ -184,7 +184,7 @@ export default function Series3Gallery({tournamentEntries = [], showTournamentEn
      <video key={rulesVideo} src={rulesVideo} crossOrigin="anonymous" controls playsInline autoPlay style={{display:'block',width:'100%',maxHeight:'75vh',background:'#000',borderRadius:8}}/>
     </section>
    </div>}
-   <footer style={{textAlign:'center',color:'#8f836d',fontSize:11,marginTop:28}}>PLATO LAND · Series 3</footer>
+   <footer style={{textAlign:'center',color:'#8f836d',fontSize:11,marginTop:28}}>{showTournamentEntry ? 'PLATO LAND' : 'PLATO LAND · Series 3'}</footer>
   </div>
  </main>;
 }
