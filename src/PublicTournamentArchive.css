@@ -38,7 +38,7 @@
 .tarchive-overview span + span { border-inline-start: 1px solid #846a46; padding-inline-start: 12px; }
 
 .tarchive-jump { margin-block: 14px 0; gap: 6px; }
-.tarchive-jump a {
+.tarchive-jump a, .tarchive-back {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
@@ -50,7 +50,8 @@
   text-decoration: none;
 }
 
-.tarchive-jump a:hover, .tarchive-archive summary:hover { background: #31271e; }
+.tarchive-back { margin-block-end: 14px; }
+.tarchive-jump a:hover, .tarchive-back:hover, .tarchive-archive summary:hover { background: #31271e; }
 .tarchive-archive :is(a, summary):focus-visible { outline: 2px solid var(--archive-gold); outline-offset: 3px; }
 .tarchive-section { margin-block-start: clamp(26px, 5vw, 42px); scroll-margin-top: 16px; }
 .tarchive-section h2 { margin: 0 0 12px; font-size: clamp(1.19rem, 4vw, 1.5rem); }

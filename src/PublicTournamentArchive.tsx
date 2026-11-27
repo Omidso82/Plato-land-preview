@@ -16,6 +16,8 @@ const stages = [
   ['quarter', 'یک‌چهارم نهایی'], ['round16', 'یک‌هشتم نهایی'], ['round32', 'یک‌شانزدهم نهایی'],
 ] as const;
 
+const archiveListHref = '/#temporary-archive';
+const archiveBackLabel = 'بازگشت به فهرست آرشیو';
 
 export type ArchivePodiumEntry = { rank: string; name?: string; id: string; prize?: number };
 
@@ -83,7 +85,9 @@ export default function PublicTournamentArchive({
   const hasKnockout = featured.length > 0 || stages.some(([stage]) => matches?.some(match => match.stage === stage));
   const podiumTitle = podium.some(player => player.prize != null) ? "سکو و جوایز" : "سکو";
   return <div className="tarchive-archive" dir="rtl">
-    {showHeader && <TemporaryPageHeader backHref="/" backLabel="بازگشت به صفحه مسابقات" />}
+    {showHeader
+      ? <TemporaryPageHeader backHref={archiveListHref} backLabel={archiveBackLabel} />
+      : <a className="tarchive-back" href={archiveListHref}>{archiveBackLabel}</a>}
     <div className="tarchive-hero">
       <h1>{title}</h1>
       {!!matches?.length && <p className="tarchive-overview">
