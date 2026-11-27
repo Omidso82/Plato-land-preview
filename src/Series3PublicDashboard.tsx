@@ -32,6 +32,15 @@ function standingsFor(group:string,fixtures:Fixture[]):Standing[]{
  return [...map.values()].map(x=>({...x,diff:x.for-x.against})).sort((a,b)=>b.points-a.points||b.diff-a.diff||b.for-a.for||a.plato_id.localeCompare(b.plato_id,'en'));
 }
 const stages:[keyof Bracket,string][]=[['round32','یک‌شانزدهم نهایی'],['round16','یک‌هشتم نهایی'],['quarterfinals','یک‌چهارم نهایی'],['semifinals','نیمه‌نهایی'],['thirdPlace','رده‌بندی (مقام سوم و چهارم)'],['final','فینال']];
+// Approved Series 3 quarterfinal slot, from the official Series 3 schedule snapshot.
+const quarterfinalStart = new Date('2026-11-28T21:00:00+03:30');
+const quarterfinalDate = new Intl.DateTimeFormat('fa-IR', {
+ weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Tehran',
+}).format(quarterfinalStart);
+const quarterfinalTehranTime = new Intl.DateTimeFormat('fa-IR', {
+ hour: '2-digit', minute: '2-digit', hourCycle: 'h23', timeZone: 'Asia/Tehran',
+}).format(quarterfinalStart);
+
 function recentResults(fixtures: Fixture[], knockoutResults: KnockoutResult[]) {
  const matches = [
   ...fixtures.map(match => ({ ...match, key: 'group:' + match.match_id, label: 'گروه ' + match.group_name })),
@@ -106,6 +115,13 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
  const thirdQualifiers=useMemo(()=>bracket?.tokens.filter(token=>token.source==='third'&&Boolean(token.group)&&!token.id.startsWith('3-BEST-'))||[],[bracket]);
  const resolvedBracketSlots=useMemo(()=>bracket?resolveSeries3BracketSlots(bracket,lockedPlacements,thirdQualifiers as any,knockoutResults):{},[bracket,lockedPlacements,thirdQualifiers,knockoutResults]);
  const tabs:[typeof tab,string][]=[['overview','خلاصه مسابقات'],['ranking','رتبه‌بندی و سیدها'],['groups','گروه‌ها و نتایج'],['bracket','مسیر قهرمانی']];
+ const upcomingQuarterfinals = (bracket?.quarterfinals ?? []).flatMap(match => {
+  const slots = resolvedBracketSlots[match.id];
+  if (!slots?.a.resolved || !slots.b.resolved
+   || knockoutResults.some(result => result.match_id === match.id && result.result_status === 'completed')) return [];
+  return [{ id: match.id, a: slots.a.token.label, b: slots.b.token.label }];
+ });
+ const quarterfinalsUpcoming = Date.now() < quarterfinalStart.getTime() && upcomingQuarterfinals.length > 0;
  const th:React.CSSProperties={padding:'7px 5px',borderBottom:'1px solid #67532f',whiteSpace:'nowrap',textAlign:'center',fontSize:10,color:'#e6d3a7'};
  const td:React.CSSProperties={padding:'7px 5px',borderBottom:'1px solid #30291d',textAlign:'center',fontSize:11,whiteSpace:'nowrap'};
  const dashboard = <section dir="rtl" style={panel} aria-label="داشبورد عمومی مسابقات سری سوم">
@@ -146,7 +162,22 @@ export default function Series3PublicDashboard({ archived = false }: { archived?
      </section>
      <section aria-labelledby="series3-upcoming-matches" style={card}>
       <h2 id="series3-upcoming-matches" style={{ margin: 0, fontSize: 16, color: gold }}>بازی‌های پیش‌رو</h2>
-      <p style={{ ...muted, marginBottom: 0 }}>برنامهٔ عمومی در دسترس نیست.</p>
+      {quarterfinalsUpcoming ? <>
+       <p style={{ ...muted, fontSize: 13, marginBlock: '8px 12px' }}>
+        یک‌چهارم نهایی · {quarterfinalDate} · ساعت <bdi>{quarterfinalTehranTime}</bdi> به وقت تهران
+       </p>
+       <ul style={{ listStyle: 'none', display: 'grid', gap: 8, margin: 0, padding: 0 }}>
+        {upcomingQuarterfinals.map(match => <li key={match.id} style={{
+         display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto minmax(0, 1fr)',
+         alignItems: 'center', textAlign: 'center', gap: 8, padding: 8,
+         border: '1px solid #493c28', borderRadius: 8, fontSize: 13,
+        }}>
+         <bdi dir="ltr" style={{ overflowWrap: 'anywhere' }}>{match.a}</bdi>
+         <span style={{ color: gold }}>مقابل</span>
+         <bdi dir="ltr" style={{ overflowWrap: 'anywhere' }}>{match.b}</bdi>
+        </li>)}
+       </ul>
+      </> : <p style={{ ...muted, marginBottom: 0 }}>بازی زمان‌بندی‌شدهٔ بعدی برای نمایش وجود ندارد.</p>}
      </section>
     </>}
     <div style={card}><strong style={{color:gold}}>مرحله گروهی</strong><p style={muted}>۴۸ بازیکن در ۱۲ گروه چهار‌نفره · ۷۲ بازی برنامه‌ریزی‌شده · هر برد ۳ امتیاز · بازی پنج‌امتیازی</p><div style={{display:'flex',gap:6,flexWrap:'wrap'}}>{groups.map(g=><span key={g} style={{border:'1px solid #5c4a2d',borderRadius:7,padding:'4px 8px',fontSize:11,color:'#ead7ac'}}>گروه {g}</span>)}</div></div>
